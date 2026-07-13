@@ -114,4 +114,20 @@ describe("createLibrary listSeries/getSeries/removeSeries", () => {
     expect(library.getSeries(added.id)).toBeNull();
     expect(library.removeSeries(added.id)).toBe(false);
   });
+
+  it("updateTracking changes status and returns the updated summary", () => {
+    const { db } = openLibraryDb(":memory:");
+    const library = createLibrary(db);
+    const added = library.addSeries(houseOfTheDragonDetails(), "watching");
+
+    const updated = library.updateTracking(added.id, { status: "completed" });
+    expect(updated?.status).toBe("completed");
+    expect(library.getSeries(added.id)?.status).toBe("completed");
+  });
+
+  it("updateTracking returns null for an unknown id", () => {
+    const { db } = openLibraryDb(":memory:");
+    const library = createLibrary(db);
+    expect(library.updateTracking(999, { status: "completed" })).toBeNull();
+  });
 });

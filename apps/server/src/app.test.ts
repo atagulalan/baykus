@@ -192,6 +192,36 @@ describe("server app", () => {
     });
   });
 
+  describe("PATCH /api/library/series/:id", () => {
+    it("updates status and returns the updated summary", async () => {
+      const app = createTestApp();
+      const created = await app.request("/api/library/series", {
+        method: "POST",
+        headers: MUTATION_HEADERS,
+        body: JSON.stringify({ externalIds: { tvmazeId: 1 }, status: "watching" }),
+      });
+      const { id } = (await created.json()) as { id: number };
+
+      const res = await app.request(`/api/library/series/${id}`, {
+        method: "PATCH",
+        headers: MUTATION_HEADERS,
+        body: JSON.stringify({ status: "completed" }),
+      });
+      expect(res.status).toBe(200);
+      expect((await res.json()) as { status: string }).toMatchObject({ status: "completed" });
+    });
+
+    it("404s for an unknown id", async () => {
+      const app = createTestApp();
+      const res = await app.request("/api/library/series/999", {
+        method: "PATCH",
+        headers: MUTATION_HEADERS,
+        body: JSON.stringify({ status: "completed" }),
+      });
+      expect(res.status).toBe(404);
+    });
+  });
+
   describe("GET/DELETE /api/library/series/:id", () => {
     it("404s for an unknown id and 204s a successful delete", async () => {
       const app = createTestApp();

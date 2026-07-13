@@ -1,4 +1,4 @@
-import type { Library, ListSeriesOptions } from "@baykus/core";
+import type { Library, ListSeriesOptions, TrackingPatch } from "@baykus/core";
 import type { ExternalIds, MetadataProvider } from "@baykus/provider-sdk";
 import { Hono } from "hono";
 import { z } from "zod";
@@ -54,6 +54,22 @@ function toListOptions(parsed: z.infer<typeof listQuerySchema>): ListSeriesOptio
   return opts;
 }
 
+const updateSeriesSchema = z
+  .object({
+    status: statusSchema.optional(),
+    pushMuted: z.boolean().optional(),
+    note: z.string().nullable().optional(),
+  })
+  .strict();
+
+function toTrackingPatch(parsed: z.infer<typeof updateSeriesSchema>): TrackingPatch {
+  const patch: TrackingPatch = {};
+  if (parsed.status !== undefined) patch.status = parsed.status;
+  if (parsed.pushMuted !== undefined) patch.pushMuted = parsed.pushMuted;
+  if (parsed.note !== undefined) patch.note = parsed.note;
+  return patch;
+}
+
 export function createLibraryRoutes(library: Library, providers: MetadataProvider[]): Hono {
   const app = new Hono();
 
@@ -77,6 +93,14 @@ export function createLibraryRoutes(library: Library, providers: MetadataProvide
     const detail = library.getSeries(id);
     if (!detail) throw new ApiError("NOT_FOUND", `series ${id} not in library`);
     return c.json(detail);
+  });
+
+  app.patch("/series/:id", async (c) => {
+    const id = parseId(c.req.param("id"));
+    const body = updateSeriesSchema.parse(await c.req.json());
+    const summary = library.updateTracking(id, toTrackingPatch(body));
+    if (!summary) throw new ApiError("NOT_FOUND", `series ${id} not in library`);
+    return c.json(summary);
   });
 
   app.delete("/series/:id", (c) => {

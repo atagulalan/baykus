@@ -1,7 +1,11 @@
 import type {
+  AddWatchResult,
   ApiErrorEnvelope,
+  BulkWatchResult,
+  BulkWatchTarget,
   ExternalIds,
   SearchResponse,
+  SeriesDetail,
   SeriesListResponse,
   SeriesSummary,
   TrackingStatus,
@@ -71,4 +75,36 @@ export function listSeries(
 
 export function removeSeries(id: number): Promise<void> {
   return request<void>(`/library/series/${id}`, { method: "DELETE" });
+}
+
+export function getSeries(id: number): Promise<SeriesDetail> {
+  return request<SeriesDetail>(`/library/series/${id}`);
+}
+
+export function updateSeries(
+  id: number,
+  patch: { status?: TrackingStatus; pushMuted?: boolean; note?: string | null },
+): Promise<SeriesSummary> {
+  return request<SeriesSummary>(`/library/series/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });
+}
+
+export function addEpisodeWatch(episodeId: number, watchedAt?: string): Promise<AddWatchResult> {
+  return request<AddWatchResult>(`/episodes/${episodeId}/watches`, {
+    method: "POST",
+    body: JSON.stringify(watchedAt ? { watchedAt } : {}),
+  });
+}
+
+export function removeLatestEpisodeWatch(episodeId: number): Promise<void> {
+  return request<void>(`/episodes/${episodeId}/watches/latest`, { method: "DELETE" });
+}
+
+export function bulkWatch(itemId: number, target: BulkWatchTarget): Promise<BulkWatchResult> {
+  return request<BulkWatchResult>(`/library/series/${itemId}/watches/bulk`, {
+    method: "POST",
+    body: JSON.stringify(target),
+  });
 }

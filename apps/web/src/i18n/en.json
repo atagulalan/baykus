@@ -42,6 +42,26 @@
     "removeConfirm": "Remove \"{{title}}\" from your library?",
     "removeError": "Something went wrong while removing"
   },
+  "series": {
+    "notFound": "This series isn't in your library",
+    "specials": "Specials",
+    "seasonNumber": "Season {{number}}",
+    "markSeasonWatched": "mark all watched",
+    "nextUp": "Next up: S{{s}}E{{e}}",
+    "suggestCompleted": "All episodes watched. Move to Completed?",
+    "moveToCompleted": "Move",
+    "staySame": "Keep as is"
+  },
+  "episode": {
+    "toggleWatched": "Mark as watched",
+    "untitled": "Untitled episode",
+    "finale": "FINALE",
+    "menu": "Episode menu",
+    "watchAgain": "watch again",
+    "editDate": "edit date",
+    "watchedUpToHere": "watched up to here",
+    "save": "Save"
+  },
   "errors": {
     "generic": "Something went wrong",
     "retry": "Retry"

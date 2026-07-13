@@ -79,3 +79,10 @@ export interface ListSeriesOptions {
   status?: TrackingStatus;
   sort?: "title" | "added" | "rating" | "nextAir";
 }
+
+/** Partial update to a series' tracking row; any subset of fields. */
+export interface TrackingPatch {
+  status?: TrackingStatus;
+  pushMuted?: boolean;
+  note?: string | null;
+}

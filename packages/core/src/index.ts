@@ -12,5 +12,6 @@ export type {
   SeriesDetail,
   SeriesProgress,
   SeriesSummary,
+  TrackingPatch,
 } from "./library/types.ts";
 export type { AddWatchResult, BulkWatchResult, BulkWatchTarget } from "./library/watches.ts";

@@ -76,29 +76,36 @@ a poster card in the library. No TMDB key involved.
 
 ---
 
-## M2 — Episode tracking & progress
+## M2 — Episode tracking & progress ✅ (done 2026-07-14)
 
 Checkpoint goal: open series detail, tick episodes (single/bulk), see real
 progress on cards, edit a watch date, rewatch an episode.
 
-- [ ] M2.1 core watches (FR-004)
+- [x] M2.1 core watches (FR-004)
   - **Files:** `packages/core/src/library/{watches.ts,watches.test.ts}`
   - **DoD:** `addWatch(episodeId, watchedAt?, source?)` (duplicate (episodeId,watchedAt) → returns existing, no throw); `bulkWatch({itemId, upToEpisodeId | seasonNumber})` per spec edge table (skip specials, skip already-watched, airing order = (s,e) ordering); `removeLatestWatch(episodeId)`; `suggestCompleted(itemId)` = all aired non-special episodes have ≥1 watch AND status ≠ completed; per-episode `watchCount`, `lastWatchedAt` in detail queries
   - **Tests:** rewatch creates 2nd event; unmark removes newest only; bulk up-to skips specials + already watched; suggestCompleted flips exactly at last aired episode; future episodes never auto-watched
   - **Verify:** `pnpm test packages/core`
 
-- [ ] M2.2 server watch routes (FR-004)
+- [x] M2.2 server watch routes (FR-004)
   - **Files:** `apps/server/src/routes/watches.ts` + tests; wire in `app.ts`
   - **DoD:** implements contracts/api.md §Watches exactly (incl. `suggestCompleted` in POST response, idempotent 200 on duplicate, bulk XOR body validation)
   - **Tests:** each endpoint happy + validation error + 404 unknown episode
   - **Verify:** `pnpm test apps/server`
 
-- [ ] M2.3 web series detail page (FR-003, FR-004)
+- [x] M2.3 web series detail page (FR-003, FR-004)
   - **Files:** `apps/web/src/pages/SeriesDetailPage.tsx`, `src/components/{SeasonSection.tsx,EpisodeRow.tsx,WatchDateDialog.tsx}`, route `/series/$id` in `router.tsx`; keys `series.*`, `episode.*`
   - **DoD:** per ui.md §Series detail: header (poster, title, year, network, status select, progress), season accordions (S0 labeled from `seasons.name`, collapsed by default), episode rows (checkbox, SxE, title, air date, watch count badge on >1, date-edit affordance), bulk buttons ("season watched", "watched up to here" on row menu), optimistic updates via TanStack Query with rollback on error, `suggestCompleted` → toast offering status change
+  <!-- DECISION 2026-07-14: the header status select and the suggestCompleted
+  toast's status-change action both require PATCH /api/library/series/:id,
+  which M3.2 was scheduled to add. Pulled the minimal PATCH (status/pushMuted/
+  note, per contracts/api.md) forward into M2.3 (core `updateTracking` +
+  server route) since M2.3's own DoD requires a working status select — a
+  disabled placeholder would be a half-finished feature. M3.2 below no longer
+  needs to add PATCH, only ratings + stats. -->
   - **Verify:** browser: tick/untick, bulk season, rewatch (tick a watched ep again via row menu "watch again"), edit a date, progress on library card updates
 
-- [ ] M2.4 CHECKPOINT M2 — manual pass of M2.3 list + M1 regression + all green
+- [x] M2.4 CHECKPOINT M2 — manual pass of M2.3 list + M1 regression + all green
 
 ---
 
@@ -113,7 +120,7 @@ see the stats page.
   - **Tests:** upsert overwrites; invalid value throws; stats math incl. runtime fallback; rating distribution counts
   - **Verify:** `pnpm test packages/core`
 
-- [ ] M3.2 server ratings + stats + PATCH series routes → contracts/api.md §Ratings §stats; tests as usual
+- [ ] M3.2 server ratings + stats → contracts/api.md §Ratings §stats; tests as usual (PATCH series route landed early in M2.3, see decision note there)
 - [ ] M3.3 web rating UI (FR-006)
   - **Files:** `src/components/RatingControl.tsx` (3 segmented buttons: 👎 kötü / 😐 normal / 👍 iyi — labels from i18n, not emoji-only), post-watch inline prompt in EpisodeRow (dismissible), rating on detail header; library sort/filter extension
   - **DoD:** ui.md §Rating; one-tap set/clear; keyboard accessible

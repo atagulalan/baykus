@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { buildImageUrl } from "../api/images.ts";
@@ -18,43 +19,45 @@ export function SeriesCard({ series, onRemove }: SeriesCardProps) {
 
   return (
     <div className="group relative flex flex-col overflow-hidden rounded-lg bg-zinc-900">
-      <div className="relative aspect-[2/3] w-full bg-zinc-800">
-        {imageUrl && !imageFailed ? (
-          <img
-            src={imageUrl}
-            alt={series.title}
-            className="h-full w-full object-cover"
-            onError={() => setImageFailed(true)}
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center p-2 text-center text-sm text-zinc-400">
-            {series.title}
-          </div>
-        )}
-        <button
-          type="button"
-          onClick={onRemove}
-          className="absolute top-1 right-1 hidden rounded bg-zinc-950/80 px-1.5 py-0.5 text-xs text-zinc-100 group-hover:block"
-        >
-          {t("library.card.remove")}
-        </button>
-      </div>
-      <div className="flex flex-col gap-1 p-2">
-        <p className="truncate font-medium text-sm">{series.title}</p>
-        <div className="flex items-center justify-between text-xs text-zinc-400">
-          <span>{series.year ?? "—"}</span>
-          {isCompleted ? (
-            <span className="text-emerald-400">✓</span>
+      <Link to="/series/$id" params={{ id: String(series.id) }} className="contents">
+        <div className="relative aspect-[2/3] w-full bg-zinc-800">
+          {imageUrl && !imageFailed ? (
+            <img
+              src={imageUrl}
+              alt={series.title}
+              className="h-full w-full object-cover"
+              onError={() => setImageFailed(true)}
+            />
           ) : (
-            <span>
-              {watched}/{aired}
-            </span>
+            <div className="flex h-full w-full items-center justify-center p-2 text-center text-sm text-zinc-400">
+              {series.title}
+            </div>
           )}
         </div>
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
-          <div className="h-full bg-emerald-500" style={{ width: `${percent}%` }} />
+        <div className="flex flex-col gap-1 p-2">
+          <p className="truncate font-medium text-sm">{series.title}</p>
+          <div className="flex items-center justify-between text-xs text-zinc-400">
+            <span>{series.year ?? "—"}</span>
+            {isCompleted ? (
+              <span className="text-emerald-400">✓</span>
+            ) : (
+              <span>
+                {watched}/{aired}
+              </span>
+            )}
+          </div>
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
+            <div className="h-full bg-emerald-500" style={{ width: `${percent}%` }} />
+          </div>
         </div>
-      </div>
+      </Link>
+      <button
+        type="button"
+        onClick={onRemove}
+        className="absolute top-1 right-1 hidden rounded bg-zinc-950/80 px-1.5 py-0.5 text-xs text-zinc-100 group-hover:block"
+      >
+        {t("library.card.remove")}
+      </button>
     </div>
   );
 }

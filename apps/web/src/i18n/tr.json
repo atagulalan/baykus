@@ -42,6 +42,26 @@
     "removeConfirm": "\"{{title}}\" kütüphaneden kaldırılsın mı?",
     "removeError": "Kaldırılırken bir hata oluştu"
   },
+  "series": {
+    "notFound": "Bu dizi kütüphanende değil",
+    "specials": "Özel Bölümler",
+    "seasonNumber": "Sezon {{number}}",
+    "markSeasonWatched": "tümünü izledim",
+    "nextUp": "Sıradaki: S{{s}}E{{e}}",
+    "suggestCompleted": "Tüm bölümler izlendi. Bitirdim'e taşınsın mı?",
+    "moveToCompleted": "Taşı",
+    "staySame": "Kalsın"
+  },
+  "episode": {
+    "toggleWatched": "İzlendi olarak işaretle",
+    "untitled": "İsimsiz bölüm",
+    "finale": "FİNAL",
+    "menu": "Bölüm menüsü",
+    "watchAgain": "tekrar izledim",
+    "editDate": "tarihi düzenle",
+    "watchedUpToHere": "buraya kadar izledim",
+    "save": "Kaydet"
+  },
   "errors": {
     "generic": "Bir şeyler ters gitti",
     "retry": "Tekrar dene"

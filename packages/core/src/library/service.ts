@@ -11,6 +11,7 @@ import type {
   SeasonSummary,
   SeriesDetail,
   SeriesSummary,
+  TrackingPatch,
 } from "./types.ts";
 import {
   type AddWatchResult,
@@ -145,6 +146,7 @@ export interface Library {
   listSeries(opts?: ListSeriesOptions): { items: SeriesSummary[]; total: number };
   getSeries(id: number): SeriesDetail | null;
   removeSeries(id: number): boolean;
+  updateTracking(itemId: number, patch: TrackingPatch): SeriesSummary | null;
   addWatch(episodeId: number, watchedAt?: string, source?: WatchSource): AddWatchResult | null;
   bulkWatch(itemId: number, target: BulkWatchTarget): BulkWatchResult | null;
   removeLatestWatch(episodeId: number): boolean;
@@ -317,6 +319,27 @@ export function createLibrary(db: LibraryDatabase): Library {
     removeSeries(id: number): boolean {
       const result = db.delete(schema.items).where(eq(schema.items.id, id)).run();
       return result.changes > 0;
+    },
+
+    updateTracking(itemId: number, patch: TrackingPatch): SeriesSummary | null {
+      const existing = getItemAndTracking(db, itemId);
+      if (!existing) return null;
+
+      const updates: Partial<typeof schema.tracking.$inferInsert> = {};
+      if (patch.status !== undefined) {
+        updates.status = patch.status;
+        updates.statusChangedAt = new Date().toISOString();
+      }
+      if (patch.pushMuted !== undefined) updates.pushMuted = patch.pushMuted;
+      if (patch.note !== undefined) updates.note = patch.note;
+
+      if (Object.keys(updates).length > 0) {
+        db.update(schema.tracking).set(updates).where(eq(schema.tracking.itemId, itemId)).run();
+      }
+
+      const row = getItemAndTracking(db, itemId);
+      if (!row) return null;
+      return buildSummary(db, row.item, row.tracking);
     },
 
     addWatch(episodeId: number, watchedAt?: string, source?: WatchSource): AddWatchResult | null {
