@@ -1,0 +1,296 @@
+import type { ExternalIds, SeriesDetails } from "@baykus/provider-sdk";
+import { eq, or } from "drizzle-orm";
+import type { LibraryDatabase } from "../db/open.ts";
+import type { TrackingStatus } from "../db/schema.ts";
+import * as schema from "../db/schema.ts";
+import { AlreadyInLibraryError } from "./errors.ts";
+import { getNextAirDate, getNextUnwatchedEpisode, getSeriesProgress } from "./progress.ts";
+import type {
+  EpisodeSummary,
+  ListSeriesOptions,
+  SeasonSummary,
+  SeriesDetail,
+  SeriesSummary,
+} from "./types.ts";
+
+type ItemRow = typeof schema.items.$inferSelect;
+type TrackingRow = typeof schema.tracking.$inferSelect;
+
+function findConflictingItemId(db: LibraryDatabase, ids: ExternalIds): number | null {
+  const conditions = [
+    ids.tmdbId != null ? eq(schema.items.tmdbId, ids.tmdbId) : null,
+    ids.tvmazeId != null ? eq(schema.items.tvmazeId, ids.tvmazeId) : null,
+    ids.imdbId != null ? eq(schema.items.imdbId, ids.imdbId) : null,
+    ids.tvdbId != null ? eq(schema.items.tvdbId, ids.tvdbId) : null,
+  ].filter((c): c is NonNullable<typeof c> => c !== null);
+
+  if (conditions.length === 0) return null;
+
+  const row = db
+    .select({ id: schema.items.id })
+    .from(schema.items)
+    .where(or(...conditions))
+    .limit(1)
+    .get();
+  return row?.id ?? null;
+}
+
+function toItemInsertValues(details: SeriesDetails, addedAt: string) {
+  return {
+    mediaType: details.mediaType,
+    title: details.title,
+    originalTitle: details.originalTitle ?? null,
+    tagline: details.tagline ?? null,
+    overview: details.overview ?? null,
+    posterRef: details.posterRef ?? null,
+    backdropRef: details.backdropRef ?? null,
+    logoRef: details.logoRef ?? null,
+    releaseStatus: details.releaseStatus ?? null,
+    firstAirDate: details.firstAirDate ?? null,
+    lastAirDate: details.lastAirDate ?? null,
+    originCountry:
+      details.originCountry && details.originCountry.length > 0
+        ? details.originCountry.join(",")
+        : null,
+    originalLanguage: details.originalLanguage ?? null,
+    episodeRunTimes: details.episodeRunTimes ?? null,
+    networks: details.networks ?? null,
+    genres: details.genres ?? null,
+    tags: null,
+    contentRatings: details.contentRatings ?? null,
+    tmdbId: details.externalIds.tmdbId ?? null,
+    tvmazeId: details.externalIds.tvmazeId ?? null,
+    imdbId: details.externalIds.imdbId ?? null,
+    tvdbId: details.externalIds.tvdbId ?? null,
+    watchProviders: null,
+    externalRatings: null,
+    lastRefreshedAt: addedAt,
+    addedAt,
+  };
+}
+
+function yearOf(dateStr: string | null): number | null {
+  if (!dateStr) return null;
+  const year = Number.parseInt(dateStr.slice(0, 4), 10);
+  return Number.isFinite(year) ? year : null;
+}
+
+function buildSummary(db: LibraryDatabase, item: ItemRow, tracking: TrackingRow): SeriesSummary {
+  return {
+    id: item.id,
+    title: item.title,
+    posterRef: item.posterRef,
+    year: yearOf(item.firstAirDate),
+    status: tracking.status,
+    rating: null, // wired in M3.1 (ratings.ts)
+    releaseStatus: item.releaseStatus,
+    network: item.networks?.[0]?.name ?? null,
+    progress: getSeriesProgress(db, item.id),
+    nextUnwatched: getNextUnwatchedEpisode(db, item.id),
+    nextAirDate: getNextAirDate(db, item.id),
+    pushMuted: tracking.pushMuted,
+  };
+}
+
+function getItemAndTracking(
+  db: LibraryDatabase,
+  itemId: number,
+): { item: ItemRow; tracking: TrackingRow } | undefined {
+  return db
+    .select({ item: schema.items, tracking: schema.tracking })
+    .from(schema.items)
+    .innerJoin(schema.tracking, eq(schema.tracking.itemId, schema.items.id))
+    .where(eq(schema.items.id, itemId))
+    .get();
+}
+
+type SortKey = NonNullable<ListSeriesOptions["sort"]>;
+
+function sortEnriched(
+  enriched: { addedAt: string; summary: SeriesSummary }[],
+  sort: SortKey,
+): void {
+  switch (sort) {
+    case "title":
+      enriched.sort((a, b) => a.summary.title.localeCompare(b.summary.title, "tr"));
+      return;
+    case "rating":
+      enriched.sort((a, b) => (b.summary.rating ?? 0) - (a.summary.rating ?? 0));
+      return;
+    case "nextAir":
+      enriched.sort((a, b) => {
+        if (a.summary.nextAirDate === b.summary.nextAirDate) return 0;
+        if (a.summary.nextAirDate === null) return 1;
+        if (b.summary.nextAirDate === null) return -1;
+        return a.summary.nextAirDate < b.summary.nextAirDate ? -1 : 1;
+      });
+      return;
+    default:
+      // "added" — most recently added first.
+      enriched.sort((a, b) => (a.addedAt < b.addedAt ? 1 : a.addedAt > b.addedAt ? -1 : 0));
+  }
+}
+
+export interface Library {
+  addSeries(details: SeriesDetails, status: TrackingStatus): SeriesSummary;
+  listSeries(opts?: ListSeriesOptions): { items: SeriesSummary[]; total: number };
+  getSeries(id: number): SeriesDetail | null;
+  removeSeries(id: number): boolean;
+}
+
+export function createLibrary(db: LibraryDatabase): Library {
+  return {
+    addSeries(details: SeriesDetails, status: TrackingStatus): SeriesSummary {
+      const existingId = findConflictingItemId(db, details.externalIds);
+      if (existingId != null) throw new AlreadyInLibraryError(existingId);
+
+      const now = new Date().toISOString();
+
+      const itemId = db.transaction((tx) => {
+        const inserted = tx
+          .insert(schema.items)
+          .values(toItemInsertValues(details, now))
+          .returning({ id: schema.items.id })
+          .get();
+
+        tx.insert(schema.tracking)
+          .values({
+            itemId: inserted.id,
+            status,
+            pushMuted: false,
+            note: null,
+            statusChangedAt: now,
+          })
+          .run();
+
+        for (const season of details.seasons) {
+          tx.insert(schema.seasons)
+            .values({
+              itemId: inserted.id,
+              number: season.number,
+              name: season.name ?? null,
+              overview: season.overview ?? null,
+              posterRef: season.posterRef ?? null,
+              airDate: season.airDate ?? null,
+            })
+            .run();
+
+          for (const ep of season.episodes) {
+            tx.insert(schema.episodes)
+              .values({
+                itemId: inserted.id,
+                seasonNumber: ep.seasonNumber,
+                episodeNumber: ep.episodeNumber,
+                title: ep.title ?? null,
+                overview: ep.overview ?? null,
+                airDate: ep.airDate ?? null,
+                runtimeMin: ep.runtimeMin ?? null,
+                stillRef: ep.stillRef ?? null,
+                episodeType: ep.episodeType ?? null,
+                externalRatings: ep.externalRatings ?? null,
+              })
+              .run();
+          }
+        }
+
+        return inserted.id;
+      });
+
+      const row = getItemAndTracking(db, itemId);
+      if (!row) throw new Error("addSeries: item vanished after insert");
+      return buildSummary(db, row.item, row.tracking);
+    },
+
+    listSeries(opts: ListSeriesOptions = {}): { items: SeriesSummary[]; total: number } {
+      const rows = db
+        .select({ item: schema.items, tracking: schema.tracking })
+        .from(schema.items)
+        .innerJoin(schema.tracking, eq(schema.tracking.itemId, schema.items.id))
+        .where(opts.status ? eq(schema.tracking.status, opts.status) : undefined)
+        .all();
+
+      const enriched = rows.map((row) => ({
+        addedAt: row.item.addedAt,
+        summary: buildSummary(db, row.item, row.tracking),
+      }));
+      sortEnriched(enriched, opts.sort ?? "added");
+
+      return { items: enriched.map((e) => e.summary), total: enriched.length };
+    },
+
+    getSeries(id: number): SeriesDetail | null {
+      const row = getItemAndTracking(db, id);
+      if (!row) return null;
+      const { item, tracking } = row;
+
+      const seasonRows = db
+        .select()
+        .from(schema.seasons)
+        .where(eq(schema.seasons.itemId, id))
+        .orderBy(schema.seasons.number)
+        .all();
+      const episodeRows = db
+        .select()
+        .from(schema.episodes)
+        .where(eq(schema.episodes.itemId, id))
+        .orderBy(schema.episodes.seasonNumber, schema.episodes.episodeNumber)
+        .all();
+
+      const episodesBySeason = new Map<number, EpisodeSummary[]>();
+      for (const ep of episodeRows) {
+        const list = episodesBySeason.get(ep.seasonNumber) ?? [];
+        list.push({
+          id: ep.id,
+          s: ep.seasonNumber,
+          e: ep.episodeNumber,
+          title: ep.title,
+          overview: ep.overview,
+          airDate: ep.airDate,
+          runtimeMin: ep.runtimeMin,
+          stillRef: ep.stillRef,
+          episodeType: ep.episodeType,
+          communityRating: ep.externalRatings?.[0] ?? null,
+          myRating: null, // wired in M3.1 (ratings.ts)
+          watchCount: 0, // wired in M2.1 (watches.ts)
+          lastWatchedAt: null, // wired in M2.1 (watches.ts)
+        });
+        episodesBySeason.set(ep.seasonNumber, list);
+      }
+
+      const seasons: SeasonSummary[] = seasonRows.map((s) => ({
+        number: s.number,
+        name: s.name,
+        overview: s.overview,
+        posterRef: s.posterRef,
+        airDate: s.airDate,
+        episodes: episodesBySeason.get(s.number) ?? [],
+      }));
+
+      return {
+        ...buildSummary(db, item, tracking),
+        tagline: item.tagline,
+        overview: item.overview,
+        genres: item.genres ?? [],
+        tags: item.tags ?? [],
+        contentRatings: item.contentRatings ?? [],
+        networks: item.networks ?? [],
+        originCountry: item.originCountry ? item.originCountry.split(",") : [],
+        originalLanguage: item.originalLanguage,
+        episodeRunTimes: item.episodeRunTimes ?? [],
+        watchProviders: item.watchProviders ?? [],
+        externalRatings: item.externalRatings ?? [],
+        backdropRef: item.backdropRef,
+        logoRef: item.logoRef,
+        note: tracking.note,
+        lastRefreshedAt: item.lastRefreshedAt,
+        addedAt: item.addedAt,
+        seasons,
+      };
+    },
+
+    removeSeries(id: number): boolean {
+      const result = db.delete(schema.items).where(eq(schema.items.id, id)).run();
+      return result.changes > 0;
+    },
+  };
+}
