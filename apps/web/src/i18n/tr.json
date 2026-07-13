@@ -8,11 +8,43 @@
       "settings": "Ayarlar"
     }
   },
+  "search": {
+    "placeholder": "Dizi ara…",
+    "loading": "Aranıyor…",
+    "noResults": "Sonuç bulunamadı",
+    "providerError": "Arama sağlayıcısında bir sorun oluştu",
+    "retry": "Tekrar dene",
+    "add": "Ekle",
+    "cancel": "İptal",
+    "added": "{{title}} kütüphanene eklendi",
+    "alreadyInLibrary": "Bu dizi zaten kütüphanende",
+    "addError": "Eklenirken bir hata oluştu"
+  },
+  "status": {
+    "label": "Durum",
+    "watching": "İzliyorum",
+    "plan_to_watch": "İzleyeceğim",
+    "completed": "Bitirdim",
+    "dropped": "Bıraktım",
+    "paused": "Ara verdim"
+  },
   "library": {
     "empty": {
       "title": "Kütüphanen boş",
       "hint": "Bir dizi aramak için yukarıdaki arama kutusunu kullan."
-    }
+    },
+    "filter": {
+      "all": "Tümü"
+    },
+    "card": {
+      "remove": "Kaldır"
+    },
+    "removeConfirm": "\"{{title}}\" kütüphaneden kaldırılsın mı?",
+    "removeError": "Kaldırılırken bir hata oluştu"
+  },
+  "errors": {
+    "generic": "Bir şeyler ters gitti",
+    "retry": "Tekrar dene"
   },
   "settings": {
     "title": "Ayarlar"

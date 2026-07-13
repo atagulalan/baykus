@@ -8,11 +8,43 @@
       "settings": "Settings"
     }
   },
+  "search": {
+    "placeholder": "Search a series…",
+    "loading": "Searching…",
+    "noResults": "No results found",
+    "providerError": "Search provider ran into a problem",
+    "retry": "Retry",
+    "add": "Add",
+    "cancel": "Cancel",
+    "added": "{{title}} was added to your library",
+    "alreadyInLibrary": "This series is already in your library",
+    "addError": "Something went wrong while adding"
+  },
+  "status": {
+    "label": "Status",
+    "watching": "Watching",
+    "plan_to_watch": "Plan to watch",
+    "completed": "Completed",
+    "dropped": "Dropped",
+    "paused": "Paused"
+  },
   "library": {
     "empty": {
       "title": "Your library is empty",
       "hint": "Use the search box above to find a series."
-    }
+    },
+    "filter": {
+      "all": "All"
+    },
+    "card": {
+      "remove": "Remove"
+    },
+    "removeConfirm": "Remove \"{{title}}\" from your library?",
+    "removeError": "Something went wrong while removing"
+  },
+  "errors": {
+    "generic": "Something went wrong",
+    "retry": "Retry"
   },
   "settings": {
     "title": "Settings"

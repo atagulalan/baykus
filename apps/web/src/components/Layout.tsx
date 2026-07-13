@@ -1,5 +1,6 @@
 import { Link, Outlet } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
+import { SearchBar } from "./SearchBar.tsx";
 
 const navItems = [
   { to: "/", key: "app.nav.library" },
@@ -13,17 +14,20 @@ export function Layout() {
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <header className="border-zinc-800 border-b">
-        <nav className="mx-auto flex max-w-5xl items-center gap-6 px-4 py-3">
+        <nav className="mx-auto flex max-w-5xl flex-wrap items-center gap-4 px-4 py-3 sm:gap-6">
           <span className="font-bold text-lg">🦉 {t("app.name")}</span>
-          {navItems.map((item) => (
-            <Link
-              key={item.to}
-              to={item.to}
-              className="text-zinc-400 hover:text-zinc-100 [&.active]:text-zinc-100"
-            >
-              {t(item.key)}
-            </Link>
-          ))}
+          <SearchBar />
+          <div className="flex items-center gap-6">
+            {navItems.map((item) => (
+              <Link
+                key={item.to}
+                to={item.to}
+                className="text-zinc-400 hover:text-zinc-100 [&.active]:text-zinc-100"
+              >
+                {t(item.key)}
+              </Link>
+            ))}
+          </div>
         </nav>
       </header>
       <main className="mx-auto max-w-5xl px-4 py-6">

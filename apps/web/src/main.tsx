@@ -4,6 +4,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./i18n/index.ts";
 import "./index.css";
+import { ToastProvider } from "./lib/toast.tsx";
 import { router } from "./router.tsx";
 
 const queryClient = new QueryClient();
@@ -14,7 +15,9 @@ if (!rootEl) throw new Error("#root element missing in index.html");
 createRoot(rootEl).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <ToastProvider>
+        <RouterProvider router={router} />
+      </ToastProvider>
     </QueryClientProvider>
   </StrictMode>,
 );
