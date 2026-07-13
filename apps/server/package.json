@@ -1,0 +1,24 @@
+{
+  "name": "@baykus/server",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "start": "node dist/main.js",
+    "build": "node build.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@baykus/core": "workspace:*",
+    "@baykus/provider-sdk": "workspace:*",
+    "@hono/node-server": "^1.17.1",
+    "hono": "^4.8.5",
+    "zod": "^4.0.5"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.8",
+    "tsx": "^4.20.3",
+    "typescript": "^5.9.2"
+  }
+}

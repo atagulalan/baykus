@@ -1,0 +1,126 @@
+{
+  "__fixture_note": "RECONSTRUCTED from TMDB API docs (GET /3/tv/94997?append_to_response=external_ids,content_ratings). Replace with a real capture in milestone M4.",
+  "adult": false,
+  "backdrop_path": "/7V0Ebks0GgpKvQ7QbLAIdX5dos4.jpg",
+  "episode_run_time": [],
+  "first_air_date": "2022-08-21",
+  "genres": [
+    { "id": 10765, "name": "Sci-Fi & Fantasy" },
+    { "id": 18, "name": "Drama" },
+    { "id": 10759, "name": "Action & Adventure" }
+  ],
+  "homepage": "https://www.hbo.com/house-of-the-dragon",
+  "id": 94997,
+  "in_production": true,
+  "languages": ["en"],
+  "last_air_date": "2026-07-05",
+  "last_episode_to_air": {
+    "id": 7196567,
+    "name": "Episode 4",
+    "overview": "",
+    "vote_average": 7.2,
+    "vote_count": 14,
+    "air_date": "2026-07-05",
+    "episode_number": 4,
+    "episode_type": "standard",
+    "production_code": "",
+    "runtime": 61,
+    "season_number": 3,
+    "show_id": 94997,
+    "still_path": "/still4.jpg"
+  },
+  "name": "House of the Dragon",
+  "next_episode_to_air": {
+    "id": 7196568,
+    "name": "Episode 5",
+    "overview": "",
+    "vote_average": 1.0,
+    "vote_count": 1,
+    "air_date": "2026-07-19",
+    "episode_number": 5,
+    "episode_type": "standard",
+    "production_code": "",
+    "runtime": null,
+    "season_number": 3,
+    "show_id": 94997,
+    "still_path": null
+  },
+  "networks": [
+    { "id": 49, "logo_path": "/tuomPhY2UtuPTqqFnKMVHvSb724.png", "name": "HBO", "origin_country": "US" }
+  ],
+  "number_of_episodes": 26,
+  "number_of_seasons": 3,
+  "origin_country": ["US"],
+  "original_language": "en",
+  "original_name": "House of the Dragon",
+  "overview": "The Targaryen dynasty is at the absolute apex of its power, with more than 15 dragons under their yoke. Most empires crumble from such heights. In the case of the Targaryens, their slow fall begins when King Viserys breaks with a century of tradition by naming his daughter Rhaenyra heir to the Iron Throne.",
+  "popularity": 987.6,
+  "poster_path": "/okrubNzXkGSa6LgrBKRz0eaviHn.jpg",
+  "production_companies": [
+    { "id": 3268, "logo_path": "/tuomPhY2UtuPTqqFnKMVHvSb724.png", "name": "HBO", "origin_country": "US" }
+  ],
+  "seasons": [
+    {
+      "air_date": "2022-08-21",
+      "episode_count": 73,
+      "id": 309556,
+      "name": "Specials",
+      "overview": "",
+      "poster_path": "/n9z5p7psbfhLsaRyUrv0jrNCbh0.jpg",
+      "season_number": 0,
+      "vote_average": 0.0
+    },
+    {
+      "air_date": "2022-08-21",
+      "episode_count": 10,
+      "id": 134965,
+      "name": "Season 1",
+      "overview": "Set nearly 200 years before Game of Thrones, King Viserys I Targaryen names his daughter, Princess Rhaenyra, as heir to the Iron Throne, breaking tradition and igniting tensions within the realm.",
+      "poster_path": "/lx6hsqWXq4aVrXPjCqnMHFrGL5u.jpg",
+      "season_number": 1,
+      "vote_average": 7.9
+    },
+    {
+      "air_date": "2024-06-16",
+      "episode_count": 8,
+      "id": 368014,
+      "name": "Season 2",
+      "overview": "House Targaryen is divided in two. Civil war looms as both sides seek support from the great houses of Westeros, ultimately amassing armies — and dragons.",
+      "poster_path": "/lZwxqNWnT1dRl76ry6BM0FPqCUg.jpg",
+      "season_number": 2,
+      "vote_average": 7.6
+    },
+    {
+      "air_date": "2026-06-21",
+      "episode_count": 8,
+      "id": 449260,
+      "name": "Season 3",
+      "overview": "The Black and Green factions lock into an all-out, relentless struggle for the Iron Throne.",
+      "poster_path": "/wSvDQN6tZR4VzDDZD3MUPIghVjC.jpg",
+      "season_number": 3,
+      "vote_average": 7.1
+    }
+  ],
+  "status": "Returning Series",
+  "tagline": "Win or die.",
+  "type": "Scripted",
+  "vote_average": 8.4,
+  "vote_count": 4901,
+  "external_ids": {
+    "imdb_id": "tt11198330",
+    "freebase_mid": null,
+    "freebase_id": null,
+    "tvdb_id": 371572,
+    "tvrage_id": null,
+    "wikidata_id": "Q56876531",
+    "facebook_id": "HouseoftheDragon",
+    "instagram_id": "houseofthedragonhbo",
+    "twitter_id": "HouseofDragon"
+  },
+  "content_ratings": {
+    "results": [
+      { "descriptors": [], "iso_3166_1": "US", "rating": "TV-MA" },
+      { "descriptors": [], "iso_3166_1": "TR", "rating": "18+" }
+    ]
+  }
+}

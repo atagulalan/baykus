@@ -1,0 +1,36 @@
+{
+  "__fixture_note": "RECONSTRUCTED from TMDB API docs (GET /3/tv/94997/watch/providers). Data originates from JustWatch — UI must show attribution. Replace with a real capture in milestone M4.",
+  "id": 94997,
+  "results": {
+    "TR": {
+      "link": "https://www.themoviedb.org/tv/94997-house-of-the-dragon/watch?locale=TR",
+      "flatrate": [
+        {
+          "logo_path": "/embS4GPK7c8pjbuY2O2irV5rYch.jpg",
+          "provider_id": 1899,
+          "provider_name": "HBO Max",
+          "display_priority": 5
+        }
+      ]
+    },
+    "US": {
+      "link": "https://www.themoviedb.org/tv/94997-house-of-the-dragon/watch?locale=US",
+      "flatrate": [
+        {
+          "logo_path": "/embS4GPK7c8pjbuY2O2irV5rYch.jpg",
+          "provider_id": 1899,
+          "provider_name": "HBO Max",
+          "display_priority": 5
+        }
+      ],
+      "buy": [
+        {
+          "logo_path": "/SPnB1qiCkYfirS2it3hZORwGVn.jpg",
+          "provider_id": 2,
+          "provider_name": "Apple TV Store",
+          "display_priority": 8
+        }
+      ]
+    }
+  }
+}

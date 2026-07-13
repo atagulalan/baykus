@@ -1,0 +1,20 @@
+{
+  "app": {
+    "name": "baykuş",
+    "nav": {
+      "library": "Kütüphane",
+      "calendar": "Takvim",
+      "stats": "İstatistikler",
+      "settings": "Ayarlar"
+    }
+  },
+  "library": {
+    "empty": {
+      "title": "Kütüphanen boş",
+      "hint": "Bir dizi aramak için yukarıdaki arama kutusunu kullan."
+    }
+  },
+  "settings": {
+    "title": "Ayarlar"
+  }
+}

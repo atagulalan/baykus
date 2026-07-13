@@ -1,0 +1,20 @@
+{
+  "app": {
+    "name": "baykuş",
+    "nav": {
+      "library": "Library",
+      "calendar": "Calendar",
+      "stats": "Stats",
+      "settings": "Settings"
+    }
+  },
+  "library": {
+    "empty": {
+      "title": "Your library is empty",
+      "hint": "Use the search box above to find a series."
+    }
+  },
+  "settings": {
+    "title": "Settings"
+  }
+}

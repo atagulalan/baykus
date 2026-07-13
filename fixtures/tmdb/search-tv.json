@@ -1,0 +1,24 @@
+{
+  "__fixture_note": "RECONSTRUCTED from TMDB API docs (GET /3/search/tv?query=house+of+the+dragon). Replace with a real capture in milestone M4 when an API key is available — see fixtures/README.md.",
+  "page": 1,
+  "results": [
+    {
+      "adult": false,
+      "backdrop_path": "/7V0Ebks0GgpKvQ7QbLAIdX5dos4.jpg",
+      "genre_ids": [10765, 18, 10759],
+      "id": 94997,
+      "origin_country": ["US"],
+      "original_language": "en",
+      "original_name": "House of the Dragon",
+      "overview": "The Targaryen dynasty is at the absolute apex of its power, with more than 15 dragons under their yoke. Most empires crumble from such heights.",
+      "popularity": 987.6,
+      "poster_path": "/okrubNzXkGSa6LgrBKRz0eaviHn.jpg",
+      "first_air_date": "2022-08-21",
+      "name": "House of the Dragon",
+      "vote_average": 8.4,
+      "vote_count": 4901
+    }
+  ],
+  "total_pages": 1,
+  "total_results": 1
+}
