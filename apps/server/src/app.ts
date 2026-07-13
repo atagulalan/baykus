@@ -6,6 +6,7 @@ import { errorHandler } from "./middleware/errors.ts";
 import { xBaykusGuard } from "./middleware/guard.ts";
 import { createLibraryRoutes } from "./routes/library.ts";
 import { createSearchRoute } from "./routes/search.ts";
+import { createWatchRoutes } from "./routes/watches.ts";
 
 export interface AppDeps {
   library: Library;
@@ -20,9 +21,9 @@ export function createApp(config: Config, deps: AppDeps) {
   app.get("/api/health", (c) => c.json({ ok: true, mode: config.BAYKUS_MODE, version: "0.1.0" }));
   app.route("/api/search", createSearchRoute(deps.providers));
   app.route("/api/library", createLibraryRoutes(deps.library, deps.providers));
+  app.route("/", createWatchRoutes(deps.library));
 
   // Route groups land here milestone by milestone (see specs tasks.md):
-  // M2: /api/episodes/:id/watches, bulk watches
   // M3: /api/ratings
   // M4: /img/*, settings
   // M5: /api/library/refresh (SSE), /api/calendar, /api/push
