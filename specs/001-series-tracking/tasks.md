@@ -29,48 +29,48 @@ Verify at any time: `pnpm lint && pnpm typecheck && pnpm test && pnpm build`.
 
 ---
 
-## M1 — Search & add a series, zero-config (TVmaze)
+## M1 — Search & add a series, zero-config (TVmaze) ✅ (done 2026-07-14)
 
 Checkpoint goal: open the app, search "house of the dragon", add it, see it as
 a poster card in the library. No TMDB key involved.
 
-- [ ] M1.1 provider-sdk runtime helpers (FR-001)
+- [x] M1.1 provider-sdk runtime helpers (FR-001)
   - **Files:** `packages/provider-sdk/src/http.ts`, `rate-limit.ts`, `http.test.ts`, `rate-limit.test.ts`; export from `index.ts`
   - **DoD:** `createRateLimiter({ tokens, perMs })` token bucket (awaitable acquire); `fetchJson(url, init, { providerId, limiter, retries })` → parsed JSON or `ProviderError` (`NETWORK` on 5xx/timeout with 2 retries + backoff, `RATE_LIMITED` honoring Retry-After, `NOT_FOUND` on 404, `PARSE_FAILED` on bad JSON)
   - **Tests:** limiter enforces rate under fake timers; fetchJson maps each failure class (mock fetch, no network)
   - **Verify:** `pnpm test packages/provider-sdk`
 
-- [ ] M1.2 provider-tvmaze (FR-001, FR-003)
+- [x] M1.2 provider-tvmaze (FR-001, FR-003)
   - **Files:** `packages/provider-tvmaze/src/{index.ts,provider.ts,mapping.ts,mapping.test.ts}`
   - **DoD:** `createTvmazeProvider(): MetadataProvider`; capabilities `{search, details, upcoming, images}`; hard limit 20 req/10 s shared per process; `search()` maps `fixtures/tvmaze/search-shows.json` shape; `getSeriesDetails()` maps `show-details-embed-episodes.json` (episodes grouped into seasons; `airdate` → `airDate`, strip HTML from summaries); external-id lookup via `/lookup/shows?imdb=|thetvdb=`; `resolveImageUrl` maps ImageRef `tvmaze:<path>` (sizes: medium→medium, else original)
   - **Tests (mapping.test.ts):** "maps search fixture to SearchResult[] with tvmazeId+imdbId+tvdbId", "maps details fixture to SeriesDetails with 26 episodes in 3 seasons", "future episodes keep airDate", "summary HTML stripped"
   - **Verify:** `pnpm test packages/provider-tvmaze`
 
-- [ ] M1.3 core DB bootstrap + migrations (FR-002)
+- [x] M1.3 core DB bootstrap + migrations (FR-002)
   - **Files:** `packages/core/drizzle.config.ts`, `packages/core/migrations/` (generated), `packages/core/src/db/open.ts`, `open.test.ts`
   - **DoD:** `openLibraryDb(filePath)` → `{ db, sqlite }` with WAL, foreign_keys ON, busy_timeout 5000; runs pending migrations idempotently (drizzle-kit generated SQL, committed to repo); `:memory:` supported for tests
   - **Tests:** open twice → no error; all 9 tables exist; FK cascade works (delete item → episodes gone)
   - **Verify:** `pnpm test packages/core`
 
-- [ ] M1.4 core Library service: add/list/get/remove + progress (FR-002, FR-003)
+- [x] M1.4 core Library service: add/list/get/remove + progress (FR-002, FR-003)
   - **Files:** `packages/core/src/library/{service.ts,progress.ts,service.test.ts,progress.test.ts}`, export from `packages/core/src/index.ts`
   - **DoD:** `createLibrary(db)` with `addSeries(details: SeriesDetails, status)` (maps DTO → items+seasons+episodes in one transaction; conflict on any matching external id → typed `AlreadyInLibraryError` carrying existing itemId); `listSeries({status?, sort})`, `getSeries(id)`, `removeSeries(id)`; progress per spec edge table: exclude season 0, aired = `airDate <= todayUtc()`, denominator = aired
   - **Tests:** add-from-tvmaze-fixture round trip; duplicate add → conflict; progress excludes specials; unaired episodes not in `aired`
   - **Verify:** `pnpm test packages/core`
 
-- [ ] M1.5 server: registry, error envelope, search + library routes (FR-001, FR-002)
+- [x] M1.5 server: registry, error envelope, search + library routes (FR-001, FR-002)
   - **Files:** `apps/server/src/providers/registry.ts`, `src/middleware/{errors.ts,guard.ts}`, `src/routes/{search.ts,library.ts}`, tests alongside; wire in `app.ts`
   - **DoD:** registry returns providers in order (tmdb if key else tvmaze — tmdb slot empty until M4); error middleware maps thrown `ProviderError`→502 envelope, zod→400, `AlreadyInLibraryError`→409 exactly per contracts/api.md; `X-Baykus: 1` required on mutations (403 otherwise); routes implement contracts/api.md §Search §Library including SeriesSummary shape
   - **Tests (app.request, fake provider):** search happy path; provider failure → 502 envelope; add → 201 then 409; list filters by status; missing X-Baykus → 403
   - **Verify:** `pnpm test apps/server`, then `pnpm dev` + `curl -s "localhost:4004/api/search?q=dragon" | head -c 300`
 
-- [ ] M1.6 web: API client, search flow, library grid (FR-001, FR-002)
+- [x] M1.6 web: API client, search flow, library grid (FR-001, FR-002)
   - **Files:** `apps/web/src/api/{client.ts,types.ts}`, `src/components/{SearchBar.tsx,SeriesCard.tsx,StatusPicker.tsx}`, rewrite `src/pages/LibraryPage.tsx`; i18n keys `search.*`, `library.*`, `status.*`
   - **DoD:** client wraps fetch (base `/api`, sets `X-Baykus: 1`, throws typed `ApiError` from envelope); SearchBar in Layout header, 300 ms debounce, dropdown with poster+title+year+network, Enter/click → status picker → POST; library grid of SeriesCard (poster via `/img/...` with title-text fallback until M4.3, title, year, progress bar stub); states: loading skeleton, empty (existing keys), error banner with retry
   - **Tests:** none required beyond typecheck (UI logic is thin); i18n keys added to both locales
   - **Verify:** `pnpm dev` → browser: search → add → card appears; reload persists
 
-- [ ] M1.7 CHECKPOINT M1
+- [x] M1.7 CHECKPOINT M1
   - **DoD:** full manual pass: zero-config boot (`rm -rf data && pnpm dev`), search, add with each status, duplicate add shows friendly 409 message, remove from library works (card context menu), `pnpm lint && pnpm typecheck && pnpm test && pnpm build` green
   - **Verify:** walk the list above in the browser, in both locales (settings toggle comes later — switch `lng` manually in `i18n/index.ts` for now)
 
