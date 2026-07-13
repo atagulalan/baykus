@@ -1,7 +1,7 @@
 import type { ExternalIds, SeriesDetails } from "@baykus/provider-sdk";
-import { eq, or } from "drizzle-orm";
+import { eq, or, sql } from "drizzle-orm";
 import type { LibraryDatabase } from "../db/open.ts";
-import type { TrackingStatus } from "../db/schema.ts";
+import type { TrackingStatus, WatchSource } from "../db/schema.ts";
 import * as schema from "../db/schema.ts";
 import { AlreadyInLibraryError } from "./errors.ts";
 import { getNextAirDate, getNextUnwatchedEpisode, getSeriesProgress } from "./progress.ts";
@@ -12,6 +12,15 @@ import type {
   SeriesDetail,
   SeriesSummary,
 } from "./types.ts";
+import {
+  type AddWatchResult,
+  addWatch,
+  type BulkWatchResult,
+  type BulkWatchTarget,
+  bulkWatch,
+  removeLatestWatch,
+  suggestCompleted,
+} from "./watches.ts";
 
 type ItemRow = typeof schema.items.$inferSelect;
 type TrackingRow = typeof schema.tracking.$inferSelect;
@@ -136,6 +145,10 @@ export interface Library {
   listSeries(opts?: ListSeriesOptions): { items: SeriesSummary[]; total: number };
   getSeries(id: number): SeriesDetail | null;
   removeSeries(id: number): boolean;
+  addWatch(episodeId: number, watchedAt?: string, source?: WatchSource): AddWatchResult | null;
+  bulkWatch(itemId: number, target: BulkWatchTarget): BulkWatchResult | null;
+  removeLatestWatch(episodeId: number): boolean;
+  suggestCompleted(itemId: number): boolean;
 }
 
 export function createLibrary(db: LibraryDatabase): Library {
@@ -236,9 +249,22 @@ export function createLibrary(db: LibraryDatabase): Library {
         .orderBy(schema.episodes.seasonNumber, schema.episodes.episodeNumber)
         .all();
 
+      const watchStats = db
+        .select({
+          episodeId: schema.watches.episodeId,
+          count: sql<number>`count(*)`,
+          lastWatchedAt: sql<string>`max(${schema.watches.watchedAt})`,
+        })
+        .from(schema.watches)
+        .where(eq(schema.watches.itemId, id))
+        .groupBy(schema.watches.episodeId)
+        .all();
+      const watchStatsByEpisode = new Map(watchStats.map((w) => [w.episodeId, w]));
+
       const episodesBySeason = new Map<number, EpisodeSummary[]>();
       for (const ep of episodeRows) {
         const list = episodesBySeason.get(ep.seasonNumber) ?? [];
+        const stats = watchStatsByEpisode.get(ep.id);
         list.push({
           id: ep.id,
           s: ep.seasonNumber,
@@ -251,8 +277,8 @@ export function createLibrary(db: LibraryDatabase): Library {
           episodeType: ep.episodeType,
           communityRating: ep.externalRatings?.[0] ?? null,
           myRating: null, // wired in M3.1 (ratings.ts)
-          watchCount: 0, // wired in M2.1 (watches.ts)
-          lastWatchedAt: null, // wired in M2.1 (watches.ts)
+          watchCount: stats?.count ?? 0,
+          lastWatchedAt: stats?.lastWatchedAt ?? null,
         });
         episodesBySeason.set(ep.seasonNumber, list);
       }
@@ -291,6 +317,22 @@ export function createLibrary(db: LibraryDatabase): Library {
     removeSeries(id: number): boolean {
       const result = db.delete(schema.items).where(eq(schema.items.id, id)).run();
       return result.changes > 0;
+    },
+
+    addWatch(episodeId: number, watchedAt?: string, source?: WatchSource): AddWatchResult | null {
+      return addWatch(db, episodeId, watchedAt, source);
+    },
+
+    bulkWatch(itemId: number, target: BulkWatchTarget): BulkWatchResult | null {
+      return bulkWatch(db, itemId, target);
+    },
+
+    removeLatestWatch(episodeId: number): boolean {
+      return removeLatestWatch(db, episodeId);
+    },
+
+    suggestCompleted(itemId: number): boolean {
+      return suggestCompleted(db, itemId);
     },
   };
 }
