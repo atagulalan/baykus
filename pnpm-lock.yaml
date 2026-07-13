@@ -26,6 +26,9 @@ importers:
       '@baykus/provider-sdk':
         specifier: workspace:*
         version: link:../../packages/provider-sdk
+      '@baykus/provider-tvmaze':
+        specifier: workspace:*
+        version: link:../../packages/provider-tvmaze
       '@hono/node-server':
         specifier: ^1.17.1
         version: 1.19.14(hono@4.12.29)
