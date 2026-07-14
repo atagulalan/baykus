@@ -22,3 +22,11 @@ export type {
 } from "./library/types.ts";
 export type { AddWatchResult, BulkWatchResult, BulkWatchTarget } from "./library/watches.ts";
 export { type RefreshResult, refreshAll, refreshItem } from "./refresh/engine.ts";
+export { type ExportOptions, exportLibraryZip } from "./zip/export.ts";
+export {
+  type ImportMode,
+  type ImportResult,
+  importLibraryZip,
+  ZipImportError,
+  type ZipImportErrorCode,
+} from "./zip/import.ts";

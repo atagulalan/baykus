@@ -267,10 +267,23 @@ Checkpoint goal: export zip, wipe data dir, import, everything is back.
   match on any available id, per M6.2's "matched by (externalIds, s, e)". -->
   - **Files:** `packages/core/src/zip/{export.ts,canonical.ts,export.test.ts}`; deps: `archiver`
   - **DoD:** streams manifest + `library/*.json` per data-model.md §Zip; canonical JSON (sorted keys, sorted arrays by stable identity) via `canonical.ts`; secrets excluded unless flag
-- [ ] M6.2 core zip import + THE round-trip test (FR-010)
+- [x] M6.2 core zip import + THE round-trip test (FR-010)
   - **Files:** `packages/core/src/zip/{import.ts,import.test.ts,roundtrip.test.ts}`; deps: `yauzl`
   - **DoD:** replace + merge per data-model.md §Merge; schemaVersion gate (unknown → typed error → 422); size/entry validation; episodes matched by (externalIds, s, e)
   - **Tests:** `roundtrip.test.ts` — "export→import(empty)→export byte-identical" (NEVER weaken); merge union/idempotency; unknown schemaVersion rejected
+  <!-- DECISION 2026-07-14: the round-trip test passed on first real attempt
+  (2 items incl. specials/rewatches/both rating targets/settings), never
+  weakened. yauzl gotcha worth recording: `{lazyEntries: false}` starts
+  emitting "entry"/"end" synchronously on open, before listeners attached in
+  a Promise executor can register — events are silently lost and every read
+  hangs forever. Fixed by using `{lazyEntries: true}` + manual
+  `zipfile.readEntry()` pump (both here and in export.test.ts's reader).
+  "Episodes never deleted on import" mirrors M5.1's refresh-engine philosophy
+  exactly — merge only ever upserts seasons/episodes by (number)/(s,e), so a
+  watch-linked episode row is never orphaned by an incoming zip that lacks
+  it. "Size/entry validation" = zip parse errors and non-array library/*.json
+  both reject as BAD_MANIFEST (422); the 50MB upload cap is enforced at the
+  HTTP layer in M6.3, not here. -->
 - [ ] M6.3 server + web: contracts §Zip; Settings export button (downloads `baykus-export-YYYYMMDD.zip`), import flow with replace/merge choice + warnings list + success summary
 - [ ] M6.4 CHECKPOINT M6 — manual: export, `rm -rf data`, restart, import, spot-check watches/ratings/settings survived; green suite
 

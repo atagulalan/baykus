@@ -1,0 +1,201 @@
+import { describe, expect, it } from "vitest";
+import { openLibraryDb } from "../db/open.ts";
+import * as schema from "../db/schema.ts";
+import { exportLibraryZip } from "./export.ts";
+import { importLibraryZip } from "./import.ts";
+
+async function streamToBuffer(stream: NodeJS.ReadableStream): Promise<Buffer> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream) chunks.push(chunk as Buffer);
+  return Buffer.concat(chunks);
+}
+
+/** A reasonably rich library: two items, specials, rewatches, both rating targets. */
+function buildPopulatedDb() {
+  const { db } = openLibraryDb(":memory:");
+
+  const item1 = db
+    .insert(schema.items)
+    .values({
+      mediaType: "series",
+      title: "House of the Dragon",
+      originalTitle: null,
+      tagline: "Win or die.",
+      overview: "Dragons.",
+      tmdbId: 94997,
+      imdbId: "tt11198330",
+      genres: [{ id: 18, name: "Drama" }],
+      networks: [{ id: 49, name: "HBO" }],
+      contentRatings: [{ region: "US", rating: "TV-MA" }],
+      episodeRunTimes: [60],
+      addedAt: "2026-01-01T00:00:00Z",
+      lastRefreshedAt: "2026-01-05T00:00:00Z",
+    })
+    .returning({ id: schema.items.id })
+    .get();
+  db.insert(schema.tracking)
+    .values({
+      itemId: item1.id,
+      status: "watching",
+      pushMuted: true,
+      note: "great show",
+      statusChangedAt: "2026-01-01T00:00:00Z",
+    })
+    .run();
+  db.insert(schema.seasons).values({ itemId: item1.id, number: 0, name: "Specials" }).run();
+  db.insert(schema.seasons).values({ itemId: item1.id, number: 1, name: "Season 1" }).run();
+  const special = db
+    .insert(schema.episodes)
+    .values({ itemId: item1.id, seasonNumber: 0, episodeNumber: 1, title: "Behind the scenes" })
+    .returning({ id: schema.episodes.id })
+    .get();
+  const s1e1 = db
+    .insert(schema.episodes)
+    .values({
+      itemId: item1.id,
+      seasonNumber: 1,
+      episodeNumber: 1,
+      title: "The Heirs of the Dragon",
+      airDate: "2022-08-21",
+      runtimeMin: 66,
+      episodeType: "standard",
+    })
+    .returning({ id: schema.episodes.id })
+    .get();
+  const s1e10 = db
+    .insert(schema.episodes)
+    .values({
+      itemId: item1.id,
+      seasonNumber: 1,
+      episodeNumber: 10,
+      title: "The Black Queen",
+      airDate: "2022-10-23",
+      episodeType: "finale",
+    })
+    .returning({ id: schema.episodes.id })
+    .get();
+
+  // A rewatch — two watch events for the same episode.
+  db.insert(schema.watches)
+    .values({
+      episodeId: s1e1.id,
+      itemId: item1.id,
+      watchedAt: "2026-01-02T10:00:00Z",
+      source: "manual",
+    })
+    .run();
+  db.insert(schema.watches)
+    .values({
+      episodeId: s1e1.id,
+      itemId: item1.id,
+      watchedAt: "2026-01-10T20:00:00Z",
+      source: "manual",
+    })
+    .run();
+  db.insert(schema.watches)
+    .values({
+      episodeId: s1e10.id,
+      itemId: item1.id,
+      watchedAt: "2026-01-15T20:00:00Z",
+      source: "bulk",
+    })
+    .run();
+  db.insert(schema.watches)
+    .values({
+      episodeId: special.id,
+      itemId: item1.id,
+      watchedAt: "2026-01-16T20:00:00Z",
+      source: "manual",
+    })
+    .run();
+
+  db.insert(schema.ratings)
+    .values({ targetType: "item", targetId: item1.id, value: 3, ratedAt: "2026-01-16T00:00:00Z" })
+    .run();
+  db.insert(schema.ratings)
+    .values({ targetType: "episode", targetId: s1e1.id, value: 2, ratedAt: "2026-01-02T11:00:00Z" })
+    .run();
+  db.insert(schema.ratings)
+    .values({
+      targetType: "episode",
+      targetId: s1e10.id,
+      value: 1,
+      ratedAt: "2026-01-15T21:00:00Z",
+    })
+    .run();
+
+  const item2 = db
+    .insert(schema.items)
+    .values({
+      mediaType: "series",
+      title: "Breaking Bad",
+      tvmazeId: 169,
+      addedAt: "2026-01-03T00:00:00Z",
+      lastRefreshedAt: "2026-01-03T00:00:00Z",
+    })
+    .returning({ id: schema.items.id })
+    .get();
+  db.insert(schema.tracking)
+    .values({
+      itemId: item2.id,
+      status: "plan_to_watch",
+      pushMuted: false,
+      note: null,
+      statusChangedAt: "2026-01-03T00:00:00Z",
+    })
+    .run();
+
+  db.insert(schema.settings).values({ key: "locale", value: "tr" }).run();
+  db.insert(schema.settings).values({ key: "region", value: "TR" }).run();
+  db.insert(schema.settings).values({ key: "scrapers_enabled", value: "0" }).run();
+
+  return { db };
+}
+
+describe("round-trip invariant (Article III — NEVER weaken this test)", () => {
+  it("export -> import(empty) -> export is byte-identical", async () => {
+    const { db: sourceDb } = buildPopulatedDb();
+    const now = "2026-02-01T00:00:00Z";
+
+    const firstZip = await streamToBuffer(exportLibraryZip(sourceDb, { now }));
+
+    const { db: targetDb } = openLibraryDb(":memory:");
+    const importResult = await importLibraryZip(targetDb, firstZip, "replace");
+    expect(importResult.warnings).toEqual([]);
+
+    const secondZip = await streamToBuffer(exportLibraryZip(targetDb, { now }));
+
+    expect(secondZip.equals(firstZip)).toBe(true);
+  });
+
+  it("round-trips through merge mode into an empty library too", async () => {
+    const { db: sourceDb } = buildPopulatedDb();
+    const now = "2026-02-01T00:00:00Z";
+
+    const firstZip = await streamToBuffer(exportLibraryZip(sourceDb, { now }));
+
+    const { db: targetDb } = openLibraryDb(":memory:");
+    await importLibraryZip(targetDb, firstZip, "merge");
+
+    const secondZip = await streamToBuffer(exportLibraryZip(targetDb, { now }));
+
+    expect(secondZip.equals(firstZip)).toBe(true);
+  });
+
+  it("round-trips secrets when includeSecrets is used symmetrically", async () => {
+    const { db: sourceDb } = buildPopulatedDb();
+    sourceDb.insert(schema.settings).values({ key: "tmdb_api_key", value: "super-secret" }).run();
+    const now = "2026-02-01T00:00:00Z";
+
+    const firstZip = await streamToBuffer(
+      exportLibraryZip(sourceDb, { now, includeSecrets: true }),
+    );
+    const { db: targetDb } = openLibraryDb(":memory:");
+    await importLibraryZip(targetDb, firstZip, "replace");
+    const secondZip = await streamToBuffer(
+      exportLibraryZip(targetDb, { now, includeSecrets: true }),
+    );
+
+    expect(secondZip.equals(firstZip)).toBe(true);
+  });
+});
