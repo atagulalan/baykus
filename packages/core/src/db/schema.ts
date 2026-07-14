@@ -33,7 +33,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 
-export type TrackingStatus = "watching" | "plan_to_watch" | "completed" | "dropped" | "paused";
+export type ManualList = "watch_later" | "stopped";
 export type WatchSource = "manual" | "bulk" | "import:tvtime" | "import:zip";
 export type RatingTargetType = "item" | "episode";
 
@@ -76,10 +76,10 @@ export const tracking = sqliteTable("tracking", {
   itemId: integer("item_id")
     .primaryKey()
     .references(() => items.id, { onDelete: "cascade" }),
-  status: text("status").$type<TrackingStatus>().notNull(),
+  manualList: text("manual_list").$type<ManualList>(),
   pushMuted: integer("push_muted", { mode: "boolean" }).notNull().default(false),
   note: text("note"),
-  statusChangedAt: text("status_changed_at").notNull(),
+  listChangedAt: text("list_changed_at").notNull(),
 });
 
 export const seasons = sqliteTable(

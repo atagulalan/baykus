@@ -1,9 +1,24 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import { openLibraryDb } from "./open.ts";
+
+const REAL_MIGRATIONS_FOLDER = fileURLToPath(new URL("../../migrations", import.meta.url));
+
+/** A migrations folder containing only 0000_init.sql, as if 0001 hadn't landed yet. */
+function makeV1MigrationsFolder(): string {
+  const dir = mkdtempSync(join(tmpdir(), "baykus-core-v1-migrations-"));
+  cpSync(REAL_MIGRATIONS_FOLDER, dir, { recursive: true });
+  rmSync(join(dir, "0001_tracking_manual_list.sql"));
+  rmSync(join(dir, "meta", "0001_snapshot.json"));
+  const journalPath = join(dir, "meta", "_journal.json");
+  const journal = JSON.parse(readFileSync(journalPath, "utf8"));
+  journal.entries = journal.entries.filter((e: { idx: number }) => e.idx === 0);
+  writeFileSync(journalPath, JSON.stringify(journal, null, 2));
+  return dir;
+}
 
 const ALL_TABLES = [
   "episodes",
@@ -86,6 +101,86 @@ describe("openLibraryDb", () => {
         .all() as { name: string }[];
       expect(rows.map((r) => r.name)).toEqual(expect.arrayContaining(ALL_TABLES));
       second.sqlite.close();
+    });
+  });
+
+  describe("migration 0001: tracking.status -> manual_list (E26)", () => {
+    let dir: string;
+    let v1Folder: string;
+
+    afterEach(() => {
+      if (dir) rmSync(dir, { recursive: true, force: true });
+      if (v1Folder) rmSync(v1Folder, { recursive: true, force: true });
+    });
+
+    it("maps every legacy v1 status on upgrade, preserving push_muted/note/list_changed_at", () => {
+      dir = mkdtempSync(join(tmpdir(), "baykus-core-test-"));
+      v1Folder = makeV1MigrationsFolder();
+      const file = join(dir, "library.db");
+
+      const v1 = openLibraryDb(file, v1Folder);
+      v1.sqlite.exec(`
+        INSERT INTO items (id, media_type, title, added_at) VALUES
+          (1, 'series', 'A', '2026-01-01T00:00:00Z'),
+          (2, 'series', 'B', '2026-01-01T00:00:00Z'),
+          (3, 'series', 'C', '2026-01-01T00:00:00Z'),
+          (4, 'series', 'D', '2026-01-01T00:00:00Z'),
+          (5, 'series', 'E', '2026-01-01T00:00:00Z');
+      `);
+      const insertTracking = v1.sqlite.prepare(
+        "INSERT INTO tracking (item_id, status, push_muted, note, status_changed_at) VALUES (?, ?, ?, ?, ?)",
+      );
+      insertTracking.run(1, "plan_to_watch", 0, null, "2026-02-01T00:00:00Z");
+      insertTracking.run(2, "dropped", 1, "not for me", "2026-02-02T00:00:00Z");
+      insertTracking.run(3, "watching", 0, null, "2026-02-03T00:00:00Z");
+      insertTracking.run(4, "completed", 0, null, "2026-02-04T00:00:00Z");
+      insertTracking.run(5, "paused", 0, "on hold", "2026-02-05T00:00:00Z");
+      v1.sqlite.close();
+
+      const upgraded = openLibraryDb(file, REAL_MIGRATIONS_FOLDER);
+      const rows = upgraded.sqlite
+        .prepare(
+          "SELECT item_id, manual_list, push_muted, note, list_changed_at FROM tracking ORDER BY item_id",
+        )
+        .all();
+      expect(rows).toEqual([
+        {
+          item_id: 1,
+          manual_list: "watch_later",
+          push_muted: 0,
+          note: null,
+          list_changed_at: "2026-02-01T00:00:00Z",
+        },
+        {
+          item_id: 2,
+          manual_list: "stopped",
+          push_muted: 1,
+          note: "not for me",
+          list_changed_at: "2026-02-02T00:00:00Z",
+        },
+        {
+          item_id: 3,
+          manual_list: null,
+          push_muted: 0,
+          note: null,
+          list_changed_at: "2026-02-03T00:00:00Z",
+        },
+        {
+          item_id: 4,
+          manual_list: null,
+          push_muted: 0,
+          note: null,
+          list_changed_at: "2026-02-04T00:00:00Z",
+        },
+        {
+          item_id: 5,
+          manual_list: null,
+          push_muted: 0,
+          note: "on hold",
+          list_changed_at: "2026-02-05T00:00:00Z",
+        },
+      ]);
+      upgraded.sqlite.close();
     });
   });
 });
