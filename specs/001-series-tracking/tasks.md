@@ -345,7 +345,7 @@ second handle is isolated; single mode password gate works.
   scoping — single mode's password gate has no handle to disambiguate a
   logout action from "no password configured" using only the session
   response shape, so no single-mode logout UI was added. -->
-- [ ] M7.5 CHECKPOINT M7 — two handles in multi mode fully isolated (search both, data never leaks), logout/login, wrong password uniform error, single mode gate on/off via env
+- [x] M7.5 CHECKPOINT M7 — two handles in multi mode fully isolated (search both, data never leaks), logout/login, wrong password uniform error, single mode gate on/off via env
 
 ---
 
