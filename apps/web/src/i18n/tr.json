@@ -201,6 +201,8 @@
     "unmatched": "Eşleşmedi ({{count}})",
     "confirmError": "İçe aktarılamadı",
     "confirm": "Onayla",
+    "confirming": "İçe aktarılıyor…",
+    "confirmProgress": "{{done}}/{{total}} (%{{percent}})",
     "summaryTitle": "İçe aktarma tamamlandı",
     "itemsCreated": "Eklenen dizi",
     "watchesCreated": "Eklenen izleme",

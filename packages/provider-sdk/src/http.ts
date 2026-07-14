@@ -72,6 +72,10 @@ export async function fetchJson<T = unknown>(
     }
     if (res.status === 429) {
       const retryAfterMs = parseRetryAfterMs(res.headers.get("retry-after"));
+      if (attempt < retries) {
+        await sleep(retryAfterMs ?? backoffMs(attempt + 1));
+        continue;
+      }
       throw new ProviderError(
         opts.providerId,
         "RATE_LIMITED",

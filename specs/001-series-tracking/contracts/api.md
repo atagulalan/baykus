@@ -230,11 +230,19 @@ Non-empty library + missing `mode` → 409. Bad manifest → 422.
     "title": "The Office (US)", "year": 2005 } ], "episodes": 188 } ],
   "unmatched": [ { "name": "Some Local Show", "episodes": 4 } ] }
 ```
-### POST /api/import/tvtime/confirm
+### POST /api/import/tvtime/confirm (SSE stream response)
 ```json
 → { "reportId": "r1", "resolutions": [ { "name": "The Office", "externalIds": { "tmdbId": 2316 } } ] }
-← 200 { "itemsCreated": 12, "watchesCreated": 1200, "skipped": 22 }
 ```
+`Content-Type: text/event-stream`. Events, in order:
+```
+event: progress   data: {"done":1,"total":15,"name":"Dark","ok":true}
+event: progress   data: {"done":2,"total":15,"name":"The Office","ok":true}
+event: progress   data: {"done":3,"total":15,"name":"Unknown Show","ok":false}
+event: complete   data: {"itemsCreated":12,"watchesCreated":1200,"skipped":22}
+```
+<!-- DECISION: confirm endpoint changed from single JSON 200 to SSE stream to
+     enable a client-side progress bar — same pattern as POST /api/library/refresh. -->
 
 ## Push
 

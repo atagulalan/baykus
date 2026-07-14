@@ -87,6 +87,7 @@ describe("matchShows", () => {
       tvdbId: 305288,
       externalIds: dark.externalIds,
       episodeCount: 2,
+      details: dark,
     });
     expect(report.fuzzy).toEqual([]);
     expect(report.unmatched).toEqual([]);
@@ -105,9 +106,7 @@ describe("matchShows", () => {
           },
         ],
       },
-      tvdbLookups: { 2316: office }, // unreachable via tvdbId; getSeriesDetails is called with tmdbId here
     });
-    // override getSeriesDetails to resolve by tmdbId for this test
     provider.getSeriesDetails = async (ref) => {
       if (ref.tmdbId === 2316) return office;
       throw new Error("no match");
@@ -117,6 +116,7 @@ describe("matchShows", () => {
 
     expect(report.matched).toHaveLength(1);
     expect(report.matched[0]?.externalIds).toEqual({ tmdbId: 2316 });
+    expect(report.matched[0]?.details).toEqual(office);
   });
 
   it("buckets a low-confidence name-search result as fuzzy — matches contracts/api.md's own §tvtime example", async () => {
@@ -143,6 +143,7 @@ describe("matchShows", () => {
       tvdbId: 999,
       episodeCount: 1,
       candidates: [{ externalIds: { tmdbId: 2316 }, title: "The Office (US)", year: 2005 }],
+      status: "watching",
     });
   });
 
@@ -156,7 +157,9 @@ describe("matchShows", () => {
 
     expect(report.matched).toEqual([]);
     expect(report.fuzzy).toEqual([]);
-    expect(report.unmatched).toEqual([{ name: "Some Local Show", tvdbId: 1, episodeCount: 3 }]);
+    expect(report.unmatched).toEqual([
+      { name: "Some Local Show", tvdbId: 1, episodeCount: 3, status: "watching" },
+    ]);
   });
 
   it("tries the next provider when the first one's tvdb lookup fails", async () => {

@@ -380,6 +380,50 @@ second handle is isolated; single mode password gate works.
   AlreadyInLibraryError.itemId is caught and reused, and addWatch()'s
   existing (episodeId, watchedAt) dedupe means re-running the same file
   creates zero duplicates — confirmed by an explicit re-run test. -->
+  <!-- DECISION 2026-07-14 (post-hoc fix): user supplied a real, current TV
+  Time GDPR export (gdpr-data.zip, 46 CSVs) to test the importer against —
+  first real-world data it had ever seen, vs. the synthetic
+  fixtures/tvtime/ corpus used above. Running parseTvTimeFiles against it
+  directly (no network) surfaced a real bug: TV Time's current export no
+  longer puts tv_show_id in any per-episode-watch file
+  (seen_episode_source.csv, watched_on_episode.csv, rewatched_episode.csv,
+  seen_episode_latest.csv — only tv_show_name). The only watch-shaped file
+  still matching SEEN_EPISODE_COLUMNS (show_seen_episode_latest.csv) is a
+  latest-episode-per-show summary, not history — the importer was silently
+  recognizing 198 "watches" (one per followed show) while dropping the
+  real ~914-event history entirely, exactly the "unrecognized files are
+  silently skipped" behavior working exactly as designed against a corpus
+  that no longer matches reality. This is precisely the risk research.md
+  already named ("TV Time export format drift") and prescribed a fix for
+  ("header-based detection + fixture corpus from real exports").
+  Fixed by adding a second column-set (NAME_KEYED_WATCH_COLUMNS:
+  tv_show_name + episode_id + episode_season_number + episode_number) and
+  making parseTvTimeFiles two-pass: pass one collects `shows` (unchanged)
+  and builds a case-insensitive name→tvdbId map; pass two resolves
+  name-keyed watch rows against that map, silently dropping any row whose
+  show name isn't in the followed-shows list (same "best effort, never
+  guess" philosophy as everything else in this importer). Each file's kind
+  is classified exactly once with SEEN_EPISODE_COLUMNS taking priority over
+  the other two column sets — needed because show_seen_episode_latest.csv's
+  real header (tv_show_id,episode_id,tv_show_name,...) satisfies BOTH the
+  legacy seen-episode set AND the followed-show set simultaneously; an
+  early version of this fix tested both independently instead of by
+  mutually-exclusive classification and double-counted that file (938
+  shows became 1136) before this was caught by re-running against the same
+  real export and noticing the shows count had moved when it shouldn't
+  have. Bonus: the new rows carry episode_season_number/episode_number
+  directly, so apps/server/src/routes/tvtime.ts's importOneShow now uses
+  that position directly when present instead of calling
+  resolveEpisodePosition — real watch history import no longer needs a
+  TMDB key at all for these rows. Added a synthetic (non-personal)
+  fixture, fixtures/tvtime/seen_episode_source.csv, mirroring the
+  real-world header shape with fabricated data; verified end-to-end via a
+  new route test asserting a name-keyed episode (deliberately absent from
+  the fake provider's findEpisodeByTvdbId map) still imports correctly,
+  proving the position came from the CSV, not a lookup. research.md's TV
+  Time section updated with the same finding. Full suite re-verified
+  green: 309 tests (was 305), lint, typecheck across all 9 workspace
+  projects. -->
 - [x] M8.2 web import wizard: upload → report table (matched/fuzzy/unmatched w/ counts) → resolve fuzzy via search picker → confirm → summary; route `/import`
   <!-- DECISION 2026-07-14: "resolve fuzzy via search picker" implemented
   as a plain <select> over the report's already-returned candidates
@@ -398,6 +442,34 @@ second handle is isolated; single mode password gate works.
   imported; confirmed watches correctly report as `skipped` (not guessed)
   since no TMDB key was configured in this environment, matching M8.1's
   DECISION. -->
+  <!-- DECISION 2026-07-14 (post-hoc fix): testing against a real GDPR export
+  (280 shows, ~7 200 unique watches) surfaced two more issues beyond M8.1's
+  parser fixes. First, the plain 200 JSON response for
+  POST /api/import/tvtime/confirm gave no feedback for a multi-minute,
+  280-show confirm; changed to an SSE stream (contracts/api.md §tvtime) —
+  one `progress` event per show, then one `complete` event — mirroring
+  /api/library/refresh's existing pattern; per-show failures (unresolved
+  fuzzy/unmatched, or a thrown error during import) are swallowed into
+  `skipped`/`ok:false` rather than failing the whole request, matching
+  refresh's design. apps/web's ImportPage gained a `confirming` step with a
+  progress bar (client.ts hand-parses the stream the same way
+  refreshAllSeries already does — no EventSource, since it can't send POST
+  or the X-Baykus header). Second, TV Time's active/archived/
+  user_show_special_status.csv fields (already parsed by M8.1) were being
+  discarded — imports always hardcoded status "watching". Now propagated
+  through matchShows and threaded into importOneShow, so a show followed as
+  "for_later" imports as plan_to_watch, archived as paused, and
+  active=0 as dropped, instead of everything landing in "watching".
+  The same real-export audit also caught two remaining parser bugs beyond
+  the name-keyed-rows fix above: episode_comment.csv's header satisfied
+  NAME_KEYED_WATCH_COLUMNS with none of the then-known noise columns and
+  imported comment rows as watches (fixed by adding comment_type and
+  watched_on_source_id to NAME_KEYED_WATCH_NOISE_COLUMNS); and the same
+  watch appearing in up to five files with timestamps drifting by seconds
+  produced duplicate watch rows past addWatch()'s exact-timestamp dedupe
+  (fixed by collapsing watches sharing (tvdbShowId, tvdbEpisodeId) within a
+  60s window in parseTvTimeFiles, keeping the earliest; pairs farther apart,
+  e.g. genuine >1 day rewatches, are left as separate watches). -->
 - [x] M8.3 provider-imdb (FR-018): datasets client — download+cache `title.ratings.tsv.gz` (24 h TTL, ~25 MB) into dataDir, binary-search or index lookup by imdbId → `externalRatings[{source:"imdb", scale:10}]`; capability externalRatings only; disabled unless scrapersEnabled… note: datasets are ToS-fine, enable by default in single mode, keep off in multi (bandwidth)
   <!-- DECISION 2026-07-14: "index lookup" implemented as a plain in-memory
   Map built once per fresh download (~1.5-2M rows), not on-disk binary

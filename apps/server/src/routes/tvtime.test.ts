@@ -13,6 +13,7 @@ import yazl from "yazl";
 import { createApp } from "../app.ts";
 import { createSingleSessionStore } from "../auth/single-session.ts";
 import { loadConfig } from "../config.ts";
+import { readSseEvents } from "./sse-test-util.ts";
 
 const fixturesDir = fileURLToPath(new URL("../../../../fixtures/tvtime", import.meta.url));
 const HEADERS = { "content-type": "application/json", "X-Baykus": "1" };
@@ -47,6 +48,7 @@ function hotdDetails(): SeriesDetails {
         episodes: [
           { seasonNumber: 1, episodeNumber: 1, title: "The Heirs of the Dragon" },
           { seasonNumber: 1, episodeNumber: 2, title: "The Rogue Prince" },
+          { seasonNumber: 1, episodeNumber: 3, title: "Second of His Name" },
         ],
       },
     ],
@@ -71,16 +73,37 @@ function darkDetails(): SeriesDetails {
   };
 }
 
+function oshiDetails(): SeriesDetails {
+  return {
+    providerId: "fake",
+    mediaType: "series",
+    externalIds: { tvdbId: 421069, tmdbId: 203737 },
+    title: "Oshi no Ko",
+    seasons: [
+      {
+        number: 1,
+        episodes: [
+          { seasonNumber: 1, episodeNumber: 1, title: "Mother and Children" },
+          { seasonNumber: 1, episodeNumber: 33, title: "Greed and Passion" },
+        ],
+      },
+    ],
+  };
+}
+
 function fakeProvider(): MetadataProvider {
   const tvdbLookups: Record<number, SeriesDetails> = {
     371572: hotdDetails(),
     305288: darkDetails(),
+    421069: oshiDetails(),
   };
   const episodePositions: Record<number, EpisodePosition> = {
     8370139: { seasonNumber: 1, episodeNumber: 1 },
     8370140: { seasonNumber: 1, episodeNumber: 2 },
     7250041: { seasonNumber: 1, episodeNumber: 1 },
     7250042: { seasonNumber: 1, episodeNumber: 2 },
+    9207267: { seasonNumber: 1, episodeNumber: 1 },
+    11515142: { seasonNumber: 1, episodeNumber: 33 },
   };
 
   return {
@@ -216,6 +239,15 @@ describe("POST /api/import/tvtime", () => {
 });
 
 describe("POST /api/import/tvtime/confirm", () => {
+  /** Buckets a parsed SSE response's events by kind. */
+  async function parseSSE(res: Response): Promise<{ progress: unknown[]; complete: unknown }> {
+    const events = await readSseEvents(res);
+    return {
+      progress: events.filter((e) => e.event === "progress").map((e) => e.data),
+      complete: events.find((e) => e.event === "complete")?.data ?? null,
+    };
+  }
+
   it("creates items and watches for matched shows, mapping tvdb episode ids to real episodes", async () => {
     const { app, library } = setup();
     const zip = await zipBuffer({
@@ -231,17 +263,41 @@ describe("POST /api/import/tvtime/confirm", () => {
       body: JSON.stringify({ reportId, resolutions: [] }),
     });
     expect(confirmRes.status).toBe(200);
-    const body = (await confirmRes.json()) as {
-      itemsCreated: number;
-      watchesCreated: number;
-      skipped: number;
-    };
-    expect(body).toEqual({ itemsCreated: 2, watchesCreated: 4, skipped: 0 });
+    const { progress, complete } = await parseSSE(confirmRes);
+    expect(complete).toEqual({ itemsCreated: 2, watchesCreated: 4, skipped: 0 });
+    expect(progress).toHaveLength(2);
 
     const { items } = library.listSeries();
     expect(items.map((i) => i.title).sort()).toEqual(["Dark", "House of the Dragon"]);
     const hotd = items.find((i) => i.title === "House of the Dragon");
     expect(hotd?.progress.watched).toBe(2);
+  });
+
+  it("imports a name-keyed watch row (current real TV Time export shape) using its own season/episode numbers, with no episode-position network lookup needed", async () => {
+    const { app, library } = setup();
+    const zip = await zipBuffer({
+      "followed_tv_show.csv": readFixture("followed_tv_show.csv"),
+      "seen_episode.csv": readFixture("seen_episode.csv"),
+      // real TV Time exports now ship this file instead of/alongside seen_episode.csv;
+      // its episode_id (8370141) is deliberately absent from fakeProvider's
+      // episodePositions map, proving the position comes from the CSV, not a lookup.
+      "seen_episode_source.csv": readFixture("seen_episode_source.csv"),
+    });
+
+    const importRes = await postImport(app, zip, "export.zip");
+    const { reportId } = (await importRes.json()) as { reportId: string };
+
+    const confirmRes = await app.request("/api/import/tvtime/confirm", {
+      method: "POST",
+      headers: HEADERS,
+      body: JSON.stringify({ reportId, resolutions: [] }),
+    });
+    expect(confirmRes.status).toBe(200);
+    const { complete } = await parseSSE(confirmRes);
+    expect(complete).toEqual({ itemsCreated: 2, watchesCreated: 5, skipped: 0 });
+
+    const hotd = library.listSeries().items.find((i) => i.title === "House of the Dragon");
+    expect(hotd?.progress.watched).toBe(3);
   });
 
   it("is idempotent: re-running the same import creates no items or duplicate watches", async () => {
@@ -266,12 +322,8 @@ describe("POST /api/import/tvtime/confirm", () => {
       headers: HEADERS,
       body: JSON.stringify({ reportId: secondId, resolutions: [] }),
     });
-    const body = (await confirmRes.json()) as {
-      itemsCreated: number;
-      watchesCreated: number;
-      skipped: number;
-    };
-    expect(body).toEqual({ itemsCreated: 0, watchesCreated: 0, skipped: 4 });
+    const { complete } = await parseSSE(confirmRes);
+    expect(complete).toEqual({ itemsCreated: 0, watchesCreated: 0, skipped: 4 });
     expect(library.listSeries().total).toBe(2);
   });
 
@@ -289,9 +341,37 @@ describe("POST /api/import/tvtime/confirm", () => {
         resolutions: [{ name: "The Office", externalIds: { tmdbId: 2316 } }],
       }),
     });
-    const body = (await confirmRes.json()) as { itemsCreated: number };
-    expect(body.itemsCreated).toBe(1);
+    const { complete } = await parseSSE(confirmRes);
+    expect((complete as { itemsCreated: number }).itemsCreated).toBe(1);
     expect(library.listSeries().items[0]?.title).toBe("The Office (US)");
+  });
+
+  it("resolves season/episode coordinate discrepancies between TV Time (TVDB) and DB (TMDB) via findEpisodeByTvdbId fallback", async () => {
+    const { app, library } = setup();
+    const zip = await zipBuffer({
+      "followed_tv_show.csv":
+        "tv_show_id,tv_show_name,active,diffusion,folder_id,archived,notification_type,user_id,created_at,updated_at\n" +
+        "421069,Oshi no Ko,1,original,,0,2,1,2023-05-06 07:38:12,2023-05-06 07:38:12\n",
+      "tracking-prod-records-v2.csv":
+        "created_at,s_id,ep_id,key,s_no,ep_no,series_name\n" +
+        "2023-05-06 07:38:15,421069,9207267,watch-episode-1,1,1,Oshi no Ko\n" +
+        "2023-06-30 15:52:49,421069,11515142,watch-episode-2,3,9,Oshi no Ko\n",
+    });
+
+    const importRes = await postImport(app, zip, "export.zip");
+    const { reportId } = (await importRes.json()) as { reportId: string };
+
+    const confirmRes = await app.request("/api/import/tvtime/confirm", {
+      method: "POST",
+      headers: HEADERS,
+      body: JSON.stringify({ reportId, resolutions: [] }),
+    });
+    expect(confirmRes.status).toBe(200);
+    const { complete } = await parseSSE(confirmRes);
+    expect(complete).toEqual({ itemsCreated: 1, watchesCreated: 2, skipped: 0 });
+
+    const series = library.listSeries().items.find((i) => i.title === "Oshi no Ko");
+    expect(series?.progress.watched).toBe(2);
   });
 
   it("404s for an unknown reportId", async () => {

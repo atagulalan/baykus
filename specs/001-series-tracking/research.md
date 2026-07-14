@@ -89,10 +89,58 @@ Field survey 2026-07-13 against a live show page
   TMDB (`find/{tvdb_id}?external_source=tvdb_id` when key present). Fall back to
   name search with confidence scoring; below threshold → "unmatched" bucket for
   manual resolution in the report UI (US-9).
+- <!-- DECISION 2026-07-14: a full GDPR zip contains many files that share
+  `tv_show_id`+`tv_show_name` (addiction scores, emotion counts, recommendations,
+  …) and episode-shaped non-watch files (emotions, character votes, comment
+  reads). Treating every such file as followed-shows / watches inflated a real
+  export to 938 "shows" (≈280 unique followed) and stalled POST /api/import/tvtime
+  for tens of minutes under TVmaze's 20 req/10s cap with no progress UI.
+  Parser now prefers live `followed_tv_show.csv` fingerprint columns
+  (`active`/`diffusion`/`archived`), falls back to minimal id+name fixtures
+  only when no preferred file is present, dedupes shows by tvdbId, and excludes
+  name-keyed rows carrying emotion/vote/comment-read noise columns. -->
+- <!-- DECISION 2026-07-14: report-phase matching used getSeriesDetails, which
+  under TMDB-first (user-provided key) fan-outs every season at 4 req/s — making
+  a 280-show import *slower* with TMDB than TVmaze alone (~3s/show). Added
+  optional MetadataProvider.resolveSeries (identity only: title + externalIds);
+  matchShows stores details:null and confirm fetches full inventory with SSE
+  progress. TMDB resolveSeries = /find + /tv/{id}?append_to_response=external_ids;
+  TVmaze = single /lookup without embed=episodes. -->
+- <!-- DECISION 2026-07-14: user asked to pull full inventory during the report
+  phase (safer for confirm) and identified our self-imposed TMDB 4 req/s cap as
+  the remaining stall (~0.5–1s/show even for identity-only resolve). Raised the
+  TMDB client limiter to ~40 req/s (under TMDB's ~50 soft ceiling) and parallelized
+  matchShows with concurrency 8; report again stores full getSeriesDetails so
+  confirm reuses seasons/episodes. TVmaze keeps its hard 20/10s. -->
+- <!-- DECISION 2026-07-14 (post-hoc fix): auditing the above against a real
+  GDPR export found two follow-on issues. fetchJson had no retry on 429 —
+  under bulk matching with the raised limiter, a single rate-limited response
+  was swallowed by the per-provider catch and silently degraded a show from
+  matched to fuzzy/unmatched. Fixed: fetchJson now retries 429 within its
+  existing retry budget, honoring Retry-After when present. Separately, 40
+  req/s left too little headroom once retries could also burst against
+  TMDB's ~50 req/s soft ceiling; lowered the limiter to ~30 req/s. Also:
+  resolveSeries (added by the previous DECISION) turned out to have zero call
+  sites once matchShows was changed to fetch full getSeriesDetails during the
+  report phase — removed from the provider interface and both
+  implementations. -->
 - Timestamps: treat as UTC; TV Time granularity is datetime — map directly to
   `watches.watched_at`, `source = import:tvtime`.
 - Importer must be idempotent: re-running the same file creates no duplicate
   watch events (dedupe key: series identity + s/e + timestamp).
+- **Schema drift confirmed 2026-07-14 against a real, current GDPR export**
+  (not just the synthetic fixture): every per-episode-watch file
+  (`seen_episode_source.csv`, `watched_on_episode.csv`, `rewatched_episode.csv`,
+  `seen_episode_latest.csv`) has dropped `tv_show_id` entirely — only
+  `tv_show_name` identifies the show now. The one file that still carries
+  `tv_show_id` (`show_seen_episode_latest.csv`) is a "latest episode per
+  followed show" summary, not the full history — relying on it alone
+  silently undercounted a real account's watches by ~4.6x (198 recognized
+  vs. 914 once name-keyed rows were joined against the followed-shows list
+  by name). Upside: the new rows carry `episode_season_number`/
+  `episode_number` directly, removing the need for a per-episode TVDB-id
+  network resolution. Fixed in `packages/importer-tvtime/src/parse.ts` —
+  see M8.1's DECISION note in tasks.md for the full writeup.
 
 ## Web Push
 

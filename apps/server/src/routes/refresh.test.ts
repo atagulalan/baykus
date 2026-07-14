@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { createApp } from "../app.ts";
 import { createSingleSessionStore } from "../auth/single-session.ts";
 import { loadConfig } from "../config.ts";
+import { readSseEvents } from "./sse-test-util.ts";
 
 function addDays(days: number): string {
   const d = new Date();
@@ -68,22 +69,6 @@ function setup(providers: MetadataProvider[] = [fakeProvider()]) {
 }
 
 const HEADERS = { "content-type": "application/json", "X-Baykus": "1" };
-
-async function readSseEvents(res: Response): Promise<{ event: string; data: unknown }[]> {
-  const text = await res.text();
-  const events: { event: string; data: unknown }[] = [];
-  for (const block of text.split("\n\n")) {
-    if (!block.trim()) continue;
-    const eventLine = block.split("\n").find((l) => l.startsWith("event:"));
-    const dataLine = block.split("\n").find((l) => l.startsWith("data:"));
-    if (!eventLine || !dataLine) continue;
-    events.push({
-      event: eventLine.slice("event:".length).trim(),
-      data: JSON.parse(dataLine.slice("data:".length).trim()),
-    });
-  }
-  return events;
-}
 
 describe("POST /api/library/series/:id/refresh", () => {
   it("happy path returns ok + newEpisodes + refreshedAt", async () => {

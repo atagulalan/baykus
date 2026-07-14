@@ -1,11 +1,16 @@
 import { useMutation } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { type DragEvent, useState } from "react";
+import { type DragEvent, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { confirmTvTimeImport, importTvTime } from "../api/client.ts";
-import type { ExternalIds, TvTimeConfirmResult, TvTimeReport } from "../api/types.ts";
+import type {
+  ExternalIds,
+  TvTimeConfirmProgressEvent,
+  TvTimeConfirmResult,
+  TvTimeReport,
+} from "../api/types.ts";
 
-type Step = "upload" | "report" | "summary";
+type Step = "upload" | "report" | "confirming" | "summary";
 
 function candidateKey(candidate: { externalIds: ExternalIds }): string {
   const ids = candidate.externalIds;
@@ -19,6 +24,9 @@ export function ImportPage() {
   const [report, setReport] = useState<TvTimeReport | null>(null);
   const [resolutions, setResolutions] = useState<Record<string, ExternalIds>>({});
   const [summary, setSummary] = useState<TvTimeConfirmResult | null>(null);
+  const [progress, setProgress] = useState<TvTimeConfirmProgressEvent | null>(null);
+  const [confirmError, setConfirmError] = useState(false);
+  const confirmingRef = useRef(false);
 
   const uploadMutation = useMutation({
     mutationFn: importTvTime,
@@ -28,20 +36,33 @@ export function ImportPage() {
     },
   });
 
-  const confirmMutation = useMutation({
-    mutationFn: () => {
-      if (!report) throw new Error("no report");
-      const chosen = Object.entries(resolutions).map(([name, externalIds]) => ({
-        name,
-        externalIds,
-      }));
-      return confirmTvTimeImport(report.reportId, chosen);
-    },
-    onSuccess: (result) => {
-      setSummary(result);
-      setStep("summary");
-    },
-  });
+  function handleConfirm() {
+    if (!report || confirmingRef.current) return;
+    confirmingRef.current = true;
+    setConfirmError(false);
+    setProgress(null);
+    setStep("confirming");
+
+    const chosen = Object.entries(resolutions).map(([name, externalIds]) => ({
+      name,
+      externalIds,
+    }));
+
+    confirmTvTimeImport(report.reportId, chosen, (event) => {
+      setProgress(event);
+    })
+      .then((result) => {
+        setSummary(result);
+        setStep("summary");
+      })
+      .catch(() => {
+        setConfirmError(true);
+        setStep("report");
+      })
+      .finally(() => {
+        confirmingRef.current = false;
+      });
+  }
 
   function handleFile(file: File) {
     uploadMutation.mutate(file);
@@ -89,6 +110,40 @@ export function ImportPage() {
             <p className="text-sm text-red-400">{t("importWizard.uploadError")}</p>
           )}
         </label>
+      </div>
+    );
+  }
+
+  if (step === "confirming") {
+    const done = progress?.done ?? 0;
+    const total = progress?.total ?? 1;
+    const percent = total > 0 ? Math.round((done / total) * 100) : 0;
+
+    return (
+      <div className="mx-auto flex max-w-md flex-col gap-4 rounded-lg bg-zinc-900 p-6">
+        <h1 className="font-semibold text-xl">{t("importWizard.confirming")}</h1>
+
+        <div className="flex flex-col gap-2">
+          <div className="h-3 w-full overflow-hidden rounded-full bg-zinc-800">
+            <div
+              className="h-full rounded-full bg-emerald-500"
+              style={{
+                width: `${percent}%`,
+                transition: "width 300ms ease-out",
+              }}
+            />
+          </div>
+          <div className="flex items-center justify-between text-sm text-zinc-400">
+            <span>
+              {t("importWizard.confirmProgress", {
+                done,
+                total,
+                percent,
+              })}
+            </span>
+          </div>
+          {progress?.name && <p className="truncate text-sm text-zinc-300">{progress.name}</p>}
+        </div>
       </div>
     );
   }
@@ -176,13 +231,10 @@ export function ImportPage() {
           </section>
         </div>
 
-        {confirmMutation.isError && (
-          <p className="text-sm text-red-400">{t("importWizard.confirmError")}</p>
-        )}
+        {confirmError && <p className="text-sm text-red-400">{t("importWizard.confirmError")}</p>}
         <button
           type="button"
-          onClick={() => confirmMutation.mutate()}
-          disabled={confirmMutation.isPending}
+          onClick={handleConfirm}
           className="self-start rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
         >
           {t("importWizard.confirm")}

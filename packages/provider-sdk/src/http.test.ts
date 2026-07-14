@@ -34,14 +34,30 @@ describe("fetchJson", () => {
     });
   });
 
-  it("maps 429 to RATE_LIMITED, honoring Retry-After", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce(
+  it("retries 429 honoring Retry-After, then succeeds", async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(new Response(null, { status: 429, headers: { "retry-after": "5" } }))
+      .mockResolvedValueOnce(jsonResponse({ ok: true }));
+
+    const promise = fetchJson("https://x.test/a", {}, { providerId: "test" });
+    await vi.runAllTimersAsync();
+    await expect(promise).resolves.toEqual({ ok: true });
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("maps 429 to RATE_LIMITED after exhausting retries, honoring Retry-After", async () => {
+    vi.mocked(fetch).mockResolvedValue(
       new Response(null, { status: 429, headers: { "retry-after": "5" } }),
     );
-    await expect(fetchJson("https://x.test/a", {}, { providerId: "test" })).rejects.toMatchObject({
+
+    const promise = fetchJson("https://x.test/a", {}, { providerId: "test", retries: 2 });
+    const assertion = expect(promise).rejects.toMatchObject({
       code: "RATE_LIMITED",
       retryAfterMs: 5000,
     });
+    await vi.runAllTimersAsync();
+    await assertion;
+    expect(fetch).toHaveBeenCalledTimes(3);
   });
 
   it("maps 401/403 to AUTH_FAILED", async () => {

@@ -12,6 +12,7 @@ export {
   parseTvTimeFiles,
   type TvTimeParsed,
   type TvTimeShow,
+  type TvTimeStatus,
   type TvTimeWatchEvent,
 } from "./parse.ts";
 export { titleSimilarity } from "./similarity.ts";

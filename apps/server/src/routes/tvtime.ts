@@ -1,7 +1,13 @@
 import { isAlreadyInLibraryError, type Library } from "@baykus/core";
-import { matchShows, parseTvTimeFiles, resolveEpisodePosition } from "@baykus/importer-tvtime";
+import {
+  matchShows,
+  parseTvTimeFiles,
+  resolveEpisodePosition,
+  type TvTimeStatus,
+} from "@baykus/importer-tvtime";
 import type { ExternalIds, MetadataProvider, SeriesDetails } from "@baykus/provider-sdk";
 import { Hono } from "hono";
+import { streamSSE } from "hono/streaming";
 import { z } from "zod";
 import { ApiError } from "../middleware/errors.ts";
 import { createReportStore, type ReportStore } from "../tvtime/report-store.ts";
@@ -66,12 +72,18 @@ async function importOneShow(
   library: Library,
   providers: MetadataProvider[],
   details: SeriesDetails,
-  watchEvents: { tvdbEpisodeId: number; watchedAt: string }[],
+  watchEvents: {
+    tvdbEpisodeId: number;
+    watchedAt: string;
+    seasonNumber?: number;
+    episodeNumber?: number;
+  }[],
+  status: TvTimeStatus = "watching",
 ): Promise<{ itemCreated: boolean; watchesCreated: number; watchesSkipped: number }> {
   let itemId: number;
   let itemCreated = true;
   try {
-    itemId = library.addSeries(details, "watching").id;
+    itemId = library.addSeries(details, status).id;
   } catch (cause) {
     if (!isAlreadyInLibraryError(cause)) throw cause;
     itemId = cause.itemId;
@@ -89,10 +101,30 @@ async function importOneShow(
   let watchesCreated = 0;
   let watchesSkipped = 0;
   for (const watchEvent of watchEvents) {
-    const position = await resolveEpisodePosition(providers, watchEvent.tvdbEpisodeId);
-    const episodeId = position
-      ? episodeIdByPosition.get(episodePositionKey(position.seasonNumber, position.episodeNumber))
-      : undefined;
+    let episodeId: number | undefined;
+
+    // Prefer the CSV's own season/episode numbers (name-keyed/trackingV1/V2
+    // rows) — they need no network round-trip and can't be thrown off by
+    // provider/TVDB season-numbering discrepancies (e.g. TMDB merging
+    // seasons TV Time counts separately). Only fall back to resolving the
+    // TVDB episode id via the providers when the CSV didn't carry them
+    // (seenEpisode rows) or the resolved position isn't in this show's
+    // inventory.
+    if (watchEvent.seasonNumber !== undefined && watchEvent.episodeNumber !== undefined) {
+      episodeId = episodeIdByPosition.get(
+        episodePositionKey(watchEvent.seasonNumber, watchEvent.episodeNumber),
+      );
+    }
+
+    if (episodeId === undefined) {
+      const position = await resolveEpisodePosition(providers, watchEvent.tvdbEpisodeId);
+      if (position) {
+        episodeId = episodeIdByPosition.get(
+          episodePositionKey(position.seasonNumber, position.episodeNumber),
+        );
+      }
+    }
+
     if (episodeId === undefined) {
       watchesSkipped++;
       continue;
@@ -159,16 +191,26 @@ export function createTvTimeRoutes(library: Library, providers: MetadataProvider
     const report = reportStore.get(body.reportId);
     if (!report) throw new ApiError("NOT_FOUND", `report ${body.reportId} not found or expired`);
 
-    let itemsCreated = 0;
-    let watchesCreated = 0;
-    let skipped = 0;
+    // Build the ordered list of shows to import so we can report total upfront.
+    type ShowJob = {
+      name: string;
+      tvdbId: number;
+      details: SeriesDetails | null;
+      externalIds: ExternalIds;
+      episodeCount: number;
+      status: TvTimeStatus;
+    };
+    const jobs: ShowJob[] = [];
 
     for (const matchedShow of report.matched) {
-      const watchEvents = report.watchesByTvdbId.get(matchedShow.tvdbId) ?? [];
-      const result = await importOneShow(library, providers, matchedShow.details, watchEvents);
-      if (result.itemCreated) itemsCreated++;
-      watchesCreated += result.watchesCreated;
-      skipped += result.watchesSkipped;
+      jobs.push({
+        name: matchedShow.name,
+        tvdbId: matchedShow.tvdbId,
+        details: matchedShow.details,
+        externalIds: matchedShow.externalIds,
+        episodeCount: matchedShow.episodeCount,
+        status: matchedShow.status,
+      });
     }
 
     const resolvedNames = new Set<string>();
@@ -176,28 +218,80 @@ export function createTvTimeRoutes(library: Library, providers: MetadataProvider
       const fuzzyShow = report.fuzzy.find((f) => f.name === resolution.name);
       if (!fuzzyShow) continue;
       resolvedNames.add(resolution.name);
+      // Details will be fetched inside the stream (network call), so store null
+      // and resolve lazily — keeps the pre-stream phase fast.
+      jobs.push({
+        name: fuzzyShow.name,
+        tvdbId: fuzzyShow.tvdbId,
+        details: null, // resolved lazily below
+        externalIds: toExternalIds(resolution.externalIds),
+        episodeCount: fuzzyShow.episodeCount,
+        status: fuzzyShow.status,
+      });
+    }
 
-      const details = await fetchDetails(providers, toExternalIds(resolution.externalIds));
-      if (!details) {
-        skipped += fuzzyShow.episodeCount;
-        continue;
+    const total = jobs.length;
+
+    return streamSSE(c, async (stream) => {
+      let done = 0;
+      let itemsCreated = 0;
+      let watchesCreated = 0;
+      let skipped = 0;
+
+      for (const job of jobs) {
+        done++;
+        let details = job.details;
+
+        // Fuzzy shows need their details fetched now; matched shows already
+        // carry full inventory from the report phase.
+        if (!details) {
+          details = await fetchDetails(providers, job.externalIds);
+        }
+
+        if (!details) {
+          skipped += job.episodeCount;
+          await stream.writeSSE({
+            event: "progress",
+            data: JSON.stringify({ done, total, name: job.name, ok: false }),
+          });
+          continue;
+        }
+
+        try {
+          const watchEvents = report.watchesByTvdbId.get(job.tvdbId) ?? [];
+          const result = await importOneShow(library, providers, details, watchEvents, job.status);
+          if (result.itemCreated) itemsCreated++;
+          watchesCreated += result.watchesCreated;
+          skipped += result.watchesSkipped;
+
+          await stream.writeSSE({
+            event: "progress",
+            data: JSON.stringify({ done, total, name: job.name, ok: true }),
+          });
+        } catch {
+          skipped += job.episodeCount;
+          await stream.writeSSE({
+            event: "progress",
+            data: JSON.stringify({ done, total, name: job.name, ok: false }),
+          });
+        }
       }
-      const watchEvents = report.watchesByTvdbId.get(fuzzyShow.tvdbId) ?? [];
-      const result = await importOneShow(library, providers, details, watchEvents);
-      if (result.itemCreated) itemsCreated++;
-      watchesCreated += result.watchesCreated;
-      skipped += result.watchesSkipped;
-    }
 
-    for (const fuzzyShow of report.fuzzy) {
-      if (!resolvedNames.has(fuzzyShow.name)) skipped += fuzzyShow.episodeCount;
-    }
-    for (const unmatchedShow of report.unmatched) {
-      skipped += unmatchedShow.episodeCount;
-    }
+      // Count skipped episodes from unresolved fuzzy and unmatched shows.
+      for (const fuzzyShow of report.fuzzy) {
+        if (!resolvedNames.has(fuzzyShow.name)) skipped += fuzzyShow.episodeCount;
+      }
+      for (const unmatchedShow of report.unmatched) {
+        skipped += unmatchedShow.episodeCount;
+      }
 
-    reportStore.delete(body.reportId);
-    return c.json({ itemsCreated, watchesCreated, skipped });
+      reportStore.delete(body.reportId);
+
+      await stream.writeSSE({
+        event: "complete",
+        data: JSON.stringify({ itemsCreated, watchesCreated, skipped }),
+      });
+    });
   });
 
   return app;

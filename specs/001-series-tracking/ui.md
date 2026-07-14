@@ -141,7 +141,19 @@ Step 1 upload (dropzone) → Step 2 report table:
 Eşleşti (12)   | Emin değilim (2)          | Eşleşmedi (1)
 Dark ✓ 30 blm  | The Office → [aday seç ▼] | Some Local Show
 ```
-→ Step 3 confirm → summary card (created/skipped counts). Fuzzy resolution
+→ Step 3 confirm → progress bar (SSE stream, same pattern as global refresh):
+```
+┌──────────────────────────────────────────┐
+│  İçe aktarılıyor…                        │
+│                                          │
+│  ████████████░░░░░░░░░░ 8/15 (%53)       │
+│  Dark                                    │
+└──────────────────────────────────────────┘
+```
+Progress bar shows done/total with percentage, emerald fill, 300ms CSS
+transition on width. Current show name displayed below the bar. On error,
+falls back to the report step with an error message.
+→ Step 4 summary card (created/skipped counts). Fuzzy resolution
 uses the standard search dropdown scoped to the row.
 
 ## Auth screens (multi mode)

@@ -315,6 +315,13 @@ export interface TvTimeReport {
   unmatched: TvTimeUnmatchedShow[];
 }
 
+export interface TvTimeConfirmProgressEvent {
+  done: number;
+  total: number;
+  name: string;
+  ok: boolean;
+}
+
 export interface TvTimeConfirmResult {
   itemsCreated: number;
   watchesCreated: number;

@@ -27,8 +27,10 @@ import {
 const BASE_URL = "https://api.themoviedb.org/3";
 const PROVIDER_ID = "tmdb";
 
-// Self-imposed 4 req/s cap for the season fan-out in getSeriesDetails, well under TMDB's ~50 req/s soft limit.
-const limiter = createRateLimiter({ tokens: 4, perMs: 1000 });
+// Bulk-friendly cap (~30 req/s, headroom under TMDB's ~50 req/s soft ceiling).
+// The old 4/s self-throttle made TV Time matching stall at ~0.5-1s/show under
+// TMDB-first; fetchJson retries 429s, but a lower cap means fewer to retry.
+const limiter = createRateLimiter({ tokens: 30, perMs: 1000 });
 
 /** v3 keys are 32-char hex API keys (query param); v4 read tokens are long JWT-like bearer strings. */
 function isV4Token(apiKey: string): boolean {

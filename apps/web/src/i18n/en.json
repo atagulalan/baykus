@@ -201,6 +201,8 @@
     "unmatched": "Unmatched ({{count}})",
     "confirmError": "Import failed",
     "confirm": "Confirm",
+    "confirming": "Importing…",
+    "confirmProgress": "{{done}}/{{total}} ({{percent}}%)",
     "summaryTitle": "Import complete",
     "itemsCreated": "Series added",
     "watchesCreated": "Watches added",

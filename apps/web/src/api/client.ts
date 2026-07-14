@@ -22,6 +22,7 @@ import type {
   SettingsPatch,
   Stats,
   TrackingStatus,
+  TvTimeConfirmProgressEvent,
   TvTimeConfirmResult,
   TvTimeReport,
 } from "./types.ts";
@@ -156,22 +157,19 @@ export function refreshSeries(id: number): Promise<RefreshResult> {
 }
 
 /**
- * The server's global refresh is a POST (contracts/api.md) guarded by the
- * X-Baykus header — the native EventSource API can't send either, so this
- * consumes the same text/event-stream body by hand via fetch + a stream reader.
+ * Reads a `text/event-stream` body (the native EventSource API can't send a
+ * POST or the X-Baykus header, so refresh/confirm consume it by hand via
+ * fetch + a stream reader) and invokes `onProgress` per `progress` event,
+ * resolving with the payload of the trailing `complete` event.
  */
-export async function refreshAllSeries(
-  onProgress: (event: RefreshProgressEvent) => void,
-): Promise<RefreshCompleteEvent> {
-  const res = await fetch("/api/library/refresh", { method: "POST", headers: { "X-Baykus": "1" } });
-  if (!res.ok || !res.body) {
-    throw new ApiError("INTERNAL", "refresh stream failed", res.status, null);
-  }
-
-  const reader = res.body.getReader();
+async function readSseStream<TProgress, TComplete>(
+  body: ReadableStream<Uint8Array>,
+  onProgress: (event: TProgress) => void,
+): Promise<TComplete> {
+  const reader = body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
-  let complete: RefreshCompleteEvent | null = null;
+  let complete: TComplete | null = null;
 
   while (true) {
     const { done, value } = await reader.read();
@@ -185,15 +183,26 @@ export async function refreshAllSeries(
       if (!eventLine || !dataLine) continue;
       const event = eventLine.slice("event:".length).trim();
       const data = JSON.parse(dataLine.slice("data:".length).trim());
-      if (event === "progress") onProgress(data as RefreshProgressEvent);
-      else if (event === "complete") complete = data as RefreshCompleteEvent;
+      if (event === "progress") onProgress(data as TProgress);
+      else if (event === "complete") complete = data as TComplete;
     }
   }
 
   if (!complete) {
-    throw new ApiError("INTERNAL", "refresh stream ended without a complete event", 200, null);
+    throw new ApiError("INTERNAL", "stream ended without a complete event", 200, null);
   }
   return complete;
+}
+
+/** contracts/api.md — POST /api/library/refresh streams progress via SSE. */
+export async function refreshAllSeries(
+  onProgress: (event: RefreshProgressEvent) => void,
+): Promise<RefreshCompleteEvent> {
+  const res = await fetch("/api/library/refresh", { method: "POST", headers: { "X-Baykus": "1" } });
+  if (!res.ok || !res.body) {
+    throw new ApiError("INTERNAL", "refresh stream failed", res.status, null);
+  }
+  return readSseStream<RefreshProgressEvent, RefreshCompleteEvent>(res.body, onProgress);
 }
 
 export function getCalendar(
@@ -290,14 +299,30 @@ export async function importTvTime(file: File): Promise<TvTimeReport> {
   return body as TvTimeReport;
 }
 
-export function confirmTvTimeImport(
+export async function confirmTvTimeImport(
   reportId: string,
   resolutions: { name: string; externalIds: ExternalIds }[],
+  onProgress: (event: TvTimeConfirmProgressEvent) => void,
 ): Promise<TvTimeConfirmResult> {
-  return request<TvTimeConfirmResult>("/import/tvtime/confirm", {
+  const res = await fetch("/api/import/tvtime/confirm", {
     method: "POST",
+    headers: { "X-Baykus": "1", "content-type": "application/json" },
     body: JSON.stringify({ reportId, resolutions }),
   });
+
+  if (!res.ok || !res.body) {
+    const isJson = res.headers.get("content-type")?.includes("application/json") ?? false;
+    const body: unknown = isJson ? await res.json() : undefined;
+    const envelope = body as ApiErrorEnvelope | undefined;
+    throw new ApiError(
+      envelope?.error.code ?? "INTERNAL",
+      envelope?.error.message ?? res.statusText,
+      res.status,
+      envelope?.error.details ?? null,
+    );
+  }
+
+  return readSseStream<TvTimeConfirmProgressEvent, TvTimeConfirmResult>(res.body, onProgress);
 }
 
 export function getVapidPublicKey(): Promise<{ key: string }> {
