@@ -9,6 +9,8 @@ interface SeriesCardProps {
   onRemove: () => void;
 }
 
+const RATING_EMOJI: Record<1 | 2 | 3, string> = { 1: "👎", 2: "😐", 3: "👍" };
+
 export function SeriesCard({ series, onRemove }: SeriesCardProps) {
   const { t } = useTranslation();
   const [imageFailed, setImageFailed] = useState(false);
@@ -51,6 +53,11 @@ export function SeriesCard({ series, onRemove }: SeriesCardProps) {
           </div>
         </div>
       </Link>
+      {series.rating !== null && (
+        <span className="absolute top-1 left-1 rounded bg-zinc-950/80 px-1 py-0.5 text-xs">
+          {RATING_EMOJI[series.rating]}
+        </span>
+      )}
       <button
         type="button"
         onClick={onRemove}

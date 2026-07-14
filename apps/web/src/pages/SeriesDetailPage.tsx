@@ -1,13 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ApiError,
   addEpisodeWatch,
   bulkWatch,
+  clearRating,
   getSeries,
   removeLatestEpisodeWatch,
+  setRating,
   updateSeries,
 } from "../api/client.ts";
 import { buildImageUrl } from "../api/images.ts";
@@ -19,9 +21,12 @@ import type {
   SeriesSummary,
   TrackingStatus,
 } from "../api/types.ts";
+import { RatingControl } from "../components/RatingControl.tsx";
 import { SeasonSection } from "../components/SeasonSection.tsx";
 import { WatchDateDialog } from "../components/WatchDateDialog.tsx";
 import { useToast } from "../lib/toast.tsx";
+
+const RATING_PROMPT_TIMEOUT_MS = 5000;
 
 const STATUSES: TrackingStatus[] = ["watching", "plan_to_watch", "completed", "dropped", "paused"];
 
@@ -59,8 +64,15 @@ export function SeriesDetailPage() {
 
   const [dateDialogEpisode, setDateDialogEpisode] = useState<EpisodeSummary | null>(null);
   const [showCompletePrompt, setShowCompletePrompt] = useState(false);
+  const [promptEpisodeId, setPromptEpisodeId] = useState<number | null>(null);
 
   const query = useQuery({ queryKey, queryFn: () => getSeries(id) });
+
+  useEffect(() => {
+    if (promptEpisodeId === null) return;
+    const timer = setTimeout(() => setPromptEpisodeId(null), RATING_PROMPT_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [promptEpisodeId]);
 
   function handleWatchResult(result: AddWatchResult | BulkWatchResult) {
     if (result.suggestCompleted && query.data?.status !== "completed") {
@@ -110,8 +122,11 @@ export function SeriesDetailPage() {
       if (context?.previous) queryClient.setQueryData(queryKey, context.previous);
       reportError();
     },
-    onSuccess: (result) => {
-      if (result) handleWatchResult(result);
+    onSuccess: (result, episode) => {
+      if (result) {
+        handleWatchResult(result);
+        setPromptEpisodeId(episode.id);
+      }
     },
     onSettled: invalidate,
   });
@@ -119,7 +134,10 @@ export function SeriesDetailPage() {
   const watchAgain = useMutation({
     mutationFn: (episodeId: number) => addEpisodeWatch(episodeId),
     onError: reportError,
-    onSuccess: (result) => handleWatchResult(result),
+    onSuccess: (result, episodeId) => {
+      handleWatchResult(result);
+      setPromptEpisodeId(episodeId);
+    },
     onSettled: invalidate,
   });
 
@@ -164,6 +182,35 @@ export function SeriesDetailPage() {
       if (context?.previous) queryClient.setQueryData(queryKey, context.previous);
       reportError();
     },
+    onSettled: invalidate,
+  });
+
+  const rateItem = useMutation<
+    unknown,
+    unknown,
+    1 | 2 | 3 | null,
+    { previous: SeriesDetail | undefined }
+  >({
+    mutationFn: (value) =>
+      value === null ? clearRating("item", id) : setRating("item", id, value),
+    onMutate: async (value) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previous = queryClient.getQueryData<SeriesDetail>(queryKey);
+      queryClient.setQueryData<SeriesDetail>(queryKey, (old) => old && { ...old, rating: value });
+      return { previous };
+    },
+    onError: (_err, _value, context) => {
+      if (context?.previous) queryClient.setQueryData(queryKey, context.previous);
+      reportError();
+    },
+    onSettled: invalidate,
+  });
+
+  const rateEpisode = useMutation({
+    mutationFn: ({ episodeId, value }: { episodeId: number; value: 1 | 2 | 3 }) =>
+      setRating("episode", episodeId, value),
+    onError: reportError,
+    onSuccess: () => setPromptEpisodeId(null),
     onSettled: invalidate,
   });
 
@@ -234,6 +281,11 @@ export function SeriesDetailPage() {
           <p className="text-sm text-zinc-400">
             {[detail.network, ...detail.genres.map((g) => g.name)].filter(Boolean).join(" · ")}
           </p>
+          <RatingControl
+            value={detail.rating}
+            onChange={(value) => rateItem.mutate(value)}
+            size="sm"
+          />
           <div className="mt-2 flex flex-col gap-1">
             <div className="h-2 w-full max-w-sm overflow-hidden rounded-full bg-zinc-800">
               <div className="h-full bg-emerald-500" style={{ width: `${percent}%` }} />
@@ -267,6 +319,9 @@ export function SeriesDetailPage() {
             }}
             onBulkUpToHere={(episodeId) => bulkUpToHere.mutate(episodeId)}
             onMarkSeasonWatched={() => markSeasonWatched.mutate(season.number)}
+            promptEpisodeId={promptEpisodeId}
+            onRateEpisode={(episodeId, value) => rateEpisode.mutate({ episodeId, value })}
+            onDismissPrompt={() => setPromptEpisodeId(null)}
           />
         ))}
       </div>

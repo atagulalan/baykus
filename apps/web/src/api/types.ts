@@ -134,3 +134,12 @@ export interface BulkWatchResult {
 export interface ApiErrorEnvelope {
   error: { code: string; message: string; details: unknown };
 }
+
+export type RatingTargetType = "item" | "episode";
+
+export interface Rating {
+  targetType: RatingTargetType;
+  targetId: number;
+  value: 1 | 2 | 3;
+  ratedAt: string;
+}

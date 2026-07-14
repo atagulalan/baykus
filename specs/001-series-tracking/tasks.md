@@ -121,7 +121,7 @@ see the stats page.
   - **Verify:** `pnpm test packages/core`
 
 - [x] M3.2 server ratings + stats → contracts/api.md §Ratings §stats; tests as usual (PATCH series route landed early in M2.3, see decision note there)
-- [ ] M3.3 web rating UI (FR-006)
+- [x] M3.3 web rating UI (FR-006)
   - **Files:** `src/components/RatingControl.tsx` (3 segmented buttons: 👎 kötü / 😐 normal / 👍 iyi — labels from i18n, not emoji-only), post-watch inline prompt in EpisodeRow (dismissible), rating on detail header; library sort/filter extension
   - **DoD:** ui.md §Rating; one-tap set/clear; keyboard accessible
 - [ ] M3.4 web stats page (FR-017) — read `dataviz` guidance before charting; simple bars/tiles, no chart lib unless needed

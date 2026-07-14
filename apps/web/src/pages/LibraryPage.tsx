@@ -16,15 +16,20 @@ const STATUS_FILTERS = [
 ] as const;
 type StatusFilter = (typeof STATUS_FILTERS)[number];
 
+const SORTS = ["added", "title", "rating", "nextAir"] as const;
+type Sort = (typeof SORTS)[number];
+
 export function LibraryPage() {
   const { t } = useTranslation();
   const toast = useToast();
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<StatusFilter>("all");
+  const [sort, setSort] = useState<Sort>("added");
 
   const query = useQuery({
-    queryKey: ["library", filter],
-    queryFn: () => listSeries(filter === "all" ? {} : { status: filter as TrackingStatus }),
+    queryKey: ["library", filter, sort],
+    queryFn: () =>
+      listSeries({ ...(filter === "all" ? {} : { status: filter as TrackingStatus }), sort }),
   });
 
   const removeMutation = useMutation({
@@ -47,19 +52,33 @@ export function LibraryPage() {
 
   return (
     <section className="flex flex-col gap-4">
-      <div className="flex flex-wrap gap-2">
-        {STATUS_FILTERS.map((value) => (
-          <button
-            key={value}
-            type="button"
-            onClick={() => setFilter(value)}
-            className={`rounded-full px-3 py-1 text-sm ${
-              filter === value ? "bg-zinc-100 text-zinc-900" : "bg-zinc-800 text-zinc-300"
-            }`}
-          >
-            {t(value === "all" ? "library.filter.all" : `status.${value}`)}
-          </button>
-        ))}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap gap-2">
+          {STATUS_FILTERS.map((value) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setFilter(value)}
+              className={`rounded-full px-3 py-1 text-sm ${
+                filter === value ? "bg-zinc-100 text-zinc-900" : "bg-zinc-800 text-zinc-300"
+              }`}
+            >
+              {t(value === "all" ? "library.filter.all" : `status.${value}`)}
+            </button>
+          ))}
+        </div>
+        <select
+          value={sort}
+          onChange={(e) => setSort(e.target.value as Sort)}
+          aria-label={t("library.sort.label")}
+          className="rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-sm"
+        >
+          {SORTS.map((s) => (
+            <option key={s} value={s}>
+              {t(`library.sort.${s}`)}
+            </option>
+          ))}
+        </select>
       </div>
 
       {query.isLoading ? (

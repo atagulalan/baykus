@@ -10,6 +10,9 @@ interface SeasonSectionProps {
   onEditDate: (episodeId: number) => void;
   onBulkUpToHere: (episodeId: number) => void;
   onMarkSeasonWatched: () => void;
+  promptEpisodeId: number | null;
+  onRateEpisode: (episodeId: number, value: 1 | 2 | 3) => void;
+  onDismissPrompt: () => void;
 }
 
 function todayIso(): string {
@@ -23,6 +26,9 @@ export function SeasonSection({
   onEditDate,
   onBulkUpToHere,
   onMarkSeasonWatched,
+  promptEpisodeId,
+  onRateEpisode,
+  onDismissPrompt,
 }: SeasonSectionProps) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(season.number !== 0);
@@ -69,6 +75,9 @@ export function SeasonSection({
               onWatchAgain={() => onWatchAgain(episode.id)}
               onEditDate={() => onEditDate(episode.id)}
               onBulkUpToHere={() => onBulkUpToHere(episode.id)}
+              showRatingPrompt={promptEpisodeId === episode.id}
+              onRate={(value) => onRateEpisode(episode.id, value)}
+              onDismissPrompt={onDismissPrompt}
             />
           ))}
         </div>

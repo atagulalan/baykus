@@ -36,6 +36,13 @@
     "filter": {
       "all": "All"
     },
+    "sort": {
+      "label": "Sort",
+      "title": "Title",
+      "added": "Added",
+      "rating": "Rating",
+      "nextAir": "Next air date"
+    },
     "card": {
       "remove": "Remove"
     },
@@ -61,6 +68,13 @@
     "editDate": "edit date",
     "watchedUpToHere": "watched up to here",
     "save": "Save"
+  },
+  "rating": {
+    "label": "Rating",
+    "bad": "bad",
+    "okay": "okay",
+    "good": "good",
+    "skip": "skip"
   },
   "errors": {
     "generic": "Something went wrong",

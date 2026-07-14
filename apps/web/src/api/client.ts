@@ -4,6 +4,8 @@ import type {
   BulkWatchResult,
   BulkWatchTarget,
   ExternalIds,
+  Rating,
+  RatingTargetType,
   SearchResponse,
   SeriesDetail,
   SeriesListResponse,
@@ -64,7 +66,7 @@ export function addSeries(
 }
 
 export function listSeries(
-  params: { status?: TrackingStatus; sort?: string } = {},
+  params: { status?: TrackingStatus; sort?: "title" | "added" | "rating" | "nextAir" } = {},
 ): Promise<SeriesListResponse> {
   const query = new URLSearchParams();
   if (params.status) query.set("status", params.status);
@@ -107,4 +109,19 @@ export function bulkWatch(itemId: number, target: BulkWatchTarget): Promise<Bulk
     method: "POST",
     body: JSON.stringify(target),
   });
+}
+
+export function setRating(
+  targetType: RatingTargetType,
+  targetId: number,
+  value: 1 | 2 | 3,
+): Promise<Rating> {
+  return request<Rating>("/ratings", {
+    method: "PUT",
+    body: JSON.stringify({ targetType, targetId, value }),
+  });
+}
+
+export function clearRating(targetType: RatingTargetType, targetId: number): Promise<void> {
+  return request<void>(`/ratings/${targetType}/${targetId}`, { method: "DELETE" });
 }

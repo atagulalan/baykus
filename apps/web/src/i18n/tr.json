@@ -36,6 +36,13 @@
     "filter": {
       "all": "Tümü"
     },
+    "sort": {
+      "label": "Sırala",
+      "title": "Başlık",
+      "added": "Eklenme",
+      "rating": "Puan",
+      "nextAir": "Sıradaki yayın"
+    },
     "card": {
       "remove": "Kaldır"
     },
@@ -61,6 +68,13 @@
     "editDate": "tarihi düzenle",
     "watchedUpToHere": "buraya kadar izledim",
     "save": "Kaydet"
+  },
+  "rating": {
+    "label": "Puan",
+    "bad": "kötü",
+    "okay": "normal",
+    "good": "iyi",
+    "skip": "geç"
   },
   "errors": {
     "generic": "Bir şeyler ters gitti",
