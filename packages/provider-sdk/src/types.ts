@@ -190,6 +190,11 @@ export interface ProviderCapabilities {
   images: boolean;
 }
 
+export interface EpisodePosition {
+  seasonNumber: number;
+  episodeNumber: number;
+}
+
 export interface MetadataProvider {
   /** Stable lowercase id: "tmdb", "tvmaze", "imdb", "serializd". */
   readonly id: string;
@@ -202,6 +207,14 @@ export interface MetadataProvider {
   getWatchProviders?(ref: ExternalIds, region: string): Promise<WatchProviderInfo[]>;
   getExternalRatings?(ref: ExternalIds): Promise<ExternalRating[]>;
   getTags?(ref: ExternalIds): Promise<TagInfo[]>;
+  /**
+   * Resolves a bare TheTVDB *episode* id (as opposed to a show id) to its
+   * (season, episode) position — TMDB-only (`/find` supports tv_episode
+   * results keyed by external tvdb id); used by the TV Time importer, which
+   * only ever receives TV Time's own per-episode TVDB ids, never s/e numbers.
+   * Returns null when the provider has no matching episode.
+   */
+  findEpisodeByTvdbId?(tvdbEpisodeId: number): Promise<EpisodePosition | null>;
   /** Resolve a persisted ImageRef to a fetchable CDN URL. */
   resolveImageUrl(ref: ImageRef, size: ImageSize): string;
 }

@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@baykus/core": "workspace:*",
+    "@baykus/importer-tvtime": "workspace:*",
     "@baykus/provider-sdk": "workspace:*",
     "@baykus/provider-tmdb": "workspace:*",
     "@baykus/provider-tvmaze": "workspace:*",
@@ -19,13 +20,17 @@
     "better-sqlite3": "^12.11.1",
     "hono": "^4.8.5",
     "web-push": "^3.6.7",
+    "yauzl": "^3.4.0",
     "zod": "^4.0.5"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
     "@types/web-push": "^3.6.4",
+    "@types/yauzl": "^3.4.0",
+    "@types/yazl": "^3.3.1",
     "esbuild": "^0.25.8",
     "tsx": "^4.20.3",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "yazl": "^3.3.1"
   }
 }

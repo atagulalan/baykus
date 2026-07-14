@@ -351,7 +351,35 @@ second handle is isolated; single mode password gate works.
 
 ## M8 — TV Time import & optional providers
 
-- [ ] M8.1 importer-tvtime (FR-011): header-based CSV detection (`fixtures/tvtime/`), tvdb→(tvmaze lookup, tmdb find when key)→externalIds, name-search fallback with confidence (≥0.85 auto, else fuzzy bucket), idempotent via watches dedupe key; produces report per contracts §tvtime
+- [x] M8.1 importer-tvtime (FR-011): header-based CSV detection (`fixtures/tvtime/`), tvdb→(tvmaze lookup, tmdb find when key)→externalIds, name-search fallback with confidence (≥0.85 auto, else fuzzy bucket), idempotent via watches dedupe key; produces report per contracts §tvtime
+  <!-- DECISION 2026-07-14: confirmed cross-referencing fixtures/tvmaze's
+  externals.thetvdb field that TV Time's tv_show_id IS TheTVDB's own
+  numeric show id (research.md already assumed this). Its per-row
+  episode_id is likewise TheTVDB's own numeric *episode* id — TV Time
+  never exposes season/episode numbers directly — confirmed via research
+  into other open-source TV Time importers (none use positional/ordinal
+  matching; TVDB episode ids are assigned by DB-insertion order, not
+  broadcast order, so sort-and-zip heuristics are unreliable and were
+  explicitly rejected). The only available resolution path is TMDB's
+  `/find/{id}?external_source=tvdb_id`, which returns tv_episode_results
+  (season_number, episode_number) for a bare episode id — extended
+  provider-sdk with an optional `findEpisodeByTvdbId` capability
+  (TMDB-only; TVmaze has no episode-level tvdb lookup) and provider-tmdb's
+  resolveShowId with tvdbId support via the same endpoint. Without a TMDB
+  key, individual watch events for an otherwise-matched show cannot be
+  resolved and are honestly counted in confirm's `skipped` rather than
+  guessed. Server routes (POST /api/import/tvtime,
+  /api/import/tvtime/confirm) cache the match report in-memory per
+  createApp() instance (30 min TTL, mirroring auth's rate limiters/
+  single-session store) — a report only needs to survive the gap between
+  viewing it and clicking confirm. Imported items default to "watching"
+  status (not specified by the contract) and skip enrichment
+  (externalRatings/watchProviders) to keep bulk import fast; users can
+  Refresh afterward. Idempotency is achieved by reusing existing
+  machinery rather than new dedupe logic: addSeries()'s
+  AlreadyInLibraryError.itemId is caught and reused, and addWatch()'s
+  existing (episodeId, watchedAt) dedupe means re-running the same file
+  creates zero duplicates — confirmed by an explicit re-run test. -->
 - [ ] M8.2 web import wizard: upload → report table (matched/fuzzy/unmatched w/ counts) → resolve fuzzy via search picker → confirm → summary; route `/import`
 - [ ] M8.3 provider-imdb (FR-018): datasets client — download+cache `title.ratings.tsv.gz` (24 h TTL, ~25 MB) into dataDir, binary-search or index lookup by imdbId → `externalRatings[{source:"imdb", scale:10}]`; capability externalRatings only; disabled unless scrapersEnabled… note: datasets are ToS-fine, enable by default in single mode, keep off in multi (bandwidth)
 - [ ] M8.4 provider-serializd (FR-018): `__NEXT_DATA__` parser (browser UA header), keyed by tmdbId, maps averageRating+distribution (scale 10) + nanogenres→TagInfo; graceful `PARSE_FAILED` on shape drift (fixture: `fixtures/serializd/`); returns tags only when `scrapersEnabled`

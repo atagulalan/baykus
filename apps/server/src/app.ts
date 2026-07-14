@@ -21,6 +21,7 @@ import { createRefreshRoutes } from "./routes/refresh.ts";
 import { createSearchRoute } from "./routes/search.ts";
 import { createSettingsRoutes } from "./routes/settings.ts";
 import { createStatsRoute } from "./routes/stats.ts";
+import { createTvTimeRoutes } from "./routes/tvtime.ts";
 import { createWatchRoutes } from "./routes/watches.ts";
 import { createZipRoutes } from "./routes/zip.ts";
 
@@ -73,6 +74,7 @@ export function createApp(config: Config, deps: AppDeps) {
   app.route("/", createCalendarRoute(contextLibrary));
   app.route("/", createPushRoutes(contextLibrary, deps.vapid.publicKey));
   app.route("/", createZipRoutes(contextLibrary));
+  app.route("/", createTvTimeRoutes(contextLibrary, deps.providers));
 
   return app;
 }

@@ -1,5 +1,6 @@
 import {
   createRateLimiter,
+  type EpisodePosition,
   type ExternalIds,
   type ExternalRating,
   fetchJson,
@@ -36,6 +37,7 @@ function isV4Token(apiKey: string): boolean {
 
 interface TmdbFindResponse {
   tv_results: { id: number }[];
+  tv_episode_results: { season_number: number; episode_number: number }[];
 }
 
 export function createTmdbProvider(opts: { apiKey: string }): MetadataProvider {
@@ -57,10 +59,17 @@ export function createTmdbProvider(opts: { apiKey: string }): MetadataProvider {
       if (!hit) throw new ProviderError(PROVIDER_ID, "NOT_FOUND", `no tv match for ${ref.imdbId}`);
       return hit.id;
     }
+    if (ref.tvdbId) {
+      const found = await get<TmdbFindResponse>(`/find/${ref.tvdbId}?external_source=tvdb_id`);
+      const hit = found.tv_results[0];
+      if (!hit)
+        throw new ProviderError(PROVIDER_ID, "NOT_FOUND", `no tv match for tvdb:${ref.tvdbId}`);
+      return hit.id;
+    }
     throw new ProviderError(
       PROVIDER_ID,
       "UNSUPPORTED",
-      "no usable external id (need tmdbId or imdbId)",
+      "no usable external id (need tmdbId, imdbId or tvdbId)",
     );
   }
 
@@ -117,6 +126,13 @@ export function createTmdbProvider(opts: { apiKey: string }): MetadataProvider {
           fetchedAt: new Date().toISOString(),
         },
       ];
+    },
+
+    async findEpisodeByTvdbId(tvdbEpisodeId: number): Promise<EpisodePosition | null> {
+      const found = await get<TmdbFindResponse>(`/find/${tvdbEpisodeId}?external_source=tvdb_id`);
+      const hit = found.tv_episode_results[0];
+      if (!hit) return null;
+      return { seasonNumber: hit.season_number, episodeNumber: hit.episode_number };
     },
 
     resolveImageUrl(ref: ImageRef, size: ImageSize): string {

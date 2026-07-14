@@ -23,6 +23,9 @@ importers:
       '@baykus/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@baykus/importer-tvtime':
+        specifier: workspace:*
+        version: link:../../packages/importer-tvtime
       '@baykus/provider-sdk':
         specifier: workspace:*
         version: link:../../packages/provider-sdk
@@ -47,6 +50,9 @@ importers:
       web-push:
         specifier: ^3.6.7
         version: 3.6.7
+      yauzl:
+        specifier: ^3.4.0
+        version: 3.4.0
       zod:
         specifier: ^4.0.5
         version: 4.4.3
@@ -57,6 +63,12 @@ importers:
       '@types/web-push':
         specifier: ^3.6.4
         version: 3.6.4
+      '@types/yauzl':
+        specifier: ^3.4.0
+        version: 3.4.0
+      '@types/yazl':
+        specifier: ^3.3.1
+        version: 3.3.1
       esbuild:
         specifier: ^0.25.8
         version: 0.25.12
@@ -66,6 +78,9 @@ importers:
       typescript:
         specifier: ^5.9.2
         version: 5.9.3
+      yazl:
+        specifier: ^3.3.1
+        version: 3.3.1
 
   apps/web:
     dependencies:
@@ -1243,6 +1258,9 @@ packages:
   '@types/yauzl@3.4.0':
     resolution: {integrity: sha512-NRPn5w6h8dhcnmx3YIRQcqMywY/+nND/uOkJessedcrowO3C0AssHp3tMJpxKAwOhFOo0OV1y9VtsC5hbKKBAw==}
 
+  '@types/yazl@3.3.1':
+    resolution: {integrity: sha512-DIWfCKpsTp6hE5BDBHV3+fIL/bLUF9Bv13iDrWnMlmhQpH67buNvI291ZauQ1xcccxK3FqQ9honnXpq4R8NMuQ==}
+
   '@vitejs/plugin-react@4.7.0':
     resolution: {integrity: sha512-gUu9hwfWvvEDBBmgtAowQCojwZmJ5mcLn3aufeCsitijs3+f2NsrPtlAWIR6OPiqljl96GVCUbLe0HyqIpVaoA==}
     engines: {node: ^14.18.0 || >=16.0.0}
@@ -2192,6 +2210,9 @@ packages:
     resolution: {integrity: sha512-jIH9yLR9wqr0wOS0TpBvo/g/2UgZH5qePVbjgRliiF0BYvOZyaBknKsF+x9Iht0O6sqgnB93rCICdOZFecJuDw==}
     engines: {node: '>=12'}
 
+  yazl@3.3.1:
+    resolution: {integrity: sha512-BbETDVWG+VcMUle37k5Fqp//7SDOK2/1+T7X8TD96M3D9G8jK5VLUdQVdVjGi8im7FGkazX7kk5hkU8X4L5Bng==}
+
   zip-stream@7.0.5:
     resolution: {integrity: sha512-dSvYKdvLsAHCDqPOhIwk/q5CvuWtTB3Dgpoe0uVEFjTzIOAmsQpprX25InCvrvJsirEbu1OHyy67n/kAj1Sw/w==}
     engines: {node: '>=18'}
@@ -2935,6 +2956,10 @@ snapshots:
       '@types/node': 26.1.1
 
   '@types/yauzl@3.4.0':
+    dependencies:
+      '@types/node': 26.1.1
+
+  '@types/yazl@3.3.1':
     dependencies:
       '@types/node': 26.1.1
 
@@ -3841,6 +3866,10 @@ snapshots:
   yauzl@3.4.0:
     dependencies:
       pend: 1.2.0
+
+  yazl@3.3.1:
+    dependencies:
+      buffer-crc32: 1.0.0
 
   zip-stream@7.0.5:
     dependencies:

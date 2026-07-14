@@ -1,3 +1,17 @@
-// Implemented in milestone M8 (specs/001-series-tracking/tasks.md).
-// TV Time GDPR export (CSV) → core import structures, with match report.
-export {};
+export { parseCsv, parseCsvRecords } from "./csv.ts";
+export {
+  type FuzzyCandidate,
+  type FuzzyShow,
+  type MatchedShow,
+  type MatchReport,
+  matchShows,
+  resolveEpisodePosition,
+  type UnmatchedShow,
+} from "./match.ts";
+export {
+  parseTvTimeFiles,
+  type TvTimeParsed,
+  type TvTimeShow,
+  type TvTimeWatchEvent,
+} from "./parse.ts";
+export { titleSimilarity } from "./similarity.ts";
