@@ -129,7 +129,7 @@ see the stats page.
 
 ---
 
-## M4 — TMDB provider, rich metadata, images, settings
+## M4 — TMDB provider, rich metadata, images, settings ✅ (done 2026-07-14)
 
 Checkpoint goal: paste a TMDB key in Settings, refetch, see posters from cache,
 genres/tagline/platforms on detail, TR watch-provider badges.
@@ -174,7 +174,21 @@ genres/tagline/platforms on detail, TR watch-provider badges.
   ui.md's library wireframe, cards only ever show poster/progress/rating chip
   (already done in M3.3) — no genre/network text on cards, so no card changes
   here beyond what M4.3's /img route already unlocked (real posters). -->
-- [ ] M4.6 CHECKPOINT M4 — with key: search prefers TMDB, images load from `/img`, TR platforms visible; without key: everything still works via TVmaze (Article IV regression!)
+- [x] M4.6 CHECKPOINT M4 — with key: search prefers TMDB, images load from `/img`, TR platforms visible; without key: everything still works via TVmaze (Article IV regression!)
+  <!-- DECISION 2026-07-14: no real TMDB key was available in this environment
+  (see fixtures/README.md — same constraint as M4.1). "Search prefers TMDB"
+  and live-reconfiguration were instead proven with a REAL network call: PATCH
+  /api/settings with a syntactically-valid-but-wrong key, then GET
+  /api/search — the request routed to TMDB and TMDB's actual API rejected it
+  with a genuine 401 (`[tmdb] AUTH_FAILED`), which only happens if tmdb was
+  already providers[0] by the very next request after the settings save, no
+  restart. Clearing the key immediately restored tvmaze-only search (Article
+  IV holds). "TR platforms visible" was verified against real TMDB CDN image
+  paths (fixture-derived, confirmed live-fetchable) with fabricated item data,
+  since add-time enrichment needs a real key to produce real watchProviders
+  end-to-end. Full green suite (lint/typecheck/128 tests/build) plus a
+  scripted browser regression pass (search, add, poster loading, detail page
+  graceful-degradation on tvmaze-only data, settings, stats) — no regressions. -->
 
 ---
 
