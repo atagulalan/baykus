@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { getSettings, updateSettings } from "../api/client.ts";
-import type { Locale, Settings, SettingsPatch } from "../api/types.ts";
+import { exportZipUrl, getSettings, importZip, updateSettings } from "../api/client.ts";
+import type { ImportMode, ImportZipResult, Locale, Settings, SettingsPatch } from "../api/types.ts";
 import {
   getCurrentPushSubscription,
   isPushSupported,
@@ -19,6 +19,9 @@ export function SettingsPage() {
   const toast = useToast();
   const queryClient = useQueryClient();
   const [tmdbKeyInput, setTmdbKeyInput] = useState("");
+  const [importMode, setImportMode] = useState<ImportMode>("merge");
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importResult, setImportResult] = useState<ImportZipResult | null>(null);
 
   const query = useQuery({ queryKey: ["settings"], queryFn: getSettings });
   const pushSupported = isPushSupported();
@@ -62,6 +65,19 @@ export function SettingsPage() {
     mutationFn: unsubscribeFromPush,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["push-subscription"] }),
     onError: () => toast.show(t("errors.generic"), "error"),
+  });
+
+  const importMutation = useMutation({
+    mutationFn: () => {
+      if (!importFile) throw new Error("no file selected");
+      return importZip(importFile, importMode);
+    },
+    onSuccess: (result) => {
+      setImportResult(result);
+      setImportFile(null);
+      queryClient.invalidateQueries();
+    },
+    onError: () => toast.show(t("settings.data.error"), "error"),
   });
 
   if (query.isLoading) {
@@ -215,6 +231,89 @@ export function SettingsPage() {
             {t("settings.notifications.enable")}
           </button>
         )}
+      </section>
+
+      <section className="flex flex-col gap-3 rounded-lg bg-zinc-900 p-4">
+        <h2 className="font-medium text-sm text-zinc-300">{t("settings.data.title")}</h2>
+
+        <a
+          href={exportZipUrl()}
+          download
+          className="self-start rounded bg-zinc-800 px-3 py-1.5 text-sm text-zinc-300"
+        >
+          {t("settings.data.export")}
+        </a>
+
+        <div className="flex flex-col gap-2 border-zinc-800 border-t pt-3">
+          <span className="text-sm">{t("settings.data.importTitle")}</span>
+
+          <div className="flex flex-col gap-1 text-sm">
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="import-mode"
+                checked={importMode === "merge"}
+                onChange={() => setImportMode("merge")}
+                className="accent-emerald-500"
+              />
+              {t("settings.data.mode.merge")}
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="import-mode"
+                checked={importMode === "replace"}
+                onChange={() => setImportMode("replace")}
+                className="accent-emerald-500"
+              />
+              {t("settings.data.mode.replace")}
+            </label>
+          </div>
+
+          <div className="flex gap-2">
+            <input
+              type="file"
+              accept=".zip,application/zip"
+              onChange={(e) => {
+                setImportFile(e.target.files?.[0] ?? null);
+                setImportResult(null);
+              }}
+              className="flex-1 text-sm text-zinc-400"
+            />
+            <button
+              type="button"
+              onClick={() => importMutation.mutate()}
+              disabled={!importFile || importMutation.isPending}
+              className="shrink-0 rounded bg-emerald-600 px-3 py-1.5 text-sm text-white disabled:opacity-50"
+            >
+              {importMutation.isPending
+                ? t("settings.data.importing")
+                : t("settings.data.importButton")}
+            </button>
+          </div>
+
+          {importResult && (
+            <div className="flex flex-col gap-1 rounded bg-zinc-800 p-3 text-sm">
+              <p className="text-emerald-400">
+                {t("settings.data.success", {
+                  items: importResult.items,
+                  watches: importResult.watches,
+                  ratings: importResult.ratings,
+                })}
+              </p>
+              {importResult.warnings.length > 0 && (
+                <div className="flex flex-col gap-1 text-xs text-zinc-400">
+                  <span className="font-medium">{t("settings.data.warnings")}</span>
+                  <ul className="list-inside list-disc">
+                    {importResult.warnings.map((warning) => (
+                      <li key={warning}>{warning}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </section>
     </div>
   );

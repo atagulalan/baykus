@@ -5,6 +5,8 @@ import type {
   BulkWatchTarget,
   CalendarResponse,
   ExternalIds,
+  ImportMode,
+  ImportZipResult,
   Rating,
   RatingTargetType,
   RefreshCompleteEvent,
@@ -198,6 +200,41 @@ export function getCalendar(
   if (params.to) query.set("to", params.to);
   const qs = query.toString();
   return request<CalendarResponse>(`/calendar${qs ? `?${qs}` : ""}`);
+}
+
+export function exportZipUrl(includeSecrets = false): string {
+  return `/api/export.zip${includeSecrets ? "?includeSecrets=1" : ""}`;
+}
+
+/**
+ * Multipart upload — bypasses request()'s JSON-only content-type handling,
+ * same pattern as refreshAllSeries() for a non-JSON request body.
+ */
+export async function importZip(file: File, mode?: ImportMode): Promise<ImportZipResult> {
+  const formData = new FormData();
+  formData.append("file", file);
+  if (mode) formData.append("mode", mode);
+
+  const res = await fetch("/api/import", {
+    method: "POST",
+    headers: { "X-Baykus": "1" },
+    body: formData,
+  });
+
+  const isJson = res.headers.get("content-type")?.includes("application/json") ?? false;
+  const body: unknown = isJson ? await res.json() : undefined;
+
+  if (!res.ok) {
+    const envelope = body as ApiErrorEnvelope | undefined;
+    throw new ApiError(
+      envelope?.error.code ?? "INTERNAL",
+      envelope?.error.message ?? res.statusText,
+      res.status,
+      envelope?.error.details ?? null,
+    );
+  }
+
+  return body as ImportZipResult;
 }
 
 export function getVapidPublicKey(): Promise<{ key: string }> {

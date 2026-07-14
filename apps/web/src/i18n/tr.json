@@ -120,6 +120,21 @@
       "disable": "Bildirimleri kaldır",
       "subscribed": "Bildirimler etkinleştirildi",
       "unsupported": "Bu tarayıcı push bildirimlerini desteklemiyor"
+    },
+    "data": {
+      "title": "Veri",
+      "export": "Zip indir",
+      "importTitle": "Zip yükle",
+      "mode": {
+        "replace": "Değiştir (mevcut kütüphaneyi sil, zip'ten yeniden kur)",
+        "merge": "Birleştir (mevcut kütüphaneye ekle)"
+      },
+      "chooseFile": "Zip dosyası seç",
+      "importButton": "Yükle",
+      "importing": "Yükleniyor…",
+      "warnings": "Uyarılar",
+      "success": "{{items}} dizi, {{watches}} izleme, {{ratings}} puan içe aktarıldı",
+      "error": "İçe aktarma başarısız oldu"
     }
   },
   "stats": {

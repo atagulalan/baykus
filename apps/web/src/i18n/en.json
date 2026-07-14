@@ -120,6 +120,21 @@
       "disable": "Remove notifications",
       "subscribed": "Notifications enabled",
       "unsupported": "This browser doesn't support push notifications"
+    },
+    "data": {
+      "title": "Data",
+      "export": "Download zip",
+      "importTitle": "Upload zip",
+      "mode": {
+        "replace": "Replace (wipe the current library, rebuild from the zip)",
+        "merge": "Merge (add into the current library)"
+      },
+      "chooseFile": "Choose a zip file",
+      "importButton": "Upload",
+      "importing": "Uploading…",
+      "warnings": "Warnings",
+      "success": "Imported {{items}} series, {{watches}} watches, {{ratings}} ratings",
+      "error": "Import failed"
     }
   },
   "stats": {

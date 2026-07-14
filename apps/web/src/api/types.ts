@@ -252,3 +252,13 @@ export interface CalendarResponse {
   upcoming: CalendarDay[];
   recentlyAired: CalendarEntry[];
 }
+
+export type ImportMode = "replace" | "merge";
+
+export interface ImportZipResult {
+  items: number;
+  watches: number;
+  ratings: number;
+  mode: ImportMode;
+  warnings: string[];
+}

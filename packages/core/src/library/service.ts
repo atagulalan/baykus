@@ -5,12 +5,15 @@ import type {
   SeriesDetails,
   WatchProviderInfo,
 } from "@baykus/provider-sdk";
+import type { Archiver } from "archiver";
 import { and, eq, or, sql } from "drizzle-orm";
 import { type CalendarResponse, getCalendar } from "../calendar/query.ts";
 import type { LibraryDatabase } from "../db/open.ts";
 import type { RatingTargetType, TrackingStatus, WatchSource } from "../db/schema.ts";
 import * as schema from "../db/schema.ts";
 import { type RefreshResult, refreshAll, refreshItem } from "../refresh/engine.ts";
+import { type ExportOptions, exportLibraryZip } from "../zip/export.ts";
+import { type ImportMode, type ImportResult, importLibraryZip } from "../zip/import.ts";
 import { AlreadyInLibraryError } from "./errors.ts";
 import { getNextAirDate, getNextUnwatchedEpisode, getSeriesProgress } from "./progress.ts";
 import {
@@ -201,6 +204,8 @@ export interface Library {
   addPushSubscription(sub: PushSubscriptionRecord): void;
   removePushSubscription(endpoint: string): boolean;
   listPushSubscriptions(): PushSubscriptionRecord[];
+  exportZip(opts?: ExportOptions): Archiver;
+  importZip(zipBuffer: Buffer, mode: ImportMode): Promise<ImportResult>;
 }
 
 export function createLibrary(db: LibraryDatabase): Library {
@@ -474,6 +479,14 @@ export function createLibrary(db: LibraryDatabase): Library {
 
     listPushSubscriptions(): PushSubscriptionRecord[] {
       return listPushSubscriptions(db);
+    },
+
+    exportZip(opts?: ExportOptions): Archiver {
+      return exportLibraryZip(db, opts);
+    },
+
+    importZip(zipBuffer: Buffer, mode: ImportMode): Promise<ImportResult> {
+      return importLibraryZip(db, zipBuffer, mode);
     },
   };
 }

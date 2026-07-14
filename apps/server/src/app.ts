@@ -15,6 +15,7 @@ import { createSearchRoute } from "./routes/search.ts";
 import { createSettingsRoutes } from "./routes/settings.ts";
 import { createStatsRoute } from "./routes/stats.ts";
 import { createWatchRoutes } from "./routes/watches.ts";
+import { createZipRoutes } from "./routes/zip.ts";
 
 export interface AppDeps {
   library: Library;
@@ -39,9 +40,9 @@ export function createApp(config: Config, deps: AppDeps) {
   app.route("/", createRefreshRoutes(deps.library, deps.providers, deps.vapid));
   app.route("/", createCalendarRoute(deps.library));
   app.route("/", createPushRoutes(deps.library, deps.vapid.publicKey));
+  app.route("/", createZipRoutes(deps.library));
 
   // Route groups land here milestone by milestone (see specs tasks.md):
-  // M6: /api/export.zip, /api/import
   // M7: /api/auth/*
 
   return app;
