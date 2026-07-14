@@ -19,3 +19,4 @@ export type {
   TrackingPatch,
 } from "./library/types.ts";
 export type { AddWatchResult, BulkWatchResult, BulkWatchTarget } from "./library/watches.ts";
+export { type RefreshResult, refreshAll, refreshItem } from "./refresh/engine.ts";

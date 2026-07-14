@@ -197,7 +197,7 @@ genres/tagline/platforms on detail, TR watch-provider badges.
 Checkpoint goal: press "Refresh all", watch SSE progress, see the calendar
 with upcoming + finale badges, receive a test push.
 
-- [ ] M5.1 core refresh engine (FR-008)
+- [x] M5.1 core refresh engine (FR-008)
   - **Files:** `packages/core/src/refresh/{engine.ts,engine.test.ts}`
   - **DoD:** `refreshItem(itemId)` re-fetches details, diffs episodes by (s,e) (upsert changed fields, insert new, never delete watched episodes — orphaned ones flagged `removed` via… NO: keep simple, delete unwatched orphans, keep watched orphans), writes refresh_log with newEpisodeCount = episodes whose airDate ∈ (lastRefreshAt, now]; `refreshAll(concurrency 3)` yields per-item results as async iterator; emits `new-episodes` events `{itemId, episodes[]}`
   - **Tests:** fake provider mutation scenarios: new episode added, air date changed, episode removed (watched vs unwatched), provider failure isolated
