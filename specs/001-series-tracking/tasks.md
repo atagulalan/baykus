@@ -192,7 +192,7 @@ genres/tagline/platforms on detail, TR watch-provider badges.
 
 ---
 
-## M5 — Refresh, calendar, push
+## M5 — Refresh, calendar, push ✅ (done 2026-07-14)
 
 Checkpoint goal: press "Refresh all", watch SSE progress, see the calendar
 with upcoming + finale badges, receive a test push.
@@ -235,7 +235,17 @@ with upcoming + finale badges, receive a test push.
   incognito-equivalent, so the final FCM handshake couldn't be exercised
   live; the request/response contract is covered by notify.test.ts and
   routes/push.test.ts instead. -->
-- [ ] M5.5 CHECKPOINT M5 — trigger refresh with a fixture-fed fake provider in dev mode OR live TVmaze; verify SSE UI, calendar renders, push arrives (localhost is a secure context)
+- [x] M5.5 CHECKPOINT M5 — trigger refresh with a fixture-fed fake provider in dev mode OR live TVmaze; verify SSE UI, calendar renders, push arrives (localhost is a secure context)
+  <!-- DECISION 2026-07-14: used live TVmaze (House of the Dragon + Breaking
+  Bad) rather than a fixture-fed fake provider — exercises the real
+  provider/registry/refresh pipeline end to end. Full green suite (lint,
+  typecheck, 163 tests, build) plus a scripted browser pass: add two series,
+  global refresh (SSE progress + completion toast), calendar (day-grouped
+  upcoming + recently-aired with real HotD schedule), per-series refresh +
+  mute toggle, episode watch/rating regression, stats page, settings page —
+  no regressions found. "Push arrives" not literally exercised live (see the
+  M5.4 decision note on Chromium's incognito Push API restriction);
+  subscribe/unsubscribe/notify covered by their own route + unit tests. -->
 
 ---
 
