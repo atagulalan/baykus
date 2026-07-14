@@ -1,5 +1,12 @@
 # UI Spec 001 — Screens, States, Conventions
 
+> **Partially superseded (2026-07-15):** [UI Spec 002](../002-watch-categories/ui.md)
+> reworks §Layout (logo link + İzleme nav item), §Library (category sections +
+> filter panel), the §Series detail header (status select → category badge +
+> manual-list control, suggest-completed toast removed), §Calendar (two
+> modes), and adds the `/watch` page. Conventions and all other screens below
+> remain normative.
+
 Wireframes are layout intent, not pixel specs. Dark theme is the default look
 (zinc-950 background, zinc-100 text — already in the scaffold); light theme via
 the `theme` setting is a v1.1 polish item, don't build it speculatively.

@@ -26,6 +26,10 @@ baykus.xava.me (multi mode, handle-claim accounts).
 2. `specs/001-series-tracking/` — spec.md (what + edge-case decisions),
    plan.md (how), data-model.md (schema + zip format), contracts/api.md (exact
    HTTP contract), ui.md (screens), tasks.md (order of work).
+3. `specs/002-watch-categories/` — **the active spec** (computed watch
+   categories, calendar modes, watch page). Same file structure; its docs are
+   deltas that override the matching 001 sections. Work happens in its
+   tasks.md (M10+).
 
 ## Normative sources — order of truth
 
@@ -34,9 +38,10 @@ When documents disagree, the higher one wins; fix the lower one in the same PR:
 1. `.specify/memory/constitution.md`
 2. **Code contracts:** `packages/provider-sdk/src/types.ts` (DTOs),
    `packages/core/src/db/schema.ts` (DB)
-3. `specs/001-series-tracking/contracts/api.md` (HTTP) and
-   spec.md §Edge-case decisions
-4. Prose specs (spec.md, plan.md, data-model.md, ui.md)
+3. Contracts: `specs/001-series-tracking/contracts/api.md` (HTTP) as amended
+   by `specs/002-watch-categories/contracts/api.md`, and the spec.md
+   §Edge-case decisions tables (001 + 002; **002 wins on overlap**)
+4. Prose specs (spec.md, plan.md, data-model.md, ui.md — same 002-wins rule)
 
 **Never invent a field, endpoint, or behavior.** If something you need is not
 in a normative source: make the smallest reasonable choice, implement it, and
@@ -62,6 +67,7 @@ comment. Silent divergence is the one unforgivable failure mode.
 |---|---|
 | any provider package | provider-sdk `types.ts` + `errors.ts`, research.md §that provider, its `fixtures/` files |
 | core storage / Library service | `schema.ts`, data-model.md, spec.md §Edge-case decisions |
+| categories / manual lists / calendar / watch page | 002 spec.md §Edge-case decisions (E16–E29), 002 plan.md, `packages/core/src/library/category.ts` once it exists |
 | zip export/import | data-model.md §Zip + §Merge, constitution Article III |
 | server routes | contracts/api.md (that section), the core service it wraps |
 | web pages/components | ui.md §that screen, contracts/api.md (endpoints it calls) |

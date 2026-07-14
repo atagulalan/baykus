@@ -1,5 +1,11 @@
 # Tasks 001 — Series Tracking
 
+> **Continuation:** M10+ live in
+> [specs/002-watch-categories/tasks.md](../002-watch-categories/tasks.md).
+> The only open task here is M9.2 (hosted deployment) — it needs real
+> DNS/TLS/hosting credentials and stays blocked on the user; do not attempt
+> it as part of 002 work.
+
 Vertical milestones: each one ends with something you can **see working in the
 browser**. Work strictly top-down; a checkpoint task gates the next milestone.
 

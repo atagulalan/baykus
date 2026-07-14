@@ -1,7 +1,14 @@
 # Spec 001 — Series Tracking (v1)
 
 **Status:** Draft · **Owner:** xava · **Created:** 2026-07-13
-**Scope:** Series (TV) module only. Movies and books are future specs (002, 003) that reuse the same architecture.
+**Scope:** Series (TV) module only. Movies and books are future specs that reuse the same architecture.
+
+> **Partially superseded (2026-07-15):**
+> [Spec 002 — Watch Categories](../002-watch-categories/spec.md) replaces the
+> manual 5-status tracking model with computed categories + two manual lists.
+> Affected here: US-3, FR-005, parts of US-1/US-5/US-7/FR-007, E7, E9's
+> status scoping — each carries an inline `SUPERSEDED by 002` marker below.
+> Where the two specs disagree, 002 wins.
 
 ## Summary
 
@@ -36,6 +43,8 @@ As a user, I search by title and add a series to my library so I can track it.
 - **Given** a TMDB key, **when** I add a series, **then** full metadata is
   fetched: seasons, episodes, air dates, poster, status, watch providers.
 - Adding sets tracking status (default: `watching`; selectable at add time).
+  *SUPERSEDED by 002: adding sets an optional `manualList` instead; a fresh
+  series lands in the computed `not_started` category.*
 
 ### US-2: Mark episodes watched
 As a user, I mark episodes as watched so my progress is accurate.
@@ -48,6 +57,9 @@ As a user, I mark episodes as watched so my progress is accurate.
 - The series card shows next-unwatched episode and progress (e.g. `S02E05 · 23/48`).
 
 ### US-3: Track status
+*SUPERSEDED by 002 (US-13/US-14): statuses are now computed categories plus
+two manual lists; the completed-suggestion toast is removed.*
+
 As a user, I set a status per series: `watching`, `plan_to_watch`, `completed`,
 `dropped`, `paused`. Library views filter/group by status. Marking the final
 episode watched offers (does not force) moving the series to `completed`.
@@ -62,6 +74,8 @@ As a user, I rate a series or an individual episode 1–3
 
 ### US-5: Upcoming calendar
 As a user, I see upcoming episodes of series I'm watching.
+*SUPERSEDED by 002 (US-15): two modes (timeline 14d back / 3mo forward +
+month grid), one day-grouped range, scoped to the active category trio.*
 
 - In-app calendar view: next 30 days grouped by day, plus "aired recently,
   unwatched" section.
@@ -82,7 +96,7 @@ happen (Article V).
 
 ### US-7: Web push for new episodes
 As a user, I opt into browser push notifications for new episodes of series I'm
-`watching`.
+`watching`. *SUPERSEDED by 002 (US-17): scope is the active category trio.*
 
 - Detection happens during refresh (manual or scheduled): episodes whose air
   date passed since the previous refresh trigger one notification per series.
@@ -137,10 +151,11 @@ the library settings (and therefore in the zip).
 - **FR-004** Watch events: create (with timestamp), bulk-create, delete-latest;
   multiple events per episode allowed.
 - **FR-005** Tracking status per series, one of five values (US-3).
+  *SUPERSEDED by 002 (FR-019/FR-020).*
 - **FR-006** Ratings: integer 1–3, targets: series, episode. One rating per
   target (upsert semantics).
 - **FR-007** Upcoming view + recently-aired-unwatched view derived from cached
-  metadata.
+  metadata. *SUPERSEDED by 002 (FR-022): single day-grouped range endpoint.*
 - **FR-008** Manual refresh per series and global; concurrency-limited;
   per-item error isolation.
 - **FR-009** Web push subscribe/unsubscribe; new-episode detection during
@@ -175,9 +190,9 @@ the library settings (and therefore in the zip).
 | E4 | Progress denominator: aired or announced episodes? | **Aired.** Card shows `watched/aired`; total announced shown only on detail page. |
 | E5 | Which watch does "unmark" delete? | The event with the **newest `watched_at`** for that episode. Never touches older (rewatch) history. |
 | E6 | Duplicate watch event (same episode + same timestamp)? | Idempotent: silently reuse the existing event (this is also the import dedupe key). |
-| E7 | When is "move to completed?" suggested? | The moment a watch (single or bulk) makes every aired non-special episode watched, and status ≠ completed. Suggestion only — never automatic. |
+| E7 | When is "move to completed?" suggested? | ~~The moment a watch (single or bulk) makes every aired non-special episode watched, and status ≠ completed. Suggestion only — never automatic.~~ *SUPERSEDED by 002: `finished` is computed automatically; the suggestion (and `suggestCompleted` API field) is removed.* |
 | E8 | Rating prompt after watching? | Only after single-episode marking in the detail view; never after bulk actions. Dismissible, remembers nothing. |
-| E9 | "Recently aired, unwatched" window? | Last **14 days**, `watching` status only. Calendar upcoming window: **30 days** default (from/to query params). |
+| E9 | "Recently aired, unwatched" window? | Last **14 days**, `watching` status only. Calendar upcoming window: **30 days** default (from/to query params). *SUPERSEDED by 002 (E22/E24): scope = active category trio; default range today−14d…today+90d; month mode travels freely.* |
 | E10 | Search debounce / minimum query? | 300 ms debounce, minimum 2 characters, results capped at 10. |
 | E11 | What happens to a watched episode the provider deleted? | Kept (with its watches); unwatched orphans are deleted on refresh. |
 | E12 | Episode identity across refreshes/imports? | `(item, season_number, episode_number)` — never provider episode ids. |
@@ -187,7 +202,8 @@ the library settings (and therefore in the zip).
 
 ## Non-goals (v1)
 
-- Movies, books (specs 002/003 — but see Article VI).
+- Movies, books (future specs — but see Article VI; 002 is taken by the
+  watch-categories rework).
 - Social features of any kind; public profiles.
 - Mobile apps; the web app must simply be responsive.
 - npm publishing of packages.

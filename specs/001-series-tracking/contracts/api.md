@@ -1,5 +1,13 @@
 # API Contract — baykuş HTTP API
 
+> **Partially superseded (2026-07-15):**
+> [Contract Delta 002](../../002-watch-categories/contracts/api.md) overrides
+> the §Library, §Watches, §Calendar and §Stats sections below (plus behavior
+> notes for tvtime/zip/push) — `status` becomes computed `category` +
+> `manualList`, `suggestCompleted` is removed, the calendar returns a single
+> `days` range, and `GET /api/watches/history` is added. Sections not listed
+> there remain normative here.
+
 **NORMATIVE.** Server routes and web client must match this document exactly.
 DTO field shapes come from `packages/provider-sdk/src/types.ts`; DB enums from
 `packages/core/src/db/schema.ts`. All bodies are JSON unless stated. All

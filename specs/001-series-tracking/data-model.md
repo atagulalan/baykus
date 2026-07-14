@@ -2,6 +2,13 @@
 
 **Plan:** [plan.md](plan.md)
 
+> **Partially superseded (2026-07-15):**
+> [Data Model 002](../002-watch-categories/data-model.md) reworks the
+> `tracking` table (`status` → nullable `manual_list` + `list_changed_at`,
+> migration 0001) and bumps the zip to **schemaVersion 2** (import still
+> accepts v1). The `tracking` table and the zip `tracking` block below
+> describe schemaVersion 1 as originally shipped.
+
 ## Design notes
 
 - One SQLite file **per library** (single mode: exactly one; multi mode: one per
