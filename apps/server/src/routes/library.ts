@@ -3,6 +3,7 @@ import type { ExternalIds, MetadataProvider } from "@baykus/provider-sdk";
 import { Hono } from "hono";
 import { z } from "zod";
 import { ApiError } from "../middleware/errors.ts";
+import { enrichExternalRatings } from "../providers/enrich.ts";
 
 const externalIdsSchema = z
   .object({
@@ -78,8 +79,10 @@ export function createLibraryRoutes(library: Library, providers: MetadataProvide
     const provider = providers[0];
     if (!provider) throw new ApiError("INTERNAL", "no metadata providers registered");
 
-    const details = await provider.getSeriesDetails(toExternalIds(body.externalIds));
-    const summary = library.addSeries(details, body.status ?? "watching");
+    const externalIds = toExternalIds(body.externalIds);
+    const details = await provider.getSeriesDetails(externalIds);
+    const externalRatings = await enrichExternalRatings(providers, externalIds);
+    const summary = library.addSeries(details, body.status ?? "watching", externalRatings);
     return c.json(summary, 201);
   });
 

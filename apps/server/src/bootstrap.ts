@@ -11,6 +11,8 @@ export function createProductionDeps(config: Config): AppDeps {
   const { db } = openLibraryDb(join(config.BAYKUS_DATA_DIR, "library.db"));
   return {
     library: createLibrary(db),
-    providers: createProviderRegistry(),
+    providers: createProviderRegistry(
+      config.BAYKUS_TMDB_API_KEY ? { tmdbApiKey: config.BAYKUS_TMDB_API_KEY } : {},
+    ),
   };
 }

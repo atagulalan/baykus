@@ -1,4 +1,4 @@
-import type { ExternalIds, SeriesDetails } from "@baykus/provider-sdk";
+import type { ExternalIds, ExternalRating, SeriesDetails } from "@baykus/provider-sdk";
 import { and, eq, or, sql } from "drizzle-orm";
 import type { LibraryDatabase } from "../db/open.ts";
 import type { RatingTargetType, TrackingStatus, WatchSource } from "../db/schema.ts";
@@ -47,7 +47,11 @@ function findConflictingItemId(db: LibraryDatabase, ids: ExternalIds): number | 
   return row?.id ?? null;
 }
 
-function toItemInsertValues(details: SeriesDetails, addedAt: string) {
+function toItemInsertValues(
+  details: SeriesDetails,
+  addedAt: string,
+  externalRatings: ExternalRating[] | null,
+) {
   return {
     mediaType: details.mediaType,
     title: details.title,
@@ -75,7 +79,7 @@ function toItemInsertValues(details: SeriesDetails, addedAt: string) {
     imdbId: details.externalIds.imdbId ?? null,
     tvdbId: details.externalIds.tvdbId ?? null,
     watchProviders: null,
-    externalRatings: null,
+    externalRatings: externalRatings && externalRatings.length > 0 ? externalRatings : null,
     lastRefreshedAt: addedAt,
     addedAt,
   };
@@ -144,7 +148,11 @@ function sortEnriched(
 }
 
 export interface Library {
-  addSeries(details: SeriesDetails, status: TrackingStatus): SeriesSummary;
+  addSeries(
+    details: SeriesDetails,
+    status: TrackingStatus,
+    externalRatings?: ExternalRating[],
+  ): SeriesSummary;
   listSeries(opts?: ListSeriesOptions): { items: SeriesSummary[]; total: number };
   getSeries(id: number): SeriesDetail | null;
   removeSeries(id: number): boolean;
@@ -160,7 +168,11 @@ export interface Library {
 
 export function createLibrary(db: LibraryDatabase): Library {
   return {
-    addSeries(details: SeriesDetails, status: TrackingStatus): SeriesSummary {
+    addSeries(
+      details: SeriesDetails,
+      status: TrackingStatus,
+      externalRatings?: ExternalRating[],
+    ): SeriesSummary {
       const existingId = findConflictingItemId(db, details.externalIds);
       if (existingId != null) throw new AlreadyInLibraryError(existingId);
 
@@ -169,7 +181,7 @@ export function createLibrary(db: LibraryDatabase): Library {
       const itemId = db.transaction((tx) => {
         const inserted = tx
           .insert(schema.items)
-          .values(toItemInsertValues(details, now))
+          .values(toItemInsertValues(details, now, externalRatings ?? null))
           .returning({ id: schema.items.id })
           .get();
 

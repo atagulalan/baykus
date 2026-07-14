@@ -26,6 +26,9 @@ importers:
       '@baykus/provider-sdk':
         specifier: workspace:*
         version: link:../../packages/provider-sdk
+      '@baykus/provider-tmdb':
+        specifier: workspace:*
+        version: link:../../packages/provider-tmdb
       '@baykus/provider-tvmaze':
         specifier: workspace:*
         version: link:../../packages/provider-tvmaze

@@ -139,14 +139,20 @@ genres/tagline/platforms on detail, TR watch-provider badges.
   - **DoD:** `createTmdbProvider({ apiKey })`; v4 Bearer + v3 key query fallback; capabilities all true except `tags`; `getSeriesDetails` = details + N season fetches (limiter 4 req/s) merged per contracts; maps external_ids, content_ratings, watch/providers (region param), episode_type, per-episode vote_average→`externalRatings[{source:"tmdb"}]`; `resolveImageUrl` per TMDB size buckets (thumb=w185, medium=w342, large=w780, original)
   - **Tests:** against `fixtures/tmdb/*` — full mapping assertions incl. finale episode_type and TR content rating. If a real TMDB key is at hand, FIRST re-capture fixtures per fixtures/README.md and drop the `__fixture_note` fields
   - **Verify:** `pnpm test packages/provider-tmdb`
-- [ ] M4.2 registry: TMDB-first ordering, per-request provider config from settings; enrich-on-add (details from best provider; externalRatings merged from all capable providers, non-fatal)
+- [x] M4.2 registry: TMDB-first ordering, per-request provider config from settings; enrich-on-add (details from best provider; externalRatings merged from all capable providers, non-fatal)
+  <!-- DECISION 2026-07-14: "per-request provider config from settings" needs the
+  settings service that M4.4 builds. M4.2 lands TMDB-first ordering + enrich-on-add
+  wired to the existing env var (BAYKUS_TMDB_API_KEY, single mode) via
+  createProviderRegistry({tmdbApiKey}); Article IV holds (keyless = TVmaze-only).
+  M4.4 will make the registry re-read the key from the settings table so a
+  Settings-page save takes effect without a restart. -->
 - [ ] M4.3 image cache + `/img` route (FR-014)
   - **Files:** `packages/core/src/images/{cache.ts,cache.test.ts}`, `apps/server/src/routes/img.ts`
   - **DoD:** contracts/api.md §Images; sha256 file names under `<dataDir>/images/`; fetch-through with per-provider resolveImageUrl; immutable cache headers; cache wipe-safe
   - **Tests:** cache hit skips fetch (mock); unknown provider → 404
 - [ ] M4.4 settings end-to-end (FR-013 groundwork, FR-015, FR-016)
   - **Files:** `packages/core/src/library/settings.ts`, `apps/server/src/routes/settings.ts`, `apps/web/src/pages/SettingsPage.tsx` rewrite
-  - **DoD:** GET/PATCH `/api/settings` (locale, region, theme, tmdbApiKey write-only — never echoed back, scrapersEnabled); web form per ui.md §Settings; locale switch live-updates i18next and persists
+  - **DoD:** GET/PATCH `/api/settings` (locale, region, theme, tmdbApiKey write-only — never echoed back, scrapersEnabled); web form per ui.md §Settings; locale switch live-updates i18next and persists; also make `createProviderRegistry` settings-aware (falls back to `BAYKUS_TMDB_API_KEY` when unset) so a saved key takes effect without a restart — see M4.2 decision note
 - [ ] M4.5 rich metadata on detail + cards (FR-016, FR-018): tagline, genres chips, content-rating badge (region-aware), network logos, watch-provider badges with **JustWatch attribution line**, external ratings row (sources with scale normalization display)
 - [ ] M4.6 CHECKPOINT M4 — with key: search prefers TMDB, images load from `/img`, TR platforms visible; without key: everything still works via TVmaze (Article IV regression!)
 
