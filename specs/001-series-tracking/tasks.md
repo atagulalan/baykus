@@ -285,7 +285,7 @@ Checkpoint goal: export zip, wipe data dir, import, everything is back.
   both reject as BAD_MANIFEST (422); the 50MB upload cap is enforced at the
   HTTP layer in M6.3, not here. -->
 - [x] M6.3 server + web: contracts §Zip; Settings export button (downloads `baykus-export-YYYYMMDD.zip`), import flow with replace/merge choice + warnings list + success summary
-- [ ] M6.4 CHECKPOINT M6 — manual: export, `rm -rf data`, restart, import, spot-check watches/ratings/settings survived; green suite
+- [x] M6.4 CHECKPOINT M6 — manual: export, `rm -rf data`, restart, import, spot-check watches/ratings/settings survived; green suite
 
 ---
 
