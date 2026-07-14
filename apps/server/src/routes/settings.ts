@@ -2,7 +2,7 @@ import type { Library, SettingsPatch } from "@baykus/core";
 import type { MetadataProvider } from "@baykus/provider-sdk";
 import { Hono } from "hono";
 import { z } from "zod";
-import { refreshProviders } from "../providers/registry.ts";
+import { effectiveScrapersEnabled, refreshProviders } from "../providers/registry.ts";
 
 const patchSettingsSchema = z
   .object({
@@ -36,6 +36,7 @@ export function createSettingsRoutes(
   envTmdbApiKey: string | undefined,
   dataDir: string,
   mode: "single" | "multi",
+  envScrapersEnabled: string | undefined,
 ): Hono {
   const app = new Hono();
 
@@ -49,7 +50,7 @@ export function createSettingsRoutes(
       const activeKey = library.getTmdbApiKey() ?? envTmdbApiKey;
       refreshProviders(providers, {
         ...(activeKey ? { tmdbApiKey: activeKey } : {}),
-        scrapersEnabled: settings.scrapersEnabled,
+        scrapersEnabled: effectiveScrapersEnabled(settings.scrapersEnabled, envScrapersEnabled),
         dataDir,
         mode,
       });

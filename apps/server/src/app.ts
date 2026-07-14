@@ -77,6 +77,7 @@ export function createApp(config: Config, deps: AppDeps) {
       config.BAYKUS_TMDB_API_KEY,
       deps.dataDir,
       config.BAYKUS_MODE,
+      config.BAYKUS_ENABLE_SCRAPERS,
     ),
   );
   app.route("/", createRefreshRoutes(contextLibrary, deps.providers, deps.vapid));

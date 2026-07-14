@@ -5,7 +5,7 @@ import type { AppDeps } from "./app.ts";
 import { openAccountsDb } from "./auth/accounts.ts";
 import { createSingleSessionStore } from "./auth/single-session.ts";
 import type { Config } from "./config.ts";
-import { createProviderRegistry } from "./providers/registry.ts";
+import { createProviderRegistry, effectiveScrapersEnabled } from "./providers/registry.ts";
 import { loadOrCreateVapidKeys, type VapidKeys } from "./push/vapid.ts";
 
 /** Real (disk-touching) dependencies for the running server, single or multi mode. */
@@ -36,7 +36,10 @@ export function createProductionDeps(config: Config): AppDeps {
     library,
     providers: createProviderRegistry({
       ...(activeTmdbKey ? { tmdbApiKey: activeTmdbKey } : {}),
-      scrapersEnabled: library.getSettings().scrapersEnabled,
+      scrapersEnabled: effectiveScrapersEnabled(
+        library.getSettings().scrapersEnabled,
+        config.BAYKUS_ENABLE_SCRAPERS,
+      ),
       dataDir: config.BAYKUS_DATA_DIR,
       mode: config.BAYKUS_MODE,
     }),

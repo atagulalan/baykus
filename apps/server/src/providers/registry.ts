@@ -23,6 +23,19 @@ export interface ProviderRegistryOptions {
 }
 
 /**
+ * research.md: extra sources are "opt-in via BAYKUS_ENABLE_SCRAPERS" at the
+ * deployment level, on top of (not instead of) the per-library Settings
+ * toggle — the env var is a floor an operator can set that the UI can't
+ * silently undo, not a replacement for the UI toggle.
+ */
+export function effectiveScrapersEnabled(
+  settingsValue: boolean,
+  envValue: string | undefined,
+): boolean {
+  return settingsValue || envValue === "1";
+}
+
+/**
  * Ordered list of registered metadata providers: TMDB first when a key is
  * configured, TVmaze otherwise (Article IV — zero-config still works), then
  * optional extra sources (imdb, serializd) when enabled.
