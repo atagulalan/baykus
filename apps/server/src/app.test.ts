@@ -1,3 +1,6 @@
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { createLibrary, openLibraryDb } from "@baykus/core";
 import type {
   ExternalIds,
@@ -6,9 +9,10 @@ import type {
   SeriesDetails,
 } from "@baykus/provider-sdk";
 import { ProviderError } from "@baykus/provider-sdk";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { AppDeps } from "./app.ts";
 import { createApp } from "./app.ts";
+import { openAccountsDb } from "./auth/accounts.ts";
 import { createSingleSessionStore } from "./auth/single-session.ts";
 import { loadConfig } from "./config.ts";
 
@@ -258,5 +262,88 @@ describe("server app", () => {
       });
       expect(goneAgain.status).toBe(404);
     });
+  });
+});
+
+describe("multi mode — library isolation (M7.3)", () => {
+  let dataDir: string;
+
+  beforeEach(() => {
+    dataDir = mkdtempSync(join(tmpdir(), "baykus-multi-"));
+  });
+
+  afterEach(() => {
+    rmSync(dataDir, { recursive: true, force: true });
+  });
+
+  function createMultiTestApp() {
+    return createApp(loadConfig({}), {
+      library: createLibrary(openLibraryDb(":memory:").db),
+      providers: [createFakeProvider()],
+      dataDir,
+      vapid: { publicKey: "test-public", privateKey: "test-private" },
+      auth: { mode: "multi", accountsDb: openAccountsDb(join(dataDir, "accounts.db")), dataDir },
+    });
+  }
+
+  async function claim(app: ReturnType<typeof createApp>, handle: string): Promise<string> {
+    const res = await app.request("/api/auth/claim", {
+      method: "POST",
+      headers: MUTATION_HEADERS,
+      body: JSON.stringify({ handle, password: "correct horse battery" }),
+    });
+    const cookie = res.headers.get("set-cookie")?.split(";")[0];
+    if (!cookie) throw new Error(`claim(${handle}) did not set a session cookie`);
+    return cookie;
+  }
+
+  it("each handle only ever sees series added under its own session", async () => {
+    const app = createMultiTestApp();
+    const cookieA = await claim(app, "handle-a");
+    const cookieB = await claim(app, "handle-b");
+
+    const addA = await app.request("/api/library/series", {
+      method: "POST",
+      headers: { ...MUTATION_HEADERS, cookie: cookieA },
+      body: JSON.stringify({ externalIds: { tvmazeId: 1 }, status: "watching" }),
+    });
+    expect(addA.status).toBe(201);
+
+    const addB = await app.request("/api/library/series", {
+      method: "POST",
+      headers: { ...MUTATION_HEADERS, cookie: cookieB },
+      body: JSON.stringify({ externalIds: { tvmazeId: 2 }, status: "watching" }),
+    });
+    expect(addB.status).toBe(201);
+
+    const listA = await app.request("/api/library/series", { headers: { cookie: cookieA } });
+    const listB = await app.request("/api/library/series", { headers: { cookie: cookieB } });
+    const bodyA = (await listA.json()) as { items: { title: string }[]; total: number };
+    const bodyB = (await listB.json()) as { items: { title: string }[]; total: number };
+
+    expect(bodyA.total).toBe(1);
+    expect(bodyB.total).toBe(1);
+    expect(bodyA.items[0]?.title).not.toBe(bodyB.items[0]?.title);
+  });
+
+  it("rejects library routes without a session", async () => {
+    const app = createMultiTestApp();
+    const res = await app.request("/api/library/series");
+    expect(res.status).toBe(401);
+  });
+
+  it("persists per-handle data across requests via the on-disk pool", async () => {
+    const app = createMultiTestApp();
+    const cookie = await claim(app, "xavaneo");
+
+    await app.request("/api/library/series", {
+      method: "POST",
+      headers: { ...MUTATION_HEADERS, cookie },
+      body: JSON.stringify({ externalIds: { tvmazeId: 1 }, status: "watching" }),
+    });
+
+    const res = await app.request("/api/library/series", { headers: { cookie } });
+    const body = (await res.json()) as { total: number };
+    expect(body.total).toBe(1);
   });
 });

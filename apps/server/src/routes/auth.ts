@@ -57,7 +57,11 @@ export interface AuthRateLimiters {
  * per the contract's explicit error table — these are different rejection
  * reasons even though both originate from createAccount().
  */
-export function createAuthRoutes(deps: AuthRouteDeps, rateLimiters: AuthRateLimiters): Hono {
+export function createAuthRoutes(
+  deps: AuthRouteDeps,
+  rateLimiters: AuthRateLimiters,
+  onAccountDeleted?: (handle: string) => void,
+): Hono {
   const app = new Hono();
 
   if (deps.mode === "multi") {
@@ -95,6 +99,7 @@ export function createAuthRoutes(deps: AuthRouteDeps, rateLimiters: AuthRateLimi
 
       deleteAllSessionsForHandle(accountsDb, session.handle);
       deleteAccount(accountsDb, session.handle);
+      onAccountDeleted?.(session.handle);
       const dbPath = libraryDbPath(dataDir, session.handle);
       for (const suffix of ["", "-wal", "-shm"]) {
         rmSync(`${dbPath}${suffix}`, { force: true });

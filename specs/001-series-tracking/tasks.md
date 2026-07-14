@@ -308,7 +308,23 @@ second handle is isolated; single mode password gate works.
   (multi mode is expected behind a reverse proxy) falling back to the raw
   socket address via @hono/node-server's getConnInfo, then "unknown" (one
   shared bucket) when neither is available. -->
-- [ ] M7.3 library resolver (Article I boundary): middleware session→handle→`<dataDir>/libraries/<handle>.db` via LRU pool (max 20 open, close idle 10 min); below middleware, handlers receive `Library` and cannot tell modes apart — enforce by keeping handler signatures mode-free
+- [x] M7.3 library resolver (Article I boundary): middleware session→handle→`<dataDir>/libraries/<handle>.db` via LRU pool (max 20 open, close idle 10 min); below middleware, handlers receive `Library` and cannot tell modes apart — enforce by keeping handler signatures mode-free
+  <!-- DECISION 2026-07-14: "handlers cannot tell modes apart" is enforced
+  literally rather than by convention — every route factory still takes a
+  plain Library parameter (zero signature or call-site changes across the
+  ~11 existing route files). deps.library is wrapped once in
+  createLibraryProxy() (apps/server/src/auth/library-context.ts), a
+  Library-shaped object whose calls forward to whichever library is active
+  in the current request's AsyncLocalStorage scope. library-resolver.ts
+  (multi mode only) resolves session→handle→pool.get(handle) and runs the
+  rest of the request inside that ALS scope; single mode never touches ALS
+  at all, so every call falls through to the one deps.library unchanged —
+  this is why zero regressions were needed in already-shipped M1-M6 route
+  tests. Safe specifically because the DB layer (better-sqlite3) is fully
+  synchronous, so there's no detached-async-gap window where ALS context
+  could be lost mid-request. Account deletion (M7.2's DELETE
+  /api/auth/account) evicts the pool entry before unlinking the library
+  file, via an onAccountDeleted callback threaded from app.ts. -->
 - [ ] M7.4 web auth UX (FR-012): `/login`, `/claim` routes per ui.md; claim success screen states loudly "şifre kurtarma YOK — zip yedeğin sigortandır"; optional zip seed upload during claim; session boot via GET /api/auth/session; account deletion in Settings with final-export interstitial
 - [ ] M7.5 CHECKPOINT M7 — two handles in multi mode fully isolated (search both, data never leaks), logout/login, wrong password uniform error, single mode gate on/off via env
 

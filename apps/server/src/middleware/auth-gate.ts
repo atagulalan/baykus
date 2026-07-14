@@ -6,7 +6,8 @@ import { ApiError } from "./errors.ts";
 
 const EXEMPT_PREFIXES = ["/api/health", "/api/auth/", "/img/"];
 
-function isExempt(pathname: string): boolean {
+/** Shared with library-resolver.ts — the same routes need neither a session nor a resolved Library. */
+export function isExempt(pathname: string): boolean {
   return EXEMPT_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
