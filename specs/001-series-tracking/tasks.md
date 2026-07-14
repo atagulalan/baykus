@@ -253,7 +253,18 @@ with upcoming + finale badges, receive a test push.
 
 Checkpoint goal: export zip, wipe data dir, import, everything is back.
 
-- [ ] M6.1 core zip export (FR-010)
+- [x] M6.1 core zip export (FR-010)
+  <!-- DECISION 2026-07-14: pnpm installed archiver@8.0.0, a fresh rewrite
+  that dropped the classic `archiver('zip', opts)` factory in favor of
+  `new ZipArchive(opts)` (named export only, no default) — adapted to that,
+  not pinned back to 7.x. push_subscriptions and refresh_log are NOT in the
+  zip (only manifest.json + items/watches/ratings/settings.json, matching
+  data-model.md's file listing exactly) — they're device-local/operational,
+  not portable user data. settings.json is a verbatim key/value dump of the
+  settings table (no camelCase translation) — the simplest faithful mirror.
+  watches.json/ratings.json's "series" field carries the item's FULL
+  ExternalIds (not just tmdbId as the doc's example shows) so import can
+  match on any available id, per M6.2's "matched by (externalIds, s, e)". -->
   - **Files:** `packages/core/src/zip/{export.ts,canonical.ts,export.test.ts}`; deps: `archiver`
   - **DoD:** streams manifest + `library/*.json` per data-model.md §Zip; canonical JSON (sorted keys, sorted arrays by stable identity) via `canonical.ts`; secrets excluded unless flag
 - [ ] M6.2 core zip import + THE round-trip test (FR-010)

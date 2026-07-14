@@ -13,11 +13,15 @@
   },
   "dependencies": {
     "@baykus/provider-sdk": "workspace:*",
+    "archiver": "^8.0.0",
     "better-sqlite3": "^12.2.0",
-    "drizzle-orm": "^0.44.3"
+    "drizzle-orm": "^0.44.3",
+    "yauzl": "^3.4.0"
   },
   "devDependencies": {
+    "@types/archiver": "^8.0.0",
     "@types/better-sqlite3": "^7.6.13",
+    "@types/yauzl": "^3.4.0",
     "drizzle-kit": "^0.31.4",
     "typescript": "^5.9.2"
   }
