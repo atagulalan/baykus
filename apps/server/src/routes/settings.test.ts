@@ -2,6 +2,7 @@ import { createLibrary, openLibraryDb } from "@baykus/core";
 import type { MetadataProvider } from "@baykus/provider-sdk";
 import { describe, expect, it } from "vitest";
 import { createApp } from "../app.ts";
+import { createSingleSessionStore } from "../auth/single-session.ts";
 import { loadConfig } from "../config.ts";
 
 function fakeProvider(id: string): MetadataProvider {
@@ -37,6 +38,7 @@ function setup(providers: MetadataProvider[] = [fakeProvider("tvmaze")]) {
     providers,
     dataDir: "/tmp/baykus-test",
     vapid: { publicKey: "test-public", privateKey: "test-private" },
+    auth: { mode: "single", password: undefined, singleSessions: createSingleSessionStore() },
   });
   return { app, providers };
 }

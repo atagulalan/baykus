@@ -2,11 +2,12 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { createLibrary, openLibraryDb } from "@baykus/core";
 import type { AppDeps } from "./app.ts";
+import { createSingleSessionStore } from "./auth/single-session.ts";
 import type { Config } from "./config.ts";
 import { createProviderRegistry } from "./providers/registry.ts";
 import { loadOrCreateVapidKeys, type VapidKeys } from "./push/vapid.ts";
 
-/** Real (disk-touching) dependencies for the running server. Single mode only for now — see M7. */
+/** Real (disk-touching) dependencies for the running server. Single mode only for now — see M7.3 for multi mode's per-handle library resolution. */
 export function createProductionDeps(config: Config): AppDeps {
   mkdirSync(config.BAYKUS_DATA_DIR, { recursive: true });
   const { db } = openLibraryDb(join(config.BAYKUS_DATA_DIR, "library.db"));
@@ -23,5 +24,10 @@ export function createProductionDeps(config: Config): AppDeps {
     providers: createProviderRegistry(tmdbApiKey ? { tmdbApiKey } : {}),
     dataDir: config.BAYKUS_DATA_DIR,
     vapid: loadOrCreateVapidKeys(config.BAYKUS_DATA_DIR, envVapidKeys),
+    auth: {
+      mode: "single",
+      password: config.BAYKUS_PASSWORD,
+      singleSessions: createSingleSessionStore(),
+    },
   };
 }

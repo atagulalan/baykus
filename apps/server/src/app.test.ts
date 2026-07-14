@@ -9,6 +9,7 @@ import { ProviderError } from "@baykus/provider-sdk";
 import { describe, expect, it } from "vitest";
 import type { AppDeps } from "./app.ts";
 import { createApp } from "./app.ts";
+import { createSingleSessionStore } from "./auth/single-session.ts";
 import { loadConfig } from "./config.ts";
 
 function fixtureSeries(ref: ExternalIds): SeriesDetails {
@@ -61,7 +62,12 @@ function createTestApp(deps: Partial<AppDeps> = {}) {
   const providers = deps.providers ?? [createFakeProvider()];
   const dataDir = deps.dataDir ?? "/tmp/baykus-test";
   const vapid = deps.vapid ?? { publicKey: "test-public", privateKey: "test-private" };
-  return createApp(loadConfig({}), { library, providers, dataDir, vapid });
+  const auth: AppDeps["auth"] = deps.auth ?? {
+    mode: "single",
+    password: undefined,
+    singleSessions: createSingleSessionStore(),
+  };
+  return createApp(loadConfig({}), { library, providers, dataDir, vapid, auth });
 }
 
 const MUTATION_HEADERS = { "content-type": "application/json", "X-Baykus": "1" };

@@ -1,6 +1,7 @@
 import { createLibrary, openLibraryDb } from "@baykus/core";
 import { describe, expect, it } from "vitest";
 import { createApp } from "../app.ts";
+import { createSingleSessionStore } from "../auth/single-session.ts";
 import { loadConfig } from "../config.ts";
 
 function setup() {
@@ -10,6 +11,7 @@ function setup() {
     providers: [],
     dataDir: "/tmp/baykus-test",
     vapid: { publicKey: "test-public-key", privateKey: "test-private-key" },
+    auth: { mode: "single", password: undefined, singleSessions: createSingleSessionStore() },
   });
   return { app, library };
 }

@@ -98,12 +98,12 @@ describe("sessions", () => {
     const db = setup();
     await createAccount(db, "xavaneo", "password123");
 
-    const { token, expiresAt } = createSession(db, "xavaneo");
+    const { token } = createSession(db, "xavaneo");
     expect(token.length).toBeGreaterThan(30);
 
     const session = validateSession(db, token);
     expect(session?.handle).toBe("xavaneo");
-    expect(session?.expiresAt).toBe(expiresAt);
+    expect(new Date(session?.expiresAt ?? 0).getTime()).toBeGreaterThan(Date.now());
   });
 
   it("returns null for an unknown token", async () => {

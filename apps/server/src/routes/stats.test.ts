@@ -2,6 +2,7 @@ import { createLibrary, openLibraryDb } from "@baykus/core";
 import type { SeriesDetails } from "@baykus/provider-sdk";
 import { describe, expect, it } from "vitest";
 import { createApp } from "../app.ts";
+import { createSingleSessionStore } from "../auth/single-session.ts";
 import { loadConfig } from "../config.ts";
 
 function fixtureSeries(): SeriesDetails {
@@ -27,6 +28,7 @@ describe("GET /api/stats", () => {
       providers: [],
       dataDir: "/tmp/baykus-test",
       vapid: { publicKey: "test-public", privateKey: "test-private" },
+      auth: { mode: "single", password: undefined, singleSessions: createSingleSessionStore() },
     });
 
     const res = await app.request("/api/stats", { headers: { "X-Baykus": "1" } });
@@ -52,6 +54,7 @@ describe("GET /api/stats", () => {
       providers: [],
       dataDir: "/tmp/baykus-test",
       vapid: { publicKey: "test-public", privateKey: "test-private" },
+      auth: { mode: "single", password: undefined, singleSessions: createSingleSessionStore() },
     });
 
     const res = await app.request("/api/stats", { headers: { "X-Baykus": "1" } });

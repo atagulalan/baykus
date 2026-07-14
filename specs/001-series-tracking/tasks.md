@@ -295,7 +295,19 @@ Checkpoint goal: `BAYKUS_MODE=multi pnpm dev` → claim handle, seed with zip,
 second handle is isolated; single mode password gate works.
 
 - [x] M7.1 accounts store (FR-012): `apps/server/src/auth/{accounts.ts,sessions.ts,accounts.test.ts}` — separate SQLite `accounts.db` (raw better-sqlite3, no drizzle needed), argon2id (`@node-rs/argon2`), session tokens (32B random, sha256-stored, 30d sliding), reserved list seeded (admin,api,www,img,static,baykus,xava,root,login,claim,settings,assets)
-- [ ] M7.2 auth routes + gates (FR-012, FR-013): contracts §Auth exactly (uniform 401 message, rate limits 5/min claim + 10/min login per IP token bucket); single-mode `BAYKUS_PASSWORD` gate; `/api/health` + `/img` exempt
+- [x] M7.2 auth routes + gates (FR-012, FR-013): contracts §Auth exactly (uniform 401 message, rate limits 5/min claim + 10/min login per IP token bucket); single-mode `BAYKUS_PASSWORD` gate; `/api/health` + `/img` exempt
+  <!-- DECISION 2026-07-14: single mode has no accounts.db (one shared
+  password, no handle), so its sessions live in an in-memory token store
+  (apps/server/src/auth/single-session.ts) instead — a server restart
+  naturally logs everyone out, acceptable for a self-hosted single-user
+  instance. /claim's handle-format (regex) rejection maps to 400
+  VALIDATION_FAILED, distinct from the 409 CONFLICT the contract specifies
+  for reserved/taken — the contract's error table only names 409 for
+  those two cases. Uniform 401 body is the literal string "invalid handle
+  or password" for both modes. Per-IP rate-limit key = X-Forwarded-For
+  (multi mode is expected behind a reverse proxy) falling back to the raw
+  socket address via @hono/node-server's getConnInfo, then "unknown" (one
+  shared bucket) when neither is available. -->
 - [ ] M7.3 library resolver (Article I boundary): middleware session→handle→`<dataDir>/libraries/<handle>.db` via LRU pool (max 20 open, close idle 10 min); below middleware, handlers receive `Library` and cannot tell modes apart — enforce by keeping handler signatures mode-free
 - [ ] M7.4 web auth UX (FR-012): `/login`, `/claim` routes per ui.md; claim success screen states loudly "şifre kurtarma YOK — zip yedeğin sigortandır"; optional zip seed upload during claim; session boot via GET /api/auth/session; account deletion in Settings with final-export interstitial
 - [ ] M7.5 CHECKPOINT M7 — two handles in multi mode fully isolated (search both, data never leaks), logout/login, wrong password uniform error, single mode gate on/off via env

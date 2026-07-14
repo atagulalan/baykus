@@ -5,6 +5,7 @@ import { createLibrary, openLibraryDb } from "@baykus/core";
 import type { MetadataProvider } from "@baykus/provider-sdk";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "../app.ts";
+import { createSingleSessionStore } from "../auth/single-session.ts";
 import { loadConfig } from "../config.ts";
 
 let dataDir: string;
@@ -52,6 +53,7 @@ function setup() {
     providers: [fakeProvider()],
     dataDir,
     vapid: { publicKey: "test-public", privateKey: "test-private" },
+    auth: { mode: "single", password: undefined, singleSessions: createSingleSessionStore() },
   });
   return app;
 }
