@@ -47,7 +47,7 @@ on schemaVersion 2.
     list_changed_at === old status_changed_at, push_muted/note intact.
   - **Verify:** `pnpm test packages/core -- open`
 
-- [ ] M10.2 core: category engine (E16–E18)
+- [x] M10.2 core: category engine (E16–E18)
   - **Files:** `packages/core/src/library/category.ts`,
     `category.test.ts`, export from `packages/core/src/index.ts`
   - **DoD:** exports `WatchCategory` (7-value union), `CATEGORY_ORDER`

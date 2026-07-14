@@ -3,6 +3,15 @@ export { type LibraryDatabase, type LibraryDb, openLibraryDb } from "./db/open.t
 export type { RatingTargetType, TrackingStatus, WatchSource } from "./db/schema.ts";
 export * as schema from "./db/schema.ts";
 export { type CachedImage, getCachedImage } from "./images/cache.ts";
+export {
+  CATEGORY_ORDER,
+  computeCategories,
+  computeCategory,
+  computeDynamicCategories,
+  computeDynamicCategory,
+  WATCHING_WINDOW_DAYS,
+  type WatchCategory,
+} from "./library/category.ts";
 export { AlreadyInLibraryError, isAlreadyInLibraryError } from "./library/errors.ts";
 export { todayUtc } from "./library/progress.ts";
 export type { PushSubscriptionRecord } from "./library/push.ts";

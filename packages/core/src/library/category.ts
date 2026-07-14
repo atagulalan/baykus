@@ -1,0 +1,190 @@
+import type { ReleaseStatus } from "@baykus/provider-sdk";
+import { and, eq, inArray, isNotNull, lte, ne, sql } from "drizzle-orm";
+import type { LibraryDatabase } from "../db/open.ts";
+import type { ManualList } from "../db/schema.ts";
+import * as schema from "../db/schema.ts";
+
+export type WatchCategory =
+  | "watching"
+  | "not_watched_recently"
+  | "not_started"
+  | "watch_later"
+  | "up_to_date"
+  | "finished"
+  | "stopped";
+
+/** Display order per spec.md E16. */
+export const CATEGORY_ORDER: WatchCategory[] = [
+  "watching",
+  "not_watched_recently",
+  "not_started",
+  "watch_later",
+  "up_to_date",
+  "finished",
+  "stopped",
+];
+
+export const WATCHING_WINDOW_DAYS = 30;
+
+/** E18: only these count as "more episodes coming"; everything else (incl. NULL) is the finished branch. */
+const ONGOING_RELEASE_STATUSES: ReadonlySet<ReleaseStatus> = new Set([
+  "returning",
+  "in_production",
+]);
+
+interface ItemCategoryInputs {
+  manualList: ManualList | null;
+  watchedEpisodes: number;
+  lastWatchedAt: string | null;
+  airedEpisodes: number;
+  airedUnwatched: number;
+  releaseStatus: ReleaseStatus | null;
+}
+
+/** ISO datetime string, no milliseconds, matching how watched_at/list_changed_at are stored. */
+function isoNow(now: Date): string {
+  return now.toISOString().replace(/\.\d{3}Z$/, "Z");
+}
+
+function windowStart(now: Date): string {
+  return isoNow(new Date(now.getTime() - WATCHING_WINDOW_DAYS * 24 * 60 * 60 * 1000));
+}
+
+/** E16 precedence, applied to one item's already-fetched aggregates. */
+function categorize(
+  inputs: ItemCategoryInputs,
+  now: Date,
+  opts: { ignoreManualList: boolean },
+): WatchCategory {
+  if (!opts.ignoreManualList) {
+    if (inputs.manualList === "watch_later") return "watch_later";
+    if (inputs.manualList === "stopped") return "stopped";
+  }
+
+  if (inputs.watchedEpisodes === 0) return "not_started";
+
+  if (inputs.airedEpisodes > 0 && inputs.airedUnwatched === 0) {
+    return inputs.releaseStatus && ONGOING_RELEASE_STATUSES.has(inputs.releaseStatus)
+      ? "up_to_date"
+      : "finished";
+  }
+
+  if (inputs.lastWatchedAt !== null && inputs.lastWatchedAt >= windowStart(now)) return "watching";
+  return "not_watched_recently";
+}
+
+function computeCategoriesInternal(
+  db: LibraryDatabase,
+  itemIds: number[],
+  now: Date,
+  opts: { ignoreManualList: boolean },
+): Map<number, WatchCategory> {
+  const result = new Map<number, WatchCategory>();
+  if (itemIds.length === 0) return result;
+
+  const today = isoNow(now).slice(0, 10);
+  const nonSpecial = ne(schema.episodes.seasonNumber, 0);
+  const aired = and(isNotNull(schema.episodes.airDate), lte(schema.episodes.airDate, today));
+
+  const base = db
+    .select({
+      id: schema.items.id,
+      releaseStatus: schema.items.releaseStatus,
+      manualList: schema.tracking.manualList,
+    })
+    .from(schema.items)
+    .innerJoin(schema.tracking, eq(schema.tracking.itemId, schema.items.id))
+    .where(inArray(schema.items.id, itemIds))
+    .all();
+
+  const watchAgg = db
+    .select({
+      itemId: schema.watches.itemId,
+      watchedEpisodes: sql<number>`count(distinct ${schema.watches.episodeId})`,
+      lastWatchedAt: sql<string>`max(${schema.watches.watchedAt})`,
+    })
+    .from(schema.watches)
+    .innerJoin(schema.episodes, eq(schema.watches.episodeId, schema.episodes.id))
+    .where(and(inArray(schema.watches.itemId, itemIds), nonSpecial))
+    .groupBy(schema.watches.itemId)
+    .all();
+  const watchByItem = new Map(watchAgg.map((r) => [r.itemId, r]));
+
+  const airedAgg = db
+    .select({ itemId: schema.episodes.itemId, airedEpisodes: sql<number>`count(*)` })
+    .from(schema.episodes)
+    .where(and(inArray(schema.episodes.itemId, itemIds), nonSpecial, aired))
+    .groupBy(schema.episodes.itemId)
+    .all();
+  const airedByItem = new Map(airedAgg.map((r) => [r.itemId, r.airedEpisodes]));
+
+  const airedWatchedAgg = db
+    .select({
+      itemId: schema.episodes.itemId,
+      airedWatched: sql<number>`count(distinct ${schema.episodes.id})`,
+    })
+    .from(schema.episodes)
+    .innerJoin(schema.watches, eq(schema.watches.episodeId, schema.episodes.id))
+    .where(and(inArray(schema.episodes.itemId, itemIds), nonSpecial, aired))
+    .groupBy(schema.episodes.itemId)
+    .all();
+  const airedWatchedByItem = new Map(airedWatchedAgg.map((r) => [r.itemId, r.airedWatched]));
+
+  for (const row of base) {
+    const watch = watchByItem.get(row.id);
+    const airedEpisodes = airedByItem.get(row.id) ?? 0;
+    const airedWatched = airedWatchedByItem.get(row.id) ?? 0;
+
+    result.set(
+      row.id,
+      categorize(
+        {
+          manualList: row.manualList,
+          watchedEpisodes: watch?.watchedEpisodes ?? 0,
+          lastWatchedAt: watch?.lastWatchedAt ?? null,
+          airedEpisodes,
+          airedUnwatched: airedEpisodes - airedWatched,
+          releaseStatus: row.releaseStatus,
+        },
+        now,
+        opts,
+      ),
+    );
+  }
+
+  return result;
+}
+
+/** Batch: one grouped query per aggregate, merged in JS — never call per-item in a loop. */
+export function computeCategories(
+  db: LibraryDatabase,
+  itemIds: number[],
+  now: Date = new Date(),
+): Map<number, WatchCategory> {
+  return computeCategoriesInternal(db, itemIds, now, { ignoreManualList: false });
+}
+
+export function computeCategory(
+  db: LibraryDatabase,
+  itemId: number,
+  now: Date = new Date(),
+): WatchCategory | null {
+  return computeCategories(db, [itemId], now).get(itemId) ?? null;
+}
+
+/** Same as computeCategories but as if manual_list were NULL — E20 guard, E26 cleanup. */
+export function computeDynamicCategories(
+  db: LibraryDatabase,
+  itemIds: number[],
+  now: Date = new Date(),
+): Map<number, WatchCategory> {
+  return computeCategoriesInternal(db, itemIds, now, { ignoreManualList: true });
+}
+
+export function computeDynamicCategory(
+  db: LibraryDatabase,
+  itemId: number,
+  now: Date = new Date(),
+): WatchCategory | null {
+  return computeDynamicCategories(db, [itemId], now).get(itemId) ?? null;
+}
