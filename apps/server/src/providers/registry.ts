@@ -1,5 +1,6 @@
 import { createImdbProvider } from "@baykus/provider-imdb";
 import type { MetadataProvider } from "@baykus/provider-sdk";
+import { createSerializdProvider } from "@baykus/provider-serializd";
 import { createTmdbProvider } from "@baykus/provider-tmdb";
 import { createTvmazeProvider } from "@baykus/provider-tvmaze";
 
@@ -11,10 +12,12 @@ export interface ProviderRegistryOptions {
   /** Required when scrapersEnabled — imdb caches its dataset under <dataDir>/imdb. */
   dataDir?: string;
   /**
-   * M8.3: imdb's dataset is keyless and ToS-fine (not scraping a live page),
-   * but multi mode keeps it off unconditionally regardless of scrapersEnabled
-   * — a hosted instance shouldn't pay the recurring ~25MB/day bandwidth for
-   * every handle by default.
+   * M8.3/M8.4: both extra sources are single-mode-only regardless of
+   * scrapersEnabled — imdb's dataset is keyless/ToS-fine but still costs
+   * recurring bandwidth a hosted instance shouldn't pay by default; serializd
+   * is genuine page scraping, which research.md keeps off multi mode
+   * unconditionally. Keeping both gated identically also avoids a confusing
+   * split under ui.md's single shared "Ek kaynakları…" checkbox.
    */
   mode?: "single" | "multi";
 }
@@ -22,7 +25,7 @@ export interface ProviderRegistryOptions {
 /**
  * Ordered list of registered metadata providers: TMDB first when a key is
  * configured, TVmaze otherwise (Article IV — zero-config still works), then
- * optional extra sources (imdb; serializd lands in M8.4) when enabled.
+ * optional extra sources (imdb, serializd) when enabled.
  */
 export function createProviderRegistry(opts: ProviderRegistryOptions = {}): MetadataProvider[] {
   const providers: MetadataProvider[] = [];
@@ -30,6 +33,7 @@ export function createProviderRegistry(opts: ProviderRegistryOptions = {}): Meta
   providers.push(createTvmazeProvider());
   if (opts.scrapersEnabled && opts.dataDir && (opts.mode ?? "single") === "single") {
     providers.push(createImdbProvider({ dataDir: opts.dataDir }));
+    providers.push(createSerializdProvider());
   }
   return providers;
 }

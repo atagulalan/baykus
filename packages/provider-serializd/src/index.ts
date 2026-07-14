@@ -1,3 +1,8 @@
-// Implemented in milestone M8 (specs/001-series-tracking/tasks.md).
-// __NEXT_DATA__ parser, capabilities: externalRatings + tags. Disabled by default.
-export {};
+export {
+  extractNextData,
+  mapExternalRatings,
+  mapTags,
+  parseShowData,
+  type ShowData,
+} from "./parse.ts";
+export { createSerializdProvider } from "./provider.ts";

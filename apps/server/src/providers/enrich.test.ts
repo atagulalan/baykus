@@ -1,6 +1,11 @@
-import type { ExternalRating, MetadataProvider, WatchProviderInfo } from "@baykus/provider-sdk";
+import type {
+  ExternalRating,
+  MetadataProvider,
+  TagInfo,
+  WatchProviderInfo,
+} from "@baykus/provider-sdk";
 import { describe, expect, it } from "vitest";
-import { enrichExternalRatings, enrichWatchProviders } from "./enrich.ts";
+import { enrichExternalRatings, enrichTags, enrichWatchProviders } from "./enrich.ts";
 
 function fakeProvider(
   id: string,
@@ -9,6 +14,8 @@ function fakeProvider(
     ratings?: ExternalRating[];
     watchProviders?: boolean;
     providers?: WatchProviderInfo[];
+    tags?: boolean;
+    tagList?: TagInfo[];
     error?: Error;
   } = {},
 ): MetadataProvider {
@@ -21,7 +28,7 @@ function fakeProvider(
       upcoming: true,
       watchProviders: opts.watchProviders ?? false,
       externalRatings: opts.externalRatings ?? false,
-      tags: false,
+      tags: opts.tags ?? false,
       images: true,
     },
     requiresApiKey: false,
@@ -47,6 +54,14 @@ function fakeProvider(
           async getWatchProviders() {
             if (opts.error) throw opts.error;
             return opts.providers ?? [];
+          },
+        }
+      : {}),
+    ...(opts.tags
+      ? {
+          async getTags() {
+            if (opts.error) throw opts.error;
+            return opts.tagList ?? [];
           },
         }
       : {}),
@@ -114,6 +129,30 @@ describe("enrichWatchProviders", () => {
 
   it("returns [] when no provider supports watch providers", async () => {
     const merged = await enrichWatchProviders([fakeProvider("a")], { tmdbId: 1 }, "TR");
+    expect(merged).toEqual([]);
+  });
+});
+
+describe("enrichTags", () => {
+  it("merges tags from every capable provider", async () => {
+    const a = fakeProvider("a", {
+      tags: true,
+      tagList: [{ source: "a", name: "🏛️ Politics" }],
+    });
+    const b = fakeProvider("b"); // tags: false — skipped entirely
+
+    const merged = await enrichTags([a, b], { tmdbId: 1 });
+    expect(merged).toEqual([{ source: "a", name: "🏛️ Politics" }]);
+  });
+
+  it("a failing provider is skipped, never fatal", async () => {
+    const broken = fakeProvider("broken", { tags: true, error: new Error("boom") });
+    const merged = await enrichTags([broken], { tmdbId: 1 });
+    expect(merged).toEqual([]);
+  });
+
+  it("returns [] when no provider supports tags", async () => {
+    const merged = await enrichTags([fakeProvider("a")], { tmdbId: 1 });
     expect(merged).toEqual([]);
   });
 });

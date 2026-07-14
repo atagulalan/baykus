@@ -376,6 +376,19 @@ export function SeriesDetailPage() {
             </div>
           )}
 
+          {detail.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {detail.tags.map((tag) => (
+                <span
+                  key={`${tag.source}-${tag.id ?? tag.name}`}
+                  className="rounded-full bg-zinc-800 px-2 py-0.5 text-xs text-emerald-300"
+                >
+                  {tag.name}
+                </span>
+              ))}
+            </div>
+          )}
+
           {detail.externalRatings.length > 0 && (
             <p className="text-sm text-zinc-400">
               {detail.externalRatings.map((r, i) => (

@@ -32,6 +32,9 @@ importers:
       '@baykus/provider-sdk':
         specifier: workspace:*
         version: link:../../packages/provider-sdk
+      '@baykus/provider-serializd':
+        specifier: workspace:*
+        version: link:../../packages/provider-serializd
       '@baykus/provider-tmdb':
         specifier: workspace:*
         version: link:../../packages/provider-tmdb
@@ -193,6 +196,9 @@ importers:
       '@baykus/provider-sdk':
         specifier: workspace:*
         version: link:../provider-sdk
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
     devDependencies:
       typescript:
         specifier: ^5.9.2

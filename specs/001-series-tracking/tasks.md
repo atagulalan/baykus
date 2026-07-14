@@ -424,7 +424,33 @@ second handle is isolated; single mode password gate works.
   capabilities.externalRatings), so those three methods are structurally
   unreachable. -->
 
-- [ ] M8.4 provider-serializd (FR-018): `__NEXT_DATA__` parser (browser UA header), keyed by tmdbId, maps averageRating+distribution (scale 10) + nanogenres→TagInfo; graceful `PARSE_FAILED` on shape drift (fixture: `fixtures/serializd/`); returns tags only when `scrapersEnabled`
+- [x] M8.4 provider-serializd (FR-018): `__NEXT_DATA__` parser (browser UA header), keyed by tmdbId, maps averageRating+distribution (scale 10) + nanogenres→TagInfo; graceful `PARSE_FAILED` on shape drift (fixture: `fixtures/serializd/`); returns tags only when `scrapersEnabled`
+  <!-- DECISION 2026-07-14: verified against the real live site (read-only
+  GET, browser UA) that Serializd's show URL slug is purely cosmetic —
+  /show/94997 alone resolves the same page as
+  /show/House-of-the-Dragon-94997 — so requests are built as
+  /show/{tmdbId} directly, no slug lookup needed. Tags carry no imageRef:
+  Serializd doesn't implement resolveImageUrl (images: false), so a
+  persisted ref could never be displayed via /img/:providerId/*. "Returns
+  tags only when scrapersEnabled" is enforced identically to M8.3's imdb
+  gate — single-mode-only, registry-level (never registered at all
+  otherwise) — rather than a runtime check inside the provider, since
+  research.md's "never enabled by default in multi mode" applies more
+  strongly here than to imdb's dataset (this is genuine live-page
+  scraping). Discovered mid-task that `Library.addSeries()` had never
+  actually accepted a tags parameter — `toItemInsertValues` hardcoded
+  `tags: null` since M2, even though the items.tags column and the
+  SeriesDetail.tags read path already existed. Added the 5th addSeries
+  param + an enrichTags() (mirroring enrichExternalRatings/
+  enrichWatchProviders) wired into the add-via-search route, plus a
+  tags-chip render in the web SeriesDetailPage (external ratings needed
+  no UI change — already rendered generically by `source`). Refresh
+  intentionally does NOT re-fetch tags/ratings/watchProviders (an
+  existing M5 boundary: refreshItem only calls getSeriesDetails, which
+  doesn't return enrichment fields) — seeing Serializd data on an
+  already-added show requires re-adding it after enabling scrapers, not
+  refreshing; the M8.5 checkpoint verifies this via a fresh add. -->
+
 - [ ] M8.5 CHECKPOINT M8 — import the synthetic TV Time fixtures end-to-end in browser; enable scrapers in single mode and see Serializd rating + tags on HotD detail
 
 ---

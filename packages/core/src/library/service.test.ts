@@ -69,6 +69,23 @@ describe("createLibrary.addSeries", () => {
     expect(detail?.seasons.find((s) => s.number === 0)?.episodes).toHaveLength(1);
     expect(detail?.genres).toEqual([{ name: "Drama" }]);
     expect(detail?.externalRatings).toEqual([]);
+    expect(detail?.tags).toEqual([]);
+  });
+
+  it("persists tags (5th param) and round-trips them via getSeries — M8.4", () => {
+    const { db } = openLibraryDb(":memory:");
+    const library = createLibrary(db);
+    const tags = [{ source: "serializd", id: 12, name: "🏛️ Politics" }];
+
+    const summary = library.addSeries(
+      houseOfTheDragonDetails(),
+      "watching",
+      undefined,
+      undefined,
+      tags,
+    );
+
+    expect(library.getSeries(summary.id)?.tags).toEqual(tags);
   });
 
   it("rejects a duplicate add with AlreadyInLibraryError carrying the existing itemId", () => {

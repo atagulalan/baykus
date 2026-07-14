@@ -2,6 +2,7 @@ import type {
   ExternalIds,
   ExternalRating,
   MetadataProvider,
+  TagInfo,
   WatchProviderInfo,
 } from "@baykus/provider-sdk";
 
@@ -48,4 +49,26 @@ export async function enrichWatchProviders(
     if (result.status === "fulfilled") merged.push(...result.value);
   }
   return merged;
+}
+
+/**
+ * Same shape as enrichExternalRatings but for curated tags (M8.4: only
+ * serializd implements this today, and only when scrapersEnabled — which
+ * is enforced by the registry never registering it otherwise, not here).
+ */
+export async function enrichTags(
+  providers: MetadataProvider[],
+  ids: ExternalIds,
+): Promise<TagInfo[]> {
+  const capable = providers.filter((p) => p.capabilities.tags && p.getTags);
+
+  const results = await Promise.allSettled(
+    capable.map((p) => p.getTags?.(ids) ?? Promise.resolve([])),
+  );
+
+  const tags: TagInfo[] = [];
+  for (const result of results) {
+    if (result.status === "fulfilled") tags.push(...result.value);
+  }
+  return tags;
 }

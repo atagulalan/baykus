@@ -14,16 +14,16 @@ describe("createProviderRegistry", () => {
     expect(providers[0]?.requiresApiKey).toBe(true);
   });
 
-  it("adds imdb in single mode when scrapersEnabled and a dataDir are given", () => {
+  it("adds imdb + serializd in single mode when scrapersEnabled and a dataDir are given", () => {
     const providers = createProviderRegistry({
       scrapersEnabled: true,
       dataDir: "/tmp/baykus-test",
       mode: "single",
     });
-    expect(providers.map((p) => p.id)).toEqual(["tvmaze", "imdb"]);
+    expect(providers.map((p) => p.id)).toEqual(["tvmaze", "imdb", "serializd"]);
   });
 
-  it("never adds imdb in multi mode, even when scrapersEnabled — M8.3: bandwidth, not ToS", () => {
+  it("never adds extra sources in multi mode, even when scrapersEnabled — M8.3/M8.4", () => {
     const providers = createProviderRegistry({
       scrapersEnabled: true,
       dataDir: "/tmp/baykus-test",
@@ -32,7 +32,7 @@ describe("createProviderRegistry", () => {
     expect(providers.map((p) => p.id)).toEqual(["tvmaze"]);
   });
 
-  it("omits imdb when scrapersEnabled is false", () => {
+  it("omits extra sources when scrapersEnabled is false", () => {
     const providers = createProviderRegistry({ dataDir: "/tmp/baykus-test", mode: "single" });
     expect(providers.map((p) => p.id)).toEqual(["tvmaze"]);
   });

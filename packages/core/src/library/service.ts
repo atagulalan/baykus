@@ -3,6 +3,7 @@ import type {
   ExternalRating,
   MetadataProvider,
   SeriesDetails,
+  TagInfo,
   WatchProviderInfo,
 } from "@baykus/provider-sdk";
 import type { Archiver } from "archiver";
@@ -76,6 +77,7 @@ function toItemInsertValues(
   addedAt: string,
   externalRatings: ExternalRating[] | null,
   watchProviders: WatchProviderInfo[] | null,
+  tags: TagInfo[] | null,
 ) {
   return {
     mediaType: details.mediaType,
@@ -97,7 +99,7 @@ function toItemInsertValues(
     episodeRunTimes: details.episodeRunTimes ?? null,
     networks: details.networks ?? null,
     genres: details.genres ?? null,
-    tags: null,
+    tags: tags && tags.length > 0 ? tags : null,
     contentRatings: details.contentRatings ?? null,
     tmdbId: details.externalIds.tmdbId ?? null,
     tvmazeId: details.externalIds.tvmazeId ?? null,
@@ -178,6 +180,7 @@ export interface Library {
     status: TrackingStatus,
     externalRatings?: ExternalRating[],
     watchProviders?: WatchProviderInfo[],
+    tags?: TagInfo[],
   ): SeriesSummary;
   listSeries(opts?: ListSeriesOptions): { items: SeriesSummary[]; total: number };
   getSeries(id: number): SeriesDetail | null;
@@ -215,6 +218,7 @@ export function createLibrary(db: LibraryDatabase): Library {
       status: TrackingStatus,
       externalRatings?: ExternalRating[],
       watchProviders?: WatchProviderInfo[],
+      tags?: TagInfo[],
     ): SeriesSummary {
       const existingId = findConflictingItemId(db, details.externalIds);
       if (existingId != null) throw new AlreadyInLibraryError(existingId);
@@ -224,7 +228,15 @@ export function createLibrary(db: LibraryDatabase): Library {
       const itemId = db.transaction((tx) => {
         const inserted = tx
           .insert(schema.items)
-          .values(toItemInsertValues(details, now, externalRatings ?? null, watchProviders ?? null))
+          .values(
+            toItemInsertValues(
+              details,
+              now,
+              externalRatings ?? null,
+              watchProviders ?? null,
+              tags ?? null,
+            ),
+          )
           .returning({ id: schema.items.id })
           .get();
 

@@ -131,13 +131,21 @@ export interface ExternalRating {
   value: number;
   scale: number;
   votes?: number;
+  distribution?: Record<string, number>;
   fetchedAt: string;
+}
+
+export interface TagInfo {
+  source: string;
+  id?: number | string;
+  name: string;
 }
 
 export interface SeriesDetail extends SeriesSummary {
   tagline: string | null;
   overview: string | null;
   genres: GenreInfo[];
+  tags: TagInfo[];
   contentRatings: ContentRating[];
   networks: NetworkInfo[];
   originalLanguage: string | null;
