@@ -82,5 +82,13 @@
   },
   "settings": {
     "title": "Ayarlar"
+  },
+  "stats": {
+    "episodesWatched": "Bölüm sayısı",
+    "watchTimeHours": "Toplam süre (saat)",
+    "activeSeries": "Aktif dizi sayısı",
+    "monthsChart": "Aylara göre izlenen bölümler",
+    "ratingDistribution": "Puan dağılımı",
+    "empty": "Henüz izleme kaydı yok"
   }
 }

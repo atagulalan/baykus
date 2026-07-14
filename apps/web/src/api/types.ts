@@ -143,3 +143,11 @@ export interface Rating {
   value: 1 | 2 | 3;
   ratedAt: string;
 }
+
+export interface Stats {
+  episodesWatched: number;
+  watchTimeMin: number;
+  itemCount: Record<TrackingStatus, number>;
+  episodesPerMonth: { month: string; count: number }[];
+  ratingDistribution: Record<"1" | "2" | "3", number>;
+}

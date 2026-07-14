@@ -82,5 +82,13 @@
   },
   "settings": {
     "title": "Settings"
+  },
+  "stats": {
+    "episodesWatched": "Episodes watched",
+    "watchTimeHours": "Total time (hours)",
+    "activeSeries": "Active series",
+    "monthsChart": "Episodes watched by month",
+    "ratingDistribution": "Rating distribution",
+    "empty": "No watch history yet"
   }
 }

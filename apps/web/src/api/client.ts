@@ -10,6 +10,7 @@ import type {
   SeriesDetail,
   SeriesListResponse,
   SeriesSummary,
+  Stats,
   TrackingStatus,
 } from "./types.ts";
 
@@ -124,4 +125,8 @@ export function setRating(
 
 export function clearRating(targetType: RatingTargetType, targetId: number): Promise<void> {
   return request<void>(`/ratings/${targetType}/${targetId}`, { method: "DELETE" });
+}
+
+export function getStats(): Promise<Stats> {
+  return request<Stats>("/stats");
 }
