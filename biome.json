@@ -2,7 +2,7 @@
   "$schema": "https://biomejs.dev/schemas/2.1.2/schema.json",
   "files": {
     "ignoreUnknown": true,
-    "includes": ["**", "!**/dist", "!**/node_modules", "!**/*.gen.ts", "!fixtures"]
+    "includes": ["**", "!**/dist", "!**/node_modules", "!**/*.gen.ts", "!fixtures", "!**/data"]
   },
   "formatter": {
     "enabled": true,

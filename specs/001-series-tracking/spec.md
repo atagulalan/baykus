@@ -196,9 +196,13 @@ the library settings (and therefore in the zip).
 
 ## Acceptance checklist (definition of done for v1)
 
-- [ ] All FRs implemented and covered per Article VIII.
-- [ ] `pnpm install && pnpm dev` gives a working app with zero config (TVmaze).
-- [ ] Docker image runs single mode with one volume (`/data`).
+- [x] All FRs implemented and covered per Article VIII.
+- [x] `pnpm install && pnpm dev` gives a working app with zero config (TVmaze).
+- [x] Docker image runs single mode with one volume (`/data`).
 - [ ] baykus.xava.me runs multi mode; handle claim → zip upload → library works.
-- [ ] Zip round-trip test green; TV Time sample import test green.
-- [ ] UI complete in TR and EN.
+      <!-- Not started: requires real DNS/TLS/hosting credentials the
+      assistant doesn't hold and shouldn't act on without explicit user
+      go-ahead (M9.2, tasks.md). Multi mode itself is implemented and
+      tested (M7); only the actual hosted deployment is outstanding. -->
+- [x] Zip round-trip test green; TV Time sample import test green.
+- [x] UI complete in TR and EN.

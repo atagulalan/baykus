@@ -82,11 +82,12 @@ bakın.
 
 ## Geliştirme
 
-Durum: **M0–M9.1 tamam** (bkz. [tasks.md](specs/001-series-tracking/tasks.md))
-— lint + typecheck + test + build yeşil, Docker imajı build edilip
-çalıştırılarak doğrulandı. Kalan iş: M9.2 (baykus.xava.me'ye asıl deploy —
-gerçek altyapı erişimi gerektirir), M9.3 doküman/ekran görüntüsü tamamlama,
-M9.4 kabul kontrolü.
+Durum: **M0–M9.4 tamam**, M9.2 hariç (bkz.
+[tasks.md](specs/001-series-tracking/tasks.md)) — lint + typecheck + test +
+build yeşil, Docker imajı build edilip çalıştırılarak doğrulandı,
+spec.md'nin kabul kontrol listesi tek tek geçildi. Kalan tek iş: M9.2
+(baykus.xava.me'ye asıl deploy) — gerçek DNS/TLS/hosting erişimi
+gerektirdiği için otonom yürütme kapsamı dışında bırakıldı.
 
 ```bash
 pnpm install

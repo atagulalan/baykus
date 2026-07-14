@@ -551,4 +551,24 @@ second handle is isolated; single mode password gate works.
   rating) via the same Playwright workflow used throughout every
   checkpoint this project, saved to docs/images/. -->
 
-- [ ] M9.4 acceptance: walk spec.md checklist; i18n parity test (vitest: tr.json/en.json key sets equal) added and green
+- [x] M9.4 acceptance: walk spec.md checklist; i18n parity test (vitest: tr.json/en.json key sets equal) added and green
+  <!-- DECISION 2026-07-14: walked spec.md's acceptance checklist item by
+  item. FR-001..018: spot-checked each against its route/component and
+  Article VIII's mandatory coverage (zip round-trip, provider fixtures,
+  watch/rating domain logic, TV Time import mapping) — all present, all
+  305 tests green across 47 files. Added
+  apps/web/src/i18n/parity.test.ts (recursive key-path diff, tr.json vs
+  en.json) — green. Grepped apps/web/src/{pages,components} for
+  hardcoded JSX text nodes outside t(...) calls — none found (Article
+  IX holds). Zero-config dev (BAYKUS_MODE=single, no TMDB key -> TVmaze
+  fallback) and the Docker single-mode /data volume were already
+  verified live in M9.1/M9.3. Fixed one incidental issue found along the
+  way: biome.json's `files.includes` didn't exclude **/data, so any
+  contributor who'd run the dev server locally (creating
+  apps/server/data/*) would get a spurious `pnpm lint` failure on their
+  own gitignored runtime files; added "!**/data" alongside the existing
+  dist/node_modules/gen.ts exclusions. baykus.xava.me itself (spec.md's
+  4th checklist line) stays unchecked — that's M9.2, deliberately not
+  attempted (real hosting credentials, out of scope for autonomous
+  execution). See spec.md's acceptance checklist for the per-line
+  checked/unchecked state. -->
