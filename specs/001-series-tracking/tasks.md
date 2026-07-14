@@ -109,7 +109,7 @@ progress on cards, edit a watch date, rewatch an episode.
 
 ---
 
-## M3 — Status, ratings (1–3), stats
+## M3 — Status, ratings (1–3), stats ✅ (done 2026-07-14)
 
 Checkpoint goal: rate episodes/series kötü/normal/iyi, filter-sort library,
 see the stats page.
@@ -125,7 +125,7 @@ see the stats page.
   - **Files:** `src/components/RatingControl.tsx` (3 segmented buttons: 👎 kötü / 😐 normal / 👍 iyi — labels from i18n, not emoji-only), post-watch inline prompt in EpisodeRow (dismissible), rating on detail header; library sort/filter extension
   - **DoD:** ui.md §Rating; one-tap set/clear; keyboard accessible
 - [x] M3.4 web stats page (FR-017) — read `dataviz` guidance before charting; simple bars/tiles, no chart lib unless needed
-- [ ] M3.5 CHECKPOINT M3 — browser pass + regression + green
+- [x] M3.5 CHECKPOINT M3 — browser pass + regression + green
 
 ---
 
