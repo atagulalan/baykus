@@ -134,7 +134,8 @@
       "importing": "Yükleniyor…",
       "warnings": "Uyarılar",
       "success": "{{items}} dizi, {{watches}} izleme, {{ratings}} puan içe aktarıldı",
-      "error": "İçe aktarma başarısız oldu"
+      "error": "İçe aktarma başarısız oldu",
+      "tvtimeImport": "TV Time'dan içe aktar"
     }
   },
   "stats": {
@@ -184,5 +185,26 @@
       "confirm": "Yine de sil",
       "error": "Hesap silinemedi — şifreni kontrol et"
     }
+  },
+  "importWizard": {
+    "title": "TV Time içe aktar",
+    "dropzone": "TV Time GDPR dışa aktarımını (zip veya csv) buraya sürükle",
+    "chooseFile": "Dosya seç",
+    "uploading": "Yükleniyor…",
+    "uploadError": "Dosya işlenemedi",
+    "reportTitle": "Eşleştirme raporu",
+    "matched": "Eşleşti ({{count}})",
+    "episodeCount": "{{count}} blm",
+    "none": "—",
+    "fuzzy": "Emin değilim ({{count}})",
+    "pickCandidate": "aday seç",
+    "unmatched": "Eşleşmedi ({{count}})",
+    "confirmError": "İçe aktarılamadı",
+    "confirm": "Onayla",
+    "summaryTitle": "İçe aktarma tamamlandı",
+    "itemsCreated": "Eklenen dizi",
+    "watchesCreated": "Eklenen izleme",
+    "skipped": "Atlanan",
+    "goToLibrary": "Kütüphaneye git"
   }
 }

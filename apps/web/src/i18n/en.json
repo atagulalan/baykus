@@ -134,7 +134,8 @@
       "importing": "Uploading…",
       "warnings": "Warnings",
       "success": "Imported {{items}} series, {{watches}} watches, {{ratings}} ratings",
-      "error": "Import failed"
+      "error": "Import failed",
+      "tvtimeImport": "Import from TV Time"
     }
   },
   "stats": {
@@ -184,5 +185,26 @@
       "confirm": "Delete anyway",
       "error": "Couldn't delete the account — check your password"
     }
+  },
+  "importWizard": {
+    "title": "Import from TV Time",
+    "dropzone": "Drag your TV Time GDPR export (zip or csv) here",
+    "chooseFile": "Choose file",
+    "uploading": "Uploading…",
+    "uploadError": "Couldn't process the file",
+    "reportTitle": "Match report",
+    "matched": "Matched ({{count}})",
+    "episodeCount": "{{count}} ep",
+    "none": "—",
+    "fuzzy": "Not sure ({{count}})",
+    "pickCandidate": "pick a candidate",
+    "unmatched": "Unmatched ({{count}})",
+    "confirmError": "Import failed",
+    "confirm": "Confirm",
+    "summaryTitle": "Import complete",
+    "itemsCreated": "Series added",
+    "watchesCreated": "Watches added",
+    "skipped": "Skipped",
+    "goToLibrary": "Go to library"
   }
 }

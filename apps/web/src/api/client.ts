@@ -22,6 +22,8 @@ import type {
   SettingsPatch,
   Stats,
   TrackingStatus,
+  TvTimeConfirmResult,
+  TvTimeReport,
 } from "./types.ts";
 
 export class ApiError extends Error {
@@ -260,6 +262,42 @@ export function logout(): Promise<void> {
 
 export function deleteAccount(password: string): Promise<void> {
   return request<void>("/auth/account", { method: "DELETE", body: JSON.stringify({ password }) });
+}
+
+export async function importTvTime(file: File): Promise<TvTimeReport> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch("/api/import/tvtime", {
+    method: "POST",
+    headers: { "X-Baykus": "1" },
+    body: formData,
+  });
+
+  const isJson = res.headers.get("content-type")?.includes("application/json") ?? false;
+  const body: unknown = isJson ? await res.json() : undefined;
+
+  if (!res.ok) {
+    const envelope = body as ApiErrorEnvelope | undefined;
+    throw new ApiError(
+      envelope?.error.code ?? "INTERNAL",
+      envelope?.error.message ?? res.statusText,
+      res.status,
+      envelope?.error.details ?? null,
+    );
+  }
+
+  return body as TvTimeReport;
+}
+
+export function confirmTvTimeImport(
+  reportId: string,
+  resolutions: { name: string; externalIds: ExternalIds }[],
+): Promise<TvTimeConfirmResult> {
+  return request<TvTimeConfirmResult>("/import/tvtime/confirm", {
+    method: "POST",
+    body: JSON.stringify({ reportId, resolutions }),
+  });
 }
 
 export function getVapidPublicKey(): Promise<{ key: string }> {

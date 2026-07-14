@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -343,6 +343,13 @@ export function SettingsPage() {
             </div>
           )}
         </div>
+
+        <Link
+          to="/import"
+          className="self-start rounded bg-zinc-800 px-3 py-1.5 text-sm text-zinc-300"
+        >
+          {t("settings.data.tvtimeImport")}
+        </Link>
       </section>
 
       {sessionQuery.data?.mode === "multi" && (

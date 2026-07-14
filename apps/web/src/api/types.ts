@@ -275,3 +275,40 @@ export interface ClaimResult {
   handle: string;
   createdAt: string;
 }
+
+export interface TvTimeMatchedShow {
+  name: string;
+  tvdbId: number;
+  resolved: ExternalIds;
+  episodes: number;
+}
+
+export interface TvTimeFuzzyCandidate {
+  externalIds: ExternalIds;
+  title: string;
+  year?: number;
+}
+
+export interface TvTimeFuzzyShow {
+  name: string;
+  candidates: TvTimeFuzzyCandidate[];
+  episodes: number;
+}
+
+export interface TvTimeUnmatchedShow {
+  name: string;
+  episodes: number;
+}
+
+export interface TvTimeReport {
+  reportId: string;
+  matched: TvTimeMatchedShow[];
+  fuzzy: TvTimeFuzzyShow[];
+  unmatched: TvTimeUnmatchedShow[];
+}
+
+export interface TvTimeConfirmResult {
+  itemsCreated: number;
+  watchesCreated: number;
+  skipped: number;
+}

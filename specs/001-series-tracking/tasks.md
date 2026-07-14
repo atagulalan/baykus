@@ -380,7 +380,24 @@ second handle is isolated; single mode password gate works.
   AlreadyInLibraryError.itemId is caught and reused, and addWatch()'s
   existing (episodeId, watchedAt) dedupe means re-running the same file
   creates zero duplicates — confirmed by an explicit re-run test. -->
-- [ ] M8.2 web import wizard: upload → report table (matched/fuzzy/unmatched w/ counts) → resolve fuzzy via search picker → confirm → summary; route `/import`
+- [x] M8.2 web import wizard: upload → report table (matched/fuzzy/unmatched w/ counts) → resolve fuzzy via search picker → confirm → summary; route `/import`
+  <!-- DECISION 2026-07-14: "resolve fuzzy via search picker" implemented
+  as a plain <select> over the report's already-returned candidates
+  (≤5 per show, per contracts/api.md's own §tvtime example) rather than a
+  live free-text search — the candidates are already resolved server-side
+  at report time, and the confirm contract only takes back one of those
+  externalIds per name, so a live search widget would offer choices the
+  server never validated against. The dropzone is a single <label>
+  wrapping the whole drop target (not a bare <div> with drag handlers) so
+  it's natively keyboard/screen-reader accessible without a synthetic
+  ARIA role. Verified end-to-end in a real browser against a running dev
+  server with real TVmaze network calls: both real fixture shows (House
+  of the Dragon, Dark) auto-matched via tvdb lookup and imported; a
+  deliberately mangled title ("Offce The") fell into the fuzzy bucket
+  with 5 real TVmaze candidates, was resolved via the dropdown, and
+  imported; confirmed watches correctly report as `skipped` (not guessed)
+  since no TMDB key was configured in this environment, matching M8.1's
+  DECISION. -->
 - [ ] M8.3 provider-imdb (FR-018): datasets client — download+cache `title.ratings.tsv.gz` (24 h TTL, ~25 MB) into dataDir, binary-search or index lookup by imdbId → `externalRatings[{source:"imdb", scale:10}]`; capability externalRatings only; disabled unless scrapersEnabled… note: datasets are ToS-fine, enable by default in single mode, keep off in multi (bandwidth)
 - [ ] M8.4 provider-serializd (FR-018): `__NEXT_DATA__` parser (browser UA header), keyed by tmdbId, maps averageRating+distribution (scale 10) + nanogenres→TagInfo; graceful `PARSE_FAILED` on shape drift (fixture: `fixtures/serializd/`); returns tags only when `scrapersEnabled`
 - [ ] M8.5 CHECKPOINT M8 — import the synthetic TV Time fixtures end-to-end in browser; enable scrapers in single mode and see Serializd rating + tags on HotD detail

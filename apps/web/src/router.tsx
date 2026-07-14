@@ -2,6 +2,7 @@ import { createRootRoute, createRoute, createRouter } from "@tanstack/react-rout
 import { Layout } from "./components/Layout.tsx";
 import { CalendarPage } from "./pages/CalendarPage.tsx";
 import { ClaimPage } from "./pages/ClaimPage.tsx";
+import { ImportPage } from "./pages/ImportPage.tsx";
 import { LibraryPage } from "./pages/LibraryPage.tsx";
 import { LoginPage } from "./pages/LoginPage.tsx";
 import { SeriesDetailPage } from "./pages/SeriesDetailPage.tsx";
@@ -57,6 +58,12 @@ const claimRoute = createRoute({
   component: ClaimPage,
 });
 
+const importRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/import",
+  component: ImportPage,
+});
+
 const routeTree = rootRoute.addChildren([
   libraryRoute,
   seriesDetailRoute,
@@ -65,6 +72,7 @@ const routeTree = rootRoute.addChildren([
   settingsRoute,
   loginRoute,
   claimRoute,
+  importRoute,
 ]);
 
 export const router = createRouter({ routeTree });
