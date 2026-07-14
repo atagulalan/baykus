@@ -81,7 +81,30 @@
     "retry": "Retry"
   },
   "settings": {
-    "title": "Settings"
+    "title": "Settings",
+    "saved": "Settings saved",
+    "save": "Save",
+    "general": {
+      "title": "General",
+      "locale": "Language",
+      "localeName": {
+        "tr": "Türkçe",
+        "en": "English"
+      },
+      "region": "Region",
+      "theme": "Theme",
+      "themeDark": "Dark",
+      "themeSoon": "coming soon"
+    },
+    "providers": {
+      "title": "Providers",
+      "tmdbKey": "TMDB API key",
+      "tmdbKeyPlaceholder": "Paste the key",
+      "tmdbKeySet": "saved ✓",
+      "clear": "Remove",
+      "scrapers": "Enable extra sources (IMDb, Serializd)",
+      "scrapersTos": "These sources scrape web pages; subject to each site's terms of use."
+    }
   },
   "stats": {
     "episodesWatched": "Episodes watched",

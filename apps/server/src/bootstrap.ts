@@ -9,11 +9,11 @@ import { createProviderRegistry } from "./providers/registry.ts";
 export function createProductionDeps(config: Config): AppDeps {
   mkdirSync(config.BAYKUS_DATA_DIR, { recursive: true });
   const { db } = openLibraryDb(join(config.BAYKUS_DATA_DIR, "library.db"));
+  const library = createLibrary(db);
+  const tmdbApiKey = library.getTmdbApiKey() ?? config.BAYKUS_TMDB_API_KEY;
   return {
-    library: createLibrary(db),
-    providers: createProviderRegistry(
-      config.BAYKUS_TMDB_API_KEY ? { tmdbApiKey: config.BAYKUS_TMDB_API_KEY } : {},
-    ),
+    library,
+    providers: createProviderRegistry(tmdbApiKey ? { tmdbApiKey } : {}),
     dataDir: config.BAYKUS_DATA_DIR,
   };
 }

@@ -10,6 +10,8 @@ import type {
   SeriesDetail,
   SeriesListResponse,
   SeriesSummary,
+  Settings,
+  SettingsPatch,
   Stats,
   TrackingStatus,
 } from "./types.ts";
@@ -129,4 +131,12 @@ export function clearRating(targetType: RatingTargetType, targetId: number): Pro
 
 export function getStats(): Promise<Stats> {
   return request<Stats>("/stats");
+}
+
+export function getSettings(): Promise<Settings> {
+  return request<Settings>("/settings");
+}
+
+export function updateSettings(patch: SettingsPatch): Promise<Settings> {
+  return request<Settings>("/settings", { method: "PATCH", body: JSON.stringify(patch) });
 }

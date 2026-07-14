@@ -144,6 +144,25 @@ export interface Rating {
   ratedAt: string;
 }
 
+export type Locale = "tr" | "en";
+export type Theme = "dark" | "light" | "system";
+
+export interface Settings {
+  locale: Locale;
+  region: string;
+  theme: Theme;
+  scrapersEnabled: boolean;
+  tmdbApiKeySet: boolean;
+}
+
+export interface SettingsPatch {
+  locale?: Locale;
+  region?: string;
+  theme?: Theme;
+  scrapersEnabled?: boolean;
+  tmdbApiKey?: string | null;
+}
+
 export interface Stats {
   episodesWatched: number;
   watchTimeMin: number;

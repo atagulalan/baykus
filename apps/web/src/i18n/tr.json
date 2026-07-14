@@ -81,7 +81,30 @@
     "retry": "Tekrar dene"
   },
   "settings": {
-    "title": "Ayarlar"
+    "title": "Ayarlar",
+    "saved": "Ayarlar kaydedildi",
+    "save": "Kaydet",
+    "general": {
+      "title": "Genel",
+      "locale": "Dil",
+      "localeName": {
+        "tr": "Türkçe",
+        "en": "English"
+      },
+      "region": "Bölge",
+      "theme": "Tema",
+      "themeDark": "Koyu",
+      "themeSoon": "yakında"
+    },
+    "providers": {
+      "title": "Sağlayıcılar",
+      "tmdbKey": "TMDB API anahtarı",
+      "tmdbKeyPlaceholder": "Anahtarı yapıştır",
+      "tmdbKeySet": "kayıtlı ✓",
+      "clear": "Kaldır",
+      "scrapers": "Ek kaynakları (IMDb, Serializd) etkinleştir",
+      "scrapersTos": "Bu kaynaklar web scraping ile veri çeker; ilgili sitelerin kullanım şartlarına tabidir."
+    }
   },
   "stats": {
     "episodesWatched": "Bölüm sayısı",

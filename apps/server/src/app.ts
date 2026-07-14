@@ -8,6 +8,7 @@ import { createImageRoute } from "./routes/img.ts";
 import { createLibraryRoutes } from "./routes/library.ts";
 import { createRatingRoutes } from "./routes/ratings.ts";
 import { createSearchRoute } from "./routes/search.ts";
+import { createSettingsRoutes } from "./routes/settings.ts";
 import { createStatsRoute } from "./routes/stats.ts";
 import { createWatchRoutes } from "./routes/watches.ts";
 
@@ -29,9 +30,9 @@ export function createApp(config: Config, deps: AppDeps) {
   app.route("/", createRatingRoutes(deps.library));
   app.route("/", createStatsRoute(deps.library));
   app.route("/", createImageRoute(deps.providers, deps.dataDir));
+  app.route("/", createSettingsRoutes(deps.library, deps.providers, config.BAYKUS_TMDB_API_KEY));
 
   // Route groups land here milestone by milestone (see specs tasks.md):
-  // M4: settings
   // M5: /api/library/refresh (SSE), /api/calendar, /api/push
   // M6: /api/export.zip, /api/import
   // M7: /api/auth/*

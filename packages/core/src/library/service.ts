@@ -6,6 +6,13 @@ import * as schema from "../db/schema.ts";
 import { AlreadyInLibraryError } from "./errors.ts";
 import { getNextAirDate, getNextUnwatchedEpisode, getSeriesProgress } from "./progress.ts";
 import { clearRating, getRating, type Rating, setRating } from "./ratings.ts";
+import {
+  getSettings,
+  getTmdbApiKey,
+  type Settings,
+  type SettingsPatch,
+  updateSettings,
+} from "./settings.ts";
 import { getStats, type Stats } from "./stats.ts";
 import type {
   EpisodeSummary,
@@ -164,6 +171,10 @@ export interface Library {
   setRating(targetType: RatingTargetType, targetId: number, value: 1 | 2 | 3): Rating;
   clearRating(targetType: RatingTargetType, targetId: number): boolean;
   getStats(): Stats;
+  getSettings(): Settings;
+  updateSettings(patch: SettingsPatch): Settings;
+  /** Internal use only (provider registry wiring) — never serialize this over the API. */
+  getTmdbApiKey(): string | undefined;
 }
 
 export function createLibrary(db: LibraryDatabase): Library {
@@ -396,6 +407,18 @@ export function createLibrary(db: LibraryDatabase): Library {
 
     getStats(): Stats {
       return getStats(db);
+    },
+
+    getSettings(): Settings {
+      return getSettings(db);
+    },
+
+    updateSettings(patch: SettingsPatch): Settings {
+      return updateSettings(db, patch);
+    },
+
+    getTmdbApiKey(): string | undefined {
+      return getTmdbApiKey(db);
     },
   };
 }

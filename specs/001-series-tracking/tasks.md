@@ -150,9 +150,19 @@ genres/tagline/platforms on detail, TR watch-provider badges.
   - **Files:** `packages/core/src/images/{cache.ts,cache.test.ts}`, `apps/server/src/routes/img.ts`
   - **DoD:** contracts/api.md §Images; sha256 file names under `<dataDir>/images/`; fetch-through with per-provider resolveImageUrl; immutable cache headers; cache wipe-safe
   - **Tests:** cache hit skips fetch (mock); unknown provider → 404
-- [ ] M4.4 settings end-to-end (FR-013 groundwork, FR-015, FR-016)
+- [x] M4.4 settings end-to-end (FR-013 groundwork, FR-015, FR-016)
   - **Files:** `packages/core/src/library/settings.ts`, `apps/server/src/routes/settings.ts`, `apps/web/src/pages/SettingsPage.tsx` rewrite
   - **DoD:** GET/PATCH `/api/settings` (locale, region, theme, tmdbApiKey write-only — never echoed back, scrapersEnabled); web form per ui.md §Settings; locale switch live-updates i18next and persists; also make `createProviderRegistry` settings-aware (falls back to `BAYKUS_TMDB_API_KEY` when unset) so a saved key takes effect without a restart — see M4.2 decision note
+  <!-- DECISION 2026-07-14: contracts/api.md has no §Settings section. Shape:
+  GET/PATCH /api/settings <-> {locale, region, theme, scrapersEnabled,
+  tmdbApiKeySet}; tmdbApiKey is accepted on PATCH (string sets, null clears)
+  but never appears in a response body — only the boolean tmdbApiKeySet does.
+  "Settings-aware" registry: PATCH /api/settings calls
+  refreshProviders(providers, ...) which splices the SAME array reference
+  `search`/`library`/`img` routes already closed over, so a saved key takes
+  effect on the very next request — no true per-request re-resolution, no
+  restart needed either. theme is stored but the web UI ships it as a
+  disabled "dark" select per ui.md (v1: sadece koyu). -->
 - [ ] M4.5 rich metadata on detail + cards (FR-016, FR-018): tagline, genres chips, content-rating badge (region-aware), network logos, watch-provider badges with **JustWatch attribution line**, external ratings row (sources with scale normalization display)
 - [ ] M4.6 CHECKPOINT M4 — with key: search prefers TMDB, images load from `/img`, TR platforms visible; without key: everything still works via TVmaze (Article IV regression!)
 

@@ -17,3 +17,16 @@ export function createProviderRegistry(opts: ProviderRegistryOptions = {}): Meta
   providers.push(createTvmazeProvider());
   return providers;
 }
+
+/**
+ * Replaces `target`'s contents in place (same array reference) so every route
+ * factory that already closed over it — search, library, img — observes the
+ * change on their very next request. Used when a Settings save changes the
+ * TMDB key, so it takes effect without a server restart.
+ */
+export function refreshProviders(
+  target: MetadataProvider[],
+  opts: ProviderRegistryOptions = {},
+): void {
+  target.splice(0, target.length, ...createProviderRegistry(opts));
+}
