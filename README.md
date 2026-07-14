@@ -22,6 +22,12 @@ Dizi (ve ileride film + kitap) takip uygulaması. TV Time / Serializd benzeri, a
 
 Sonraki modüller: film, kitap. Mimari en baştan çoklu medya tipine göre tasarlandı; bkz. [specs/](specs/).
 
+## Ekran görüntüleri
+
+| Kütüphane | Dizi detayı | Takvim |
+|---|---|---|
+| ![Kütüphane](docs/images/library.png) | ![Dizi detayı](docs/images/series-detail.png) | ![Takvim](docs/images/calendar.png) |
+
 ## Mimari (özet)
 
 ```
@@ -58,12 +64,29 @@ baykus/  (pnpm monorepo — paketler npm'e yayınlanmaz, workspace olarak yaşar
 | [specs/001-series-tracking/tasks.md](specs/001-series-tracking/tasks.md) | Dikey milestone'lar (M0–M9), görev başına Files/DoD/Tests/Verify |
 | [fixtures/README.md](fixtures/README.md) | Test fixture'ları — kaynak ve yeniden yakalama komutları |
 | [docs/spec-kit.md](docs/spec-kit.md) | Spec-driven development metodolojisi ve yeni feature ekleme süreci |
+| [docs/self-hosting.md](docs/self-hosting.md) | Self-host kurulum rehberi (Docker, ortam değişkenleri, yedekleme) |
 | [AGENTS.md](AGENTS.md) | AI ajanları için proje talimatları |
+
+## Hızlı başlangıç (Docker)
+
+Kendi sunucunda tek komutla çalıştırmak için (tek kullanıcı modu):
+
+```bash
+cp compose.example.yml compose.yml
+docker compose up -d
+```
+
+`http://localhost:4004` üzerinden açılır. Detaylı kurulum, ortam
+değişkenleri ve yedekleme için [docs/self-hosting.md](docs/self-hosting.md)'ye
+bakın.
 
 ## Geliştirme
 
-Durum: **M0 (scaffold) tamam** — lint + typecheck + test + build yeşil.
-Sıradaki iş: `specs/001-series-tracking/tasks.md` → M1.
+Durum: **M0–M9.1 tamam** (bkz. [tasks.md](specs/001-series-tracking/tasks.md))
+— lint + typecheck + test + build yeşil, Docker imajı build edilip
+çalıştırılarak doğrulandı. Kalan iş: M9.2 (baykus.xava.me'ye asıl deploy —
+gerçek altyapı erişimi gerektirir), M9.3 doküman/ekran görüntüsü tamamlama,
+M9.4 kabul kontrolü.
 
 ```bash
 pnpm install

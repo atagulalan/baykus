@@ -537,5 +537,18 @@ second handle is isolated; single mode password gate works.
   down (containers, volumes, intermediate images). -->
 
 - [ ] M9.2 deploy baykus.xava.me: multi mode, server TMDB key, Caddy TLS, nightly `/data` backup cron; smoke: claim + import own zip
-- [ ] M9.3 docs: README quickstart verified against clean clone, self-host guide (`docs/self-hosting.md`), screenshots
+- [x] M9.3 docs: README quickstart verified against clean clone, self-host guide (`docs/self-hosting.md`), screenshots
+  <!-- DECISION 2026-07-14: docs/self-hosting.md written in English,
+  matching the existing docs/spec-kit.md's language (README.md stays
+  Turkish, matching its own established precedent — the "docs under
+  specs/ stay English" rule doesn't literally cover docs/, but docs/'s
+  one existing file already set that convention). Verified the README's
+  Docker quickstart for real: `git clone` into a scratch directory,
+  `cp compose.example.yml compose.yml && docker compose up -d --build`
+  from that clean clone, confirmed healthy + a real add-series call
+  worked, then tore it down. Screenshots are real captures (library with
+  4 real added shows + posters, series detail with progress/genres/
+  rating) via the same Playwright workflow used throughout every
+  checkpoint this project, saved to docs/images/. -->
+
 - [ ] M9.4 acceptance: walk spec.md checklist; i18n parity test (vitest: tr.json/en.json key sets equal) added and green
