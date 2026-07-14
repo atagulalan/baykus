@@ -451,7 +451,40 @@ second handle is isolated; single mode password gate works.
   already-added show requires re-adding it after enabling scrapers, not
   refreshing; the M8.5 checkpoint verifies this via a fresh add. -->
 
-- [ ] M8.5 CHECKPOINT M8 — import the synthetic TV Time fixtures end-to-end in browser; enable scrapers in single mode and see Serializd rating + tags on HotD detail
+- [x] M8.5 CHECKPOINT M8 — import the synthetic TV Time fixtures end-to-end in browser; enable scrapers in single mode and see Serializd rating + tags on HotD detail
+  <!-- DECISION 2026-07-14: TV Time import verified fully end-to-end in a
+  real browser against a running dev server — real fixture CSVs zipped
+  together, real TVmaze network calls, both House of the Dragon and Dark
+  auto-matched via tvdb lookup and imported with correct episode counts;
+  a deliberately mangled title landed in the fuzzy bucket with real
+  candidates, was resolved via the dropdown, and imported. "Enable
+  scrapers... and see Serializd rating + tags" is only PARTIALLY
+  reproducible live from this sandboxed environment: enabling scrapers
+  and adding HotD (with a combined externalIds set covering tvmaze/tmdb/
+  imdb) correctly surfaced the IMDb rating end-to-end (real dataset
+  download, real Map lookup, real UI render) — but live Serializd calls
+  got Cloudflare-challenged (HTTP 403, cf-mitigated: challenge). Root-
+  caused via A/B testing: curl with the SAME User-Agent from the SAME IP
+  succeeds every time; Node's fetch() (undici) — with or without a full
+  realistic browser header set (sec-ch-ua, sec-fetch-*, Accept-Language,
+  etc.) — is challenged every time. This isolates the cause to
+  Cloudflare's TLS/HTTP-stack fingerprinting, not headers, meaning no
+  amount of work within "browser UA header"'s stated scope fixes it, and
+  a real deployed instance (also Node fetch-based) would hit the same
+  wall whenever Cloudflare's bot management is in challenge mode for its
+  IP — this is the exact "scraper breakage" risk research.md's own risk
+  table names, with the exact mitigation it prescribes (capability flags,
+  isolated failures, Article IV) already in place and confirmed working:
+  HotD still added successfully, IMDb rating still appeared, Serializd's
+  failure was silently absorbed without breaking anything. To confirm the
+  Serializd-specific code paths beyond the 16 unit tests already passing
+  against the real captured fixture, the exact JSON shape those tests
+  produce (real nanogenre tags + a serializd rating) was injected via a
+  mocked API response (Playwright page.route(), isolating the React
+  render path from the live network call) — confirmed the tag chips and
+  "SERIALIZD 7.9" rating row render exactly as designed. Green suite: 299
+  tests, lint, typecheck across all 9 workspace projects, build. -->
+
 
 ---
 
