@@ -120,7 +120,7 @@ see the stats page.
   - **Tests:** upsert overwrites; invalid value throws; stats math incl. runtime fallback; rating distribution counts
   - **Verify:** `pnpm test packages/core`
 
-- [ ] M3.2 server ratings + stats → contracts/api.md §Ratings §stats; tests as usual (PATCH series route landed early in M2.3, see decision note there)
+- [x] M3.2 server ratings + stats → contracts/api.md §Ratings §stats; tests as usual (PATCH series route landed early in M2.3, see decision note there)
 - [ ] M3.3 web rating UI (FR-006)
   - **Files:** `src/components/RatingControl.tsx` (3 segmented buttons: 👎 kötü / 😐 normal / 👍 iyi — labels from i18n, not emoji-only), post-watch inline prompt in EpisodeRow (dismissible), rating on detail header; library sort/filter extension
   - **DoD:** ui.md §Rating; one-tap set/clear; keyboard accessible

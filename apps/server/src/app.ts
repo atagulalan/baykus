@@ -5,7 +5,9 @@ import type { Config } from "./config.ts";
 import { errorHandler } from "./middleware/errors.ts";
 import { xBaykusGuard } from "./middleware/guard.ts";
 import { createLibraryRoutes } from "./routes/library.ts";
+import { createRatingRoutes } from "./routes/ratings.ts";
 import { createSearchRoute } from "./routes/search.ts";
+import { createStatsRoute } from "./routes/stats.ts";
 import { createWatchRoutes } from "./routes/watches.ts";
 
 export interface AppDeps {
@@ -22,9 +24,10 @@ export function createApp(config: Config, deps: AppDeps) {
   app.route("/api/search", createSearchRoute(deps.providers));
   app.route("/api/library", createLibraryRoutes(deps.library, deps.providers));
   app.route("/", createWatchRoutes(deps.library));
+  app.route("/", createRatingRoutes(deps.library));
+  app.route("/", createStatsRoute(deps.library));
 
   // Route groups land here milestone by milestone (see specs tasks.md):
-  // M3: /api/ratings
   // M4: /img/*, settings
   // M5: /api/library/refresh (SSE), /api/calendar, /api/push
   // M6: /api/export.zip, /api/import
