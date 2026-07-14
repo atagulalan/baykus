@@ -57,7 +57,8 @@
     "nextUp": "Next up: S{{s}}E{{e}}",
     "suggestCompleted": "All episodes watched. Move to Completed?",
     "moveToCompleted": "Move",
-    "staySame": "Keep as is"
+    "staySame": "Keep as is",
+    "justwatchAttribution": "Data from JustWatch"
   },
   "episode": {
     "toggleWatched": "Mark as watched",

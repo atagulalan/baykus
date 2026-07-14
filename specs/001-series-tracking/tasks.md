@@ -163,7 +163,17 @@ genres/tagline/platforms on detail, TR watch-provider badges.
   effect on the very next request — no true per-request re-resolution, no
   restart needed either. theme is stored but the web UI ships it as a
   disabled "dark" select per ui.md (v1: sadece koyu). -->
-- [ ] M4.5 rich metadata on detail + cards (FR-016, FR-018): tagline, genres chips, content-rating badge (region-aware), network logos, watch-provider badges with **JustWatch attribution line**, external ratings row (sources with scale normalization display)
+- [x] M4.5 rich metadata on detail + cards (FR-016, FR-018): tagline, genres chips, content-rating badge (region-aware), network logos, watch-provider badges with **JustWatch attribution line**, external ratings row (sources with scale normalization display)
+  <!-- DECISION 2026-07-14: M4.2 only scoped enrich-on-add to externalRatings.
+  Watch-provider badges need SOMETHING to populate watchProviders, and M4.6's
+  checkpoint explicitly requires "TR platforms visible" — so M4.5 extends
+  enrich-on-add to also call getWatchProviders (region from settings, default
+  TR) alongside getExternalRatings, same non-fatal Promise.allSettled pattern.
+  This is a snapshot taken at add-time; M5's refresh engine is what keeps it
+  current later (Article V: no required background jobs). "Cards" scope: per
+  ui.md's library wireframe, cards only ever show poster/progress/rating chip
+  (already done in M3.3) — no genre/network text on cards, so no card changes
+  here beyond what M4.3's /img route already unlocked (real posters). -->
 - [ ] M4.6 CHECKPOINT M4 — with key: search prefers TMDB, images load from `/img`, TR platforms visible; without key: everything still works via TVmaze (Article IV regression!)
 
 ---

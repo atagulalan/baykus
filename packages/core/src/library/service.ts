@@ -1,4 +1,9 @@
-import type { ExternalIds, ExternalRating, SeriesDetails } from "@baykus/provider-sdk";
+import type {
+  ExternalIds,
+  ExternalRating,
+  SeriesDetails,
+  WatchProviderInfo,
+} from "@baykus/provider-sdk";
 import { and, eq, or, sql } from "drizzle-orm";
 import type { LibraryDatabase } from "../db/open.ts";
 import type { RatingTargetType, TrackingStatus, WatchSource } from "../db/schema.ts";
@@ -58,6 +63,7 @@ function toItemInsertValues(
   details: SeriesDetails,
   addedAt: string,
   externalRatings: ExternalRating[] | null,
+  watchProviders: WatchProviderInfo[] | null,
 ) {
   return {
     mediaType: details.mediaType,
@@ -85,7 +91,7 @@ function toItemInsertValues(
     tvmazeId: details.externalIds.tvmazeId ?? null,
     imdbId: details.externalIds.imdbId ?? null,
     tvdbId: details.externalIds.tvdbId ?? null,
-    watchProviders: null,
+    watchProviders: watchProviders && watchProviders.length > 0 ? watchProviders : null,
     externalRatings: externalRatings && externalRatings.length > 0 ? externalRatings : null,
     lastRefreshedAt: addedAt,
     addedAt,
@@ -159,6 +165,7 @@ export interface Library {
     details: SeriesDetails,
     status: TrackingStatus,
     externalRatings?: ExternalRating[],
+    watchProviders?: WatchProviderInfo[],
   ): SeriesSummary;
   listSeries(opts?: ListSeriesOptions): { items: SeriesSummary[]; total: number };
   getSeries(id: number): SeriesDetail | null;
@@ -183,6 +190,7 @@ export function createLibrary(db: LibraryDatabase): Library {
       details: SeriesDetails,
       status: TrackingStatus,
       externalRatings?: ExternalRating[],
+      watchProviders?: WatchProviderInfo[],
     ): SeriesSummary {
       const existingId = findConflictingItemId(db, details.externalIds);
       if (existingId != null) throw new AlreadyInLibraryError(existingId);
@@ -192,7 +200,7 @@ export function createLibrary(db: LibraryDatabase): Library {
       const itemId = db.transaction((tx) => {
         const inserted = tx
           .insert(schema.items)
-          .values(toItemInsertValues(details, now, externalRatings ?? null))
+          .values(toItemInsertValues(details, now, externalRatings ?? null, watchProviders ?? null))
           .returning({ id: schema.items.id })
           .get();
 

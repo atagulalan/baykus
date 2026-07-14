@@ -1,10 +1,16 @@
-import type { ExternalRating, MetadataProvider } from "@baykus/provider-sdk";
+import type { ExternalRating, MetadataProvider, WatchProviderInfo } from "@baykus/provider-sdk";
 import { describe, expect, it } from "vitest";
-import { enrichExternalRatings } from "./enrich.ts";
+import { enrichExternalRatings, enrichWatchProviders } from "./enrich.ts";
 
 function fakeProvider(
   id: string,
-  opts: { externalRatings?: boolean; ratings?: ExternalRating[]; error?: Error } = {},
+  opts: {
+    externalRatings?: boolean;
+    ratings?: ExternalRating[];
+    watchProviders?: boolean;
+    providers?: WatchProviderInfo[];
+    error?: Error;
+  } = {},
 ): MetadataProvider {
   return {
     id,
@@ -13,7 +19,7 @@ function fakeProvider(
       search: true,
       details: true,
       upcoming: true,
-      watchProviders: false,
+      watchProviders: opts.watchProviders ?? false,
       externalRatings: opts.externalRatings ?? false,
       tags: false,
       images: true,
@@ -33,6 +39,14 @@ function fakeProvider(
           async getExternalRatings() {
             if (opts.error) throw opts.error;
             return opts.ratings ?? [];
+          },
+        }
+      : {}),
+    ...(opts.watchProviders
+      ? {
+          async getWatchProviders() {
+            if (opts.error) throw opts.error;
+            return opts.providers ?? [];
           },
         }
       : {}),
@@ -75,6 +89,31 @@ describe("enrichExternalRatings", () => {
 
   it("returns [] when no provider supports external ratings", async () => {
     const merged = await enrichExternalRatings([fakeProvider("a")], { tmdbId: 1 });
+    expect(merged).toEqual([]);
+  });
+});
+
+describe("enrichWatchProviders", () => {
+  it("merges watch providers for the requested region", async () => {
+    const a = fakeProvider("a", {
+      watchProviders: true,
+      providers: [{ provider: "HBO Max", type: "flatrate", region: "TR" }],
+    });
+    const b = fakeProvider("b"); // watchProviders: false — skipped entirely
+
+    const merged = await enrichWatchProviders([a, b], { tmdbId: 1 }, "TR");
+
+    expect(merged).toEqual([{ provider: "HBO Max", type: "flatrate", region: "TR" }]);
+  });
+
+  it("a failing provider is skipped, never fatal", async () => {
+    const broken = fakeProvider("broken", { watchProviders: true, error: new Error("boom") });
+    const merged = await enrichWatchProviders([broken], { tmdbId: 1 }, "TR");
+    expect(merged).toEqual([]);
+  });
+
+  it("returns [] when no provider supports watch providers", async () => {
+    const merged = await enrichWatchProviders([fakeProvider("a")], { tmdbId: 1 }, "TR");
     expect(merged).toEqual([]);
   });
 });

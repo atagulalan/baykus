@@ -104,11 +104,47 @@ export interface GenreInfo {
   name: string;
 }
 
+export interface ContentRating {
+  region: string;
+  rating: string;
+}
+
+export interface NetworkInfo {
+  id?: number;
+  name: string;
+  logoRef?: string | null;
+  originCountry?: string;
+}
+
+export type WatchProviderType = "flatrate" | "rent" | "buy" | "ads" | "free";
+
+export interface WatchProviderInfo {
+  provider: string;
+  providerId?: number;
+  type: WatchProviderType;
+  region: string;
+  logoRef?: string | null;
+}
+
+export interface ExternalRating {
+  source: string;
+  value: number;
+  scale: number;
+  votes?: number;
+  fetchedAt: string;
+}
+
 export interface SeriesDetail extends SeriesSummary {
   tagline: string | null;
   overview: string | null;
   genres: GenreInfo[];
+  contentRatings: ContentRating[];
+  networks: NetworkInfo[];
   originalLanguage: string | null;
+  watchProviders: WatchProviderInfo[];
+  externalRatings: ExternalRating[];
+  backdropRef: string | null;
+  logoRef: string | null;
   note: string | null;
   lastRefreshedAt: string | null;
   addedAt: string;

@@ -8,6 +8,7 @@ import {
   bulkWatch,
   clearRating,
   getSeries,
+  getSettings,
   removeLatestEpisodeWatch,
   setRating,
   updateSeries,
@@ -29,6 +30,20 @@ import { useToast } from "../lib/toast.tsx";
 const RATING_PROMPT_TIMEOUT_MS = 5000;
 
 const STATUSES: TrackingStatus[] = ["watching", "plan_to_watch", "completed", "dropped", "paused"];
+
+/** Falls back to plain text if the logo 404s (e.g. its provider isn't registered right now). */
+function LogoOrText({ src, alt }: { src: string | null; alt: string }) {
+  const [failed, setFailed] = useState(false);
+  if (!src || failed) return <span>{alt}</span>;
+  return <img src={src} alt={alt} className="h-4 object-contain" onError={() => setFailed(true)} />;
+}
+
+/** Decorative icon that just disappears on a 404 instead of showing a broken-image glyph. */
+function DecorativeLogo({ src, className }: { src: string | null; className: string }) {
+  const [failed, setFailed] = useState(false);
+  if (!src || failed) return null;
+  return <img src={src} alt="" className={className} onError={() => setFailed(true)} />;
+}
 
 function updateEpisodeInDetail(
   detail: SeriesDetail,
@@ -67,6 +82,8 @@ export function SeriesDetailPage() {
   const [promptEpisodeId, setPromptEpisodeId] = useState<number | null>(null);
 
   const query = useQuery({ queryKey, queryFn: () => getSeries(id) });
+  const settingsQuery = useQuery({ queryKey: ["settings"], queryFn: getSettings });
+  const activeRegion = settingsQuery.data?.region ?? "TR";
 
   useEffect(() => {
     if (promptEpisodeId === null) return;
@@ -245,6 +262,9 @@ export function SeriesDetailPage() {
   const imageUrl = buildImageUrl(detail.posterRef, "large");
   const { watched, aired } = detail.progress;
   const percent = aired > 0 ? Math.round((watched / aired) * 100) : 0;
+  const contentRating =
+    detail.contentRatings.find((r) => r.region === activeRegion) ?? detail.contentRatings[0];
+  const regionWatchProviders = detail.watchProviders.filter((wp) => wp.region === activeRegion);
 
   return (
     <div className="flex flex-col gap-6">
@@ -278,14 +298,72 @@ export function SeriesDetailPage() {
             </select>
           </div>
           {detail.tagline && <p className="text-sm text-zinc-400 italic">"{detail.tagline}"</p>}
-          <p className="text-sm text-zinc-400">
-            {[detail.network, ...detail.genres.map((g) => g.name)].filter(Boolean).join(" · ")}
-          </p>
+
+          {(detail.networks.length > 0 || contentRating) && (
+            <div className="flex flex-wrap items-center gap-2 text-sm text-zinc-400">
+              {detail.networks.map((n) => (
+                <LogoOrText key={n.name} src={buildImageUrl(n.logoRef, "thumb")} alt={n.name} />
+              ))}
+              {contentRating && (
+                <span className="rounded border border-zinc-700 px-1.5 py-0.5 text-xs">
+                  {contentRating.rating}
+                </span>
+              )}
+            </div>
+          )}
+
+          {detail.genres.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {detail.genres.map((g) => (
+                <span
+                  key={g.id ?? g.name}
+                  className="rounded-full bg-zinc-800 px-2 py-0.5 text-xs text-zinc-300"
+                >
+                  {g.name}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {detail.externalRatings.length > 0 && (
+            <p className="text-sm text-zinc-400">
+              {detail.externalRatings.map((r, i) => (
+                <span key={r.source}>
+                  {i > 0 && " · "}⭐ {r.source.toUpperCase()}{" "}
+                  {(r.scale === 10 ? r.value : (r.value / r.scale) * 10).toFixed(1)}
+                </span>
+              ))}
+            </p>
+          )}
+
           <RatingControl
             value={detail.rating}
             onChange={(value) => rateItem.mutate(value)}
             size="sm"
           />
+
+          {regionWatchProviders.length > 0 && (
+            <div className="flex flex-col gap-1">
+              <div className="flex flex-wrap items-center gap-2">
+                {regionWatchProviders.map((wp) => {
+                  return (
+                    <span
+                      key={`${wp.provider}-${wp.type}-${wp.region}`}
+                      className="flex items-center gap-1 rounded bg-zinc-800 px-2 py-1 text-xs text-zinc-200"
+                    >
+                      <DecorativeLogo
+                        src={buildImageUrl(wp.logoRef, "thumb")}
+                        className="h-4 w-4 rounded object-cover"
+                      />
+                      {wp.provider} ({wp.region})
+                    </span>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-zinc-500">{t("series.justwatchAttribution")}</p>
+            </div>
+          )}
+
           <div className="mt-2 flex flex-col gap-1">
             <div className="h-2 w-full max-w-sm overflow-hidden rounded-full bg-zinc-800">
               <div className="h-full bg-emerald-500" style={{ width: `${percent}%` }} />

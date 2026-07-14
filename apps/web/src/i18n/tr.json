@@ -57,7 +57,8 @@
     "nextUp": "Sıradaki: S{{s}}E{{e}}",
     "suggestCompleted": "Tüm bölümler izlendi. Bitirdim'e taşınsın mı?",
     "moveToCompleted": "Taşı",
-    "staySame": "Kalsın"
+    "staySame": "Kalsın",
+    "justwatchAttribution": "JustWatch verisi"
   },
   "episode": {
     "toggleWatched": "İzlendi olarak işaretle",
