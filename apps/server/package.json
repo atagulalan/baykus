@@ -12,6 +12,7 @@
   "dependencies": {
     "@baykus/core": "workspace:*",
     "@baykus/importer-tvtime": "workspace:*",
+    "@baykus/provider-imdb": "workspace:*",
     "@baykus/provider-sdk": "workspace:*",
     "@baykus/provider-tmdb": "workspace:*",
     "@baykus/provider-tvmaze": "workspace:*",

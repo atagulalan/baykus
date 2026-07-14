@@ -26,6 +26,9 @@ importers:
       '@baykus/importer-tvtime':
         specifier: workspace:*
         version: link:../../packages/importer-tvtime
+      '@baykus/provider-imdb':
+        specifier: workspace:*
+        version: link:../../packages/provider-imdb
       '@baykus/provider-sdk':
         specifier: workspace:*
         version: link:../../packages/provider-sdk

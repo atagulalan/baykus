@@ -69,7 +69,16 @@ export function createApp(config: Config, deps: AppDeps) {
   app.route("/", createRatingRoutes(contextLibrary));
   app.route("/", createStatsRoute(contextLibrary));
   app.route("/", createImageRoute(deps.providers, deps.dataDir));
-  app.route("/", createSettingsRoutes(contextLibrary, deps.providers, config.BAYKUS_TMDB_API_KEY));
+  app.route(
+    "/",
+    createSettingsRoutes(
+      contextLibrary,
+      deps.providers,
+      config.BAYKUS_TMDB_API_KEY,
+      deps.dataDir,
+      config.BAYKUS_MODE,
+    ),
+  );
   app.route("/", createRefreshRoutes(contextLibrary, deps.providers, deps.vapid));
   app.route("/", createCalendarRoute(contextLibrary));
   app.route("/", createPushRoutes(contextLibrary, deps.vapid.publicKey));

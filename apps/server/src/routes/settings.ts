@@ -34,6 +34,8 @@ export function createSettingsRoutes(
   library: Library,
   providers: MetadataProvider[],
   envTmdbApiKey: string | undefined,
+  dataDir: string,
+  mode: "single" | "multi",
 ): Hono {
   const app = new Hono();
 
@@ -43,9 +45,14 @@ export function createSettingsRoutes(
     const body = patchSettingsSchema.parse(await c.req.json());
     const settings = library.updateSettings(toSettingsPatch(body));
 
-    if (body.tmdbApiKey !== undefined) {
+    if (body.tmdbApiKey !== undefined || body.scrapersEnabled !== undefined) {
       const activeKey = library.getTmdbApiKey() ?? envTmdbApiKey;
-      refreshProviders(providers, activeKey ? { tmdbApiKey: activeKey } : {});
+      refreshProviders(providers, {
+        ...(activeKey ? { tmdbApiKey: activeKey } : {}),
+        scrapersEnabled: settings.scrapersEnabled,
+        dataDir,
+        mode,
+      });
     }
 
     return c.json(settings);

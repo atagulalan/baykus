@@ -1,3 +1,2 @@
-// Implemented in milestone M8 (specs/001-series-tracking/tasks.md).
-// IMDb daily datasets (title.ratings.tsv.gz), capability: externalRatings only.
-export {};
+export { type ImdbRating, parseRatingsTsv, type RatingsIndex } from "./datasets.ts";
+export { createImdbProvider } from "./provider.ts";

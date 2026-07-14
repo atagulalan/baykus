@@ -398,7 +398,32 @@ second handle is isolated; single mode password gate works.
   imported; confirmed watches correctly report as `skipped` (not guessed)
   since no TMDB key was configured in this environment, matching M8.1's
   DECISION. -->
-- [ ] M8.3 provider-imdb (FR-018): datasets client — download+cache `title.ratings.tsv.gz` (24 h TTL, ~25 MB) into dataDir, binary-search or index lookup by imdbId → `externalRatings[{source:"imdb", scale:10}]`; capability externalRatings only; disabled unless scrapersEnabled… note: datasets are ToS-fine, enable by default in single mode, keep off in multi (bandwidth)
+- [x] M8.3 provider-imdb (FR-018): datasets client — download+cache `title.ratings.tsv.gz` (24 h TTL, ~25 MB) into dataDir, binary-search or index lookup by imdbId → `externalRatings[{source:"imdb", scale:10}]`; capability externalRatings only; disabled unless scrapersEnabled… note: datasets are ToS-fine, enable by default in single mode, keep off in multi (bandwidth)
+  <!-- DECISION 2026-07-14: "index lookup" implemented as a plain in-memory
+  Map built once per fresh download (~1.5-2M rows), not on-disk binary
+  search — simpler, still O(1) per lookup, and the whole point of the
+  24h-cached dataset is avoiding a per-title network call, so holding the
+  parsed index in memory for a self-hosted single-mode process's lifetime
+  is the smallest reasonable choice. "Enable by default in single mode,
+  keep off in multi" could NOT be implemented as a packages/core Settings
+  default (Article I: core has no mode concept, and scrapers_enabled's
+  stored default must stay mode-agnostic) — instead it's enforced at the
+  apps/server registry level: createProviderRegistry() only ever
+  registers imdb when mode==="single" AND the (still core-owned, still
+  off-by-default) scrapersEnabled setting is true; multi mode omits it
+  unconditionally regardless of that setting, guaranteeing the
+  "(bandwidth)" concern can never bite a hosted instance. A user in
+  single mode still has to flip the existing "Ek kaynakları… etkinleştir"
+  Settings toggle once (matching M8.5's own checkpoint wording, "enable
+  scrapers… and see…") — reusing that single shared toggle for both
+  imdb and serializd (M8.4) rather than inventing a second one, since
+  ui.md's Settings copy already names both providers under one checkbox.
+  search/getSeriesDetails/resolveImageUrl throw UNSUPPORTED rather than
+  carrying real logic: enrichExternalRatings is the only code path that
+  ever calls an externalRatings-only provider (filtered by
+  capabilities.externalRatings), so those three methods are structurally
+  unreachable. -->
+
 - [ ] M8.4 provider-serializd (FR-018): `__NEXT_DATA__` parser (browser UA header), keyed by tmdbId, maps averageRating+distribution (scale 10) + nanogenres→TagInfo; graceful `PARSE_FAILED` on shape drift (fixture: `fixtures/serializd/`); returns tags only when `scrapersEnabled`
 - [ ] M8.5 CHECKPOINT M8 — import the synthetic TV Time fixtures end-to-end in browser; enable scrapers in single mode and see Serializd rating + tags on HotD detail
 

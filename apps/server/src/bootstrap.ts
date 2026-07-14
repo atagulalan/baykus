@@ -31,7 +31,12 @@ export function createProductionDeps(config: Config): AppDeps {
 
   return {
     library,
-    providers: createProviderRegistry(activeTmdbKey ? { tmdbApiKey: activeTmdbKey } : {}),
+    providers: createProviderRegistry({
+      ...(activeTmdbKey ? { tmdbApiKey: activeTmdbKey } : {}),
+      scrapersEnabled: library.getSettings().scrapersEnabled,
+      dataDir: config.BAYKUS_DATA_DIR,
+      mode: config.BAYKUS_MODE,
+    }),
     dataDir: config.BAYKUS_DATA_DIR,
     vapid: loadOrCreateVapidKeys(config.BAYKUS_DATA_DIR, envVapidKeys),
     auth:
