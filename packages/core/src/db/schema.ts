@@ -150,7 +150,7 @@ export const ratings = sqliteTable(
     /** items.id or episodes.id depending on targetType. */
     targetId: integer("target_id").notNull(),
     /** 1 = kötü, 2 = normal, 3 = iyi. */
-    value: integer("value").notNull(),
+    value: integer("value").$type<1 | 2 | 3>().notNull(),
     ratedAt: text("rated_at").notNull(),
   },
   (t) => [

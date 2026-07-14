@@ -114,7 +114,7 @@ progress on cards, edit a watch date, rewatch an episode.
 Checkpoint goal: rate episodes/series kötü/normal/iyi, filter-sort library,
 see the stats page.
 
-- [ ] M3.1 core ratings + stats (FR-005, FR-006, FR-017)
+- [x] M3.1 core ratings + stats (FR-005, FR-006, FR-017)
   - **Files:** `packages/core/src/library/{ratings.ts,stats.ts}` + tests
   - **DoD:** `setRating(targetType, targetId, value 1|2|3)` upsert, `clearRating`; value CHECK enforced; `getStats()` per contracts/api.md §stats (watchTimeMin = Σ runtime of watch events; unknown runtime → itemRunTimes avg fallback, else 0); status transitions tracked with `statusChangedAt`
   - **Tests:** upsert overwrites; invalid value throws; stats math incl. runtime fallback; rating distribution counts

@@ -1,10 +1,12 @@
 import type { ExternalIds, SeriesDetails } from "@baykus/provider-sdk";
-import { eq, or, sql } from "drizzle-orm";
+import { and, eq, or, sql } from "drizzle-orm";
 import type { LibraryDatabase } from "../db/open.ts";
-import type { TrackingStatus, WatchSource } from "../db/schema.ts";
+import type { RatingTargetType, TrackingStatus, WatchSource } from "../db/schema.ts";
 import * as schema from "../db/schema.ts";
 import { AlreadyInLibraryError } from "./errors.ts";
 import { getNextAirDate, getNextUnwatchedEpisode, getSeriesProgress } from "./progress.ts";
+import { clearRating, getRating, type Rating, setRating } from "./ratings.ts";
+import { getStats, type Stats } from "./stats.ts";
 import type {
   EpisodeSummary,
   ListSeriesOptions,
@@ -92,7 +94,7 @@ function buildSummary(db: LibraryDatabase, item: ItemRow, tracking: TrackingRow)
     posterRef: item.posterRef,
     year: yearOf(item.firstAirDate),
     status: tracking.status,
-    rating: null, // wired in M3.1 (ratings.ts)
+    rating: getRating(db, "item", item.id)?.value ?? null,
     releaseStatus: item.releaseStatus,
     network: item.networks?.[0]?.name ?? null,
     progress: getSeriesProgress(db, item.id),
@@ -151,6 +153,9 @@ export interface Library {
   bulkWatch(itemId: number, target: BulkWatchTarget): BulkWatchResult | null;
   removeLatestWatch(episodeId: number): boolean;
   suggestCompleted(itemId: number): boolean;
+  setRating(targetType: RatingTargetType, targetId: number, value: 1 | 2 | 3): Rating;
+  clearRating(targetType: RatingTargetType, targetId: number): boolean;
+  getStats(): Stats;
 }
 
 export function createLibrary(db: LibraryDatabase): Library {
@@ -263,6 +268,17 @@ export function createLibrary(db: LibraryDatabase): Library {
         .all();
       const watchStatsByEpisode = new Map(watchStats.map((w) => [w.episodeId, w]));
 
+      const episodeRatingRows = db
+        .select({ targetId: schema.ratings.targetId, value: schema.ratings.value })
+        .from(schema.ratings)
+        .innerJoin(
+          schema.episodes,
+          and(eq(schema.episodes.id, schema.ratings.targetId), eq(schema.episodes.itemId, id)),
+        )
+        .where(eq(schema.ratings.targetType, "episode"))
+        .all();
+      const ratingByEpisode = new Map(episodeRatingRows.map((r) => [r.targetId, r.value]));
+
       const episodesBySeason = new Map<number, EpisodeSummary[]>();
       for (const ep of episodeRows) {
         const list = episodesBySeason.get(ep.seasonNumber) ?? [];
@@ -278,7 +294,7 @@ export function createLibrary(db: LibraryDatabase): Library {
           stillRef: ep.stillRef,
           episodeType: ep.episodeType,
           communityRating: ep.externalRatings?.[0] ?? null,
-          myRating: null, // wired in M3.1 (ratings.ts)
+          myRating: ratingByEpisode.get(ep.id) ?? null,
           watchCount: stats?.count ?? 0,
           lastWatchedAt: stats?.lastWatchedAt ?? null,
         });
@@ -356,6 +372,18 @@ export function createLibrary(db: LibraryDatabase): Library {
 
     suggestCompleted(itemId: number): boolean {
       return suggestCompleted(db, itemId);
+    },
+
+    setRating(targetType: RatingTargetType, targetId: number, value: 1 | 2 | 3): Rating {
+      return setRating(db, targetType, targetId, value);
+    },
+
+    clearRating(targetType: RatingTargetType, targetId: number): boolean {
+      return clearRating(db, targetType, targetId);
+    },
+
+    getStats(): Stats {
+      return getStats(db);
     },
   };
 }
