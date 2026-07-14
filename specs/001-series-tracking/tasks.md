@@ -294,7 +294,7 @@ Checkpoint goal: export zip, wipe data dir, import, everything is back.
 Checkpoint goal: `BAYKUS_MODE=multi pnpm dev` → claim handle, seed with zip,
 second handle is isolated; single mode password gate works.
 
-- [ ] M7.1 accounts store (FR-012): `apps/server/src/auth/{accounts.ts,sessions.ts,accounts.test.ts}` — separate SQLite `accounts.db` (raw better-sqlite3, no drizzle needed), argon2id (`@node-rs/argon2`), session tokens (32B random, sha256-stored, 30d sliding), reserved list seeded (admin,api,www,img,static,baykus,xava,root,login,claim,settings,assets)
+- [x] M7.1 accounts store (FR-012): `apps/server/src/auth/{accounts.ts,sessions.ts,accounts.test.ts}` — separate SQLite `accounts.db` (raw better-sqlite3, no drizzle needed), argon2id (`@node-rs/argon2`), session tokens (32B random, sha256-stored, 30d sliding), reserved list seeded (admin,api,www,img,static,baykus,xava,root,login,claim,settings,assets)
 - [ ] M7.2 auth routes + gates (FR-012, FR-013): contracts §Auth exactly (uniform 401 message, rate limits 5/min claim + 10/min login per IP token bucket); single-mode `BAYKUS_PASSWORD` gate; `/api/health` + `/img` exempt
 - [ ] M7.3 library resolver (Article I boundary): middleware session→handle→`<dataDir>/libraries/<handle>.db` via LRU pool (max 20 open, close idle 10 min); below middleware, handlers receive `Library` and cannot tell modes apart — enforce by keeping handler signatures mode-free
 - [ ] M7.4 web auth UX (FR-012): `/login`, `/claim` routes per ui.md; claim success screen states loudly "şifre kurtarma YOK — zip yedeğin sigortandır"; optional zip seed upload during claim; session boot via GET /api/auth/session; account deletion in Settings with final-export interstitial
