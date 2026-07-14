@@ -134,7 +134,7 @@ see the stats page.
 Checkpoint goal: paste a TMDB key in Settings, refetch, see posters from cache,
 genres/tagline/platforms on detail, TR watch-provider badges.
 
-- [ ] M4.1 provider-tmdb (FR-001, FR-003, FR-016, FR-018)
+- [x] M4.1 provider-tmdb (FR-001, FR-003, FR-016, FR-018)
   - **Files:** `packages/provider-tmdb/src/{index.ts,provider.ts,mapping.ts,mapping.test.ts}`
   - **DoD:** `createTmdbProvider({ apiKey })`; v4 Bearer + v3 key query fallback; capabilities all true except `tags`; `getSeriesDetails` = details + N season fetches (limiter 4 req/s) merged per contracts; maps external_ids, content_ratings, watch/providers (region param), episode_type, per-episode vote_average→`externalRatings[{source:"tmdb"}]`; `resolveImageUrl` per TMDB size buckets (thumb=w185, medium=w342, large=w780, original)
   - **Tests:** against `fixtures/tmdb/*` — full mapping assertions incl. finale episode_type and TR content rating. If a real TMDB key is at hand, FIRST re-capture fixtures per fixtures/README.md and drop the `__fixture_note` fields
