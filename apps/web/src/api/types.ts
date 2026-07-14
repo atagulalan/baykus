@@ -262,3 +262,16 @@ export interface ImportZipResult {
   mode: ImportMode;
   warnings: string[];
 }
+
+export type AuthMode = "single" | "multi";
+
+export interface AuthSession {
+  authenticated: boolean;
+  handle: string | null;
+  mode: AuthMode;
+}
+
+export interface ClaimResult {
+  handle: string;
+  createdAt: string;
+}

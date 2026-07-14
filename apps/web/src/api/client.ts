@@ -1,9 +1,11 @@
 import type {
   AddWatchResult,
   ApiErrorEnvelope,
+  AuthSession,
   BulkWatchResult,
   BulkWatchTarget,
   CalendarResponse,
+  ClaimResult,
   ExternalIds,
   ImportMode,
   ImportZipResult,
@@ -235,6 +237,29 @@ export async function importZip(file: File, mode?: ImportMode): Promise<ImportZi
   }
 
   return body as ImportZipResult;
+}
+
+export function getAuthSession(): Promise<AuthSession> {
+  return request<AuthSession>("/auth/session");
+}
+
+export function login(payload: {
+  handle?: string;
+  password: string;
+}): Promise<{ handle: string | null }> {
+  return request("/auth/login", { method: "POST", body: JSON.stringify(payload) });
+}
+
+export function claim(payload: { handle: string; password: string }): Promise<ClaimResult> {
+  return request<ClaimResult>("/auth/claim", { method: "POST", body: JSON.stringify(payload) });
+}
+
+export function logout(): Promise<void> {
+  return request<void>("/auth/logout", { method: "POST" });
+}
+
+export function deleteAccount(password: string): Promise<void> {
+  return request<void>("/auth/account", { method: "DELETE", body: JSON.stringify({ password }) });
 }
 
 export function getVapidPublicKey(): Promise<{ key: string }> {

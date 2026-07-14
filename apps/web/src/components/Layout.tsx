@@ -1,5 +1,7 @@
-import { Link, Outlet } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { Link, Navigate, Outlet, useRouterState } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
+import { getAuthSession } from "../api/client.ts";
 import { SearchBar } from "./SearchBar.tsx";
 
 const navItems = [
@@ -9,8 +11,20 @@ const navItems = [
   { to: "/settings", key: "app.nav.settings" },
 ] as const;
 
+const BARE_PATHS = new Set(["/login", "/claim"]);
+
 export function Layout() {
   const { t } = useTranslation();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const sessionQuery = useQuery({ queryKey: ["auth-session"], queryFn: getAuthSession });
+
+  // /login and /claim render without nav chrome and manage their own
+  // auth-redirect logic (they ARE the unauthenticated entry points).
+  if (BARE_PATHS.has(pathname)) return <Outlet />;
+
+  if (sessionQuery.isLoading) return null;
+  if (sessionQuery.data && !sessionQuery.data.authenticated) return <Navigate to="/login" />;
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <header className="border-zinc-800 border-b">

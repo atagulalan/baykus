@@ -153,5 +153,36 @@
       "upcoming": "Yaklaşan bölüm yok",
       "recentlyAired": "İzlenmemiş bölüm yok"
     }
+  },
+  "auth": {
+    "handle": "Kullanıcı adı",
+    "password": "Şifre",
+    "login": "Giriş yap",
+    "loginError": "Kullanıcı adı veya şifre hatalı",
+    "needAccount": "Hesabın yok mu? Oluştur",
+    "claim": {
+      "title": "Hesap oluştur",
+      "confirmPassword": "Şifre (tekrar)",
+      "passwordMismatch": "Şifreler eşleşmiyor",
+      "handleHint": "3-30 karakter, küçük harf/rakam/tire",
+      "seedZip": "Zip ile başla (opsiyonel)",
+      "error": "Hesap oluşturulamadı — kullanıcı adı alınmış olabilir",
+      "submit": "Hesap oluştur",
+      "successTitle": "Şifre kurtarma yok",
+      "successBody": "Yedeğin = zip export. Ayarlar → Zip indir.",
+      "seedImportFailed": "Zip içe aktarılamadı — hesabın oluşturuldu, Ayarlar'dan tekrar deneyebilirsin",
+      "continue": "Kütüphaneye git"
+    },
+    "account": {
+      "title": "Hesap",
+      "handle": "Kullanıcı adı: {{handle}}",
+      "logout": "Çıkış yap",
+      "delete": "Hesabı sil"
+    },
+    "deleteAccount": {
+      "warning": "Önce son bir yedek indir",
+      "confirm": "Yine de sil",
+      "error": "Hesap silinemedi — şifreni kontrol et"
+    }
   }
 }

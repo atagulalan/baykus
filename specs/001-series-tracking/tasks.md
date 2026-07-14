@@ -325,7 +325,26 @@ second handle is isolated; single mode password gate works.
   could be lost mid-request. Account deletion (M7.2's DELETE
   /api/auth/account) evicts the pool entry before unlinking the library
   file, via an onAccountDeleted callback threaded from app.ts. -->
-- [ ] M7.4 web auth UX (FR-012): `/login`, `/claim` routes per ui.md; claim success screen states loudly "şifre kurtarma YOK — zip yedeğin sigortandır"; optional zip seed upload during claim; session boot via GET /api/auth/session; account deletion in Settings with final-export interstitial
+- [x] M7.4 web auth UX (FR-012): `/login`, `/claim` routes per ui.md; claim success screen states loudly "şifre kurtarma YOK — zip yedeğin sigortandır"; optional zip seed upload during claim; session boot via GET /api/auth/session; account deletion in Settings with final-export interstitial
+  <!-- DECISION 2026-07-14: contracts/api.md's POST /api/auth/claim only
+  takes {handle, password} — there's no zip-seed parameter on that
+  endpoint. ui.md's "optional zip ile başla" is implemented by composing
+  two already-tested calls instead of inventing a new field: claim first
+  (creates the account + session), then POST /api/import (mode=replace,
+  reusing M6.3's endpoint) if a file was chosen — the fresh session cookie
+  routes it to the right per-handle library via M7.3's resolver. A failed
+  seed import doesn't fail the claim (the account still exists); the
+  success screen shows a warning instead so the user can retry from
+  Settings. TanStack Router's code-based pathless layout routes (id-only
+  createRoute) didn't produce a pathless type in this installed version
+  (1.170.17) no matter the id spelling tried — Layout instead reads the
+  current pathname itself and renders a bare <Outlet/> for /login and
+  /claim, skipping nav chrome and the auth-session redirect check for
+  those two routes only. Settings' "Hesap" section (handle, logout,
+  delete-with-interstitial) is multi-mode-only per ui.md's literal
+  scoping — single mode's password gate has no handle to disambiguate a
+  logout action from "no password configured" using only the session
+  response shape, so no single-mode logout UI was added. -->
 - [ ] M7.5 CHECKPOINT M7 — two handles in multi mode fully isolated (search both, data never leaks), logout/login, wrong password uniform error, single mode gate on/off via env
 
 ---

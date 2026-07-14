@@ -1,8 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { exportZipUrl, getSettings, importZip, updateSettings } from "../api/client.ts";
+import {
+  deleteAccount,
+  exportZipUrl,
+  getAuthSession,
+  getSettings,
+  importZip,
+  logout,
+  updateSettings,
+} from "../api/client.ts";
 import type { ImportMode, ImportZipResult, Locale, Settings, SettingsPatch } from "../api/types.ts";
+import { DeleteAccountDialog } from "../components/DeleteAccountDialog.tsx";
 import {
   getCurrentPushSubscription,
   isPushSupported,
@@ -18,12 +28,15 @@ export function SettingsPage() {
   const { t, i18n } = useTranslation();
   const toast = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [tmdbKeyInput, setTmdbKeyInput] = useState("");
   const [importMode, setImportMode] = useState<ImportMode>("merge");
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importResult, setImportResult] = useState<ImportZipResult | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const query = useQuery({ queryKey: ["settings"], queryFn: getSettings });
+  const sessionQuery = useQuery({ queryKey: ["auth-session"], queryFn: getAuthSession });
   const pushSupported = isPushSupported();
   const pushStatusQuery = useQuery({
     queryKey: ["push-subscription"],
@@ -78,6 +91,22 @@ export function SettingsPage() {
       queryClient.invalidateQueries();
     },
     onError: () => toast.show(t("settings.data.error"), "error"),
+  });
+
+  const logoutMutation = useMutation({
+    mutationFn: logout,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["auth-session"] });
+      navigate({ to: "/login" });
+    },
+  });
+
+  const deleteAccountMutation = useMutation({
+    mutationFn: (password: string) => deleteAccount(password),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["auth-session"] });
+      navigate({ to: "/login" });
+    },
   });
 
   if (query.isLoading) {
@@ -315,6 +344,41 @@ export function SettingsPage() {
           )}
         </div>
       </section>
+
+      {sessionQuery.data?.mode === "multi" && (
+        <section className="flex flex-col gap-3 rounded-lg bg-zinc-900 p-4">
+          <h2 className="font-medium text-sm text-zinc-300">{t("auth.account.title")}</h2>
+          <p className="text-sm text-zinc-400">
+            {t("auth.account.handle", { handle: sessionQuery.data.handle ?? "" })}
+          </p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => logoutMutation.mutate()}
+              disabled={logoutMutation.isPending}
+              className="rounded bg-zinc-800 px-3 py-1.5 text-sm text-zinc-300 disabled:opacity-50"
+            >
+              {t("auth.account.logout")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setDeleteDialogOpen(true)}
+              className="rounded bg-red-950 px-3 py-1.5 text-red-400 text-sm"
+            >
+              {t("auth.account.delete")}
+            </button>
+          </div>
+        </section>
+      )}
+
+      {deleteDialogOpen && (
+        <DeleteAccountDialog
+          pending={deleteAccountMutation.isPending}
+          error={deleteAccountMutation.isError}
+          onClose={() => setDeleteDialogOpen(false)}
+          onConfirm={(password) => deleteAccountMutation.mutate(password)}
+        />
+      )}
     </div>
   );
 }

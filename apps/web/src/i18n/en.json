@@ -153,5 +153,36 @@
       "upcoming": "No upcoming episodes",
       "recentlyAired": "No unwatched episodes"
     }
+  },
+  "auth": {
+    "handle": "Handle",
+    "password": "Password",
+    "login": "Log in",
+    "loginError": "Invalid handle or password",
+    "needAccount": "Don't have an account? Create one",
+    "claim": {
+      "title": "Create account",
+      "confirmPassword": "Confirm password",
+      "passwordMismatch": "Passwords don't match",
+      "handleHint": "3-30 characters, lowercase letters/digits/hyphens",
+      "seedZip": "Start from a zip (optional)",
+      "error": "Couldn't create the account — the handle may be taken",
+      "submit": "Create account",
+      "successTitle": "No password recovery",
+      "successBody": "Your backup is your zip export. Settings → Download zip.",
+      "seedImportFailed": "The zip import failed — your account was created, retry it from Settings",
+      "continue": "Go to library"
+    },
+    "account": {
+      "title": "Account",
+      "handle": "Handle: {{handle}}",
+      "logout": "Log out",
+      "delete": "Delete account"
+    },
+    "deleteAccount": {
+      "warning": "Download a final backup first",
+      "confirm": "Delete anyway",
+      "error": "Couldn't delete the account — check your password"
+    }
   }
 }
