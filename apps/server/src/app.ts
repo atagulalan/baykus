@@ -49,7 +49,7 @@ export function createApp(config: Config, deps: AppDeps) {
 
   let onAccountDeleted: ((handle: string) => void) | undefined;
   if (deps.auth.mode === "multi") {
-    const pool = createLibraryPool(deps.auth.dataDir);
+    const pool = createLibraryPool(deps.auth.dataDir, config.BAYKUS_MIGRATIONS_DIR);
     app.use("*", createLibraryResolver(deps.auth.accountsDb, pool));
     onAccountDeleted = (handle) => pool.close(handle);
   }

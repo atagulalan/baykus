@@ -18,8 +18,11 @@ export function createProductionDeps(config: Config): AppDeps {
   // requesting handle's pooled library instead, see app.ts).
   const library =
     config.BAYKUS_MODE === "single"
-      ? createLibrary(openLibraryDb(join(config.BAYKUS_DATA_DIR, "library.db")).db)
-      : createLibrary(openLibraryDb(":memory:").db);
+      ? createLibrary(
+          openLibraryDb(join(config.BAYKUS_DATA_DIR, "library.db"), config.BAYKUS_MIGRATIONS_DIR)
+            .db,
+        )
+      : createLibrary(openLibraryDb(":memory:", config.BAYKUS_MIGRATIONS_DIR).db);
 
   const tmdbApiKey = config.BAYKUS_MODE === "single" ? library.getTmdbApiKey() : undefined;
   const activeTmdbKey = tmdbApiKey ?? config.BAYKUS_TMDB_API_KEY;

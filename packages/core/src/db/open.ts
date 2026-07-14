@@ -11,14 +11,23 @@ export interface LibraryDb {
   sqlite: Database.Database;
 }
 
-const migrationsFolder = fileURLToPath(new URL("../../migrations", import.meta.url));
+const DEFAULT_MIGRATIONS_FOLDER = fileURLToPath(new URL("../../migrations", import.meta.url));
 
 /**
  * Opens (creating if needed) a library SQLite file and applies any pending
  * migrations. Safe to call repeatedly on the same file — migrations already
  * applied are skipped. `filePath: ":memory:"` is supported for tests.
+ *
+ * `migrationsFolder` defaults to a path computed relative to *this source
+ * file* — correct in dev/tests, but meaningless once this module is bundled
+ * into another file (M9.1: apps/server's esbuild bundle inlines this code,
+ * so `import.meta.url` at runtime points at dist/main.js, not here). The
+ * bundled entrypoint passes an explicit override; nothing else needs to.
  */
-export function openLibraryDb(filePath: string): LibraryDb {
+export function openLibraryDb(
+  filePath: string,
+  migrationsFolder: string = DEFAULT_MIGRATIONS_FOLDER,
+): LibraryDb {
   const sqlite = new Database(filePath);
   sqlite.pragma("journal_mode = WAL");
   sqlite.pragma("foreign_keys = ON");

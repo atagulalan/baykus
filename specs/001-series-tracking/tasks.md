@@ -490,7 +490,52 @@ second handle is isolated; single mode password gate works.
 
 ## M9 — Ship
 
-- [ ] M9.1 Dockerfile (multi-stage: pnpm build → node:22-slim runtime, `/data` volume, HEALTHCHECK `/api/health`, port 4004) + `compose.example.yml`; server serves `apps/web/dist` statically + SPA fallback
+- [x] M9.1 Dockerfile (multi-stage: pnpm build → node:22-slim runtime, `/data` volume, HEALTHCHECK `/api/health`, port 4004) + `compose.example.yml`; server serves `apps/web/dist` statically + SPA fallback
+  <!-- DECISION 2026-07-14: actually built and ran this in Docker (daemon
+  was available) rather than just writing a plausible-looking Dockerfile
+  — good thing, since it surfaced two real bugs neither typecheck nor the
+  test suite could ever catch:
+  (1) apps/server's esbuild bundle used `packages: "external"`, which
+  externalizes @baykus/* workspace imports exactly like real npm
+  packages. In dev this "worked" only because pnpm's workspace symlinks
+  resolve OUTSIDE node_modules (to packages/*/src/*.ts), and Node's
+  native type-stripping (default-on in this Node version, no flag needed)
+  refuses to strip types for anything physically under node_modules — so
+  a properly-installed production node_modules (via pnpm deploy, prod
+  install, or copying node_modules between Docker stages) can never run
+  the old bundle at all. Fixed by switching build.mjs to an explicit
+  `external` array (computed from every workspace package's own
+  package.json, unioned, @baykus/* names excluded) so esbuild bundles
+  @baykus/* code directly instead of leaving it external — dist/main.js
+  is now plain, fully self-contained JS with zero @baykus/* imports and
+  zero TypeScript syntax; the strip-types dependency is gone entirely.
+  This meant apps/server/package.json needed two new *direct*
+  dependencies (drizzle-orm, archiver) that were previously only
+  transitively available via @baykus/core, since pnpm's strict
+  node_modules won't hoist a dependency to a package that doesn't declare
+  it itself.
+  (2) Bundling moved packages/core/src/db/open.ts's migrations-folder
+  computation (import.meta.url-relative) into dist/main.js, where
+  import.meta.url now resolves to the bundle's location, not open.ts's —
+  breaking migrations. Fixed by adding an optional migrationsFolder
+  parameter to openLibraryDb() (default unchanged for dev/tests) plus a
+  BAYKUS_MIGRATIONS_DIR env var the Docker image sets explicitly; the
+  same pattern (BAYKUS_WEB_DIST) gates the new static-file+SPA-fallback
+  middleware in main.ts, added only when that directory exists so `pnpm
+  dev` (Vite serves apps/web separately) is unaffected.
+  (3) `pnpm prune --prod` at the workspace root treats the ROOT
+  package.json (devDependencies only, no "dependencies") as the pruning
+  target and silently wipes node_modules to nothing — replaced with
+  `rm -rf **/node_modules && pnpm install --prod --frozen-lockfile`,
+  which correctly resolves each workspace package's own prod deps.
+  Verified for real: built the image, ran it standalone AND via `docker
+  compose up --build` (both healthy per Docker's own HEALTHCHECK),
+  confirmed static asset serving + SPA fallback (client route survives a
+  hard refresh) + API 404s stay JSON (not swallowed by the SPA
+  catch-all) + a real add-series network call + multi mode (including a
+  real argon2 claim) all work inside the container, then tore everything
+  down (containers, volumes, intermediate images). -->
+
 - [ ] M9.2 deploy baykus.xava.me: multi mode, server TMDB key, Caddy TLS, nightly `/data` backup cron; smoke: claim + import own zip
 - [ ] M9.3 docs: README quickstart verified against clean clone, self-host guide (`docs/self-hosting.md`), screenshots
 - [ ] M9.4 acceptance: walk spec.md checklist; i18n parity test (vitest: tr.json/en.json key sets equal) added and green

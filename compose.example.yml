@@ -1,0 +1,33 @@
+# Self-hosting quickstart (single mode — one user, no accounts):
+#   cp compose.example.yml compose.yml
+#   docker compose up -d
+#
+# baykuş is then at http://localhost:4004. All data (SQLite files, cached
+# images, push keys) lives in the "baykus-data" volume — back it up (or
+# just use Ayarlar → Zip indir; your data is always portable, Article III).
+services:
+  baykus:
+    build: .
+    # Or, once published: image: ghcr.io/xava/baykus:latest
+    ports:
+      - "4004:4004"
+    volumes:
+      - baykus-data:/data
+    environment:
+      BAYKUS_MODE: single
+      # Optional password gate (FR-013) — unset means anyone who can reach
+      # this instance can use it, which is fine on a private network.
+      # BAYKUS_PASSWORD: change-me
+      # Optional — richer metadata via TMDB (Article IV: fully usable
+      # without one, via keyless TVmaze). Can also be set later in Ayarlar.
+      # BAYKUS_TMDB_API_KEY: your-tmdb-v4-read-token
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4004/api/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+
+volumes:
+  baykus-data:

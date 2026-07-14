@@ -27,7 +27,7 @@ export interface LibraryPool {
  * a pool exists. Map insertion order doubles as LRU order: re-inserting a key
  * moves it to the end, so the first key is always the least-recently-used one.
  */
-export function createLibraryPool(dataDir: string): LibraryPool {
+export function createLibraryPool(dataDir: string, migrationsFolder?: string): LibraryPool {
   const entries = new Map<string, PoolEntry>();
 
   function evictIdle(): void {
@@ -64,7 +64,7 @@ export function createLibraryPool(dataDir: string): LibraryPool {
       evictOldestIfFull();
       const dbPath = libraryDbPath(dataDir, handle);
       mkdirSync(dirname(dbPath), { recursive: true });
-      const { db, sqlite } = openLibraryDb(dbPath);
+      const { db, sqlite } = openLibraryDb(dbPath, migrationsFolder);
       const library = createLibrary(db);
       entries.set(handle, { library, sqlite, lastUsed: Date.now() });
       return library;

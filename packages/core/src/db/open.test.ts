@@ -1,6 +1,7 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import { openLibraryDb } from "./open.ts";
 
@@ -26,6 +27,18 @@ describe("openLibraryDb", () => {
 
   it("creates all 9 library tables", () => {
     const { sqlite } = openLibraryDb(":memory:");
+    const rows = sqlite
+      .prepare(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '__drizzle%'",
+      )
+      .all() as { name: string }[];
+    expect(rows.map((r) => r.name).sort()).toEqual(ALL_TABLES);
+    sqlite.close();
+  });
+
+  it("accepts an explicit migrationsFolder override (M9.1: needed once apps/server bundles this code, breaking the default import.meta.url-relative path)", () => {
+    const explicitFolder = fileURLToPath(new URL("../../migrations", import.meta.url));
+    const { sqlite } = openLibraryDb(":memory:", explicitFolder);
     const rows = sqlite
       .prepare(
         "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '__drizzle%'",
