@@ -4,6 +4,7 @@ import { Hono } from "hono";
 import type { Config } from "./config.ts";
 import { errorHandler } from "./middleware/errors.ts";
 import { xBaykusGuard } from "./middleware/guard.ts";
+import { createCalendarRoute } from "./routes/calendar.ts";
 import { createImageRoute } from "./routes/img.ts";
 import { createLibraryRoutes } from "./routes/library.ts";
 import { createRatingRoutes } from "./routes/ratings.ts";
@@ -33,9 +34,10 @@ export function createApp(config: Config, deps: AppDeps) {
   app.route("/", createImageRoute(deps.providers, deps.dataDir));
   app.route("/", createSettingsRoutes(deps.library, deps.providers, config.BAYKUS_TMDB_API_KEY));
   app.route("/", createRefreshRoutes(deps.library, deps.providers));
+  app.route("/", createCalendarRoute(deps.library));
 
   // Route groups land here milestone by milestone (see specs tasks.md):
-  // M5: /api/calendar, /api/push
+  // M5: /api/push
   // M6: /api/export.zip, /api/import
   // M7: /api/auth/*
 

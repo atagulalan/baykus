@@ -120,5 +120,14 @@
     "monthsChart": "Episodes watched by month",
     "ratingDistribution": "Rating distribution",
     "empty": "No watch history yet"
+  },
+  "calendar": {
+    "upcoming": "Upcoming 30 days",
+    "recentlyAired": "Last 14 days · unwatched",
+    "today": "TODAY {{date}}",
+    "empty": {
+      "upcoming": "No upcoming episodes",
+      "recentlyAired": "No unwatched episodes"
+    }
   }
 }

@@ -212,7 +212,13 @@ with upcoming + finale badges, receive a test push.
   (api/client.ts refreshAllSeries) — same progressive-update UX, no contract
   change. Per-series refresh trigger points follow ui.md exactly: the card's
   hover menu (⟳ + Kaldır) and the detail header's ⟳ next to the status select. -->
-- [ ] M5.3 calendar (FR-007): core query (30d upcoming + 14d recently-aired-unwatched, `watching` only), server route, web CalendarPage per ui.md (day-grouped list, finale badge from episodeType, platform badges)
+- [x] M5.3 calendar (FR-007): core query (30d upcoming + 14d recently-aired-unwatched, `watching` only), server route, web CalendarPage per ui.md (day-grouped list, finale badge from episodeType, platform badges)
+  <!-- DECISION 2026-07-14: "`watching` only" in this DoD line reads as scoping
+  BOTH windows (not just recently-aired-unwatched) — spec.md's E9 edge case
+  frames the 14-day/watching-only rule specifically for recently-aired, but
+  a calendar surfacing upcoming episodes for dropped/completed/backlog shows
+  serves no purpose, so upcoming is scoped to watching too. Smallest
+  reasonable choice; no contracts/api.md text contradicts it. -->
 - [ ] M5.4 web push (FR-009)
   - **Files:** `apps/server/src/push/{vapid.ts,notify.ts}`, `apps/web/public/sw.js`, subscribe UI in Settings, per-series mute in detail header
   - **DoD:** deps `web-push`; VAPID keypair generated at first boot into dataDir (single) / env (multi); notify on `new-episodes` (one per series, skip muted); contracts §Push; sw click → `/series/:id`

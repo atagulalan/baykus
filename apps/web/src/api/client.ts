@@ -3,6 +3,7 @@ import type {
   ApiErrorEnvelope,
   BulkWatchResult,
   BulkWatchTarget,
+  CalendarResponse,
   ExternalIds,
   Rating,
   RatingTargetType,
@@ -187,4 +188,14 @@ export async function refreshAllSeries(
     throw new ApiError("INTERNAL", "refresh stream ended without a complete event", 200, null);
   }
   return complete;
+}
+
+export function getCalendar(
+  params: { from?: string; to?: string } = {},
+): Promise<CalendarResponse> {
+  const query = new URLSearchParams();
+  if (params.from) query.set("from", params.from);
+  if (params.to) query.set("to", params.to);
+  const qs = query.toString();
+  return request<CalendarResponse>(`/calendar${qs ? `?${qs}` : ""}`);
 }

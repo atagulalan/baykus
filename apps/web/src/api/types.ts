@@ -228,3 +228,27 @@ export interface RefreshCompleteEvent {
   failed: number;
   newEpisodes: number;
 }
+
+export interface CalendarEntry {
+  itemId: number;
+  title: string;
+  posterRef: string | null;
+  episodeId: number;
+  s: number;
+  e: number;
+  episodeTitle: string | null;
+  episodeType: EpisodeType | null;
+  network: string | null;
+  watchProviders: WatchProviderInfo[];
+  airDate?: string;
+}
+
+export interface CalendarDay {
+  date: string;
+  entries: CalendarEntry[];
+}
+
+export interface CalendarResponse {
+  upcoming: CalendarDay[];
+  recentlyAired: CalendarEntry[];
+}

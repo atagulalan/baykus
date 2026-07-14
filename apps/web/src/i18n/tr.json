@@ -120,5 +120,14 @@
     "monthsChart": "Aylara göre izlenen bölümler",
     "ratingDistribution": "Puan dağılımı",
     "empty": "Henüz izleme kaydı yok"
+  },
+  "calendar": {
+    "upcoming": "Yaklaşan 30 gün",
+    "recentlyAired": "Son 14 gün · izlenmemiş",
+    "today": "BUGÜN {{date}}",
+    "empty": {
+      "upcoming": "Yaklaşan bölüm yok",
+      "recentlyAired": "İzlenmemiş bölüm yok"
+    }
   }
 }

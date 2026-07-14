@@ -6,6 +6,7 @@ import type {
   WatchProviderInfo,
 } from "@baykus/provider-sdk";
 import { and, eq, or, sql } from "drizzle-orm";
+import { type CalendarResponse, getCalendar } from "../calendar/query.ts";
 import type { LibraryDatabase } from "../db/open.ts";
 import type { RatingTargetType, TrackingStatus, WatchSource } from "../db/schema.ts";
 import * as schema from "../db/schema.ts";
@@ -190,6 +191,7 @@ export interface Library {
     itemIds: number[],
     concurrency?: number,
   ): AsyncGenerator<RefreshResult>;
+  getCalendar(opts?: { from?: string; to?: string }): CalendarResponse;
 }
 
 export function createLibrary(db: LibraryDatabase): Library {
@@ -447,6 +449,10 @@ export function createLibrary(db: LibraryDatabase): Library {
       concurrency?: number,
     ): AsyncGenerator<RefreshResult> {
       return refreshAll(db, provider, itemIds, concurrency);
+    },
+
+    getCalendar(opts?: { from?: string; to?: string }): CalendarResponse {
+      return getCalendar(db, opts);
     },
   };
 }
