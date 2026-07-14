@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { listSeries, removeSeries } from "../api/client.ts";
+import { listSeries, refreshAllSeries, refreshSeries, removeSeries } from "../api/client.ts";
 import type { TrackingStatus } from "../api/types.ts";
 import { SeriesCard } from "../components/SeriesCard.tsx";
 import { useToast } from "../lib/toast.tsx";
@@ -25,6 +25,9 @@ export function LibraryPage() {
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<StatusFilter>("all");
   const [sort, setSort] = useState<Sort>("added");
+  const [refreshProgress, setRefreshProgress] = useState<{ done: number; total: number } | null>(
+    null,
+  );
 
   const query = useQuery({
     queryKey: ["library", filter, sort],
@@ -48,6 +51,33 @@ export function LibraryPage() {
     }
   }
 
+  const refreshOneMutation = useMutation({
+    mutationFn: (id: number) => refreshSeries(id),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["library"] });
+      toast.show(
+        result.newEpisodes > 0
+          ? t("series.refreshFoundNew", { count: result.newEpisodes })
+          : t("series.refreshUpToDate"),
+      );
+    },
+    onError: () => toast.show(t("errors.generic"), "error"),
+  });
+
+  const refreshAllMutation = useMutation({
+    mutationFn: () =>
+      refreshAllSeries((event) => setRefreshProgress({ done: event.done, total: event.total })),
+    onSuccess: (result) => {
+      setRefreshProgress(null);
+      queryClient.invalidateQueries({ queryKey: ["library"] });
+      toast.show(t("library.refreshAllDone", { newEpisodes: result.newEpisodes }));
+    },
+    onError: () => {
+      setRefreshProgress(null);
+      toast.show(t("errors.generic"), "error");
+    },
+  });
+
   const items = query.data?.items ?? [];
 
   return (
@@ -67,18 +97,33 @@ export function LibraryPage() {
             </button>
           ))}
         </div>
-        <select
-          value={sort}
-          onChange={(e) => setSort(e.target.value as Sort)}
-          aria-label={t("library.sort.label")}
-          className="rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-sm"
-        >
-          {SORTS.map((s) => (
-            <option key={s} value={s}>
-              {t(`library.sort.${s}`)}
-            </option>
-          ))}
-        </select>
+        <div className="flex items-center gap-2">
+          {refreshProgress && (
+            <span className="text-xs text-zinc-500">
+              {refreshProgress.done}/{refreshProgress.total}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={() => refreshAllMutation.mutate()}
+            disabled={refreshAllMutation.isPending}
+            className="rounded bg-zinc-800 px-3 py-1 text-sm text-zinc-300 disabled:opacity-50"
+          >
+            {t("library.refreshAll")}
+          </button>
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value as Sort)}
+            aria-label={t("library.sort.label")}
+            className="rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-sm"
+          >
+            {SORTS.map((s) => (
+              <option key={s} value={s}>
+                {t(`library.sort.${s}`)}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {query.isLoading ? (
@@ -110,6 +155,7 @@ export function LibraryPage() {
               key={series.id}
               series={series}
               onRemove={() => handleRemove(series.id, series.title)}
+              onRefresh={() => refreshOneMutation.mutate(series.id)}
             />
           ))}
         </div>

@@ -201,7 +201,17 @@ with upcoming + finale badges, receive a test push.
   - **Files:** `packages/core/src/refresh/{engine.ts,engine.test.ts}`
   - **DoD:** `refreshItem(itemId)` re-fetches details, diffs episodes by (s,e) (upsert changed fields, insert new, never delete watched episodes — orphaned ones flagged `removed` via… NO: keep simple, delete unwatched orphans, keep watched orphans), writes refresh_log with newEpisodeCount = episodes whose airDate ∈ (lastRefreshAt, now]; `refreshAll(concurrency 3)` yields per-item results as async iterator; emits `new-episodes` events `{itemId, episodes[]}`
   - **Tests:** fake provider mutation scenarios: new episode added, air date changed, episode removed (watched vs unwatched), provider failure isolated
-- [ ] M5.2 server refresh routes + SSE (contracts §Refresh); web: per-series refresh button + global refresh with progress bar (EventSource)
+- [x] M5.2 server refresh routes + SSE (contracts §Refresh); web: per-series refresh button + global refresh with progress bar (EventSource)
+  <!-- DECISION 2026-07-14: contracts/api.md specifies POST /api/library/refresh
+  for the global SSE route, guarded by the same X-Baykus header as every other
+  mutating endpoint. The browser's native EventSource API can only issue GET
+  requests and can't set custom headers, so it's incompatible with that
+  contract as written. Kept the route POST (contracts outrank tasks.md's
+  "(EventSource)" parenthetical), and the client instead reads the same
+  text/event-stream body by hand via fetch + a ReadableStream reader
+  (api/client.ts refreshAllSeries) — same progressive-update UX, no contract
+  change. Per-series refresh trigger points follow ui.md exactly: the card's
+  hover menu (⟳ + Kaldır) and the detail header's ⟳ next to the status select. -->
 - [ ] M5.3 calendar (FR-007): core query (30d upcoming + 14d recently-aired-unwatched, `watching` only), server route, web CalendarPage per ui.md (day-grouped list, finale badge from episodeType, platform badges)
 - [ ] M5.4 web push (FR-009)
   - **Files:** `apps/server/src/push/{vapid.ts,notify.ts}`, `apps/web/public/sw.js`, subscribe UI in Settings, per-series mute in detail header

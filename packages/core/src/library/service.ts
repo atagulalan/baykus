@@ -1,6 +1,7 @@
 import type {
   ExternalIds,
   ExternalRating,
+  MetadataProvider,
   SeriesDetails,
   WatchProviderInfo,
 } from "@baykus/provider-sdk";
@@ -8,6 +9,7 @@ import { and, eq, or, sql } from "drizzle-orm";
 import type { LibraryDatabase } from "../db/open.ts";
 import type { RatingTargetType, TrackingStatus, WatchSource } from "../db/schema.ts";
 import * as schema from "../db/schema.ts";
+import { type RefreshResult, refreshAll, refreshItem } from "../refresh/engine.ts";
 import { AlreadyInLibraryError } from "./errors.ts";
 import { getNextAirDate, getNextUnwatchedEpisode, getSeriesProgress } from "./progress.ts";
 import { clearRating, getRating, type Rating, setRating } from "./ratings.ts";
@@ -182,6 +184,12 @@ export interface Library {
   updateSettings(patch: SettingsPatch): Settings;
   /** Internal use only (provider registry wiring) — never serialize this over the API. */
   getTmdbApiKey(): string | undefined;
+  refreshItem(provider: MetadataProvider, itemId: number): Promise<RefreshResult>;
+  refreshAll(
+    provider: MetadataProvider,
+    itemIds: number[],
+    concurrency?: number,
+  ): AsyncGenerator<RefreshResult>;
 }
 
 export function createLibrary(db: LibraryDatabase): Library {
@@ -427,6 +435,18 @@ export function createLibrary(db: LibraryDatabase): Library {
 
     getTmdbApiKey(): string | undefined {
       return getTmdbApiKey(db);
+    },
+
+    refreshItem(provider: MetadataProvider, itemId: number): Promise<RefreshResult> {
+      return refreshItem(db, provider, itemId);
+    },
+
+    refreshAll(
+      provider: MetadataProvider,
+      itemIds: number[],
+      concurrency?: number,
+    ): AsyncGenerator<RefreshResult> {
+      return refreshAll(db, provider, itemIds, concurrency);
     },
   };
 }

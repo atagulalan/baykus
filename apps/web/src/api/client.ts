@@ -6,6 +6,9 @@ import type {
   ExternalIds,
   Rating,
   RatingTargetType,
+  RefreshCompleteEvent,
+  RefreshProgressEvent,
+  RefreshResult,
   SearchResponse,
   SeriesDetail,
   SeriesListResponse,
@@ -139,4 +142,49 @@ export function getSettings(): Promise<Settings> {
 
 export function updateSettings(patch: SettingsPatch): Promise<Settings> {
   return request<Settings>("/settings", { method: "PATCH", body: JSON.stringify(patch) });
+}
+
+export function refreshSeries(id: number): Promise<RefreshResult> {
+  return request<RefreshResult>(`/library/series/${id}/refresh`, { method: "POST" });
+}
+
+/**
+ * The server's global refresh is a POST (contracts/api.md) guarded by the
+ * X-Baykus header — the native EventSource API can't send either, so this
+ * consumes the same text/event-stream body by hand via fetch + a stream reader.
+ */
+export async function refreshAllSeries(
+  onProgress: (event: RefreshProgressEvent) => void,
+): Promise<RefreshCompleteEvent> {
+  const res = await fetch("/api/library/refresh", { method: "POST", headers: { "X-Baykus": "1" } });
+  if (!res.ok || !res.body) {
+    throw new ApiError("INTERNAL", "refresh stream failed", res.status, null);
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let complete: RefreshCompleteEvent | null = null;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const blocks = buffer.split("\n\n");
+    buffer = blocks.pop() ?? "";
+    for (const block of blocks) {
+      const eventLine = block.split("\n").find((line) => line.startsWith("event:"));
+      const dataLine = block.split("\n").find((line) => line.startsWith("data:"));
+      if (!eventLine || !dataLine) continue;
+      const event = eventLine.slice("event:".length).trim();
+      const data = JSON.parse(dataLine.slice("data:".length).trim());
+      if (event === "progress") onProgress(data as RefreshProgressEvent);
+      else if (event === "complete") complete = data as RefreshCompleteEvent;
+    }
+  }
+
+  if (!complete) {
+    throw new ApiError("INTERNAL", "refresh stream ended without a complete event", 200, null);
+  }
+  return complete;
 }

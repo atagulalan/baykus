@@ -7,6 +7,7 @@ import { xBaykusGuard } from "./middleware/guard.ts";
 import { createImageRoute } from "./routes/img.ts";
 import { createLibraryRoutes } from "./routes/library.ts";
 import { createRatingRoutes } from "./routes/ratings.ts";
+import { createRefreshRoutes } from "./routes/refresh.ts";
 import { createSearchRoute } from "./routes/search.ts";
 import { createSettingsRoutes } from "./routes/settings.ts";
 import { createStatsRoute } from "./routes/stats.ts";
@@ -31,9 +32,10 @@ export function createApp(config: Config, deps: AppDeps) {
   app.route("/", createStatsRoute(deps.library));
   app.route("/", createImageRoute(deps.providers, deps.dataDir));
   app.route("/", createSettingsRoutes(deps.library, deps.providers, config.BAYKUS_TMDB_API_KEY));
+  app.route("/", createRefreshRoutes(deps.library, deps.providers));
 
   // Route groups land here milestone by milestone (see specs tasks.md):
-  // M5: /api/library/refresh (SSE), /api/calendar, /api/push
+  // M5: /api/calendar, /api/push
   // M6: /api/export.zip, /api/import
   // M7: /api/auth/*
 

@@ -44,10 +44,13 @@
       "nextAir": "Sıradaki yayın"
     },
     "card": {
-      "remove": "Kaldır"
+      "remove": "Kaldır",
+      "refresh": "Yenile"
     },
     "removeConfirm": "\"{{title}}\" kütüphaneden kaldırılsın mı?",
-    "removeError": "Kaldırılırken bir hata oluştu"
+    "removeError": "Kaldırılırken bir hata oluştu",
+    "refreshAll": "Tümünü yenile",
+    "refreshAllDone": "Yenileme tamamlandı — {{newEpisodes}} yeni bölüm"
   },
   "series": {
     "notFound": "Bu dizi kütüphanende değil",
@@ -58,7 +61,10 @@
     "suggestCompleted": "Tüm bölümler izlendi. Bitirdim'e taşınsın mı?",
     "moveToCompleted": "Taşı",
     "staySame": "Kalsın",
-    "justwatchAttribution": "JustWatch verisi"
+    "justwatchAttribution": "JustWatch verisi",
+    "refresh": "Yenile",
+    "refreshFoundNew": "{{count}} yeni bölüm bulundu",
+    "refreshUpToDate": "Güncel — yeni bölüm yok"
   },
   "episode": {
     "toggleWatched": "İzlendi olarak işaretle",

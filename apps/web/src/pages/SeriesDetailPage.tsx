@@ -9,6 +9,7 @@ import {
   clearRating,
   getSeries,
   getSettings,
+  refreshSeries,
   removeLatestEpisodeWatch,
   setRating,
   updateSeries,
@@ -202,6 +203,19 @@ export function SeriesDetailPage() {
     onSettled: invalidate,
   });
 
+  const refreshSeriesMutation = useMutation({
+    mutationFn: () => refreshSeries(id),
+    onSuccess: (result) => {
+      toast.show(
+        result.newEpisodes > 0
+          ? t("series.refreshFoundNew", { count: result.newEpisodes })
+          : t("series.refreshUpToDate"),
+      );
+    },
+    onError: reportError,
+    onSettled: invalidate,
+  });
+
   const rateItem = useMutation<
     unknown,
     unknown,
@@ -296,6 +310,15 @@ export function SeriesDetailPage() {
                 </option>
               ))}
             </select>
+            <button
+              type="button"
+              onClick={() => refreshSeriesMutation.mutate()}
+              disabled={refreshSeriesMutation.isPending}
+              aria-label={t("series.refresh")}
+              className="rounded px-2 py-1 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100 disabled:opacity-50"
+            >
+              {refreshSeriesMutation.isPending ? "…" : "⟳"}
+            </button>
           </div>
           {detail.tagline && <p className="text-sm text-zinc-400 italic">"{detail.tagline}"</p>}
 

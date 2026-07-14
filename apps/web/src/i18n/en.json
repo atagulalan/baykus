@@ -44,10 +44,13 @@
       "nextAir": "Next air date"
     },
     "card": {
-      "remove": "Remove"
+      "remove": "Remove",
+      "refresh": "Refresh"
     },
     "removeConfirm": "Remove \"{{title}}\" from your library?",
-    "removeError": "Something went wrong while removing"
+    "removeError": "Something went wrong while removing",
+    "refreshAll": "Refresh all",
+    "refreshAllDone": "Refresh done — {{newEpisodes}} new episodes"
   },
   "series": {
     "notFound": "This series isn't in your library",
@@ -58,7 +61,10 @@
     "suggestCompleted": "All episodes watched. Move to Completed?",
     "moveToCompleted": "Move",
     "staySame": "Keep as is",
-    "justwatchAttribution": "Data from JustWatch"
+    "justwatchAttribution": "Data from JustWatch",
+    "refresh": "Refresh",
+    "refreshFoundNew": "Found {{count}} new episodes",
+    "refreshUpToDate": "Up to date — no new episodes"
   },
   "episode": {
     "toggleWatched": "Mark as watched",

@@ -206,3 +206,25 @@ export interface Stats {
   episodesPerMonth: { month: string; count: number }[];
   ratingDistribution: Record<"1" | "2" | "3", number>;
 }
+
+export interface RefreshResult {
+  itemId: number;
+  ok: boolean;
+  newEpisodes: number;
+  refreshedAt: string;
+}
+
+export interface RefreshProgressEvent {
+  done: number;
+  total: number;
+  itemId: number;
+  ok: boolean;
+  newEpisodes: number;
+  error?: string;
+}
+
+export interface RefreshCompleteEvent {
+  ok: number;
+  failed: number;
+  newEpisodes: number;
+}

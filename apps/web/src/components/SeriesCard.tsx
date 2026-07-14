@@ -7,11 +7,12 @@ import type { SeriesSummary } from "../api/types.ts";
 interface SeriesCardProps {
   series: SeriesSummary;
   onRemove: () => void;
+  onRefresh: () => void;
 }
 
 const RATING_EMOJI: Record<1 | 2 | 3, string> = { 1: "👎", 2: "😐", 3: "👍" };
 
-export function SeriesCard({ series, onRemove }: SeriesCardProps) {
+export function SeriesCard({ series, onRemove, onRefresh }: SeriesCardProps) {
   const { t } = useTranslation();
   const [imageFailed, setImageFailed] = useState(false);
   const imageUrl = buildImageUrl(series.posterRef);
@@ -58,13 +59,23 @@ export function SeriesCard({ series, onRemove }: SeriesCardProps) {
           {RATING_EMOJI[series.rating]}
         </span>
       )}
-      <button
-        type="button"
-        onClick={onRemove}
-        className="absolute top-1 right-1 hidden rounded bg-zinc-950/80 px-1.5 py-0.5 text-xs text-zinc-100 group-hover:block"
-      >
-        {t("library.card.remove")}
-      </button>
+      <div className="absolute top-1 right-1 hidden gap-1 group-hover:flex">
+        <button
+          type="button"
+          onClick={onRefresh}
+          aria-label={t("library.card.refresh")}
+          className="rounded bg-zinc-950/80 px-1.5 py-0.5 text-xs text-zinc-100"
+        >
+          ⟳
+        </button>
+        <button
+          type="button"
+          onClick={onRemove}
+          className="rounded bg-zinc-950/80 px-1.5 py-0.5 text-xs text-zinc-100"
+        >
+          {t("library.card.remove")}
+        </button>
+      </div>
     </div>
   );
 }
