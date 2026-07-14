@@ -1,6 +1,7 @@
 export { type LibraryDatabase, type LibraryDb, openLibraryDb } from "./db/open.ts";
 export type { RatingTargetType, TrackingStatus, WatchSource } from "./db/schema.ts";
 export * as schema from "./db/schema.ts";
+export { type CachedImage, getCachedImage } from "./images/cache.ts";
 export { AlreadyInLibraryError, isAlreadyInLibraryError } from "./library/errors.ts";
 export { todayUtc } from "./library/progress.ts";
 export type { Rating } from "./library/ratings.ts";

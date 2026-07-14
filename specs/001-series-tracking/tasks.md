@@ -146,7 +146,7 @@ genres/tagline/platforms on detail, TR watch-provider badges.
   createProviderRegistry({tmdbApiKey}); Article IV holds (keyless = TVmaze-only).
   M4.4 will make the registry re-read the key from the settings table so a
   Settings-page save takes effect without a restart. -->
-- [ ] M4.3 image cache + `/img` route (FR-014)
+- [x] M4.3 image cache + `/img` route (FR-014)
   - **Files:** `packages/core/src/images/{cache.ts,cache.test.ts}`, `apps/server/src/routes/img.ts`
   - **DoD:** contracts/api.md §Images; sha256 file names under `<dataDir>/images/`; fetch-through with per-provider resolveImageUrl; immutable cache headers; cache wipe-safe
   - **Tests:** cache hit skips fetch (mock); unknown provider → 404

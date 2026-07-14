@@ -14,5 +14,6 @@ export function createProductionDeps(config: Config): AppDeps {
     providers: createProviderRegistry(
       config.BAYKUS_TMDB_API_KEY ? { tmdbApiKey: config.BAYKUS_TMDB_API_KEY } : {},
     ),
+    dataDir: config.BAYKUS_DATA_DIR,
   };
 }

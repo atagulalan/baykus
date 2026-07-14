@@ -22,7 +22,7 @@ function fixtureSeries(): SeriesDetails {
 describe("GET /api/stats", () => {
   it("returns the full shape with zeroed defaults on an empty library", async () => {
     const library = createLibrary(openLibraryDb(":memory:").db);
-    const app = createApp(loadConfig({}), { library, providers: [] });
+    const app = createApp(loadConfig({}), { library, providers: [], dataDir: "/tmp/baykus-test" });
 
     const res = await app.request("/api/stats", { headers: { "X-Baykus": "1" } });
     expect(res.status).toBe(200);
@@ -42,7 +42,7 @@ describe("GET /api/stats", () => {
     const ep1 = detail?.seasons[0]?.episodes[0]?.id;
     if (ep1 === undefined) throw new Error("setup: fixture episode missing");
     library.addWatch(ep1, "2026-01-05T00:00:00Z");
-    const app = createApp(loadConfig({}), { library, providers: [] });
+    const app = createApp(loadConfig({}), { library, providers: [], dataDir: "/tmp/baykus-test" });
 
     const res = await app.request("/api/stats", { headers: { "X-Baykus": "1" } });
     const body = await res.json();

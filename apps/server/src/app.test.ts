@@ -59,7 +59,8 @@ function createFakeProvider(
 function createTestApp(deps: Partial<AppDeps> = {}) {
   const library = deps.library ?? createLibrary(openLibraryDb(":memory:").db);
   const providers = deps.providers ?? [createFakeProvider()];
-  return createApp(loadConfig({}), { library, providers });
+  const dataDir = deps.dataDir ?? "/tmp/baykus-test";
+  return createApp(loadConfig({}), { library, providers, dataDir });
 }
 
 const MUTATION_HEADERS = { "content-type": "application/json", "X-Baykus": "1" };
