@@ -199,3 +199,15 @@ export function getCalendar(
   const qs = query.toString();
   return request<CalendarResponse>(`/calendar${qs ? `?${qs}` : ""}`);
 }
+
+export function getVapidPublicKey(): Promise<{ key: string }> {
+  return request<{ key: string }>("/push/vapid-public-key");
+}
+
+export function subscribePush(subscription: PushSubscriptionJSON): Promise<void> {
+  return request<void>("/push/subscribe", { method: "POST", body: JSON.stringify(subscription) });
+}
+
+export function unsubscribePush(endpoint: string): Promise<void> {
+  return request<void>("/push/subscribe", { method: "DELETE", body: JSON.stringify({ endpoint }) });
+}

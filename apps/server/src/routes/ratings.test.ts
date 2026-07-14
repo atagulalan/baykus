@@ -25,7 +25,12 @@ function setup() {
   const detail = library.getSeries(summary.id);
   const ep1 = detail?.seasons[0]?.episodes[0]?.id;
   if (ep1 === undefined) throw new Error("setup: fixture episode missing");
-  const app = createApp(loadConfig({}), { library, providers: [], dataDir: "/tmp/baykus-test" });
+  const app = createApp(loadConfig({}), {
+    library,
+    providers: [],
+    dataDir: "/tmp/baykus-test",
+    vapid: { publicKey: "test-public", privateKey: "test-private" },
+  });
   return { app, itemId: summary.id, ep1 };
 }
 

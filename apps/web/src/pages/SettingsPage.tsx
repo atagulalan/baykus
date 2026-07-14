@@ -3,6 +3,12 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getSettings, updateSettings } from "../api/client.ts";
 import type { Locale, Settings, SettingsPatch } from "../api/types.ts";
+import {
+  getCurrentPushSubscription,
+  isPushSupported,
+  subscribeToPush,
+  unsubscribeFromPush,
+} from "../lib/push.ts";
 import { useToast } from "../lib/toast.tsx";
 
 const LOCALES: Locale[] = ["tr", "en"];
@@ -15,6 +21,12 @@ export function SettingsPage() {
   const [tmdbKeyInput, setTmdbKeyInput] = useState("");
 
   const query = useQuery({ queryKey: ["settings"], queryFn: getSettings });
+  const pushSupported = isPushSupported();
+  const pushStatusQuery = useQuery({
+    queryKey: ["push-subscription"],
+    queryFn: async () => (await getCurrentPushSubscription()) !== null,
+    enabled: pushSupported,
+  });
 
   const patch = useMutation({
     mutationFn: (p: SettingsPatch) => updateSettings(p),
@@ -36,6 +48,21 @@ export function SettingsPage() {
     patch.mutate({ tmdbApiKey: value });
     setTmdbKeyInput("");
   }
+
+  const subscribeMutation = useMutation({
+    mutationFn: subscribeToPush,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["push-subscription"] });
+      toast.show(t("settings.notifications.subscribed"));
+    },
+    onError: () => toast.show(t("errors.generic"), "error"),
+  });
+
+  const unsubscribeMutation = useMutation({
+    mutationFn: unsubscribeFromPush,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["push-subscription"] }),
+    onError: () => toast.show(t("errors.generic"), "error"),
+  });
 
   if (query.isLoading) {
     return (
@@ -163,6 +190,31 @@ export function SettingsPage() {
           {t("settings.providers.scrapers")}
         </label>
         <p className="text-xs text-zinc-500">{t("settings.providers.scrapersTos")}</p>
+      </section>
+
+      <section className="flex flex-col gap-3 rounded-lg bg-zinc-900 p-4">
+        <h2 className="font-medium text-sm text-zinc-300">{t("settings.notifications.title")}</h2>
+        {!pushSupported ? (
+          <p className="text-xs text-zinc-500">{t("settings.notifications.unsupported")}</p>
+        ) : pushStatusQuery.data ? (
+          <button
+            type="button"
+            onClick={() => unsubscribeMutation.mutate()}
+            disabled={unsubscribeMutation.isPending}
+            className="self-start rounded bg-zinc-800 px-3 py-1.5 text-sm text-zinc-300 disabled:opacity-50"
+          >
+            {t("settings.notifications.disable")}
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => subscribeMutation.mutate()}
+            disabled={subscribeMutation.isPending}
+            className="self-start rounded bg-emerald-600 px-3 py-1.5 text-sm text-white disabled:opacity-50"
+          >
+            {t("settings.notifications.enable")}
+          </button>
+        )}
       </section>
     </div>
   );

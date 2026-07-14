@@ -216,6 +216,26 @@ export function SeriesDetailPage() {
     onSettled: invalidate,
   });
 
+  const toggleMute = useMutation<
+    SeriesSummary,
+    unknown,
+    boolean,
+    { previous: SeriesDetail | undefined }
+  >({
+    mutationFn: (pushMuted: boolean) => updateSeries(id, { pushMuted }),
+    onMutate: async (pushMuted) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previous = queryClient.getQueryData<SeriesDetail>(queryKey);
+      queryClient.setQueryData<SeriesDetail>(queryKey, (old) => old && { ...old, pushMuted });
+      return { previous };
+    },
+    onError: (_err, _pushMuted, context) => {
+      if (context?.previous) queryClient.setQueryData(queryKey, context.previous);
+      reportError();
+    },
+    onSettled: invalidate,
+  });
+
   const rateItem = useMutation<
     unknown,
     unknown,
@@ -318,6 +338,14 @@ export function SeriesDetailPage() {
               className="rounded px-2 py-1 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100 disabled:opacity-50"
             >
               {refreshSeriesMutation.isPending ? "…" : "⟳"}
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleMute.mutate(!detail.pushMuted)}
+              aria-label={detail.pushMuted ? t("series.unmute") : t("series.mute")}
+              className="rounded px-2 py-1 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"
+            >
+              {detail.pushMuted ? "🔕" : "🔔"}
             </button>
           </div>
           {detail.tagline && <p className="text-sm text-zinc-400 italic">"{detail.tagline}"</p>}

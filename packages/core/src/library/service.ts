@@ -13,6 +13,12 @@ import * as schema from "../db/schema.ts";
 import { type RefreshResult, refreshAll, refreshItem } from "../refresh/engine.ts";
 import { AlreadyInLibraryError } from "./errors.ts";
 import { getNextAirDate, getNextUnwatchedEpisode, getSeriesProgress } from "./progress.ts";
+import {
+  addPushSubscription,
+  listPushSubscriptions,
+  type PushSubscriptionRecord,
+  removePushSubscription,
+} from "./push.ts";
 import { clearRating, getRating, type Rating, setRating } from "./ratings.ts";
 import {
   getSettings,
@@ -192,6 +198,9 @@ export interface Library {
     concurrency?: number,
   ): AsyncGenerator<RefreshResult>;
   getCalendar(opts?: { from?: string; to?: string }): CalendarResponse;
+  addPushSubscription(sub: PushSubscriptionRecord): void;
+  removePushSubscription(endpoint: string): boolean;
+  listPushSubscriptions(): PushSubscriptionRecord[];
 }
 
 export function createLibrary(db: LibraryDatabase): Library {
@@ -453,6 +462,18 @@ export function createLibrary(db: LibraryDatabase): Library {
 
     getCalendar(opts?: { from?: string; to?: string }): CalendarResponse {
       return getCalendar(db, opts);
+    },
+
+    addPushSubscription(sub: PushSubscriptionRecord): void {
+      addPushSubscription(db, sub);
+    },
+
+    removePushSubscription(endpoint: string): boolean {
+      return removePushSubscription(db, endpoint);
+    },
+
+    listPushSubscriptions(): PushSubscriptionRecord[] {
+      return listPushSubscriptions(db);
     },
   };
 }

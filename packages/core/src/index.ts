@@ -5,6 +5,7 @@ export * as schema from "./db/schema.ts";
 export { type CachedImage, getCachedImage } from "./images/cache.ts";
 export { AlreadyInLibraryError, isAlreadyInLibraryError } from "./library/errors.ts";
 export { todayUtc } from "./library/progress.ts";
+export type { PushSubscriptionRecord } from "./library/push.ts";
 export type { Rating } from "./library/ratings.ts";
 export { createLibrary, type Library } from "./library/service.ts";
 export type { Locale, Settings, SettingsPatch, Theme } from "./library/settings.ts";

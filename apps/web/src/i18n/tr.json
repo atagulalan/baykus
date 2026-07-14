@@ -64,7 +64,9 @@
     "justwatchAttribution": "JustWatch verisi",
     "refresh": "Yenile",
     "refreshFoundNew": "{{count}} yeni bölüm bulundu",
-    "refreshUpToDate": "Güncel — yeni bölüm yok"
+    "refreshUpToDate": "Güncel — yeni bölüm yok",
+    "mute": "Bildirimleri kapat",
+    "unmute": "Bildirimleri aç"
   },
   "episode": {
     "toggleWatched": "İzlendi olarak işaretle",
@@ -111,6 +113,13 @@
       "clear": "Kaldır",
       "scrapers": "Ek kaynakları (IMDb, Serializd) etkinleştir",
       "scrapersTos": "Bu kaynaklar web scraping ile veri çeker; ilgili sitelerin kullanım şartlarına tabidir."
+    },
+    "notifications": {
+      "title": "Bildirimler",
+      "enable": "Bildirimleri etkinleştir",
+      "disable": "Bildirimleri kaldır",
+      "subscribed": "Bildirimler etkinleştirildi",
+      "unsupported": "Bu tarayıcı push bildirimlerini desteklemiyor"
     }
   },
   "stats": {

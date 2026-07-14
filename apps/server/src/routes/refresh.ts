@@ -3,6 +3,8 @@ import type { MetadataProvider } from "@baykus/provider-sdk";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { ApiError } from "../middleware/errors.ts";
+import { notifyNewEpisodes } from "../push/notify.ts";
+import type { VapidKeys } from "../push/vapid.ts";
 
 function parseId(raw: string): number {
   const id = Number.parseInt(raw, 10);
@@ -10,17 +12,40 @@ function parseId(raw: string): number {
   return id;
 }
 
+/** Never lets a push failure break the refresh response — notify.ts already isolates per-subscription errors. */
+async function notifySafely(
+  library: Library,
+  vapid: VapidKeys,
+  itemId: number,
+  title: string,
+  newEpisodes: number,
+) {
+  try {
+    await notifyNewEpisodes(library, vapid, { itemId, title, newEpisodes });
+  } catch {
+    // best-effort — a push failure never fails the refresh itself.
+  }
+}
+
 /** contracts/api.md §Refresh. */
-export function createRefreshRoutes(library: Library, providers: MetadataProvider[]): Hono {
+export function createRefreshRoutes(
+  library: Library,
+  providers: MetadataProvider[],
+  vapid: VapidKeys,
+): Hono {
   const app = new Hono();
 
   app.post("/api/library/series/:id/refresh", async (c) => {
     const id = parseId(c.req.param("id"));
-    if (!library.getSeries(id)) throw new ApiError("NOT_FOUND", `series ${id} not in library`);
+    const before = library.getSeries(id);
+    if (!before) throw new ApiError("NOT_FOUND", `series ${id} not in library`);
     const provider = providers[0];
     if (!provider) throw new ApiError("INTERNAL", "no metadata providers registered");
 
     const result = await library.refreshItem(provider, id);
+    if (result.ok && result.newEpisodes > 0) {
+      await notifySafely(library, vapid, id, before.title, result.newEpisodes);
+    }
     return c.json({
       itemId: result.itemId,
       ok: result.ok,
@@ -34,6 +59,7 @@ export function createRefreshRoutes(library: Library, providers: MetadataProvide
     if (!provider) throw new ApiError("INTERNAL", "no metadata providers registered");
 
     const { items } = library.listSeries();
+    const titleById = new Map(items.map((item) => [item.id, item.title]));
     const itemIds = items.map((item) => item.id);
     const total = itemIds.length;
 
@@ -48,6 +74,10 @@ export function createRefreshRoutes(library: Library, providers: MetadataProvide
         if (result.ok) {
           ok++;
           newEpisodes += result.newEpisodes;
+          if (result.newEpisodes > 0) {
+            const title = titleById.get(result.itemId) ?? "";
+            await notifySafely(library, vapid, result.itemId, title, result.newEpisodes);
+          }
         } else {
           failed++;
         }

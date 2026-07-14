@@ -219,10 +219,22 @@ with upcoming + finale badges, receive a test push.
   a calendar surfacing upcoming episodes for dropped/completed/backlog shows
   serves no purpose, so upcoming is scoped to watching too. Smallest
   reasonable choice; no contracts/api.md text contradicts it. -->
-- [ ] M5.4 web push (FR-009)
+- [x] M5.4 web push (FR-009)
   - **Files:** `apps/server/src/push/{vapid.ts,notify.ts}`, `apps/web/public/sw.js`, subscribe UI in Settings, per-series mute in detail header
   - **DoD:** deps `web-push`; VAPID keypair generated at first boot into dataDir (single) / env (multi); notify on `new-episodes` (one per series, skip muted); contracts §Push; sw click → `/series/:id`
   - **Tests:** notify called per event with mocked web-push; mute suppresses
+  <!-- DECISION 2026-07-14: notify wiring lives in refresh.ts (both the
+  single-item and SSE global routes), fired when a refresh result has
+  newEpisodes > 0 — wrapped so a push failure never fails the refresh
+  response itself. Verified live: real VAPID keys generated + persisted to
+  dataDir/vapid.json on boot, subscribe/unsubscribe round-tripped via curl,
+  mute toggle confirmed in-browser (persists across reload). The actual
+  subscribe() call was verified reaching the browser's real Push API but
+  Chromium refuses PushManager in incognito contexts (documented Chrome
+  behavior, crbug.com/41124656) — Playwright's default context is
+  incognito-equivalent, so the final FCM handshake couldn't be exercised
+  live; the request/response contract is covered by notify.test.ts and
+  routes/push.test.ts instead. -->
 - [ ] M5.5 CHECKPOINT M5 — trigger refresh with a fixture-fed fake provider in dev mode OR live TVmaze; verify SSE UI, calendar renders, push arrives (localhost is a secure context)
 
 ---

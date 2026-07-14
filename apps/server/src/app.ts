@@ -4,9 +4,11 @@ import { Hono } from "hono";
 import type { Config } from "./config.ts";
 import { errorHandler } from "./middleware/errors.ts";
 import { xBaykusGuard } from "./middleware/guard.ts";
+import type { VapidKeys } from "./push/vapid.ts";
 import { createCalendarRoute } from "./routes/calendar.ts";
 import { createImageRoute } from "./routes/img.ts";
 import { createLibraryRoutes } from "./routes/library.ts";
+import { createPushRoutes } from "./routes/push.ts";
 import { createRatingRoutes } from "./routes/ratings.ts";
 import { createRefreshRoutes } from "./routes/refresh.ts";
 import { createSearchRoute } from "./routes/search.ts";
@@ -18,6 +20,7 @@ export interface AppDeps {
   library: Library;
   providers: MetadataProvider[];
   dataDir: string;
+  vapid: VapidKeys;
 }
 
 export function createApp(config: Config, deps: AppDeps) {
@@ -33,11 +36,11 @@ export function createApp(config: Config, deps: AppDeps) {
   app.route("/", createStatsRoute(deps.library));
   app.route("/", createImageRoute(deps.providers, deps.dataDir));
   app.route("/", createSettingsRoutes(deps.library, deps.providers, config.BAYKUS_TMDB_API_KEY));
-  app.route("/", createRefreshRoutes(deps.library, deps.providers));
+  app.route("/", createRefreshRoutes(deps.library, deps.providers, deps.vapid));
   app.route("/", createCalendarRoute(deps.library));
+  app.route("/", createPushRoutes(deps.library, deps.vapid.publicKey));
 
   // Route groups land here milestone by milestone (see specs tasks.md):
-  // M5: /api/push
   // M6: /api/export.zip, /api/import
   // M7: /api/auth/*
 

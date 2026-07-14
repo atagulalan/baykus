@@ -16,9 +16,11 @@
     "@baykus/provider-tvmaze": "workspace:*",
     "@hono/node-server": "^1.17.1",
     "hono": "^4.8.5",
+    "web-push": "^3.6.7",
     "zod": "^4.0.5"
   },
   "devDependencies": {
+    "@types/web-push": "^3.6.4",
     "esbuild": "^0.25.8",
     "tsx": "^4.20.3",
     "typescript": "^5.9.2"

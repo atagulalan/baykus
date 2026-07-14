@@ -47,7 +47,12 @@ function fakeProvider(): MetadataProvider {
 
 function setup() {
   const library = createLibrary(openLibraryDb(":memory:").db);
-  const app = createApp(loadConfig({}), { library, providers: [fakeProvider()], dataDir });
+  const app = createApp(loadConfig({}), {
+    library,
+    providers: [fakeProvider()],
+    dataDir,
+    vapid: { publicKey: "test-public", privateKey: "test-private" },
+  });
   return app;
 }
 

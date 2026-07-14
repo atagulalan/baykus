@@ -32,7 +32,12 @@ function fixtureSeries(): SeriesDetails {
 function setup() {
   const library = createLibrary(openLibraryDb(":memory:").db);
   const summary = library.addSeries(fixtureSeries(), "watching");
-  const app = createApp(loadConfig({}), { library, providers: [], dataDir: "/tmp/baykus-test" });
+  const app = createApp(loadConfig({}), {
+    library,
+    providers: [],
+    dataDir: "/tmp/baykus-test",
+    vapid: { publicKey: "test-public", privateKey: "test-private" },
+  });
   return { app, itemId: summary.id };
 }
 

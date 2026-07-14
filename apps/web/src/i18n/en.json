@@ -64,7 +64,9 @@
     "justwatchAttribution": "Data from JustWatch",
     "refresh": "Refresh",
     "refreshFoundNew": "Found {{count}} new episodes",
-    "refreshUpToDate": "Up to date — no new episodes"
+    "refreshUpToDate": "Up to date — no new episodes",
+    "mute": "Mute notifications",
+    "unmute": "Unmute notifications"
   },
   "episode": {
     "toggleWatched": "Mark as watched",
@@ -111,6 +113,13 @@
       "clear": "Remove",
       "scrapers": "Enable extra sources (IMDb, Serializd)",
       "scrapersTos": "These sources scrape web pages; subject to each site's terms of use."
+    },
+    "notifications": {
+      "title": "Notifications",
+      "enable": "Enable notifications",
+      "disable": "Remove notifications",
+      "subscribed": "Notifications enabled",
+      "unsupported": "This browser doesn't support push notifications"
     }
   },
   "stats": {

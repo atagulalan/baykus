@@ -37,7 +37,12 @@ function setup() {
   const summary = library.addSeries(fixtureSeries(), "watching");
   const detail = library.getSeries(summary.id);
   if (!detail) throw new Error("setup: series vanished");
-  const app = createApp(loadConfig({}), { library, providers: [], dataDir: "/tmp/baykus-test" });
+  const app = createApp(loadConfig({}), {
+    library,
+    providers: [],
+    dataDir: "/tmp/baykus-test",
+    vapid: { publicKey: "test-public", privateKey: "test-private" },
+  });
 
   const special = detail.seasons.find((s) => s.number === 0);
   const season1 = detail.seasons.find((s) => s.number === 1);

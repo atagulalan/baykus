@@ -32,7 +32,12 @@ function fakeProvider(id: string): MetadataProvider {
 
 function setup(providers: MetadataProvider[] = [fakeProvider("tvmaze")]) {
   const library = createLibrary(openLibraryDb(":memory:").db);
-  const app = createApp(loadConfig({}), { library, providers, dataDir: "/tmp/baykus-test" });
+  const app = createApp(loadConfig({}), {
+    library,
+    providers,
+    dataDir: "/tmp/baykus-test",
+    vapid: { publicKey: "test-public", privateKey: "test-private" },
+  });
   return { app, providers };
 }
 
