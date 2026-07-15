@@ -7,10 +7,25 @@ import type {
   ExternalIds,
   TvTimeConfirmProgressEvent,
   TvTimeConfirmResult,
+  TvTimeImportProgressEvent,
   TvTimeReport,
 } from "../api/types.ts";
 
 type Step = "upload" | "report" | "confirming" | "summary";
+
+const UPLOAD_LOG_LIMIT = 8;
+
+const MATCH_STATUS_MARK: Record<TvTimeImportProgressEvent["status"], string> = {
+  matched: "✓",
+  fuzzy: "?",
+  unmatched: "✗",
+};
+
+const MATCH_STATUS_CLASS: Record<TvTimeImportProgressEvent["status"], string> = {
+  matched: "text-emerald-400",
+  fuzzy: "text-amber-400",
+  unmatched: "text-zinc-600",
+};
 
 function candidateKey(candidate: { externalIds: ExternalIds }): string {
   const ids = candidate.externalIds;
@@ -26,10 +41,14 @@ export function ImportPage() {
   const [summary, setSummary] = useState<TvTimeConfirmResult | null>(null);
   const [progress, setProgress] = useState<TvTimeConfirmProgressEvent | null>(null);
   const [confirmError, setConfirmError] = useState(false);
+  const [uploadLog, setUploadLog] = useState<TvTimeImportProgressEvent[]>([]);
   const confirmingRef = useRef(false);
 
   const uploadMutation = useMutation({
-    mutationFn: importTvTime,
+    mutationFn: (file: File) =>
+      importTvTime(file, (event) => {
+        setUploadLog((prev) => [event, ...prev].slice(0, UPLOAD_LOG_LIMIT));
+      }),
     onSuccess: (result) => {
       setReport(result);
       setStep("report");
@@ -65,6 +84,7 @@ export function ImportPage() {
   }
 
   function handleFile(file: File) {
+    setUploadLog([]);
     uploadMutation.mutate(file);
   }
 
@@ -104,7 +124,47 @@ export function ImportPage() {
             }}
           />
           {uploadMutation.isPending && (
-            <p className="text-sm text-zinc-400">{t("importWizard.uploading")}</p>
+            <div className="flex w-full flex-col gap-2">
+              {(() => {
+                const latest = uploadLog[0];
+                const percent =
+                  latest && latest.total > 0 ? Math.round((latest.done / latest.total) * 100) : 0;
+                return (
+                  <>
+                    <p className="text-sm text-zinc-400">
+                      {latest
+                        ? t("importWizard.uploadProgress", {
+                            done: latest.done,
+                            total: latest.total,
+                          })
+                        : t("importWizard.uploading")}
+                    </p>
+                    {latest && (
+                      <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-800">
+                        <div
+                          className="h-full rounded-full bg-emerald-500 transition-[width] duration-300 ease-out"
+                          style={{ width: `${percent}%` }}
+                        />
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+              <ul className="flex flex-col gap-0.5 text-left text-xs">
+                {uploadLog.map((event, i) => (
+                  <li
+                    // biome-ignore lint/suspicious/noArrayIndexKey: log entries are append-only and never reordered
+                    key={i}
+                    className="truncate text-zinc-500"
+                  >
+                    <span className={MATCH_STATUS_CLASS[event.status]}>
+                      {MATCH_STATUS_MARK[event.status]}
+                    </span>{" "}
+                    {event.name}
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
           {uploadMutation.isError && (
             <p className="text-sm text-red-400">{t("importWizard.uploadError")}</p>

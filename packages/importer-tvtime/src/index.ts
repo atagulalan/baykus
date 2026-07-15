@@ -3,6 +3,7 @@ export {
   type FuzzyCandidate,
   type FuzzyShow,
   type MatchedShow,
+  type MatchProgressEvent,
   type MatchReport,
   matchShows,
   resolveEpisodePosition,

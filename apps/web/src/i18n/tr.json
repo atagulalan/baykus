@@ -248,6 +248,7 @@
     "dropzone": "TV Time GDPR dışa aktarımını (zip veya csv) buraya sürükle",
     "chooseFile": "Dosya seç",
     "uploading": "Yükleniyor…",
+    "uploadProgress": "{{done}}/{{total}} gösteri eşleştirildi",
     "uploadError": "Dosya işlenemedi",
     "reportTitle": "Eşleştirme raporu",
     "matched": "Eşleşti ({{count}})",

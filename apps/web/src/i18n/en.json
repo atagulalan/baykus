@@ -248,6 +248,7 @@
     "dropzone": "Drag your TV Time GDPR export (zip or csv) here",
     "chooseFile": "Choose file",
     "uploading": "Uploading…",
+    "uploadProgress": "{{done}}/{{total}} shows matched",
     "uploadError": "Couldn't process the file",
     "reportTitle": "Match report",
     "matched": "Matched ({{count}})",

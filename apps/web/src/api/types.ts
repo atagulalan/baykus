@@ -372,6 +372,13 @@ export interface TvTimeReport {
   unmatched: TvTimeUnmatchedShow[];
 }
 
+export interface TvTimeImportProgressEvent {
+  done: number;
+  total: number;
+  name: string;
+  status: "matched" | "fuzzy" | "unmatched";
+}
+
 export interface TvTimeConfirmProgressEvent {
   done: number;
   total: number;

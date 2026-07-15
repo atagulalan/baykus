@@ -187,6 +187,36 @@ async function postImport(app: ReturnType<typeof createApp>, buffer: Buffer, fil
   });
 }
 
+interface ImportReport {
+  reportId: string;
+  matched: { name: string; tvdbId: number; episodes: number }[];
+  fuzzy: { name: string; candidates: unknown[]; episodes: number }[];
+  unmatched: { name: string; episodes: number }[];
+}
+
+/**
+ * POST /api/import/tvtime streams SSE (matching-phase progress + a trailing
+ * complete event carrying the report) — same pattern as confirm, added so the
+ * upload step isn't a silent black box for large real-world exports.
+ */
+async function readImportReport(res: Response): Promise<{
+  progress: { done: number; total: number; name: string; status: string }[];
+  report: ImportReport;
+}> {
+  const events = await readSseEvents(res);
+  const complete = events.find((e) => e.event === "complete")?.data;
+  if (!complete) throw new Error("import stream ended without a complete event");
+  return {
+    progress: events.filter((e) => e.event === "progress").map((e) => e.data) as {
+      done: number;
+      total: number;
+      name: string;
+      status: string;
+    }[],
+    report: complete as ImportReport,
+  };
+}
+
 describe("POST /api/import/tvtime", () => {
   it("matches both real fixture shows via tvdb lookup and reports episode counts", async () => {
     const { app } = setup();
@@ -197,21 +227,21 @@ describe("POST /api/import/tvtime", () => {
 
     const res = await postImport(app, zip, "export.zip");
     expect(res.status).toBe(200);
-    const body = (await res.json()) as {
-      reportId: string;
-      matched: { name: string; tvdbId: number; episodes: number }[];
-      fuzzy: unknown[];
-      unmatched: unknown[];
-    };
+    const { progress, report } = await readImportReport(res);
 
-    expect(body.fuzzy).toEqual([]);
-    expect(body.unmatched).toEqual([]);
-    expect(body.matched).toEqual(
+    expect(report.fuzzy).toEqual([]);
+    expect(report.unmatched).toEqual([]);
+    expect(report.matched).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ name: "House of the Dragon", tvdbId: 371572, episodes: 2 }),
         expect.objectContaining({ name: "Dark", tvdbId: 305288, episodes: 2 }),
       ]),
     );
+
+    expect(progress).toHaveLength(2);
+    expect(progress.every((p) => p.total === 2)).toBe(true);
+    expect(progress.map((p) => p.name).sort()).toEqual(["Dark", "House of the Dragon"]);
+    expect(progress.every((p) => p.status === "matched")).toBe(true);
   });
 
   it("buckets a name-search hit below the confidence threshold as fuzzy", async () => {
@@ -219,12 +249,13 @@ describe("POST /api/import/tvtime", () => {
     const csv = "tv_show_id,tv_show_name,created_at\n999,The Office,2020-01-01 00:00:00\n";
     const res = await postImport(app, Buffer.from(csv, "utf-8"), "followed_tv_show.csv");
 
-    const body = (await res.json()) as { fuzzy: { name: string; candidates: unknown[] }[] };
-    expect(body.fuzzy).toHaveLength(1);
-    expect(body.fuzzy[0]?.name).toBe("The Office");
-    expect(body.fuzzy[0]?.candidates).toEqual([
+    const { progress, report } = await readImportReport(res);
+    expect(report.fuzzy).toHaveLength(1);
+    expect(report.fuzzy[0]?.name).toBe("The Office");
+    expect(report.fuzzy[0]?.candidates).toEqual([
       { externalIds: { tmdbId: 2316 }, title: "The Office (US)", year: 2005 },
     ]);
+    expect(progress).toEqual([{ done: 1, total: 1, name: "The Office", status: "fuzzy" }]);
   });
 
   it("400s when the file field is missing", async () => {
@@ -255,7 +286,8 @@ describe("POST /api/import/tvtime/confirm", () => {
       "seen_episode.csv": readFixture("seen_episode.csv"),
     });
     const importRes = await postImport(app, zip, "export.zip");
-    const { reportId } = (await importRes.json()) as { reportId: string };
+    const { report } = await readImportReport(importRes);
+    const { reportId } = report;
 
     const confirmRes = await app.request("/api/import/tvtime/confirm", {
       method: "POST",
@@ -285,7 +317,8 @@ describe("POST /api/import/tvtime/confirm", () => {
     });
 
     const importRes = await postImport(app, zip, "export.zip");
-    const { reportId } = (await importRes.json()) as { reportId: string };
+    const { report } = await readImportReport(importRes);
+    const { reportId } = report;
 
     const confirmRes = await app.request("/api/import/tvtime/confirm", {
       method: "POST",
@@ -308,7 +341,8 @@ describe("POST /api/import/tvtime/confirm", () => {
     });
 
     const first = await postImport(app, zip, "export.zip");
-    const { reportId: firstId } = (await first.json()) as { reportId: string };
+    const { report: firstReport } = await readImportReport(first);
+    const { reportId: firstId } = firstReport;
     await app.request("/api/import/tvtime/confirm", {
       method: "POST",
       headers: HEADERS,
@@ -316,7 +350,8 @@ describe("POST /api/import/tvtime/confirm", () => {
     });
 
     const second = await postImport(app, zip, "export.zip");
-    const { reportId: secondId } = (await second.json()) as { reportId: string };
+    const { report: secondReport } = await readImportReport(second);
+    const { reportId: secondId } = secondReport;
     const confirmRes = await app.request("/api/import/tvtime/confirm", {
       method: "POST",
       headers: HEADERS,
@@ -331,7 +366,8 @@ describe("POST /api/import/tvtime/confirm", () => {
     const { app, library } = setup();
     const csv = "tv_show_id,tv_show_name,created_at\n999,The Office,2020-01-01 00:00:00\n";
     const importRes = await postImport(app, Buffer.from(csv, "utf-8"), "followed_tv_show.csv");
-    const { reportId } = (await importRes.json()) as { reportId: string };
+    const { report } = await readImportReport(importRes);
+    const { reportId } = report;
 
     const confirmRes = await app.request("/api/import/tvtime/confirm", {
       method: "POST",
@@ -359,7 +395,8 @@ describe("POST /api/import/tvtime/confirm", () => {
     });
 
     const importRes = await postImport(app, zip, "export.zip");
-    const { reportId } = (await importRes.json()) as { reportId: string };
+    const { report } = await readImportReport(importRes);
+    const { reportId } = report;
 
     const confirmRes = await app.request("/api/import/tvtime/confirm", {
       method: "POST",
@@ -382,7 +419,8 @@ describe("POST /api/import/tvtime/confirm", () => {
     });
 
     const importRes = await postImport(app, zip, "export.zip");
-    const { reportId } = (await importRes.json()) as { reportId: string };
+    const { report } = await readImportReport(importRes);
+    const { reportId } = report;
 
     const confirmRes = await app.request("/api/import/tvtime/confirm", {
       method: "POST",
@@ -403,7 +441,8 @@ describe("POST /api/import/tvtime/confirm", () => {
     });
 
     const importRes = await postImport(app, zip, "export.zip");
-    const { reportId } = (await importRes.json()) as { reportId: string };
+    const { report } = await readImportReport(importRes);
+    const { reportId } = report;
 
     const confirmRes = await app.request("/api/import/tvtime/confirm", {
       method: "POST",

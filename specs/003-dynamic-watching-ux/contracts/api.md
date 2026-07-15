@@ -96,6 +96,31 @@ Entries gain two nullable fields (E38):
 - Payload sent: `{ "title": "baykuş", "body": "Test bildirimi",
   "url": "/settings" }` (E39).
 
+## TV Time import (changed — matching progress, E44)
+
+### POST /api/import/tvtime (response changed: JSON → SSE stream)
+
+`Content-Type: text/event-stream`, same wire pattern as
+`/api/import/tvtime/confirm`. Events, in order:
+```
+event: progress   data: {"done":1,"total":15,"name":"Dark","status":"matched"}
+event: progress   data: {"done":2,"total":15,"name":"The Office","status":"fuzzy"}
+event: progress   data: {"done":3,"total":15,"name":"Unknown Show","status":"unmatched"}
+event: complete   data: { "reportId": "r1", "matched": [...], "fuzzy": [...], "unmatched": [...] }
+```
+- `progress` fires once per show, in **completion** order (bounded
+  concurrency), not input order — `done` is a monotonic count out of
+  `total`; `status` is that show's outcome kind.
+- `complete`'s payload is exactly the old 200 JSON body, unchanged shape.
+- Non-streaming errors (missing file, unreadable zip/csv) still short-circuit
+  with a plain error-envelope response before the stream starts (unchanged).
+<!-- DECISION: changed from a single JSON 200 to an SSE stream for the same
+     reason /confirm already is one — a real export's matching phase (one
+     provider lookup per show) can take minutes with zero client feedback.
+     Additive in spirit (the terminal payload is identical) but technically
+     a response Content-Type change, so called out here explicitly rather
+     than filed under "behavior note". -->
+
 ## Zip (behavior note)
 
 Endpoints unchanged. Export emits schemaVersion **3**; import accepts 1, 2

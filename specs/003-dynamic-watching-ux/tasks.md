@@ -483,3 +483,34 @@ confirmed against that export and reduced to fixtures in `parse.test.ts`.
     variant + "prefers a currently-dropped show over a stale for_later
     status".
   - **Verify:** `pnpm test packages/importer-tvtime` (41 tests green).
+
+---
+
+## M17.10 — TV Time import: live matching progress (E44, out-of-plan)
+
+A real export can carry hundreds of shows; the matching phase (one
+metadata lookup/search per show) was a silent multi-minute spinner. Same
+fix pattern `/confirm` already has, extended to the upload step.
+
+- [x] M17.10 core+server+web: stream matching progress over SSE (E44)
+  - **Files:** `packages/importer-tvtime/src/{match.ts,match.test.ts,
+    index.ts}`, `apps/server/src/routes/{tvtime.ts,tvtime.test.ts}`,
+    `apps/web/src/api/{client.ts,types.ts}`,
+    `apps/web/src/pages/ImportPage.tsx`,
+    `apps/web/src/i18n/{tr,en}.json`.
+  - **DoD:** contracts 003 §TV Time import: `matchShows` takes an optional
+    `onProgress(event)` callback fired once per show in completion order;
+    the route wraps the handler in `streamSSE`, emitting one `progress`
+    event per show ahead of the existing trailing `complete` event (same
+    payload shape as the old 200 JSON). Web: `importTvTime` reads the SSE
+    stream via the existing generic `readSseStream` helper (already used by
+    confirm/refresh); `ImportPage` shows a progress bar + a capped
+    (8-entry) live log with a ✓/?/✗ mark per outcome while uploading.
+  - **Tests:** `match.test.ts` — progress fires once per show with a stable
+    `total` regardless of completion order; `tvtime.test.ts` — every
+    existing import test reads the report via the new SSE helper, plus an
+    explicit progress-events assertion on both the all-matched and the
+    fuzzy-bucket fixture.
+  - **Verify:** `pnpm test packages/importer-tvtime apps/server` green;
+    `pnpm typecheck` clean (generic `readSseStream<TProgress, TComplete>`
+    reused as-is, no new client-side parsing code).

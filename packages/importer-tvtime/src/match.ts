@@ -201,6 +201,13 @@ async function matchOneShow(
   };
 }
 
+export interface MatchProgressEvent {
+  done: number;
+  total: number;
+  name: string;
+  status: "matched" | "fuzzy" | "unmatched";
+}
+
 /**
  * contracts/api.md §tvtime. Fetches full SeriesDetails during the report phase
  * (safer: confirm reuses inventory; watch s/e resolution only needs what's
@@ -209,16 +216,27 @@ async function matchOneShow(
  *
  * Shows are resolved with bounded concurrency; provider rate limiters still
  * apply (TMDB ~30/s after bulk-import tuning; TVmaze keeps its hard 20/10s).
+ * A real export can carry hundreds of shows, making this phase the actual
+ * bottleneck behind the upload spinner — onProgress lets the route stream
+ * per-show completion over SSE instead of leaving the client blocked with no
+ * feedback. Progress fires in completion order (concurrency 8), not input
+ * order; `done` is still a monotonic count out of `total`.
  */
 export async function matchShows(
   shows: TvTimeShow[],
   watches: TvTimeWatchEvent[],
   providers: MetadataProvider[],
+  onProgress?: (event: MatchProgressEvent) => void | Promise<void>,
 ): Promise<MatchReport> {
   const eligible = detailsProviders(providers);
-  const outcomes = await mapPool(shows, MATCH_CONCURRENCY, (show) =>
-    matchOneShow(show, watches, eligible),
-  );
+  const total = shows.length;
+  let done = 0;
+  const outcomes = await mapPool(shows, MATCH_CONCURRENCY, async (show) => {
+    const outcome = await matchOneShow(show, watches, eligible);
+    done++;
+    await onProgress?.({ done, total, name: show.name, status: outcome.kind });
+    return outcome;
+  });
 
   const matched: MatchedShow[] = [];
   const fuzzy: FuzzyShow[] = [];

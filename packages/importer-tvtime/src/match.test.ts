@@ -162,6 +162,43 @@ describe("matchShows", () => {
     ]);
   });
 
+  it("reports progress once per show, with the outcome kind and a stable total, regardless of completion order", async () => {
+    const dark = fixtureSeries("Dark", { tvdbId: 305288 });
+    const provider = fakeProvider({
+      tvdbLookups: { 305288: dark },
+      searchResults: {
+        "The Office": [
+          {
+            providerId: "fake",
+            mediaType: "series",
+            externalIds: { tmdbId: 2316 },
+            title: "The Office (US)",
+            year: 2005,
+          },
+        ],
+      },
+    });
+
+    const events: { done: number; total: number; name: string; status: string }[] = [];
+    await matchShows(
+      [show(305288, "Dark"), show(999, "The Office"), show(1, "Some Local Show")],
+      [],
+      [provider],
+      (event) => {
+        events.push(event);
+      },
+    );
+
+    expect(events).toHaveLength(3);
+    expect(events.every((e) => e.total === 3)).toBe(true);
+    expect(events.map((e) => e.done).sort()).toEqual([1, 2, 3]);
+    expect(Object.fromEntries(events.map((e) => [e.name, e.status]))).toEqual({
+      Dark: "matched",
+      "The Office": "fuzzy",
+      "Some Local Show": "unmatched",
+    });
+  });
+
   it("tries the next provider when the first one's tvdb lookup fails", async () => {
     const dark = fixtureSeries("Dark", { tvdbId: 305288 });
     const failing = fakeProvider({ id: "failing" });

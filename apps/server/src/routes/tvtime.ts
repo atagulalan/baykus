@@ -171,31 +171,44 @@ export function createTvTimeRoutes(library: Library, providers: MetadataProvider
     const buffer = Buffer.from(await file.arrayBuffer());
     const csvContents = await extractCsvContents(buffer);
     const { shows, watches } = parseTvTimeFiles(csvContents);
-    const { matched, fuzzy, unmatched } = await matchShows(shows, watches, providers);
 
-    const watchesByTvdbId = new Map<number, typeof watches>();
-    for (const watch of watches) {
-      const list = watchesByTvdbId.get(watch.tvdbShowId) ?? [];
-      list.push(watch);
-      watchesByTvdbId.set(watch.tvdbShowId, list);
-    }
+    return streamSSE(c, async (stream) => {
+      const { matched, fuzzy, unmatched } = await matchShows(
+        shows,
+        watches,
+        providers,
+        async (progress) => {
+          await stream.writeSSE({ event: "progress", data: JSON.stringify(progress) });
+        },
+      );
 
-    const reportId = reportStore.create({ matched, fuzzy, unmatched, watchesByTvdbId });
+      const watchesByTvdbId = new Map<number, typeof watches>();
+      for (const watch of watches) {
+        const list = watchesByTvdbId.get(watch.tvdbShowId) ?? [];
+        list.push(watch);
+        watchesByTvdbId.set(watch.tvdbShowId, list);
+      }
 
-    return c.json({
-      reportId,
-      matched: matched.map((m) => ({
-        name: m.name,
-        tvdbId: m.tvdbId,
-        resolved: m.externalIds,
-        episodes: m.episodeCount,
-      })),
-      fuzzy: fuzzy.map((f) => ({
-        name: f.name,
-        candidates: f.candidates,
-        episodes: f.episodeCount,
-      })),
-      unmatched: unmatched.map((u) => ({ name: u.name, episodes: u.episodeCount })),
+      const reportId = reportStore.create({ matched, fuzzy, unmatched, watchesByTvdbId });
+
+      await stream.writeSSE({
+        event: "complete",
+        data: JSON.stringify({
+          reportId,
+          matched: matched.map((m) => ({
+            name: m.name,
+            tvdbId: m.tvdbId,
+            resolved: m.externalIds,
+            episodes: m.episodeCount,
+          })),
+          fuzzy: fuzzy.map((f) => ({
+            name: f.name,
+            candidates: f.candidates,
+            episodes: f.episodeCount,
+          })),
+          unmatched: unmatched.map((u) => ({ name: u.name, episodes: u.episodeCount })),
+        }),
+      });
     });
   });
 

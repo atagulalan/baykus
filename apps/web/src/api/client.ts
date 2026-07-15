@@ -24,6 +24,7 @@ import type {
   Stats,
   TvTimeConfirmProgressEvent,
   TvTimeConfirmResult,
+  TvTimeImportProgressEvent,
   TvTimeReport,
   WatchCategory,
   WatchHistoryResponse,
@@ -290,7 +291,11 @@ export function resetLibrary(): Promise<void> {
   });
 }
 
-export async function importTvTime(file: File): Promise<TvTimeReport> {
+/** contracts/api.md §tvtime — streams matching-phase progress via SSE, same pattern as confirm. */
+export async function importTvTime(
+  file: File,
+  onProgress: (event: TvTimeImportProgressEvent) => void,
+): Promise<TvTimeReport> {
   const formData = new FormData();
   formData.append("file", file);
 
@@ -300,10 +305,9 @@ export async function importTvTime(file: File): Promise<TvTimeReport> {
     body: formData,
   });
 
-  const isJson = res.headers.get("content-type")?.includes("application/json") ?? false;
-  const body: unknown = isJson ? await res.json() : undefined;
-
-  if (!res.ok) {
+  if (!res.ok || !res.body) {
+    const isJson = res.headers.get("content-type")?.includes("application/json") ?? false;
+    const body: unknown = isJson ? await res.json() : undefined;
     const envelope = body as ApiErrorEnvelope | undefined;
     throw new ApiError(
       envelope?.error.code ?? "INTERNAL",
@@ -313,7 +317,7 @@ export async function importTvTime(file: File): Promise<TvTimeReport> {
     );
   }
 
-  return body as TvTimeReport;
+  return readSseStream<TvTimeImportProgressEvent, TvTimeReport>(res.body, onProgress);
 }
 
 export async function confirmTvTimeImport(
