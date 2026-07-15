@@ -1,6 +1,9 @@
 import type { Library } from "@baykus/core";
 import { Hono } from "hono";
 import { z } from "zod";
+import { ApiError } from "../middleware/errors.ts";
+import { sendTestNotification } from "../push/notify.ts";
+import type { VapidKeys } from "../push/vapid.ts";
 
 // Standard browser PushSubscription.toJSON() shape — not our own DTO, so
 // unknown extra fields (e.g. expirationTime) are simply dropped, not rejected.
@@ -10,9 +13,10 @@ const subscribeSchema = z.object({
 });
 
 const unsubscribeSchema = z.object({ endpoint: z.string() }).strict();
+const testSchema = z.object({ endpoint: z.string() }).strict();
 
 /** contracts/api.md §Push. */
-export function createPushRoutes(library: Library, vapidPublicKey: string): Hono {
+export function createPushRoutes(library: Library, vapid: VapidKeys): Hono {
   const app = new Hono();
 
   app.post("/api/push/subscribe", async (c) => {
@@ -31,7 +35,16 @@ export function createPushRoutes(library: Library, vapidPublicKey: string): Hono
     return c.body(null, 204);
   });
 
-  app.get("/api/push/vapid-public-key", (c) => c.json({ key: vapidPublicKey }));
+  app.get("/api/push/vapid-public-key", (c) => c.json({ key: vapid.publicKey }));
+
+  app.post("/api/push/test", async (c) => {
+    const body = testSchema.parse(await c.req.json());
+    const result = await sendTestNotification(library, vapid, body.endpoint);
+    if (result !== "sent") {
+      throw new ApiError("NOT_FOUND", "unknown or no longer valid push subscription");
+    }
+    return c.json({});
+  });
 
   return app;
 }

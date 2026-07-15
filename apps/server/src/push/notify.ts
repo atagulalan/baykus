@@ -52,3 +52,38 @@ export async function notifyNewEpisodes(
     }),
   );
 }
+
+export type SendTestNotificationResult = "sent" | "unknown-endpoint" | "gone";
+
+/**
+ * E39: sends a fixed test payload to exactly one subscription (the
+ * requesting device's own endpoint). A push-service 404/410 removes the
+ * subscription — same cleanup rule as notifyNewEpisodes. Other send
+ * failures rethrow, left for the route's generic error mapping.
+ */
+export async function sendTestNotification(
+  library: Library,
+  vapid: VapidKeys,
+  endpoint: string,
+): Promise<SendTestNotificationResult> {
+  const sub = library.listPushSubscriptions().find((s) => s.endpoint === endpoint);
+  if (!sub) return "unknown-endpoint";
+
+  webpush.setVapidDetails(VAPID_SUBJECT, vapid.publicKey, vapid.privateKey);
+  const payload = JSON.stringify({ title: "baykuş", body: "Test bildirimi", url: "/settings" });
+
+  try {
+    await webpush.sendNotification(
+      { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+      payload,
+    );
+    return "sent";
+  } catch (err) {
+    const statusCode = (err as { statusCode?: number }).statusCode;
+    if (statusCode === 404 || statusCode === 410) {
+      library.removePushSubscription(sub.endpoint);
+      return "gone";
+    }
+    throw err;
+  }
+}

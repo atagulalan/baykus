@@ -362,7 +362,7 @@ acceptance walked, docs refreshed.
   and the anchor itself need a browser to see; deferred to M17.5/M17.7
   MANUELTEST.md coverage. -->
 
-- [ ] M17.3 server: push test endpoint (E39, FR-037)
+- [x] M17.3 server: push test endpoint (E39, FR-037)
   - **Files:** `apps/server/src/routes/{push.ts,push.test.ts}`,
     `apps/server/src/push/notify.ts` (only if a send helper is extracted —
     keep `notifyNewEpisodes` behavior identical)

@@ -82,7 +82,7 @@ export function createApp(config: Config, deps: AppDeps) {
   );
   app.route("/", createRefreshRoutes(contextLibrary, deps.providers, deps.vapid));
   app.route("/", createCalendarRoute(contextLibrary));
-  app.route("/", createPushRoutes(contextLibrary, deps.vapid.publicKey));
+  app.route("/", createPushRoutes(contextLibrary, deps.vapid));
   app.route("/", createZipRoutes(contextLibrary));
   app.route("/", createTvTimeRoutes(contextLibrary, deps.providers));
 
