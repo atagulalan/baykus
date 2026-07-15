@@ -33,10 +33,12 @@ baykus.xava.me (multi mode, handle-claim accounts).
 4. `specs/003-dynamic-watching-ux/` — dynamic İzleniyor signals, configurable
    window, UI polish + brand refresh. Deltas over 002 + 001. Its tasks.md
    (M14–M17) is implemented; only the M17.7 browser checkpoint remains.
-5. `specs/004-import-fidelity-ux/` — **the active spec** (TV Time import
-   fidelity, aired-only progress, view transitions, TMDB-parity URLs).
-   Deltas over 003 + 002 + 001; 004 wins where they overlap. Work happens
-   in its tasks.md (M18+).
+5. `specs/004-import-fidelity-ux/` — TV Time import fidelity, aired-only
+   progress, view transitions, TMDB-parity URLs. Deltas over 003 + 002 +
+   001; 004 wins where they overlap. Its tasks.md (M18–M22) is
+   implemented; only the M22 browser checkpoint remains (see root
+   `MANUELTEST.md` §M22). No spec 005 exists yet — check for a root
+   `HANDOVER.md` or ask the user what's next.
 
 ## Normative sources — order of truth
 
