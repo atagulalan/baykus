@@ -1,7 +1,7 @@
 import { parseCsvRecords } from "./csv.ts";
 
 /** Assignable to @baykus/core's identical TrackingStatus — importer-tvtime must not depend on @baykus/core. */
-export type TvTimeStatus = "watching" | "plan_to_watch" | "completed" | "dropped" | "paused";
+export type TvTimeStatus = "watching" | "plan_to_watch" | "completed" | "dropped";
 
 export interface TvTimeShow {
   /** TV Time's tv_show_id is TheTVDB's own numeric show id — confirmed against fixtures/tvmaze's externals.thetvdb field. */
@@ -9,6 +9,8 @@ export interface TvTimeShow {
   name: string;
   followedAt: string;
   status?: TvTimeStatus;
+  /** E49: followed-file row had active=0 (unfollowed in TV Time). Fallback-shaped files (no `active` column) never set this. */
+  unfollowed: boolean;
 }
 
 export interface TvTimeWatchEvent {
@@ -21,9 +23,16 @@ export interface TvTimeWatchEvent {
   episodeNumber?: number;
 }
 
+/** E49: a followed show TV Time itself hides (unfollowed, zero surviving watch events) — skipped before matching. */
+export interface SkippedRelic {
+  name: string;
+  tvdbId: number;
+}
+
 export interface TvTimeParsed {
   shows: TvTimeShow[];
   watches: TvTimeWatchEvent[];
+  skippedRelics: SkippedRelic[];
 }
 
 const FOLLOWED_SHOW_COLUMNS = ["tv_show_id", "tv_show_name"];
@@ -162,11 +171,13 @@ function recordsToShows(
      * active/archived are checked first and for_later only applies to shows
      * that are still actively followed.
      */
+    const unfollowed = record.active === "0";
     let status: TvTimeStatus = "watching";
-    if (record.active === "0") {
+    if (unfollowed) {
       status = "dropped";
     } else if (record.archived === "1") {
-      status = "paused";
+      // E48: TV Time's "stop watching" writes archived=1 with active still 1.
+      status = "dropped";
     } else if (specialStatuses?.get(tvdbId) === "for_later") {
       status = "plan_to_watch";
     }
@@ -176,6 +187,7 @@ function recordsToShows(
       name: record.tv_show_name,
       followedAt: toIso(record.created_at),
       status,
+      unfollowed,
     });
   }
   return shows;
@@ -362,5 +374,25 @@ export function parseTvTimeFiles(fileContents: string[]): TvTimeParsed {
     }
   }
 
-  return { shows, watches: collapseDriftingDuplicates(watches) };
+  const collapsedWatches = collapseDriftingDuplicates(watches);
+
+  // E49: a relic is a followed-file row TV Time itself unfollowed (active=0) with
+  // zero surviving watch events — counted after dedupe/collapse, so drift across
+  // files never falsely looks like "no watches".
+  const watchCountByTvdbId = new Map<number, number>();
+  for (const watch of collapsedWatches) {
+    watchCountByTvdbId.set(watch.tvdbShowId, (watchCountByTvdbId.get(watch.tvdbShowId) ?? 0) + 1);
+  }
+
+  const survivingShows: TvTimeShow[] = [];
+  const skippedRelics: SkippedRelic[] = [];
+  for (const show of shows) {
+    if (show.unfollowed && (watchCountByTvdbId.get(show.tvdbId) ?? 0) === 0) {
+      skippedRelics.push({ name: show.name, tvdbId: show.tvdbId });
+    } else {
+      survivingShows.push(show);
+    }
+  }
+
+  return { shows: survivingShows, watches: collapsedWatches, skippedRelics };
 }

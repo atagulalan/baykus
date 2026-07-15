@@ -23,8 +23,15 @@ describe("parseTvTimeFiles", () => {
         name: "House of the Dragon",
         followedAt: "2022-08-21T10:00:00.000Z",
         status: "watching",
+        unfollowed: false,
       },
-      { tvdbId: 305288, name: "Dark", followedAt: "2020-06-27T14:00:00.000Z", status: "watching" },
+      {
+        tvdbId: 305288,
+        name: "Dark",
+        followedAt: "2020-06-27T14:00:00.000Z",
+        status: "watching",
+        unfollowed: false,
+      },
     ]);
 
     expect(result.watches).toHaveLength(4);
@@ -37,7 +44,7 @@ describe("parseTvTimeFiles", () => {
 
   it("skips unrecognized files silently", () => {
     const result = parseTvTimeFiles(["not,a,tvtime,file\nfoo,bar,baz,qux\n"]);
-    expect(result).toEqual({ shows: [], watches: [] });
+    expect(result).toEqual({ shows: [], watches: [], skippedRelics: [] });
   });
 
   it("ignores rows with a non-numeric show id", () => {
@@ -108,6 +115,7 @@ describe("parseTvTimeFiles", () => {
         name: "Real Show",
         followedAt: "2020-01-01T00:00:00.000Z",
         status: "watching",
+        unfollowed: false,
       },
     ]);
   });
@@ -117,7 +125,13 @@ describe("parseTvTimeFiles", () => {
     const b = "tv_show_id,tv_show_name,created_at\n1,Show A Again,2020-01-02 00:00:00\n";
     const result = parseTvTimeFiles([a, b]);
     expect(result.shows).toEqual([
-      { tvdbId: 1, name: "Show A", followedAt: "2020-01-01T00:00:00.000Z", status: "watching" },
+      {
+        tvdbId: 1,
+        name: "Show A",
+        followedAt: "2020-01-01T00:00:00.000Z",
+        status: "watching",
+        unfollowed: false,
+      },
     ]);
   });
 
@@ -260,19 +274,43 @@ describe("parseTvTimeFiles", () => {
       "user_id,tv_show_id,status,created_at,updated_at,tv_show_name\n" +
       "1,104,for_later,2020-01-01 00:00:00,2020-01-01 00:00:00,Show D\n";
 
-    const result = parseTvTimeFiles([followed, special]);
+    // Show B is active=0 (unfollowed); a watch keeps it out of the E49 relic skip
+    // so this test can still assert its status derivation like the other three.
+    const watches = "tv_show_id,episode_id,created_at\n102,888,2020-01-02 00:00:00\n";
+
+    const result = parseTvTimeFiles([followed, special, watches]);
 
     expect(result.shows).toEqual([
-      { tvdbId: 101, name: "Show A", followedAt: "2020-01-01T00:00:00.000Z", status: "watching" },
-      { tvdbId: 102, name: "Show B", followedAt: "2020-01-01T00:00:00.000Z", status: "dropped" },
-      { tvdbId: 103, name: "Show C", followedAt: "2020-01-01T00:00:00.000Z", status: "paused" },
+      {
+        tvdbId: 101,
+        name: "Show A",
+        followedAt: "2020-01-01T00:00:00.000Z",
+        status: "watching",
+        unfollowed: false,
+      },
+      {
+        tvdbId: 102,
+        name: "Show B",
+        followedAt: "2020-01-01T00:00:00.000Z",
+        status: "dropped",
+        unfollowed: true,
+      },
+      {
+        tvdbId: 103,
+        name: "Show C",
+        followedAt: "2020-01-01T00:00:00.000Z",
+        status: "dropped", // E48: archived=1 (with active=1) now maps to dropped, was paused
+        unfollowed: false,
+      },
       {
         tvdbId: 104,
         name: "Show D",
         followedAt: "2020-01-01T00:00:00.000Z",
         status: "plan_to_watch",
+        unfollowed: false,
       },
     ]);
+    expect(result.skippedRelics).toEqual([]);
   });
 
   it("prefers a currently-dropped show (active=0) over a stale for_later status from before it was dropped", () => {
@@ -286,10 +324,68 @@ describe("parseTvTimeFiles", () => {
       "user_id,tv_show_id,status,created_at,updated_at,tv_show_name\n" +
       "1,105,for_later,2017-01-01 00:00:00,2017-01-01 00:00:00,Show E\n";
 
-    const result = parseTvTimeFiles([followed, special]);
+    // Show E is active=0 (unfollowed); a watch keeps it out of the E49 relic skip
+    // so this test can still assert the current-state-wins status derivation.
+    const watch = "tv_show_id,episode_id,created_at\n105,999,2020-01-02 00:00:00\n";
+
+    const result = parseTvTimeFiles([followed, special, watch]);
 
     expect(result.shows).toEqual([
-      { tvdbId: 105, name: "Show E", followedAt: "2020-01-01T00:00:00.000Z", status: "dropped" },
+      {
+        tvdbId: 105,
+        name: "Show E",
+        followedAt: "2020-01-01T00:00:00.000Z",
+        status: "dropped",
+        unfollowed: true,
+      },
     ]);
+    expect(result.skippedRelics).toEqual([]);
+  });
+
+  it("maps archived=1 with active=1 (Suits-shape: stopped watching) to dropped and keeps it — active shows are never unfollowed, so it's never a relic", () => {
+    const followed =
+      "notification_offset,tv_show_name,active,diffusion,folder_id,archived,notification_type,user_id,tv_show_id,created_at,updated_at\n" +
+      "-10,Suits,1,original,,1,2,1,247808,2020-01-01 00:00:00,2020-01-01 00:00:00\n";
+
+    const result = parseTvTimeFiles([followed]);
+
+    expect(result.shows).toEqual([
+      {
+        tvdbId: 247808,
+        name: "Suits",
+        followedAt: "2020-01-01T00:00:00.000Z",
+        status: "dropped",
+        unfollowed: false,
+      },
+    ]);
+    expect(result.skippedRelics).toEqual([]);
+  });
+
+  it("skips an unfollowed (active=0) show with zero surviving watch events as a relic (Troy-shape) — excluded from shows, reported in skippedRelics", () => {
+    const followed =
+      "notification_offset,tv_show_name,active,diffusion,folder_id,archived,notification_type,user_id,tv_show_id,created_at,updated_at\n" +
+      "-10,Troy,0,original,,0,2,1,278460,2019-02-16 21:35:13,2019-02-16 21:35:13\n";
+
+    const result = parseTvTimeFiles([followed]);
+
+    expect(result.shows).toEqual([]);
+    expect(result.skippedRelics).toEqual([{ name: "Troy", tvdbId: 278460 }]);
+  });
+
+  it("never marks a fallback-shaped show (no active column) as unfollowed, so it's never skipped as a relic even with zero watches", () => {
+    const followed = "tv_show_id,tv_show_name,created_at\n1,Show A,2020-01-01 00:00:00\n";
+
+    const result = parseTvTimeFiles([followed]);
+
+    expect(result.shows).toEqual([
+      {
+        tvdbId: 1,
+        name: "Show A",
+        followedAt: "2020-01-01T00:00:00.000Z",
+        status: "watching",
+        unfollowed: false,
+      },
+    ]);
+    expect(result.skippedRelics).toEqual([]);
   });
 });

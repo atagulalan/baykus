@@ -11,6 +11,7 @@ export {
 } from "./match.ts";
 export {
   parseTvTimeFiles,
+  type SkippedRelic,
   type TvTimeParsed,
   type TvTimeShow,
   type TvTimeStatus,

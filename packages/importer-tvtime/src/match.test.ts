@@ -63,7 +63,7 @@ function fakeProvider(opts: FakeProviderOpts = {}): MetadataProvider {
 }
 
 function show(tvdbId: number, name: string): TvTimeShow {
-  return { tvdbId, name, followedAt: "2020-01-01T00:00:00.000Z" };
+  return { tvdbId, name, followedAt: "2020-01-01T00:00:00.000Z", unfollowed: false };
 }
 
 function watch(tvdbShowId: number, tvdbEpisodeId: number): TvTimeWatchEvent {
