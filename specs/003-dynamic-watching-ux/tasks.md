@@ -301,7 +301,7 @@ calendar, filter reset fixed.
   behavior is untouched. Browser verify deferred to M16.4's
   MANUELTEST.md per the M14.7/M15.4 precedent (no browser tool here). -->
 
-- [ ] M16.3 web: filter RESET fix (E41, FR-038)
+- [x] M16.3 web: filter RESET fix (E41, FR-038)
   - **Files:** `apps/web/src/components/FilterPanel.tsx`
   - **DoD:** delete `RESET_SORT`; `reset()` sets the draft to
     `DEFAULT_LIBRARY_SORT` + `DEFAULT_LIBRARY_CATEGORY`. Nothing else

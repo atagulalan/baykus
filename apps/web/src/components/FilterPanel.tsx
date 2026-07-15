@@ -7,7 +7,6 @@ export type LibraryCategoryFilter = WatchCategory | "all";
 
 export const DEFAULT_LIBRARY_SORT: LibrarySort = "lastWatched";
 export const DEFAULT_LIBRARY_CATEGORY: LibraryCategoryFilter = "all";
-const RESET_SORT: LibrarySort = "added";
 
 const SORTS: LibrarySort[] = ["lastWatched", "added", "title", "rating", "nextAir"];
 
@@ -36,8 +35,8 @@ export function FilterPanel({ sort, category, onApply }: FilterPanelProps) {
   }
 
   function reset() {
-    setDraftSort(RESET_SORT);
-    setDraftCategory("all");
+    setDraftSort(DEFAULT_LIBRARY_SORT);
+    setDraftCategory(DEFAULT_LIBRARY_CATEGORY);
   }
 
   return (
