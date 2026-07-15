@@ -2,8 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { addEpisodeWatch, getWatchHistory, listSeries } from "../api/client.ts";
-import type { WatchHistoryEntry } from "../api/types.ts";
-import { WatchNextRow } from "../components/WatchNextRow.tsx";
+import type { WatchHistoryEntry, WatchHistoryResponse } from "../api/types.ts";
+import { EpisodeRow, WatchNextRow } from "../components/WatchNextRow.tsx";
 import { todayIso } from "../lib/date.ts";
 import { useToast } from "../lib/toast.tsx";
 
@@ -41,28 +41,22 @@ function HistoryRow({ entry }: { entry: WatchHistoryEntry }) {
           )} ${time}`;
 
   return (
-    <div className="flex items-center justify-between gap-2 py-1 text-sm text-zinc-300">
-      <span className="truncate">
-        {entry.title} S{entry.s}E{entry.e}
-        {entry.episodeTitle ? ` · ${entry.episodeTitle}` : ""}
-      </span>
-      <span className="shrink-0 text-xs text-zinc-500">{relativeDay}</span>
-    </div>
+    <EpisodeRow
+      itemId={entry.itemId}
+      posterRef={entry.posterRef}
+      title={entry.title}
+      s={entry.s}
+      e={entry.e}
+      episodeTitle={entry.episodeTitle}
+      airDate={entry.airDate}
+      episodeType={entry.episodeType}
+      trailing={<span className="shrink-0 text-xs text-zinc-500">{relativeDay}</span>}
+    />
   );
 }
 
-function HistorySection() {
+function HistorySection({ query }: { query: ReturnType<typeof useQuery<WatchHistoryResponse>> }) {
   const { t } = useTranslation();
-  const query = useQuery({ queryKey: ["watch-history"], queryFn: () => getWatchHistory() });
-  const bottomRef = useRef<HTMLDivElement>(null);
-  const hasScrolledRef = useRef(false);
-
-  useEffect(() => {
-    if (!query.isLoading && !hasScrolledRef.current) {
-      bottomRef.current?.scrollIntoView({ block: "end" });
-      hasScrolledRef.current = true;
-    }
-  }, [query.isLoading]);
 
   return (
     <section className="flex flex-col gap-2">
@@ -74,12 +68,11 @@ function HistorySection() {
       ) : (query.data?.items.length ?? 0) === 0 ? (
         <p className="text-sm text-zinc-500">{t("watch.empty.history")}</p>
       ) : (
-        <div className="flex max-h-80 flex-col gap-0.5 overflow-y-auto">
+        <div className="flex flex-col">
           {/* API returns newest-first; E27 renders oldest at top, newest at bottom. */}
           {[...(query.data?.items ?? [])].reverse().map((entry) => (
             <HistoryRow key={entry.watchId} entry={entry} />
           ))}
-          <div ref={bottomRef} />
         </div>
       )}
     </section>
@@ -90,7 +83,10 @@ export function WatchPage() {
   const { t } = useTranslation();
   const toast = useToast();
   const queryClient = useQueryClient();
+  const nextHeadingRef = useRef<HTMLHeadingElement>(null);
+  const hasScrolledRef = useRef(false);
 
+  const historyQuery = useQuery({ queryKey: ["watch-history"], queryFn: () => getWatchHistory() });
   const libraryQuery = useQuery({ queryKey: ["library", "watch"], queryFn: () => listSeries() });
 
   const quickMark = useMutation({
@@ -103,6 +99,15 @@ export function WatchPage() {
     onError: () => toast.show(t("errors.generic"), "error"),
   });
 
+  // One-shot anchor to "Sıradaki bölümler" once both sections have settled — mirrors the
+  // calendar timeline's today-anchor pattern (E38, replaces the old history bottom-anchor).
+  useEffect(() => {
+    if (!historyQuery.isLoading && !libraryQuery.isLoading && !hasScrolledRef.current) {
+      nextHeadingRef.current?.scrollIntoView({ block: "start" });
+      hasScrolledRef.current = true;
+    }
+  }, [historyQuery.isLoading, libraryQuery.isLoading]);
+
   const items = libraryQuery.data?.items ?? [];
   const watchNext = items.filter((s) => s.category === "watching");
   const notWatchedRecently = items.filter((s) => s.category === "not_watched_recently");
@@ -111,12 +116,14 @@ export function WatchPage() {
     <div className="flex flex-col gap-8">
       <h1 className="font-semibold text-2xl">{t("watch.title")}</h1>
 
-      <HistorySection />
+      <HistorySection query={historyQuery} />
 
       <hr className="border-zinc-800" />
 
       <section className="flex flex-col gap-2">
-        <h2 className="font-medium text-sm text-zinc-300">{t("watch.next")}</h2>
+        <h2 ref={nextHeadingRef} className="scroll-mt-16 font-medium text-sm text-zinc-300">
+          {t("watch.next")}
+        </h2>
         {libraryQuery.isLoading ? (
           <div className="h-32 animate-pulse rounded-lg bg-zinc-900" />
         ) : libraryQuery.isError ? (

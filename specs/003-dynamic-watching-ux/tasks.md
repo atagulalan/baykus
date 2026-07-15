@@ -335,7 +335,7 @@ acceptance walked, docs refreshed.
   - **Tests:** core: fields populated + null-safe; server: response shape.
   - **Verify:** `pnpm test packages/core -- history && pnpm test apps/server`
 
-- [ ] M17.2 web: watch page rework (E38, FR-036)
+- [x] M17.2 web: watch page rework (E38, FR-036)
   - **Files:** `apps/web/src/components/WatchNextRow.tsx` (+ its test),
     `apps/web/src/pages/WatchPage.tsx`, `apps/web/src/api/types.ts`
   - **DoD:** ui.md 003 §Watch page: shared presentational row with leading-
@@ -349,6 +349,18 @@ acceptance walked, docs refreshed.
   - **Tests:** existing WatchNextRow tests stay green; i18n parity.
   - **Verify:** `pnpm dev` → /watch opens anchored at Sıradaki bölümler;
     history rows visually match; quick-mark still advances rows.
+  <!-- DECISION: the shared shell is a new export `EpisodeRow` alongside
+  the existing `WatchNextRow` in the same file (not a rename) — WatchNextRow
+  keeps its exact prop signature/behavior for the checkbox variant,
+  HistoryRow (in WatchPage.tsx) uses EpisodeRow directly with a trailing
+  timestamp. computeOverflowBadge/shouldShowQuickMarkCheckbox untouched.
+  historyQuery moved up from HistorySection into WatchPage() so the
+  one-shot scroll effect can wait on both history and library queries
+  settling (the anchor's page position depends on the now-unbounded
+  history list's rendered height). Reused scroll-mt-16 from M16.1's
+  calendar anchor for the same sticky-header height. Full-list rendering
+  and the anchor itself need a browser to see; deferred to M17.5/M17.7
+  MANUELTEST.md coverage. -->
 
 - [ ] M17.3 server: push test endpoint (E39, FR-037)
   - **Files:** `apps/server/src/routes/{push.ts,push.test.ts}`,

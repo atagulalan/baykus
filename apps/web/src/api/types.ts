@@ -309,6 +309,8 @@ export interface WatchHistoryEntry {
   s: number;
   e: number;
   episodeTitle: string | null;
+  airDate: string | null;
+  episodeType: EpisodeType | null;
 }
 
 export interface WatchHistoryResponse {
