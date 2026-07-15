@@ -275,7 +275,7 @@ on schemaVersion 2.
   for the contract/API surface generally but this page never calls it,
   even in single-category flat-grid mode. -->
 
-- [ ] M10.8 CHECKPOINT M10
+- [x] M10.8 CHECKPOINT M10
   - **DoD:** full browser pass of M10.7's Verify list in BOTH locales + M1–M9
     regression spot-check (search/add, episode ticking, rating, refresh SSE,
     settings, stats page renders with new categories); export a zip, wipe,
