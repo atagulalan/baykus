@@ -38,6 +38,20 @@ describe("buildProgressSegments (E34)", () => {
     expect(buildProgressSegments(seasons)).toEqual([{ kind: "filled" }, { kind: "filled" }]);
   });
 
+  it("caught-up on every aired episode (E50: getSeasonProgress already excludes announced-future episodes from total) -> all filled, no frontier", () => {
+    const seasons = sp(
+      [
+        { number: 1, watched: 8, total: 8 },
+        { number: 2, watched: 5, total: 5 },
+      ],
+      true,
+    );
+
+    const segments = buildProgressSegments(seasons);
+    expect(segments).toEqual([{ kind: "filled" }, { kind: "filled" }]);
+    expect(segments?.some((s) => s.kind === "frontier")).toBe(false);
+  });
+
   it("non-sequential (skip-around) -> null, the fallback bar", () => {
     const seasons = sp(
       [

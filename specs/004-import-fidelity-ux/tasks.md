@@ -95,7 +95,7 @@ episodes announced) renders an all-filled segmented bar on card and detail.
     zero-aired series → `seasons: []`.
   - **Verify:** `pnpm test packages/core -- progress`
 
-- [ ] M19.2 web: pin the caught-up rendering
+- [x] M19.2 web: pin the caught-up rendering
   - **Files:** `apps/web/src/components/SegmentedProgress.test.ts`
   - **DoD:** no component change expected (plan.md §Progress notes — the
     all-filled branch already exists). Add the regression fixture: every
