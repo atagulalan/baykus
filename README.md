@@ -11,9 +11,14 @@ Dizi (ve ileride film + kitap) takip uygulaması. TV Time / Serializd benzeri, a
 
 - Dizi arama ve kütüphaneye ekleme (TMDB birincil, TVmaze anahtar gerektirmeyen fallback)
 - Bölüm bazında izleme takibi: izleme tarihi, tekrar izleme (rewatch), sezon/dizi toplu işaretleme
-- Takip durumu: izliyorum / izleyeceğim / bitirdim / bıraktım / ara verdim
+- Dinamik kategoriler (otomatik hesaplanır): izleniyor, bir süredir izlenmedi, daha başlanmadı,
+  güncel, bitirildi — artı iki manuel liste (sonra izlenecek, bırakıldı) kullanıcı tarafından
+  ayarlanabilir ve bir bölüm izlenince otomatik temizlenir
 - 3'lü puanlama: **1 = kötü, 2 = normal, 3 = iyi** (dizi ve bölüm seviyesinde)
-- Yaklaşan bölümler takvimi (uygulama içi) + web push bildirimi
+- Takvim: zaman çizelgesi (gün gün, BUGÜN'e otomatik scroll) ve ay görünümü modları, artı web
+  push bildirimi — ikisi de sadece aktif (izlenen) dizilere odaklanır
+- İzleme sayfası: son 30 izlemenin geçmişi, sıradaki bölümler ve bir süredir izlenmeyenler
+  bölümleri, hızlı işaretleme
 - Hangi platformda yayında bilgisi (TMDB watch providers)
 - Manuel metadata güncelleme — zamanlanmış arka plan işi gerekmez, "Yenile" butonu yeter
 - Zip export/import (taşınabilir, sürümlü format)
@@ -27,6 +32,11 @@ Sonraki modüller: film, kitap. Mimari en baştan çoklu medya tipine göre tasa
 | Kütüphane | Dizi detayı | Takvim |
 |---|---|---|
 | ![Kütüphane](docs/images/library.png) | ![Dizi detayı](docs/images/series-detail.png) | ![Takvim](docs/images/calendar.png) |
+
+> Bu görüntüler spec 002 (dinamik kategoriler, takvim modları, izleme
+> sayfası) öncesinden kalma — güncel arayüzü tam yansıtmıyor. Otonom
+> yürütmede tarayıcı erişimi olmadığı için yenilenemedi; bir sonraki
+> tarayıcılı oturumda güncellenmeli.
 
 ## Mimari (özet)
 
@@ -62,6 +72,8 @@ baykus/  (pnpm monorepo — paketler npm'e yayınlanmaz, workspace olarak yaşar
 | [specs/001-series-tracking/ui.md](specs/001-series-tracking/ui.md) | Ekran spesifikasyonları, wireframe'ler, i18n kuralları |
 | [specs/001-series-tracking/research.md](specs/001-series-tracking/research.md) | Sağlayıcı API'leri, scraping riskleri, TV Time formatı |
 | [specs/001-series-tracking/tasks.md](specs/001-series-tracking/tasks.md) | Dikey milestone'lar (M0–M9), görev başına Files/DoD/Tests/Verify |
+| [specs/002-watch-categories/spec.md](specs/002-watch-categories/spec.md) | v2 delta spec — dinamik kategoriler, takvim modları, izleme sayfası (001 üzerine, 001 ile çakışırsa 002 kazanır) |
+| [specs/002-watch-categories/tasks.md](specs/002-watch-categories/tasks.md) | 002'nin milestone'ları (M10–M13) |
 | [fixtures/README.md](fixtures/README.md) | Test fixture'ları — kaynak ve yeniden yakalama komutları |
 | [docs/spec-kit.md](docs/spec-kit.md) | Spec-driven development metodolojisi ve yeni feature ekleme süreci |
 | [docs/self-hosting.md](docs/self-hosting.md) | Self-host kurulum rehberi (Docker, ortam değişkenleri, yedekleme) |
@@ -82,12 +94,16 @@ bakın.
 
 ## Geliştirme
 
-Durum: **M0–M9.4 tamam**, M9.2 hariç (bkz.
-[tasks.md](specs/001-series-tracking/tasks.md)) — lint + typecheck + test +
-build yeşil, Docker imajı build edilip çalıştırılarak doğrulandı,
-spec.md'nin kabul kontrol listesi tek tek geçildi. Kalan tek iş: M9.2
-(baykus.xava.me'ye asıl deploy) — gerçek DNS/TLS/hosting erişimi
-gerektirdiği için otonom yürütme kapsamı dışında bırakıldı.
+Durum: **v1 (M0–M9.4) tamam**, M9.2 hariç (bkz.
+[001 tasks.md](specs/001-series-tracking/tasks.md)) — gerçek DNS/TLS/hosting
+erişimi gerektirdiği için otonom yürütme kapsamı dışında bırakıldı.
+
+**Spec 002 (dinamik kategoriler, takvim modları, izleme sayfası) — M10–M13.1
+tamam** (bkz. [002 tasks.md](specs/002-watch-categories/tasks.md)): lint +
+typecheck + test yeşil (394 test), her E16–E29 kararının en az bir testi var,
+zip round-trip v2'de yeşil. Kalan iş: M10.8/M11.4/M12.4 checkpoint'lerinin
+tarayıcı doğrulaması — otonom yürütmede tarayıcı erişimi yok, adımlar
+[MANUELTEST.md](MANUELTEST.md)'de toplandı; sonrasında M13.2 kapanır.
 
 ```bash
 pnpm install

@@ -504,9 +504,19 @@ badges, and the not-watched-recently section.
   live UI transition, "UI complete") are left unchecked there — no
   browser tool available; steps are in MANUELTEST.md for xava's final
   pass. -->
-- [ ] M13.2 docs: README.md feature bullets (statuses → categories line,
+- [x] M13.2 docs: README.md feature bullets (statuses → categories line,
   calendar modes, watch page), `docs/self-hosting.md` only if it mentions
   statuses (check), refresh `docs/images/` screenshots if a browser is
   available (otherwise note it and move on). Update the root `HANDOVER.md`
   status line, or delete it if everything above is done — it is a working
   document, not permanent documentation.
+  <!-- DECISION: docs/self-hosting.md has zero mentions of statuses —
+  left untouched, matching the task's own conditional. docs/images/*.png
+  predate 002's UI rework and are now stale, but no browser tool is
+  available to recapture them — added a note in README pointing this
+  out instead of silently leaving stale screenshots unexplained.
+  HANDOVER.md was NOT deleted: M10.8/M11.4/M12.4's browser halves are
+  still pending xava, so "everything above" isn't done yet — updated its
+  Status line instead to reflect M10-M13.1 progress and point at
+  MANUELTEST.md; it should be deleted once those three checkpoints are
+  confirmed and their boxes checked. -->

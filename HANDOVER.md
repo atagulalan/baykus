@@ -2,7 +2,12 @@
 
 **From:** planning session (Claude Fable, 2026-07-15) ·
 **To:** the implementing agent ·
-**Status:** ready to start — nothing of 002 is implemented yet.
+**Status:** M10–M13.1 implemented and committed (core/server/web, full
+gate green, every E16–E29 has a test). Not done: the browser-only halves
+of the M10.8/M11.4/M12.4 checkpoints (no browser-automation tool in this
+environment) — steps are in the root `MANUELTEST.md` for xava's manual
+pass. M13.2 (docs) is in progress; this file gets deleted once the
+checkpoints are confirmed and the last task box is checked.
 
 ## Your mission
 
