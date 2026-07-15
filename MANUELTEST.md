@@ -221,3 +221,55 @@ döndürdüğünü curl ile doğrulama) benim tarafımdan yapıldı.
 ### Tam gate
 - [x] `pnpm lint && pnpm typecheck && pnpm test && pnpm build` — hepsi
       yeşil (ben zaten doğruladım).
+
+---
+
+## M16.4 — CHECKPOINT M16 (bekliyor)
+
+Spec 003, M16: sticky header + mobil alt navigasyon, takvimde poster
+görselleri, filtre RESET düzeltmesi. Mekanik kısım (tam gate) benim
+tarafımdan doğrulandı.
+
+### Sticky header
+- [ ] Herhangi bir sayfada aşağı kaydır — üst bar (logo + arama +
+      masaüstünde nav linkleri) ekranın üstünde sabit kalmalı, altındaki
+      içeriğin üzerine binmeli (opak arka plan).
+
+### Mobil alt navigasyon (<640px veya DevTools mobil görünüm)
+- [ ] Üst barda nav linkleri (Kütüphane/İzleme/Takvim/İstatistik/Ayarlar)
+      **kaybolmalı**; ekranın altında sabit bir tab bar'da 5 ikon +
+      küçük etiket görünmeli (lucide-react ikonları — FontAwesome/ikon
+      fontu **olmamalı**).
+- [ ] Tab bar'daki 5 sekmenin hepsine tıklayıp ilgili sayfaya gittiğini
+      doğrula; aktif sekme diğerlerinden görsel olarak ayrışmalı.
+- [ ] Sayfa içeriği tab bar'ın arkasında kalmamalı (alt boşluk yeterli).
+- [ ] Takvim → zaman çizelgesi modunda sayfa açılışında BUGÜN satırına
+      otomatik scroll oluyor mu, satır sticky header'ın **altında kalmadan**
+      tam görünür mü (scroll-mt).
+
+### Takvimde poster görselleri (E35)
+- [ ] Zaman çizelgesi modunda her satırda 40×56 poster thumbnail
+      görünmeli.
+- [ ] Ay modu (masaüstü) — hücrelerde küçük (~24px) poster + metin
+      görünmeli; posteri olmayan bir bölüm sadece metin göstermeli
+      (placeholder kutusu yok).
+- [ ] Pencereyi <640px'e daralt → ay modu, zaman çizelgesi tarzı
+      satırlara (poster thumb'lı) dönüşmeli.
+- [ ] Posteri 404 dönen veya null olan bir girdi kırık görsel ikonu
+      göstermeden temiz bir placeholder ile render olmalı.
+- [ ] Bugün vurgusu hem zaman çizelgesinde hem ay modunda hâlâ doğru
+      çalışıyor mu (2026-07-15 yerel tarih düzeltmesinin tekrar
+      doğrulanması).
+
+### Filtre RESET (E41)
+- [ ] Kütüphane sayfasında Filtrele panelini aç, sıralamayı ve
+      kategoriyi varsayılan olmayan bir değere değiştir, SIFIRLA'ya
+      bas → radyo düğmeleri **Son izlenen** + **Tümü**'ne dönmeli (draft
+      state, panel açık kalmalı). UYGULA ile onayla.
+
+### İki dil
+- [ ] Ayarlar → Dil'den EN'e geç, yukarıdaki adımların tamamını tekrarla.
+
+### Tam gate
+- [x] `pnpm lint && pnpm typecheck && pnpm test && pnpm build` — hepsi
+      yeşil (ben zaten doğruladım).

@@ -310,9 +310,14 @@ calendar, filter reset fixed.
   - **Verify:** `pnpm dev` → change both filters, SIFIRLA → radios show Son
     izlenen + Tümü, UYGULA applies.
 
-- [ ] M16.4 CHECKPOINT M16 — append M16 steps to `MANUELTEST.md` (sticky,
+- [x] M16.4 CHECKPOINT M16 — append M16 steps to `MANUELTEST.md` (sticky,
   bottom tabs, posters both modes + mobile, reset, TR+EN); full gate green;
   then check this box and commit.
+  <!-- DECISION: full gate green (lint, typecheck, 440 tests, clean
+  build). Sticky header, mobile bottom tabs, calendar posters (both
+  modes + mobile), and filter RESET all need a browser to see visually
+  — left as unchecked MANUELTEST.md items; box checked per the
+  M14.7/M15.4 "then check this box and commit" convention. -->
 
 ---
 
