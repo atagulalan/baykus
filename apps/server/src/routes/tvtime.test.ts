@@ -395,6 +395,28 @@ describe("POST /api/import/tvtime/confirm", () => {
     expect(dark?.manualList).toBe("stopped");
   });
 
+  it("a zero-watch imported show computes as not_started, not watching — import:tvtime bypasses the newly-added lift (E32)", async () => {
+    const { app, library } = setup();
+    const zip = await zipBuffer({
+      "followed_tv_show.csv":
+        "tv_show_id,tv_show_name,created_at\n371572,House of the Dragon,2022-08-21 10:00:00\n",
+    });
+
+    const importRes = await postImport(app, zip, "export.zip");
+    const { reportId } = (await importRes.json()) as { reportId: string };
+
+    const confirmRes = await app.request("/api/import/tvtime/confirm", {
+      method: "POST",
+      headers: HEADERS,
+      body: JSON.stringify({ reportId, resolutions: [] }),
+    });
+    expect(confirmRes.status).toBe(200);
+
+    const hotd = library.listSeries().items.find((i) => i.title === "House of the Dragon");
+    expect(hotd?.progress.watched).toBe(0);
+    expect(hotd?.category).toBe("not_started");
+  });
+
   it("404s for an unknown reportId", async () => {
     const { app } = setup();
     const res = await app.request("/api/import/tvtime/confirm", {

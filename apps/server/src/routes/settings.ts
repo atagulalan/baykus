@@ -11,6 +11,7 @@ const patchSettingsSchema = z
     theme: z.enum(["dark", "light", "system"]).optional(),
     scrapersEnabled: z.boolean().optional(),
     tmdbApiKey: z.string().nullable().optional(),
+    watchingWindowDays: z.number().int().min(1).max(365).optional(),
   })
   .strict();
 
@@ -21,6 +22,9 @@ function toSettingsPatch(parsed: z.infer<typeof patchSettingsSchema>): SettingsP
   if (parsed.theme !== undefined) patch.theme = parsed.theme;
   if (parsed.scrapersEnabled !== undefined) patch.scrapersEnabled = parsed.scrapersEnabled;
   if (parsed.tmdbApiKey !== undefined) patch.tmdbApiKey = parsed.tmdbApiKey;
+  if (parsed.watchingWindowDays !== undefined) {
+    patch.watchingWindowDays = parsed.watchingWindowDays;
+  }
   return patch;
 }
 

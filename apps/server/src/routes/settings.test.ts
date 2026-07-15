@@ -125,4 +125,32 @@ describe("PATCH /api/settings", () => {
     });
     expect(res.status).toBe(400);
   });
+
+  it("updates watchingWindowDays and round-trips it (E31)", async () => {
+    const { app } = setup();
+    const res = await app.request("/api/settings", {
+      method: "PATCH",
+      headers: HEADERS,
+      body: JSON.stringify({ watchingWindowDays: 14 }),
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ watchingWindowDays: 14 });
+
+    const getRes = await app.request("/api/settings");
+    expect(await getRes.json()).toMatchObject({ watchingWindowDays: 14 });
+  });
+
+  it.each([
+    0, 366, 1.5,
+  ])("400 VALIDATION_FAILED for watchingWindowDays out of range (%s)", async (value) => {
+    const { app } = setup();
+    const res = await app.request("/api/settings", {
+      method: "PATCH",
+      headers: HEADERS,
+      body: JSON.stringify({ watchingWindowDays: value }),
+    });
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error: { code: string } };
+    expect(body.error.code).toBe("VALIDATION_FAILED");
+  });
 });

@@ -148,7 +148,7 @@ window; imports don't; the window length is a setting.
   manualList: x } : {})`), matching the existing pattern in
   routes/library.ts's toTrackingPatch. -->
 
-- [ ] M14.5 server: settings validation + tvtime addedVia
+- [x] M14.5 server: settings validation + tvtime addedVia
   - **Files:** `apps/server/src/routes/{settings.ts,settings.test.ts,
     tvtime.ts,tvtime.test.ts}`
   - **DoD:** settings PATCH zod gains `watchingWindowDays: z.number().int()
