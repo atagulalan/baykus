@@ -15,6 +15,17 @@ export interface SeriesProgress {
   total: number;
 }
 
+export interface SeasonProgressEntry {
+  number: number;
+  watched: number;
+  total: number;
+}
+
+export interface SeasonProgress {
+  seasons: SeasonProgressEntry[];
+  sequential: boolean;
+}
+
 export interface NextUnwatchedEpisode {
   episodeId: number;
   s: number;
@@ -48,6 +59,56 @@ export function getSeriesProgress(db: LibraryDatabase, itemId: number): SeriesPr
     .all();
 
   return { watched: watchedRows.length, aired, total };
+}
+
+/**
+ * E34: per-season watched/total (total = announced, not just aired) plus
+ * `sequential` — whether the watched set is a contiguous (s,e)-ordered
+ * prefix. One episode query + one grouped watch query, then a single JS
+ * scan; never per-episode.
+ */
+export function getSeasonProgress(db: LibraryDatabase, itemId: number): SeasonProgress {
+  const episodes = db
+    .select({
+      id: schema.episodes.id,
+      seasonNumber: schema.episodes.seasonNumber,
+    })
+    .from(schema.episodes)
+    .where(and(eq(schema.episodes.itemId, itemId), ne(schema.episodes.seasonNumber, 0)))
+    .orderBy(schema.episodes.seasonNumber, schema.episodes.episodeNumber)
+    .all();
+
+  if (episodes.length === 0) return { seasons: [], sequential: true };
+
+  const watchedRows = db
+    .select({ episodeId: schema.watches.episodeId })
+    .from(schema.watches)
+    .innerJoin(schema.episodes, eq(schema.watches.episodeId, schema.episodes.id))
+    .where(and(eq(schema.episodes.itemId, itemId), ne(schema.episodes.seasonNumber, 0)))
+    .groupBy(schema.watches.episodeId)
+    .all();
+  const watchedEpisodeIds = new Set(watchedRows.map((r) => r.episodeId));
+
+  let sequential = true;
+  let seenUnwatched = false;
+  const seasonsByNumber = new Map<number, SeasonProgressEntry>();
+  for (const ep of episodes) {
+    const watched = watchedEpisodeIds.has(ep.id);
+    if (watched && seenUnwatched) sequential = false;
+    if (!watched) seenUnwatched = true;
+
+    const entry = seasonsByNumber.get(ep.seasonNumber) ?? {
+      number: ep.seasonNumber,
+      watched: 0,
+      total: 0,
+    };
+    entry.total += 1;
+    if (watched) entry.watched += 1;
+    seasonsByNumber.set(ep.seasonNumber, entry);
+  }
+
+  const seasons = [...seasonsByNumber.values()].sort((a, b) => a.number - b.number);
+  return { seasons, sequential };
 }
 
 /** First non-special episode (airing order) with no watch event, regardless of airedness. */

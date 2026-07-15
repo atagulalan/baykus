@@ -23,7 +23,12 @@ import {
 } from "./category.ts";
 import { AlreadyInLibraryError, ManualListConflictError } from "./errors.ts";
 import { getWatchHistory, type WatchHistoryEntry } from "./history.ts";
-import { getNextAirDate, getNextUnwatchedEpisode, getSeriesProgress } from "./progress.ts";
+import {
+  getNextAirDate,
+  getNextUnwatchedEpisode,
+  getSeasonProgress,
+  getSeriesProgress,
+} from "./progress.ts";
 import {
   addPushSubscription,
   listPushSubscriptions,
@@ -144,6 +149,7 @@ function buildSummary(
     releaseStatus: item.releaseStatus,
     network: item.networks?.[0]?.name ?? null,
     progress: getSeriesProgress(db, item.id),
+    seasonProgress: getSeasonProgress(db, item.id),
     nextUnwatched: getNextUnwatchedEpisode(db, item.id),
     nextAirDate: getNextAirDate(db, item.id),
     pushMuted: tracking.pushMuted,

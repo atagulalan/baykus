@@ -11,9 +11,9 @@ import type {
 } from "@baykus/provider-sdk";
 import type { ManualList } from "../db/schema.ts";
 import type { WatchCategory } from "./category.ts";
-import type { NextUnwatchedEpisode, SeriesProgress } from "./progress.ts";
+import type { NextUnwatchedEpisode, SeasonProgress, SeriesProgress } from "./progress.ts";
 
-export type { NextUnwatchedEpisode, SeriesProgress };
+export type { NextUnwatchedEpisode, SeasonProgress, SeriesProgress };
 
 export interface SeriesSummary {
   id: number;
@@ -29,6 +29,7 @@ export interface SeriesSummary {
   releaseStatus: ReleaseStatus | null;
   network: string | null;
   progress: SeriesProgress;
+  seasonProgress: SeasonProgress;
   nextUnwatched: NextUnwatchedEpisode | null;
   nextAirDate: string | null;
   pushMuted: boolean;

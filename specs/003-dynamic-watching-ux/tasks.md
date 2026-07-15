@@ -207,7 +207,7 @@ window; imports don't; the window length is a setting.
 Checkpoint goal: cards and the detail header show the season-segmented bar
 (fallback intact); detail page has specials last and an uncropped poster.
 
-- [ ] M15.1 core: `seasonProgress` on summaries (E34, FR-032)
+- [x] M15.1 core: `seasonProgress` on summaries (E34, FR-032)
   - **Files:** `packages/core/src/library/{progress.ts,progress.test.ts,
     types.ts,service.ts}`, `packages/core/src/index.ts`
   - **DoD:** `getSeasonProgress(db, itemId): SeasonProgress` per data-model

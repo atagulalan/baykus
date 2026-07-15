@@ -21,7 +21,12 @@ export {
   ManualListConflictError,
 } from "./library/errors.ts";
 export type { WatchHistoryEntry } from "./library/history.ts";
-export { todayUtc } from "./library/progress.ts";
+export {
+  getSeasonProgress,
+  type SeasonProgress,
+  type SeasonProgressEntry,
+  todayUtc,
+} from "./library/progress.ts";
 export type { PushSubscriptionRecord } from "./library/push.ts";
 export type { Rating } from "./library/ratings.ts";
 export { type AddSeriesOptions, createLibrary, type Library } from "./library/service.ts";
