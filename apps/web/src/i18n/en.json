@@ -20,13 +20,21 @@
     "alreadyInLibrary": "This series is already in your library",
     "addError": "Something went wrong while adding"
   },
-  "status": {
-    "label": "Status",
+  "category": {
     "watching": "Watching",
-    "plan_to_watch": "Plan to watch",
-    "completed": "Completed",
-    "dropped": "Dropped",
-    "paused": "Paused"
+    "not_watched_recently": "Haven't watched for a while",
+    "not_started": "Not started",
+    "watch_later": "Watch later",
+    "up_to_date": "Up to date",
+    "finished": "Finished",
+    "stopped": "Stopped"
+  },
+  "manualList": {
+    "label": "List",
+    "none": "Automatic",
+    "watch_later": "Watch later",
+    "stopped": "Stopped",
+    "addDefault": "Add"
   },
   "library": {
     "empty": {
@@ -34,18 +42,27 @@
       "hint": "Use the search box above to find a series."
     },
     "filter": {
-      "all": "All"
+      "title": "Filter",
+      "sortTitle": "Sort",
+      "progressTitle": "Progress",
+      "allCategories": "All",
+      "reset": "RESET",
+      "apply": "APPLY"
     },
     "sort": {
       "label": "Sort",
       "title": "Title",
       "added": "Added",
       "rating": "Rating",
-      "nextAir": "Next air date"
+      "nextAir": "Next air date",
+      "lastWatched": "Last watched"
     },
     "card": {
       "remove": "Remove",
-      "refresh": "Refresh"
+      "refresh": "Refresh",
+      "moveToWatchLater": "Move to Watch later",
+      "moveToStopped": "Move to Stopped",
+      "moveToAuto": "Back to Automatic"
     },
     "removeConfirm": "Remove \"{{title}}\" from your library?",
     "removeError": "Something went wrong while removing",
@@ -58,9 +75,7 @@
     "seasonNumber": "Season {{number}}",
     "markSeasonWatched": "mark all watched",
     "nextUp": "Next up: S{{s}}E{{e}}",
-    "suggestCompleted": "All episodes watched. Move to Completed?",
-    "moveToCompleted": "Move",
-    "staySame": "Keep as is",
+    "stoppedBlocked": "A finished series can't be marked as stopped",
     "justwatchAttribution": "Data from JustWatch",
     "refresh": "Refresh",
     "refreshFoundNew": "Found {{count}} new episodes",

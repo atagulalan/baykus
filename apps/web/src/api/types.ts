@@ -5,7 +5,27 @@
 
 export type MediaType = "series" | "movie" | "book";
 
-export type TrackingStatus = "watching" | "plan_to_watch" | "completed" | "dropped" | "paused";
+export type ManualList = "watch_later" | "stopped";
+
+export type WatchCategory =
+  | "watching"
+  | "not_watched_recently"
+  | "not_started"
+  | "watch_later"
+  | "up_to_date"
+  | "finished"
+  | "stopped";
+
+/** Display order per spec.md E16. */
+export const CATEGORY_ORDER: WatchCategory[] = [
+  "watching",
+  "not_watched_recently",
+  "not_started",
+  "watch_later",
+  "up_to_date",
+  "finished",
+  "stopped",
+];
 
 export interface ExternalIds {
   tmdbId?: number;
@@ -43,6 +63,8 @@ export interface NextUnwatchedEpisode {
   s: number;
   e: number;
   title: string | null;
+  airDate: string | null;
+  episodeType: EpisodeType | null;
 }
 
 export interface SeriesSummary {
@@ -50,7 +72,9 @@ export interface SeriesSummary {
   title: string;
   posterRef: string | null;
   year: number | null;
-  status: TrackingStatus;
+  category: WatchCategory;
+  manualList: ManualList | null;
+  lastWatchedAt: string | null;
   rating: 1 | 2 | 3 | null;
   releaseStatus: string | null;
   network: string | null;
@@ -164,7 +188,6 @@ export interface AddWatchResult {
   episodeId: number;
   watchedAt: string;
   source: string;
-  suggestCompleted: boolean;
 }
 
 export type BulkWatchTarget = { upToEpisodeId: number } | { seasonNumber: number };
@@ -172,7 +195,6 @@ export type BulkWatchTarget = { upToEpisodeId: number } | { seasonNumber: number
 export interface BulkWatchResult {
   created: number;
   skippedAlreadyWatched: number;
-  suggestCompleted: boolean;
 }
 
 export interface ApiErrorEnvelope {
@@ -210,7 +232,7 @@ export interface SettingsPatch {
 export interface Stats {
   episodesWatched: number;
   watchTimeMin: number;
-  itemCount: Record<TrackingStatus, number>;
+  itemCount: Record<WatchCategory, number>;
   episodesPerMonth: { month: string; count: number }[];
   ratingDistribution: Record<"1" | "2" | "3", number>;
 }

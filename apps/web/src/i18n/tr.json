@@ -20,13 +20,21 @@
     "alreadyInLibrary": "Bu dizi zaten kütüphanende",
     "addError": "Eklenirken bir hata oluştu"
   },
-  "status": {
-    "label": "Durum",
-    "watching": "İzliyorum",
-    "plan_to_watch": "İzleyeceğim",
-    "completed": "Bitirdim",
-    "dropped": "Bıraktım",
-    "paused": "Ara verdim"
+  "category": {
+    "watching": "İzleniyor",
+    "not_watched_recently": "Bir süredir izlenmedi",
+    "not_started": "Daha başlanmadı",
+    "watch_later": "Sonra izlenecek",
+    "up_to_date": "Güncel",
+    "finished": "Bitirildi",
+    "stopped": "Bırakıldı"
+  },
+  "manualList": {
+    "label": "Liste",
+    "none": "Otomatik",
+    "watch_later": "Sonra izlenecek",
+    "stopped": "Bırakıldı",
+    "addDefault": "Ekle"
   },
   "library": {
     "empty": {
@@ -34,18 +42,27 @@
       "hint": "Bir dizi aramak için yukarıdaki arama kutusunu kullan."
     },
     "filter": {
-      "all": "Tümü"
+      "title": "Filtrele",
+      "sortTitle": "Sıralama",
+      "progressTitle": "İlerleme",
+      "allCategories": "Tümü",
+      "reset": "SIFIRLA",
+      "apply": "UYGULA"
     },
     "sort": {
       "label": "Sırala",
       "title": "Başlık",
       "added": "Eklenme",
       "rating": "Puan",
-      "nextAir": "Sıradaki yayın"
+      "nextAir": "Sıradaki yayın",
+      "lastWatched": "Son izlenen"
     },
     "card": {
       "remove": "Kaldır",
-      "refresh": "Yenile"
+      "refresh": "Yenile",
+      "moveToWatchLater": "Sonra izlenecek'e taşı",
+      "moveToStopped": "Bırakıldı'ya taşı",
+      "moveToAuto": "Otomatik'e döndür"
     },
     "removeConfirm": "\"{{title}}\" kütüphaneden kaldırılsın mı?",
     "removeError": "Kaldırılırken bir hata oluştu",
@@ -58,9 +75,7 @@
     "seasonNumber": "Sezon {{number}}",
     "markSeasonWatched": "tümünü izledim",
     "nextUp": "Sıradaki: S{{s}}E{{e}}",
-    "suggestCompleted": "Tüm bölümler izlendi. Bitirdim'e taşınsın mı?",
-    "moveToCompleted": "Taşı",
-    "staySame": "Kalsın",
+    "stoppedBlocked": "Bitirilmiş bir dizi bırakıldı olarak işaretlenemez",
     "justwatchAttribution": "JustWatch verisi",
     "refresh": "Yenile",
     "refreshFoundNew": "{{count}} yeni bölüm bulundu",

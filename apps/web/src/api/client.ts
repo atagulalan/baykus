@@ -9,6 +9,7 @@ import type {
   ExternalIds,
   ImportMode,
   ImportZipResult,
+  ManualList,
   Rating,
   RatingTargetType,
   RefreshCompleteEvent,
@@ -21,10 +22,10 @@ import type {
   Settings,
   SettingsPatch,
   Stats,
-  TrackingStatus,
   TvTimeConfirmProgressEvent,
   TvTimeConfirmResult,
   TvTimeReport,
+  WatchCategory,
 } from "./types.ts";
 
 export class ApiError extends Error {
@@ -71,19 +72,22 @@ export function searchSeries(query: string, limit = 10): Promise<SearchResponse>
 
 export function addSeries(
   externalIds: ExternalIds,
-  status: TrackingStatus,
+  manualList?: ManualList,
 ): Promise<SeriesSummary> {
   return request<SeriesSummary>("/library/series", {
     method: "POST",
-    body: JSON.stringify({ externalIds, status }),
+    body: JSON.stringify({ externalIds, manualList }),
   });
 }
 
 export function listSeries(
-  params: { status?: TrackingStatus; sort?: "title" | "added" | "rating" | "nextAir" } = {},
+  params: {
+    category?: WatchCategory;
+    sort?: "title" | "added" | "rating" | "nextAir" | "lastWatched";
+  } = {},
 ): Promise<SeriesListResponse> {
   const query = new URLSearchParams();
-  if (params.status) query.set("status", params.status);
+  if (params.category) query.set("category", params.category);
   if (params.sort) query.set("sort", params.sort);
   const qs = query.toString();
   return request<SeriesListResponse>(`/library/series${qs ? `?${qs}` : ""}`);
@@ -99,7 +103,7 @@ export function getSeries(id: number): Promise<SeriesDetail> {
 
 export function updateSeries(
   id: number,
-  patch: { status?: TrackingStatus; pushMuted?: boolean; note?: string | null },
+  patch: { manualList?: ManualList | null; pushMuted?: boolean; note?: string | null },
 ): Promise<SeriesSummary> {
   return request<SeriesSummary>(`/library/series/${id}`, {
     method: "PATCH",

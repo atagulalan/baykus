@@ -17,11 +17,10 @@ import {
 import { buildImageUrl } from "../api/images.ts";
 import type {
   AddWatchResult,
-  BulkWatchResult,
   EpisodeSummary,
+  ManualList,
   SeriesDetail,
   SeriesSummary,
-  TrackingStatus,
 } from "../api/types.ts";
 import { RatingControl } from "../components/RatingControl.tsx";
 import { SeasonSection } from "../components/SeasonSection.tsx";
@@ -29,8 +28,6 @@ import { WatchDateDialog } from "../components/WatchDateDialog.tsx";
 import { useToast } from "../lib/toast.tsx";
 
 const RATING_PROMPT_TIMEOUT_MS = 5000;
-
-const STATUSES: TrackingStatus[] = ["watching", "plan_to_watch", "completed", "dropped", "paused"];
 
 /** Falls back to plain text if the logo 404s (e.g. its provider isn't registered right now). */
 function LogoOrText({ src, alt }: { src: string | null; alt: string }) {
@@ -79,7 +76,6 @@ export function SeriesDetailPage() {
   const queryKey = ["series", id] as const;
 
   const [dateDialogEpisode, setDateDialogEpisode] = useState<EpisodeSummary | null>(null);
-  const [showCompletePrompt, setShowCompletePrompt] = useState(false);
   const [promptEpisodeId, setPromptEpisodeId] = useState<number | null>(null);
 
   const query = useQuery({ queryKey, queryFn: () => getSeries(id) });
@@ -91,12 +87,6 @@ export function SeriesDetailPage() {
     const timer = setTimeout(() => setPromptEpisodeId(null), RATING_PROMPT_TIMEOUT_MS);
     return () => clearTimeout(timer);
   }, [promptEpisodeId]);
-
-  function handleWatchResult(result: AddWatchResult | BulkWatchResult) {
-    if (result.suggestCompleted && query.data?.status !== "completed") {
-      setShowCompletePrompt(true);
-    }
-  }
 
   function invalidate() {
     queryClient.invalidateQueries({ queryKey });
@@ -141,10 +131,7 @@ export function SeriesDetailPage() {
       reportError();
     },
     onSuccess: (result, episode) => {
-      if (result) {
-        handleWatchResult(result);
-        setPromptEpisodeId(episode.id);
-      }
+      if (result) setPromptEpisodeId(episode.id);
     },
     onSettled: invalidate,
   });
@@ -152,10 +139,7 @@ export function SeriesDetailPage() {
   const watchAgain = useMutation({
     mutationFn: (episodeId: number) => addEpisodeWatch(episodeId),
     onError: reportError,
-    onSuccess: (result, episodeId) => {
-      handleWatchResult(result);
-      setPromptEpisodeId(episodeId);
-    },
+    onSuccess: (_result, episodeId) => setPromptEpisodeId(episodeId),
     onSettled: invalidate,
   });
 
@@ -165,40 +149,38 @@ export function SeriesDetailPage() {
       return addEpisodeWatch(episode.id, iso);
     },
     onError: reportError,
-    onSuccess: (result) => handleWatchResult(result),
     onSettled: invalidate,
   });
 
   const bulkUpToHere = useMutation({
     mutationFn: (episodeId: number) => bulkWatch(id, { upToEpisodeId: episodeId }),
     onError: reportError,
-    onSuccess: (result) => handleWatchResult(result),
     onSettled: invalidate,
   });
 
   const markSeasonWatched = useMutation({
     mutationFn: (seasonNumber: number) => bulkWatch(id, { seasonNumber }),
     onError: reportError,
-    onSuccess: (result) => handleWatchResult(result),
     onSettled: invalidate,
   });
 
-  const changeStatus = useMutation<
+  const changeManualList = useMutation<
     SeriesSummary,
     unknown,
-    TrackingStatus,
+    ManualList | null,
     { previous: SeriesDetail | undefined }
   >({
-    mutationFn: (status: TrackingStatus) => updateSeries(id, { status }),
-    onMutate: async (status) => {
+    mutationFn: (manualList: ManualList | null) => updateSeries(id, { manualList }),
+    onMutate: async (manualList) => {
       await queryClient.cancelQueries({ queryKey });
       const previous = queryClient.getQueryData<SeriesDetail>(queryKey);
-      queryClient.setQueryData<SeriesDetail>(queryKey, (old) => old && { ...old, status });
+      queryClient.setQueryData<SeriesDetail>(queryKey, (old) => old && { ...old, manualList });
       return { previous };
     },
-    onError: (_err, _status, context) => {
+    onError: (err, _manualList, context) => {
       if (context?.previous) queryClient.setQueryData(queryKey, context.previous);
-      reportError();
+      // E20 race: the server re-checked the dynamic category and rejected the change.
+      toast.show(err instanceof ApiError ? err.message : t("errors.generic"), "error");
     },
     onSettled: invalidate,
   });
@@ -318,18 +300,32 @@ export function SeriesDetailPage() {
               {detail.title}
               {detail.year ? ` (${detail.year})` : ""}
             </h1>
-            <select
-              value={detail.status}
-              onChange={(e) => changeStatus.mutate(e.target.value as TrackingStatus)}
-              aria-label={t("status.label")}
-              className="rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-sm"
-            >
-              {STATUSES.map((status) => (
-                <option key={status} value={status}>
-                  {t(`status.${status}`)}
+            <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-xs font-medium text-zinc-300 uppercase">
+              {t(`category.${detail.category}`)}
+            </span>
+            <span className="flex items-center gap-1 text-sm text-zinc-400">
+              {t("manualList.label")}:
+              <select
+                value={detail.manualList ?? ""}
+                onChange={(e) =>
+                  changeManualList.mutate(
+                    e.target.value === "" ? null : (e.target.value as ManualList),
+                  )
+                }
+                aria-label={t("manualList.label")}
+                className="rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-sm text-zinc-100"
+              >
+                <option value="">{t("manualList.none")}</option>
+                <option value="watch_later">{t("manualList.watch_later")}</option>
+                <option
+                  value="stopped"
+                  disabled={detail.category === "finished"}
+                  title={detail.category === "finished" ? t("series.stoppedBlocked") : undefined}
+                >
+                  {t("manualList.stopped")}
                 </option>
-              ))}
-            </select>
+              </select>
+            </span>
             <button
               type="button"
               onClick={() => refreshSeriesMutation.mutate()}
@@ -477,29 +473,6 @@ export function SeriesDetailPage() {
             setDateDialogEpisode(null);
           }}
         />
-      )}
-
-      {showCompletePrompt && (
-        <div className="-translate-x-1/2 fixed bottom-20 left-1/2 z-40 flex items-center gap-3 rounded-lg bg-zinc-800 px-4 py-2 text-sm shadow-lg">
-          <span>{t("series.suggestCompleted")}</span>
-          <button
-            type="button"
-            onClick={() => {
-              changeStatus.mutate("completed");
-              setShowCompletePrompt(false);
-            }}
-            className="rounded bg-emerald-600 px-2 py-1 font-medium text-white text-xs"
-          >
-            {t("series.moveToCompleted")}
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowCompletePrompt(false)}
-            className="text-xs text-zinc-400 hover:text-zinc-100"
-          >
-            {t("series.staySame")}
-          </button>
-        </div>
       )}
     </div>
   );

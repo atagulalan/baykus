@@ -3,9 +3,9 @@ import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ApiError, addSeries, searchSeries } from "../api/client.ts";
 import { buildImageUrl } from "../api/images.ts";
-import type { SearchResult, TrackingStatus } from "../api/types.ts";
+import type { ManualList, SearchResult } from "../api/types.ts";
 import { useToast } from "../lib/toast.tsx";
-import { StatusPicker } from "./StatusPicker.tsx";
+import { ManualListPicker } from "./ManualListPicker.tsx";
 
 const DEBOUNCE_MS = 300;
 const MIN_QUERY_LENGTH = 2;
@@ -53,7 +53,7 @@ export function SearchBar() {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState<SearchResult | null>(null);
-  const [status, setStatus] = useState<TrackingStatus>("watching");
+  const [manualList, setManualList] = useState<ManualList | null>(null);
   const [highlighted, setHighlighted] = useState(0);
 
   const debouncedQuery = useDebouncedValue(query, DEBOUNCE_MS);
@@ -66,7 +66,7 @@ export function SearchBar() {
   });
 
   const addMutation = useMutation({
-    mutationFn: (result: SearchResult) => addSeries(result.externalIds, status),
+    mutationFn: (result: SearchResult) => addSeries(result.externalIds, manualList ?? undefined),
     onSuccess: (summary) => {
       toast.show(t("search.added", { title: summary.title }));
       queryClient.invalidateQueries({ queryKey: ["library"] });
@@ -98,7 +98,7 @@ export function SearchBar() {
 
   function selectResult(result: SearchResult) {
     setPending(result);
-    setStatus("watching");
+    setManualList(null);
   }
 
   function onKeyDown(e: KeyboardEvent<HTMLInputElement>) {
@@ -143,7 +143,7 @@ export function SearchBar() {
           {pending ? (
             <div className="flex items-center gap-2 p-3">
               <span className="flex-1 truncate text-sm">{pending.title}</span>
-              <StatusPicker value={status} onChange={setStatus} />
+              <ManualListPicker value={manualList} onChange={setManualList} />
               <button
                 type="button"
                 disabled={addMutation.isPending}

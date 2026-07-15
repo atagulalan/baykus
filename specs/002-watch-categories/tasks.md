@@ -192,7 +192,7 @@ on schemaVersion 2.
   no per-category branching, so the other two categories don't exercise new
   code paths. -->
 
-- [ ] M10.7 web: types, home sections, filter panel, manual-list UI
+- [x] M10.7 web: types, home sections, filter panel, manual-list UI
   - **Files:** `apps/web/src/api/{types.ts,client.ts}`,
     `src/pages/{LibraryPage.tsx,SeriesDetailPage.tsx}`,
     `src/components/{Layout.tsx,SeriesCard.tsx,SearchBar.tsx}`,
@@ -217,6 +217,63 @@ on schemaVersion 2.
     apply/reset; add-from-search lands in Daha başlanmadı; watch an episode
     of a Sonra izlenecek show → section move without reload; Bırakıldı
     disabled on a finished show; logo navigates home.
+  <!-- DECISION: no browser-automation tool is available in this environment,
+  so the actual visual/interactive browser pass above was NOT performed by
+  me. What was verified instead: `tsc --noEmit` clean, `vite build` (prod
+  bundle) clean, every touched .tsx transforms cleanly through Vite's dev
+  endpoint (no compile errors), i18n parity test green, `grep -i status`
+  clean per the Tests line, and a full curl-driven exercise of the live
+  dev server's API contract (add with/without manualList, GET ?category=,
+  GET ?sort=lastWatched, PATCH manualList incl. the exact 409 envelope on a
+  real finished item) confirming the server responses match what the new
+  web types/components expect byte-for-byte. The actual "does it render
+  and click correctly" pass is deferred to M10.8, which is explicitly a
+  dedicated browser-verification checkpoint — not silently skipped, just
+  not performable by me without a browser tool. -->
+  <!-- DECISION: ui.md's "Layout (changed)" section also specifies a new
+  "İzleme" nav item pointing at /watch, but /watch doesn't exist until
+  M12.3. M10.7's own DoD bullet only names the logo→Link change explicitly
+  (not the nav item), so only the logo change was made here; adding a nav
+  link to a route that doesn't exist for two more milestones would be worse
+  than deferring it — the nav item will be added alongside the /watch page
+  itself in M12.3. -->
+  <!-- DECISION: `library.filter.allCategories` is a new i18n key not
+  explicitly named in ui.md's i18n key list (which enumerates title,
+  sortTitle, progressTitle, reset, apply for library.filter.*) but is
+  needed for the "Tümü" radio in FilterPanel's progress section — the
+  now-deleted `library.filter.all` key wasn't reused (ui.md says it's
+  "replaced", not kept) so a fresh key was added instead of resurrecting
+  the deleted one. -->
+  <!-- DECISION: SeriesCard's hover-menu manual-list actions ("Sonra
+  izlenecek'e taşı" / "Bırakıldı'ya taşı" / "Otomatik'e döndür") use new
+  library.card.moveTo{WatchLater,Stopped,Auto} keys — not individually
+  enumerated in ui.md's i18n list (which only calls out the button labels
+  inline in the §Home prose, not as key names) but required to implement
+  the DoD's explicit "hover menu manual-list actions" bullet; each action
+  is hidden when it would be a no-op (already that list) or blocked (stop
+  on a finished series — mirrors the server's E20 guard so the button
+  never causes a 409 in normal use, though updateSeries still surfaces one
+  on a race). -->
+  <!-- DECISION: the 3-option Liste select (Otomatik/Sonra izlenecek/
+  Bırakıldı) on the series detail page is inline JSX, not a shared
+  component with ManualListPicker — the two pickers have different option
+  sets (2 vs 3) and different labels for the "null" value (Ekle vs
+  Otomatik per ui.md's own copy), and tasks.md's Files list only names one
+  renamed component (ManualListPicker), not a second new one for this. -->
+  <!-- DECISION: promptEpisodeId/onDismissPrompt/onRateEpisode (the episode
+  rating prompt) were kept as-is in SeriesDetailPage.tsx — they looked
+  related to the deleted suggest-completed prompt (both fired from watch
+  mutations' onSuccess) but are actually an unrelated feature (post-watch
+  rating nudge, wired through SeasonSection/EpisodeRow), confirmed by
+  reading SeasonSection.tsx before touching anything. Only the
+  suggestCompleted-specific state (showCompletePrompt, handleWatchResult)
+  and its JSX/i18n were removed. -->
+  <!-- DECISION: home page's category grouping/filtering is purely
+  client-side over one `listSeries({ sort })` call (no `category` query
+  param sent from the Home page), per ui.md's explicit "no category
+  param" bullet — the server-side `category` filter added in M10.6 exists
+  for the contract/API surface generally but this page never calls it,
+  even in single-category flat-grid mode. -->
 
 - [ ] M10.8 CHECKPOINT M10
   - **DoD:** full browser pass of M10.7's Verify list in BOTH locales + M1–M9
