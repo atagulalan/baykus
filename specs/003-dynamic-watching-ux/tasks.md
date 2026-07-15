@@ -162,7 +162,7 @@ window; imports don't; the window length is a setting.
     existing fake-provider test already exercises).
   - **Verify:** `pnpm test apps/server`
 
-- [ ] M14.6 web: window setting UI
+- [x] M14.6 web: window setting UI
   - **Files:** `apps/web/src/api/types.ts`,
     `apps/web/src/pages/SettingsPage.tsx`, `apps/web/src/i18n/{tr,en}.json`
   - **DoD:** ui.md 003 §Settings: `Settings`/`SettingsPatch` types gain

@@ -30,6 +30,7 @@ export function SettingsPage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [tmdbKeyInput, setTmdbKeyInput] = useState("");
+  const [windowInput, setWindowInput] = useState<string | null>(null);
   const [importMode, setImportMode] = useState<ImportMode>("merge");
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importResult, setImportResult] = useState<ImportZipResult | null>(null);
@@ -56,6 +57,15 @@ export function SettingsPage() {
   function handleLocaleChange(locale: Locale) {
     i18n.changeLanguage(locale);
     patch.mutate({ locale });
+  }
+
+  function handleWindowBlur(currentWindowDays: number) {
+    if (windowInput === null) return;
+    const parsed = Number(windowInput);
+    if (Number.isInteger(parsed) && parsed >= 1 && parsed <= 365 && parsed !== currentWindowDays) {
+      patch.mutate({ watchingWindowDays: parsed });
+    }
+    setWindowInput(null);
   }
 
   function handleSaveTmdbKey() {
@@ -171,6 +181,20 @@ export function SettingsPage() {
               </option>
             ))}
           </select>
+        </label>
+
+        <label className="flex flex-col gap-1 text-sm">
+          {t("settings.general.watchingWindow")}
+          <input
+            type="number"
+            min={1}
+            max={365}
+            value={windowInput ?? String(settings.watchingWindowDays)}
+            onChange={(e) => setWindowInput(e.target.value)}
+            onBlur={() => handleWindowBlur(settings.watchingWindowDays)}
+            className="rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5"
+          />
+          <span className="text-xs text-zinc-500">{t("settings.general.watchingWindowHint")}</span>
         </label>
 
         <label className="flex flex-col gap-1 text-sm text-zinc-500">

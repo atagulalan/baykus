@@ -124,6 +124,8 @@
         "en": "English"
       },
       "region": "Region",
+      "watchingWindow": "Watching window (days)",
+      "watchingWindowHint": "Shows watched, added, or with a new episode within this window stay in Watching.",
       "theme": "Theme",
       "themeDark": "Dark",
       "themeSoon": "coming soon"

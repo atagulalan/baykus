@@ -219,6 +219,7 @@ export interface Settings {
   theme: Theme;
   scrapersEnabled: boolean;
   tmdbApiKeySet: boolean;
+  watchingWindowDays: number;
 }
 
 export interface SettingsPatch {
@@ -227,6 +228,7 @@ export interface SettingsPatch {
   theme?: Theme;
   scrapersEnabled?: boolean;
   tmdbApiKey?: string | null;
+  watchingWindowDays?: number;
 }
 
 export interface Stats {

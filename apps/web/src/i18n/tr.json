@@ -124,6 +124,8 @@
         "en": "English"
       },
       "region": "Bölge",
+      "watchingWindow": "İzleniyor penceresi (gün)",
+      "watchingWindowHint": "Bu süre içinde izlenen/eklenen/yeni bölümü çıkan diziler İzleniyor'da kalır.",
       "theme": "Tema",
       "themeDark": "Koyu",
       "themeSoon": "yakında"
