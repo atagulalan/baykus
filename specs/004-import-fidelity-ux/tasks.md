@@ -131,7 +131,7 @@ TMDB form after a keyed refresh.
     untouched (Article III — run it, don't modify it).
   - **Verify:** `pnpm test packages/core`
 
-- [ ] M20.2 server: `GET /api/library/series/by-tmdb/:tmdbId`
+- [x] M20.2 server: `GET /api/library/series/by-tmdb/:tmdbId`
   - **Files:** `apps/server/src/routes/{library.ts,library.test.ts}`
   - **DoD:** contracts 004 §by-tmdb: zod positive-int param; item-id lookup
     by `items.tmdb_id` delegating to the same SeriesDetail builder as the

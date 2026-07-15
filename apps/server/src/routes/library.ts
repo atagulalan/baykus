@@ -46,6 +46,9 @@ function parseId(raw: string): number {
   return id;
 }
 
+/** E52: unlike parseId, a malformed tmdbId is a client error (400), not a 404. */
+const tmdbIdParamSchema = z.coerce.number().int().positive();
+
 // zod's `.optional()` types the field as `T | undefined` (always present); the
 // DTOs it feeds use genuinely-optional keys (`exactOptionalPropertyTypes`), so
 // undefined values must be dropped rather than passed through.
@@ -115,6 +118,16 @@ export function createLibraryRoutes(library: Library, providers: MetadataProvide
     const id = parseId(c.req.param("id"));
     const detail = library.getSeries(id);
     if (!detail) throw new ApiError("NOT_FOUND", `series ${id} not in library`);
+    return c.json(detail);
+  });
+
+  // E52: TMDB-parity URLs. Thin — finds the internal id off items.tmdb_id, then
+  // delegates to the exact same SeriesDetail builder as the internal-id route above.
+  app.get("/series/by-tmdb/:tmdbId", (c) => {
+    const tmdbId = tmdbIdParamSchema.parse(c.req.param("tmdbId"));
+    const match = library.listSeries().items.find((item) => item.tmdbId === tmdbId);
+    const detail = match ? library.getSeries(match.id) : null;
+    if (!detail) throw new ApiError("NOT_FOUND", `series with tmdbId ${tmdbId} not in library`);
     return c.json(detail);
   });
 

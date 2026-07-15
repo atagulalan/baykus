@@ -355,6 +355,38 @@ describe("server app", () => {
     });
   });
 
+  describe("GET /api/library/series/by-tmdb/:tmdbId (E52)", () => {
+    it("200s with a body identical to the internal-id fetch of the same item", async () => {
+      const app = createTestApp();
+      const created = await app.request("/api/library/series", {
+        method: "POST",
+        headers: MUTATION_HEADERS,
+        body: JSON.stringify({ externalIds: { tmdbId: 94997 } }),
+      });
+      const { id } = (await created.json()) as { id: number };
+
+      const byId = await app.request(`/api/library/series/${id}`);
+      const byTmdb = await app.request("/api/library/series/by-tmdb/94997");
+
+      expect(byTmdb.status).toBe(200);
+      expect(await byTmdb.json()).toEqual(await byId.json());
+    });
+
+    it("404s for an unknown tmdbId", async () => {
+      const app = createTestApp();
+      const res = await app.request("/api/library/series/by-tmdb/999999");
+      expect(res.status).toBe(404);
+    });
+
+    it("400s on a non-numeric or non-positive tmdbId", async () => {
+      const app = createTestApp();
+      const abc = await app.request("/api/library/series/by-tmdb/abc");
+      expect(abc.status).toBe(400);
+      const negative = await app.request("/api/library/series/by-tmdb/-1");
+      expect(negative.status).toBe(400);
+    });
+  });
+
   describe("DELETE /api/library (danger zone)", () => {
     it("204s and wipes every series, requiring the strict confirm body", async () => {
       const app = createTestApp();
