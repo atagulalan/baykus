@@ -11,7 +11,41 @@ describe("getSettings", () => {
       theme: "dark",
       scrapersEnabled: false,
       tmdbApiKeySet: false,
+      watchingWindowDays: 30,
     });
+  });
+});
+
+describe("watchingWindowDays (E31)", () => {
+  it("defaults to 30 when absent", () => {
+    const { db } = openLibraryDb(":memory:");
+    expect(getSettings(db).watchingWindowDays).toBe(30);
+  });
+
+  it("round-trips a written value", () => {
+    const { db } = openLibraryDb(":memory:");
+    const result = updateSettings(db, { watchingWindowDays: 7 });
+    expect(result.watchingWindowDays).toBe(7);
+    expect(getSettings(db).watchingWindowDays).toBe(7);
+  });
+
+  it.each([
+    "abc",
+    "0",
+    "9999",
+    "3.5",
+    "",
+  ])("a garbage stored value (%s) reads back as 30", (raw) => {
+    const { db, sqlite } = openLibraryDb(":memory:");
+    sqlite.prepare("INSERT INTO settings (key, value) VALUES ('watching_window_days', ?)").run(raw);
+    expect(getSettings(db).watchingWindowDays).toBe(30);
+  });
+
+  it("patching watchingWindowDays leaves other keys intact", () => {
+    const { db } = openLibraryDb(":memory:");
+    updateSettings(db, { locale: "en", region: "US" });
+    const result = updateSettings(db, { watchingWindowDays: 14 });
+    expect(result).toMatchObject({ locale: "en", region: "US", watchingWindowDays: 14 });
   });
 });
 
@@ -29,6 +63,7 @@ describe("updateSettings", () => {
       theme: "dark",
       scrapersEnabled: true,
       tmdbApiKeySet: false,
+      watchingWindowDays: 30,
     });
   });
 

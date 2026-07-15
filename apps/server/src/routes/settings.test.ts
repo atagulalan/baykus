@@ -56,6 +56,7 @@ describe("GET /api/settings", () => {
       theme: "dark",
       scrapersEnabled: false,
       tmdbApiKeySet: false,
+      watchingWindowDays: 30,
     });
   });
 });

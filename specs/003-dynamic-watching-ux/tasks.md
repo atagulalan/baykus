@@ -57,7 +57,7 @@ window; imports don't; the window length is a setting.
   ordering; future migrations must keep "when" monotonically increasing
   past this value rather than trusting drizzle-kit's real-clock default. -->
 
-- [ ] M14.2 core: `watchingWindowDays` setting (E31)
+- [x] M14.2 core: `watchingWindowDays` setting (E31)
   - **Files:** `packages/core/src/library/{settings.ts,settings.test.ts}`
   - **DoD:** `Settings.watchingWindowDays: number` (default 30);
     `SettingsPatch.watchingWindowDays?: number`; key `watching_window_days`
