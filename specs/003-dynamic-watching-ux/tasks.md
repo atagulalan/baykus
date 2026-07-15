@@ -389,10 +389,23 @@ acceptance walked, docs refreshed.
   - **Verify:** `pnpm dev` + a subscribed browser → notification arrives
     (browser step; append to MANUELTEST.md if not verifiable here).
 
-- [ ] M17.5 acceptance: walk spec.md 003 §Acceptance checklist item by item,
+- [x] M17.5 acceptance: walk spec.md 003 §Acceptance checklist item by item,
   checking boxes with evidence (M13.1 discipline); confirm every E30–E41 has
   a named test (E40 = the existing img.test.ts assertion); i18n parity run.
   Browser-only lines: append to `MANUELTEST.md` §M17 instead of checking.
+  <!-- DECISION: found E35/E36/E37(b)/E41 with zero automated test
+  coverage (each is a presentation-only change, their own tasks' DoD
+  already said "Tests: none beyond typecheck") — same situation 002's
+  M13.1 hit with E23/E25/E28/E29. Followed the same precedent for the
+  part that had real branching logic: extracted E37(a)'s season-sort
+  comparator into apps/web/src/lib/seasons.ts (sortSeasonsSpecialsLast)
+  and added lib/seasons.test.ts (4 cases), closing that one gap. E35/E36/
+  E37(b)/E41 have no comparable pure logic to extract (plain CSS/markup
+  or a two-constant swap) — left as MANUELTEST.md-only coverage and
+  called out explicitly in spec.md's own checklist evidence note rather
+  than silently marking the line done. Full gate: 53 files, 449 tests,
+  clean typecheck. spec.md's checklist edited in place with [x]/[ ]/[~]
+  + inline evidence per line, mirroring 002's spec.md style exactly. -->
 
 - [ ] M17.6 docs: README feature bullets (dynamic İzleniyor signals,
   configurable window, mobile bottom nav, segmented progress, push test);

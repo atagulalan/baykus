@@ -26,6 +26,7 @@ import { RatingControl } from "../components/RatingControl.tsx";
 import { SeasonSection } from "../components/SeasonSection.tsx";
 import { SegmentedProgress } from "../components/SegmentedProgress.tsx";
 import { WatchDateDialog } from "../components/WatchDateDialog.tsx";
+import { sortSeasonsSpecialsLast } from "../lib/seasons.ts";
 import { useToast } from "../lib/toast.tsx";
 
 const RATING_PROMPT_TIMEOUT_MS = 5000;
@@ -278,12 +279,7 @@ export function SeriesDetailPage() {
 
   const imageUrl = buildImageUrl(detail.posterRef, "large");
   const { watched, aired } = detail.progress;
-  // Specials (season 0) render last — a presentation-only sort (E37); core/zip season ordering untouched.
-  const sortedSeasons = [...detail.seasons].sort((a, b) => {
-    if (a.number === 0) return 1;
-    if (b.number === 0) return -1;
-    return a.number - b.number;
-  });
+  const sortedSeasons = sortSeasonsSpecialsLast(detail.seasons);
   const contentRating =
     detail.contentRatings.find((r) => r.region === activeRegion) ?? detail.contentRatings[0];
   const regionWatchProviders = detail.watchProviders.filter((wp) => wp.region === activeRegion);

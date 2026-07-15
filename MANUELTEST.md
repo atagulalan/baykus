@@ -273,3 +273,46 @@ tarafımdan doğrulandı.
 ### Tam gate
 - [x] `pnpm lint && pnpm typecheck && pnpm test && pnpm build` — hepsi
       yeşil (ben zaten doğruladım).
+
+---
+
+## M17 — İzleme sayfası + test bildirimi (bekliyor)
+
+Spec 003, M17: birleşik izleme sayfası (paylaşılan satır bileşeni,
+sabitlenmiş geçmiş, otomatik scroll), test bildirimi butonu. Sunucu
+tarafı testleri (push.test.ts, history.test.ts, watches.test.ts) ve
+saf yardımcı fonksiyon testleri (WatchNextRow.test.ts değişmedi,
+seasons.test.ts yeni) zaten yeşil — burada sadece tarayıcı gerektiren
+kısımlar listeleniyor.
+
+### İzleme sayfası (E38)
+- [ ] `/watch` sayfasını aç — sayfa açılışında otomatik olarak
+      **"Sıradaki bölümler"** başlığına scroll olmalı (sticky header'ın
+      altında kalmadan, tam görünür).
+- [ ] İzleme geçmişi artık kutulu/kısa bir metin listesi değil, diğer
+      bölümlerle (Sıradaki bölümler, Bir süredir izlenmedi) **aynı görsel
+      satır** biçiminde olmalı: poster, başlık, SxEy, bölüm adı,
+      EpisodeTags rozetleri, sağda göreli zaman ("Bugün 21:30" /
+      "Dün 21:12" / "12 Tem 21:30").
+- [ ] Geçmiş listesi artık **iç scroll kutusu içinde değil** — tüm
+      liste (varsayılan 30 kayıt) sayfanın kendisinde, en eski üstte en
+      yeni altta sırayla akmalı.
+- [ ] Sıradaki bölümler / Bir süredir izlenmedi bölümlerindeki quick-mark
+      checkbox'ı hâlâ çalışıyor mu (bir satırı işaretle → o dizi bir
+      sonraki bölüme ilerlemeli veya kategoriden düşmeli).
+
+### Test bildirimi (E39)
+- [ ] Ayarlar → Bildirimler bölümünde, bildirimlere abone olduktan sonra
+      **"Test bildirimi gönder"** butonu görünmeli (abone değilken
+      görünmemeli).
+- [ ] Butona bas → cihazda gerçek bir push bildirimi ("baykuş" /
+      "Test bildirimi") gelmeli; başarı toast'ı ("Test bildirimi
+      gönderildi") çıkmalı.
+- [ ] Aboneliği iptal edip tekrar dene → buton kaybolmalı.
+
+### İki dil
+- [ ] Ayarlar → Dil'den EN'e geç, yukarıdaki adımların tamamını tekrarla.
+
+### Tam gate
+- [x] `pnpm lint && pnpm typecheck && pnpm test && pnpm build` — hepsi
+      yeşil (ben zaten doğruladım).

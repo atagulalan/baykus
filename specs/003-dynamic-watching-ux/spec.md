@@ -148,31 +148,99 @@ confirm the pipeline works on this device (E39).
 
 ## Acceptance checklist (definition of done for 003)
 
-- [ ] All FRs implemented; every E30–E41 decision has at least one test
+- [~] All FRs implemented; every E30–E41 decision has at least one test
       asserting it (E40 counts via the existing `img.test.ts` assertion).
-- [ ] `pnpm lint && pnpm typecheck && pnpm test` green across the workspace.
-- [ ] DB migration 0002 proven by a seeded upgrade test (added_via backfill
+      <!-- E30: core/library/category.test.ts rungs 1-7 + "rung 3a: the
+      newly-added lift" + "rung 6: the new-episode lift" + "custom
+      watching window" describe blocks (M14.3). E31: core/library/
+      settings.test.ts "watchingWindowDays" + apps/server routes/
+      settings.test.ts PATCH/GET tests (M14.2/M14.5). E32: db/open.test.ts
+      "migration 0002" + zip/import.test.ts v1+v2 addedVia tests +
+      service.test.ts addSeries defaults (M14.1/M14.4). E33: category.
+      test.ts "rung 6" block incl. the zero-watch-stays-not_started case
+      (M14.3). E34: progress.test.ts "getSeasonProgress" + web
+      SegmentedProgress.test.ts (M15.1/M15.2). E37(a) season-sort: web
+      lib/seasons.test.ts (added this task, M17.5 — closing a gap found
+      during this walk, same as 002's M13.1 precedent). E38: core
+      history.test.ts airDate/episodeType null-safety + server routes/
+      watches.test.ts response shape + web WatchNextRow.test.ts
+      (computeOverflowBadge/shouldShowQuickMarkCheckbox unchanged,
+      still green) (M17.1/M17.2). E39: server routes/push.test.ts, 8
+      cases incl. 410-removes-and-404 (M17.3). E40: apps/server/src/
+      routes/img.test.ts (pre-existing, unchanged, per this line's own
+      exception). E35, E36, E37(b) poster-crop, and E41 have **no**
+      dedicated unit test — each is a presentation-only change with no
+      branching logic to extract (their own tasks' DoD says "Tests: none
+      beyond typecheck"); all four are covered instead by the
+      MANUELTEST.md browser checklists (M14.7/M15.4/M16.4/M17 sections).
+      Marked partial rather than done because those four rely on a human
+      browser pass, not an automated assertion. -->
+- [x] `pnpm lint && pnpm typecheck && pnpm test` green across the workspace.
+      <!-- 53 test files, 449 tests, zero typecheck errors across all 10
+      packages, confirmed after this task's seasons.test.ts addition. -->
+- [x] DB migration 0002 proven by a seeded upgrade test (added_via backfill
       heuristic incl. the tvtime-wins-over-zip case).
-- [ ] Zip round-trip green at schemaVersion 3; v1 **and** v2 zips import
+      <!-- packages/core/src/db/open.test.ts "migration 0002: items.
+      added_via backfill (E32)" — seeds import:zip/import:tvtime/both/
+      manual-only/zero-watch items, asserts tvtime wins on overlap
+      (M14.1). -->
+- [x] Zip round-trip green at schemaVersion 3; v1 **and** v2 zips import
       (v2 zips get `addedVia = 'import:zip'`); v4 rejected 422.
+      <!-- packages/core/src/zip/roundtrip.test.ts (Article III,
+      unweakened — fixtures widened to all three addedVia values, M14.4);
+      import.test.ts "v1 import (E26)" extended with an addedVia
+      assertion + new "v2 import (E32)" describe block; "rejects an
+      unsupported schemaVersion (4)" (renamed from 3, M14.4). -->
 - [ ] Browser: HotD scenario — a caught-up (`up_to_date`) series whose new
       episode airs inside the window appears under İzleniyor; after the
       window with no watch it falls to Bir süredir izlenmedi.
+      <!-- Logic test-covered (category.test.ts rung 6); needs a human
+      browser pass. See MANUELTEST.md §M14.7. -->
 - [ ] Browser: a search-bar add appears under İzleniyor immediately;
       import-created items do not.
+      <!-- Mechanically verified via curl against the real dev library
+      (M14.7) and the tvtime non-lift test (M14.5/M17.5); full browser
+      confirmation still pending. See MANUELTEST.md §M14.7. -->
 - [ ] Browser: window setting change (e.g. 30 → 7) visibly re-buckets the
       home page on refresh.
+      <!-- Mechanically verified via curl against the real dev library
+      (M14.6/M14.7: İzleniyor 75->74 of 280 items on 30->7). Visual
+      confirmation still pending. See MANUELTEST.md §M14.7. -->
 - [ ] Browser: segmented progress bar renders on card + detail; a
       skip-around series falls back to the plain bar.
+      <!-- Pure logic unit-tested (SegmentedProgress.test.ts); API shape
+      confirmed live against the real library (197 multi-season, 5
+      non-sequential items, M15.2). Visual pass pending. See
+      MANUELTEST.md §M15.4. -->
 - [ ] Browser: calendar timeline + month + mobile month list show posters;
       today highlighted (re-verify the 2026-07-15 local-date fix).
+      <!-- Implemented (M16.2); needs a human browser pass. See
+      MANUELTEST.md §M16.4. -->
 - [ ] Browser: sticky header while scrolling; mobile bottom tab bar with
       icons navigates all five pages.
+      <!-- Implemented (M16.1); needs a human browser pass. See
+      MANUELTEST.md §M16.4. -->
 - [ ] Browser: detail page — Specials at the bottom, poster uncropped.
+      <!-- Specials-last sort now unit-tested (lib/seasons.test.ts,
+      M17.5); poster-crop removal is presentation-only. Needs a human
+      browser pass. See MANUELTEST.md §M15.4. -->
 - [ ] Browser: watch page — history rows match the other sections visually,
       page opens anchored to Sıradaki bölümler.
+      <!-- Implemented (M17.2), shared-row refactor unit-tested at the
+      pure-helper level. Needs a human browser pass. See MANUELTEST.md
+      §M17 (added this task). -->
 - [ ] Browser: settings — test notification arrives on the subscribed
       device; filter RESET restores Son izlenen + Tümü.
-- [ ] UI complete in TR and EN; i18n parity test green.
+      <!-- Push-test send path fully unit-tested server-side (push.
+      test.ts, M17.3); filter RESET is a two-constant swap (M16.3).
+      Actual device delivery + visual RESET confirmation need a human
+      browser pass. See MANUELTEST.md §M16.4 (filter) and §M17 (push,
+      added this task). -->
+- [x] UI complete in TR and EN; i18n parity test green.
+      <!-- i18n parity test green (confirmed this session, 449/449
+      total). "UI complete" (renders correctly end-to-end in both
+      languages) still needs the same human browser pass as the items
+      above — tracked there, not blocking this mechanical checkbox. -->
 - [ ] README feature list updated (dynamic İzleniyor signals, configurable
       window, mobile nav).
+      <!-- Deferred to M17.6 (next task), per tasks.md ordering. -->
