@@ -407,12 +407,18 @@ acceptance walked, docs refreshed.
   clean typecheck. spec.md's checklist edited in place with [x]/[ ]/[~]
   + inline evidence per line, mirroring 002's spec.md style exactly. -->
 
-- [ ] M17.6 docs: README feature bullets (dynamic İzleniyor signals,
+- [x] M17.6 docs: README feature bullets (dynamic İzleniyor signals,
   configurable window, mobile bottom nav, segmented progress, push test);
   `docs/self-hosting.md` only if it mentions the window/settings (check);
   update the root `HANDOVER.md` status (or delete it if every checkpoint —
   002's pending ones included — is confirmed done; it is a working document,
   not permanent documentation).
+  <!-- DECISION: checked docs/self-hosting.md — it only documents env vars
+  (TMDB key, scrapers flag), no mention of the window/settings surface, so
+  left untouched. HANDOVER.md rewritten (not deleted) since M17.7 and
+  002's M11.4/M12.4 boxes are still pending; new content summarizes what
+  M14-M17.6 shipped and points straight at M17.7 as the only remaining
+  task. -->
 
 - [ ] M17.7 CHECKPOINT 003 — full browser pass of every `MANUELTEST.md` M14–
   M17 section in BOTH locales + M10–M13 regression spot-check + full gate

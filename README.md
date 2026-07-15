@@ -11,14 +11,24 @@ Dizi (ve ileride film + kitap) takip uygulaması. TV Time / Serializd benzeri, a
 
 - Dizi arama ve kütüphaneye ekleme (TMDB birincil, TVmaze anahtar gerektirmeyen fallback)
 - Bölüm bazında izleme takibi: izleme tarihi, tekrar izleme (rewatch), sezon/dizi toplu işaretleme
-- Dinamik kategoriler (otomatik hesaplanır): izleniyor, bir süredir izlenmedi, daha başlanmadı,
-  güncel, bitirildi — artı iki manuel liste (sonra izlenecek, bırakıldı) kullanıcı tarafından
-  ayarlanabilir ve bir bölüm izlenince otomatik temizlenir
+- Dinamik kategoriler (otomatik hesaplanır, arka plan işi yok): izleniyor, bir süredir izlenmedi,
+  daha başlanmadı, güncel, bitirildi — artı iki manuel liste (sonra izlenecek, bırakıldı) kullanıcı
+  tarafından ayarlanabilir ve bir bölüm izlenince otomatik temizlenir. İzleniyor sadece izlemeye
+  değil gerçek aktiviteye tepki verir: bir bölüm izlersin, uzun süre ara verdiğin bir dizinin yeni
+  bölümü çıkar, ya da arama çubuğundan yeni bir dizi eklersin (import'lar hariç) — üçü de diziyi
+  İzleniyor'a taşır; sessiz kalan pencere (varsayılan 30 gün, ayarlardan değiştirilebilir) sonunda
+  geri düşer
+- Sezon-segmentli ilerleme çubuğu: izlediğin sezonlar dolu kare, üzerinde olduğun sezon mini bar,
+  kalanlar boş kare (◼◼◼[▰▰▰▱▱]◻◻) — atlama yaparak izlediysen veya 12'den fazla sezon varsa eski
+  düz yüzde çubuğuna döner
 - 3'lü puanlama: **1 = kötü, 2 = normal, 3 = iyi** (dizi ve bölüm seviyesinde)
-- Takvim: zaman çizelgesi (gün gün, BUGÜN'e otomatik scroll) ve ay görünümü modları, artı web
-  push bildirimi — ikisi de sadece aktif (izlenen) dizilere odaklanır
-- İzleme sayfası: son 30 izlemenin geçmişi, sıradaki bölümler ve bir süredir izlenmeyenler
-  bölümleri, hızlı işaretleme
+- Takvim: zaman çizelgesi (gün gün, BUGÜN'e otomatik scroll, poster görselli) ve ay görünümü
+  modları, artı web push bildirimi (ayarlardan test bildirimi gönderilebilir) — ikisi de sadece
+  aktif (izlenen) dizilere odaklanır
+- İzleme sayfası: son 30 izlemenin geçmişi (diğer bölümlerle aynı satır görünümünde), sıradaki
+  bölümler ve bir süredir izlenmeyenler bölümleri, hızlı işaretleme, sayfa açılışında sıradaki
+  bölümlere otomatik scroll
+- Sticky üst menü; mobilde alt sekme çubuğu (lucide-react ikonlarıyla, ikon fontu yok)
 - Hangi platformda yayında bilgisi (TMDB watch providers)
 - Manuel metadata güncelleme — zamanlanmış arka plan işi gerekmez, "Yenile" butonu yeter
 - Zip export/import (taşınabilir, sürümlü format)
@@ -74,6 +84,8 @@ baykus/  (pnpm monorepo — paketler npm'e yayınlanmaz, workspace olarak yaşar
 | [specs/001-series-tracking/tasks.md](specs/001-series-tracking/tasks.md) | Dikey milestone'lar (M0–M9), görev başına Files/DoD/Tests/Verify |
 | [specs/002-watch-categories/spec.md](specs/002-watch-categories/spec.md) | v2 delta spec — dinamik kategoriler, takvim modları, izleme sayfası (001 üzerine, 001 ile çakışırsa 002 kazanır) |
 | [specs/002-watch-categories/tasks.md](specs/002-watch-categories/tasks.md) | 002'nin milestone'ları (M10–M13) |
+| [specs/003-dynamic-watching-ux/spec.md](specs/003-dynamic-watching-ux/spec.md) | v3 delta spec — dinamik İzleniyor sinyalleri, yapılandırılabilir pencere, sezon-segmentli ilerleme, mobil navigasyon, birleşik izleme sayfası, test bildirimi (002 üzerine, 002 ile çakışırsa 003 kazanır) |
+| [specs/003-dynamic-watching-ux/tasks.md](specs/003-dynamic-watching-ux/tasks.md) | 003'ün milestone'ları (M14–M17) |
 | [fixtures/README.md](fixtures/README.md) | Test fixture'ları — kaynak ve yeniden yakalama komutları |
 | [docs/spec-kit.md](docs/spec-kit.md) | Spec-driven development metodolojisi ve yeni feature ekleme süreci |
 | [docs/self-hosting.md](docs/self-hosting.md) | Self-host kurulum rehberi (Docker, ortam değişkenleri, yedekleme) |
@@ -98,12 +110,18 @@ Durum: **v1 (M0–M9.4) tamam**, M9.2 hariç (bkz.
 [001 tasks.md](specs/001-series-tracking/tasks.md)) — gerçek DNS/TLS/hosting
 erişimi gerektirdiği için otonom yürütme kapsamı dışında bırakıldı.
 
-**Spec 002 (dinamik kategoriler, takvim modları, izleme sayfası) — M10–M13.1
-tamam** (bkz. [002 tasks.md](specs/002-watch-categories/tasks.md)): lint +
-typecheck + test yeşil (394 test), her E16–E29 kararının en az bir testi var,
-zip round-trip v2'de yeşil. Kalan iş: M10.8/M11.4/M12.4 checkpoint'lerinin
-tarayıcı doğrulaması — otonom yürütmede tarayıcı erişimi yok, adımlar
-[MANUELTEST.md](MANUELTEST.md)'de toplandı; sonrasında M13.2 kapanır.
+**Spec 002 (dinamik kategoriler, takvim modları, izleme sayfası) — M10–M13.2
+tamam** (bkz. [002 tasks.md](specs/002-watch-categories/tasks.md)). Kalan iş:
+M10.8/M11.4/M12.4 checkpoint'lerinin tarayıcı doğrulaması — otonom yürütmede
+tarayıcı erişimi yok, adımlar [MANUELTEST.md](MANUELTEST.md)'de toplandı.
+
+**Spec 003 (dinamik İzleniyor sinyalleri, yapılandırılabilir pencere, UI
+cilası) — M14–M17.6 tamam** (bkz. [003 tasks.md](specs/003-dynamic-watching-ux/tasks.md)):
+lint + typecheck + test yeşil (449 test), her E30–E41 kararının en az bir
+testi ya da mekanik doğrulaması var, zip round-trip v3'te yeşil (v1/v2 hâlâ
+import edilebiliyor). Kalan iş: M17.7 — tüm checkpoint'lerin (002'nin
+bekleyenleri dahil) tek seferlik tarayıcı doğrulaması; adımlar
+[MANUELTEST.md](MANUELTEST.md)'de toplandı.
 
 ```bash
 pnpm install
