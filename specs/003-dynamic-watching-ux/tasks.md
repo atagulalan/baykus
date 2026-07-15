@@ -462,3 +462,24 @@ a one-off SQL correction.
     was deliberately never exercised against xava's real data; the
     destructive path itself is covered by the in-memory server/core
     tests. Browser confirmation of the dialog UX deferred to M17.7.
+
+---
+
+## M17.9 — TV Time parser fixes against a real export (E43, out-of-plan)
+
+Surfaced while running the importer against a real TV Time GDPR export
+(not in the original `fikir.txt` set): two independent parsing bugs, both
+confirmed against that export and reduced to fixtures in `parse.test.ts`.
+
+- [x] M17.9 core: `for_later`/duplicate-watch parsing fixes (E43)
+  - **Files:** `packages/importer-tvtime/src/{parse.ts,parse.test.ts}`
+  - **DoD:** `recordsToShows` checks `active`/`archived` before
+    `special_status`'s `for_later` (current follow state wins over a stale
+    pre-drop marker); `collapseDriftingDuplicates` keeps a within-window
+    duplicate's `seasonNumber`/`episodeNumber` if any copy in the window
+    carries them, regardless of file iteration order.
+  - **Tests:** `parse.test.ts` — "keeps season/episode numbers when a
+    collapsed duplicate without them sorts first" + the reversed-order
+    variant + "prefers a currently-dropped show over a stale for_later
+    status".
+  - **Verify:** `pnpm test packages/importer-tvtime` (41 tests green).

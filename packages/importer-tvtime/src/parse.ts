@@ -153,14 +153,22 @@ function recordsToShows(
     const tvdbId = Number.parseInt(record.tv_show_id ?? "", 10);
     if (!Number.isFinite(tvdbId) || !record.tv_show_name) continue;
 
+    /**
+     * followed_tv_show.csv's active/archived reflect the *current* follow
+     * state; user_show_special_status.csv's for_later can be a stale marker
+     * left over from before the show was later dropped — confirmed against a
+     * real GDPR export where several shows carry both active=0 and a
+     * for_later row from years earlier. Current state must win, so
+     * active/archived are checked first and for_later only applies to shows
+     * that are still actively followed.
+     */
     let status: TvTimeStatus = "watching";
-    const special = specialStatuses?.get(tvdbId);
-    if (special === "for_later") {
-      status = "plan_to_watch";
-    } else if (record.active === "0") {
+    if (record.active === "0") {
       status = "dropped";
     } else if (record.archived === "1") {
       status = "paused";
+    } else if (specialStatuses?.get(tvdbId) === "for_later") {
+      status = "plan_to_watch";
     }
 
     shows.push({
@@ -192,6 +200,15 @@ const DUPLICATE_WATCH_WINDOW_MS = 60_000;
  * sharing (tvdbShowId, tvdbEpisodeId) within a 60s window down to the
  * earliest one; pairs farther apart survive as separate (genuine rewatch)
  * watches.
+ *
+ * show_seen_episode_latest.csv (seenEpisode kind) never carries season/
+ * episode numbers, but confirmed against a real GDPR export it records the
+ * *same* watch — same show, same episode id, same timestamp to the second —
+ * as the tracking/name-keyed row that does. A naive "keep whichever sorts
+ * first" pick is order-dependent on file iteration order and can silently
+ * keep the number-less copy, forcing a network resolveEpisodePosition() call
+ * at confirm time that may fail and skip the episode entirely. Within a
+ * collapsed window, a copy carrying seasonNumber/episodeNumber always wins.
  */
 function collapseDriftingDuplicates(watches: TvTimeWatchEvent[]): TvTimeWatchEvent[] {
   const byPair = new Map<string, TvTimeWatchEvent[]>();
@@ -205,12 +222,24 @@ function collapseDriftingDuplicates(watches: TvTimeWatchEvent[]): TvTimeWatchEve
   const collapsed: TvTimeWatchEvent[] = [];
   for (const group of byPair.values()) {
     const sorted = [...group].sort((a, b) => Date.parse(a.watchedAt) - Date.parse(b.watchedAt));
-    let lastKeptMs: number | null = null;
+    let windowStartMs: number | null = null;
+    let current: TvTimeWatchEvent | null = null;
     for (const watch of sorted) {
       const ms = Date.parse(watch.watchedAt);
-      if (lastKeptMs !== null && ms - lastKeptMs <= DUPLICATE_WATCH_WINDOW_MS) continue;
-      collapsed.push(watch);
-      lastKeptMs = ms;
+      if (windowStartMs !== null && current && ms - windowStartMs <= DUPLICATE_WATCH_WINDOW_MS) {
+        if (
+          current.seasonNumber === undefined &&
+          watch.seasonNumber !== undefined &&
+          watch.episodeNumber !== undefined
+        ) {
+          current.seasonNumber = watch.seasonNumber;
+          current.episodeNumber = watch.episodeNumber;
+        }
+        continue;
+      }
+      windowStartMs = ms;
+      current = { ...watch };
+      collapsed.push(current);
     }
   }
   return collapsed;

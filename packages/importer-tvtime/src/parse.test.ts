@@ -193,6 +193,49 @@ describe("parseTvTimeFiles", () => {
     ]);
   });
 
+  it("keeps season/episode numbers when a collapsed duplicate without them sorts first (show_seen_episode_latest.csv vs tracking v2, real-export shape)", () => {
+    const seenEpisodeLatest =
+      "tv_show_id,episode_id,created_at,updated_at,tv_show_name,user_id\n" +
+      "426165,9687688,2023-06-25 22:15:42,2023-06-25 22:15:42,Heavenly Delusion,1\n";
+    const v2 =
+      "created_at,s_id,ep_id,key,s_no,ep_no,series_name\n" +
+      "2023-06-25 22:15:42,426165,9687688,watch-episode-abc,1,13,Heavenly Delusion\n";
+
+    // seenEpisodeLatest (no s/e numbers) is listed first, same as the earliest-sorts-first
+    // pick this dedupe used to make blindly.
+    const result = parseTvTimeFiles([seenEpisodeLatest, v2]);
+    expect(result.watches).toEqual([
+      {
+        tvdbShowId: 426165,
+        tvdbEpisodeId: 9687688,
+        watchedAt: "2023-06-25T22:15:42.000Z",
+        seasonNumber: 1,
+        episodeNumber: 13,
+      },
+    ]);
+  });
+
+  it("keeps season/episode numbers regardless of which file the numbered duplicate appears in", () => {
+    const seenEpisodeLatest =
+      "tv_show_id,episode_id,created_at,updated_at,tv_show_name,user_id\n" +
+      "426165,9687688,2023-06-25 22:15:42,2023-06-25 22:15:42,Heavenly Delusion,1\n";
+    const v2 =
+      "created_at,s_id,ep_id,key,s_no,ep_no,series_name\n" +
+      "2023-06-25 22:15:42,426165,9687688,watch-episode-abc,1,13,Heavenly Delusion\n";
+
+    // Same two files, reversed order — the numbered row is now processed first.
+    const result = parseTvTimeFiles([v2, seenEpisodeLatest]);
+    expect(result.watches).toEqual([
+      {
+        tvdbShowId: 426165,
+        tvdbEpisodeId: 9687688,
+        watchedAt: "2023-06-25T22:15:42.000Z",
+        seasonNumber: 1,
+        episodeNumber: 13,
+      },
+    ]);
+  });
+
   it("keeps the same (show, episode) watch as two events when timestamps are 2 days apart (genuine rewatch)", () => {
     const v1 =
       "created_at,type,series_id,episode_id\n" +
@@ -229,6 +272,24 @@ describe("parseTvTimeFiles", () => {
         followedAt: "2020-01-01T00:00:00.000Z",
         status: "plan_to_watch",
       },
+    ]);
+  });
+
+  it("prefers a currently-dropped show (active=0) over a stale for_later status from before it was dropped", () => {
+    const followed =
+      "notification_offset,tv_show_name,active,diffusion,folder_id,archived,notification_type,user_id,tv_show_id,created_at,updated_at\n" +
+      "-10,Show E,0,original,,0,2,1,105,2020-01-01 00:00:00,2020-01-01 00:00:00\n";
+
+    // for_later row predates the drop and was never cleaned up — confirmed against a
+    // real GDPR export where several shows carry both.
+    const special =
+      "user_id,tv_show_id,status,created_at,updated_at,tv_show_name\n" +
+      "1,105,for_later,2017-01-01 00:00:00,2017-01-01 00:00:00,Show E\n";
+
+    const result = parseTvTimeFiles([followed, special]);
+
+    expect(result.shows).toEqual([
+      { tvdbId: 105, name: "Show E", followedAt: "2020-01-01T00:00:00.000Z", status: "dropped" },
     ]);
   });
 });

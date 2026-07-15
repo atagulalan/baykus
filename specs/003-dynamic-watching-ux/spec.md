@@ -124,6 +124,31 @@ confirm the pipeline works on this device (E39).
   `{ confirm: "DELETE" }`. Settings gains a "Danger zone" section with a
   type-to-confirm dialog (mirrors `DeleteAccountDialog`'s export-first
   pattern, but no password — single mode has none).
+- **FR-041** TV Time parser correctness fixes against real GDPR exports
+  (E43): `for_later` status only applies when the show is still actively
+  followed (active/archived checked first); `collapseDriftingDuplicates`
+  keeps a within-window duplicate's season/episode numbers instead of
+  silently dropping them depending on file iteration order.
+- **FR-042** `POST /api/import/tvtime` streams matching-phase progress over
+  SSE (E44), same pattern as `/confirm`: one `progress` event per show as it
+  resolves, then a trailing `complete` event carrying the existing report
+  shape. Import wizard shows a live per-show log + progress bar while
+  uploading.
+- **FR-043** Brand refresh (E45): new dark design system (void/snow/muted/
+  yellow palette, DM Serif Display + DM Sans + JetBrains Mono, lucide-react
+  icons replacing emoji throughout) applied across the web app; new shared
+  `Checkbox` primitive. Visual only — no behavior change beyond what E46/E47
+  call out separately.
+- **FR-044** Series-level actions consolidated (E46): `SeriesCard` drops its
+  hover actions (remove/refresh/move-to-list); those + mute/unmute now live
+  in a single "⋮" menu on the series detail page header. Library grid card
+  is now a pure link + progress display.
+- **FR-045** Episode watch-action redesign (E47): the episode row's "⋮"
+  dropdown is replaced by checkbox-driven modals — marking an unwatched
+  episode that has unwatched episodes before it prompts "mark up to here or
+  just this one"; unmarking a watched episode opens a "watch again / edit
+  date / mark as unwatched" sheet. A season section auto-collapses once
+  complete and swaps its "mark all watched" button for a checkbox.
 
 ## Edge-case decisions (normative — do not re-decide these in code)
 
@@ -142,6 +167,11 @@ confirm the pipeline works on this device (E39).
 | E40 | Browser caching of series images? | Already implemented and asserted: `createImageRoute` sets `Cache-Control: public, max-age=31536000, immutable` on every `/img` response (cache keys are content-addressed by provider path, so immutable is correct), and `img.test.ts` asserts the exact header. Recorded here so the product note isn't silently dropped — **no task, no code change.** |
 | E41 | Filter RESET? | RESET sets the draft to the page-load defaults: sort `lastWatched` ("Son izlenen"), category `all` ("Tümü"). Draft-only — APPLY still applies, panel stays open. Supersedes 002 ui.md's "RESET = Tümü + Son eklenen" (which contradicted the page default and is the reported bug). |
 | E42 | Danger zone (delete all data)? | Added post-checklist (2026-07-15), surfaced while debugging a real-library E32 edge case (see below) — not in the original `fikir.txt` set. `DELETE /api/library`, strict `{ confirm: "DELETE" }` body; deletes items (cascade), ratings, settings, push subscriptions, refresh log — a superset of the zip-import "replace" wipe (which leaves push subscriptions and the refresh log alone). Web: a red-bordered "Danger zone" section in Settings, always visible (not gated by single/multi mode — multi-mode account deletion is a separate, account-level action); the confirm dialog requires typing a locale-specific phrase (`settings.dangerZone.confirmPhrase`: "SİL" / "DELETE") rather than a password, since single mode has none. No auto-navigation on success (unlike account deletion, which redirects to `/login`) — the library is simply empty on the same page. |
+| E43 | TV Time parser bugs against real exports? | Added post-checklist (2026-07-15), surfaced while running the importer against a real TV Time GDPR export (out of the original `fikir.txt` set). Two independent bugs: **(a)** `user_show_special_status.csv`'s `for_later` row can be a stale marker left over from before a show was later dropped/archived — `followed_tv_show.csv`'s `active`/`archived` reflect *current* state and must be checked first; `for_later` only applies when the show is still actively followed. **(b)** `collapseDriftingDuplicates` (parse.ts) merges same-(show, episode) watches within a 60s window down to one; `show_seen_episode_latest.csv` rows never carry season/episode numbers, but a numbered duplicate of the *same* watch can appear in another file within that window — the merge now keeps the numbers if any copy in the window has them, instead of an order-dependent "first one sorted wins" pick that could silently drop them (forcing a network `resolveEpisodePosition()` call at confirm time that may fail and skip the episode). Both confirmed against a real export; fixtures for both live in `parse.test.ts`. |
+| E44 | TV Time import progress feedback? | Added post-checklist (2026-07-15) — a real export can carry hundreds of shows, and the matching phase (one metadata lookup/search per show, bounded concurrency) was a silent multi-minute spinner. `matchShows` gains an optional `onProgress` callback fired once per show in *completion* order (not input order) with `{ done, total, name, status }`; the route streams it as SSE `progress` events ahead of the existing trailing `complete` event — same wire pattern `/confirm` already uses. Web shows a progress bar + a capped (8-entry) live log of the most recent matches with a ✓/?/✗ mark per outcome. |
+| E45 | Brand refresh? | Added post-checklist (2026-07-15), design-led (not in `fikir.txt`). New token set (`apps/web/src/index.css` `@theme`): colors `void #080808` (bg), `snow #ebebeb` (text), `muted #666666`, `yellow #f0e000` (accent — replaces emerald as the one accent color); fonts `DM Serif Display` (italic, headings/titles), `DM Sans` (body), `JetBrains Mono` (labels/metadata, uppercase+tracked). Cards/panels: sharp corners (no `rounded-*`), hairline `border-white/5` or `/10` instead of filled `bg-zinc-900` blocks. Rating (👍/😐/👎) and category-status coloring move from emoji to lucide arrow icons (`ArrowUp`/`Minus`/`ArrowDown`) colored red/yellow/green. New shared `Checkbox` primitive (button + `Check` icon, not a native `<input>`) replaces every native checkbox in the app. Design reference: `specs/003-dynamic-watching-ux/design/brand-identity.html` (static Tailwind mockup, not part of the built app — excluded from biome). Supersedes every hardcoded `zinc-*`/`emerald-*` color and rounded-corner mention in 001/002/003 ui.md — treat this row as the current palette, not those. |
+| E46 | Where do series actions live? | Added post-checklist (2026-07-15), paired with E45. `SeriesCard`'s hover-reveal buttons (remove, refresh, move-to-watch_later/stopped/auto) are gone — the library grid card is now a pure link (poster + title + progress) with no per-card mutation surface. All of those actions, plus mute/unmute (previously two small header icon-buttons), now live in one "⋮" menu on the series detail page header, next to the category badge. Rationale: the hover-button grid was the last remaining `rounded`/`bg-zinc-950/80` chrome that didn't fit the E45 palette, and consolidating avoids six overlapping hover targets on a card that's also a link. `RatingControl` and the segmented progress bar's category coloring move up next to the title in the same header restructure. |
+| E47 | Episode-row watch actions after the redesign? | Added post-checklist (2026-07-15), paired with E45. The episode row's "⋮" dropdown (watch again / edit date / mark up to here) is replaced by two checkbox-driven modals, gated on click by watch state: clicking an **unwatched, aired** episode's checkbox — if any earlier episode in the season is unwatched (`hasUnwatchedBefore`, computed in `SeasonSection` from the series' `nextUnwatched` cursor), shows a confirm modal ("mark everything up to here, or just this one?"); otherwise marks it directly (unchanged one-tap behavior). Clicking a **watched** episode's checkbox opens a "watch again / edit date / mark as unwatched" sheet (same three actions the old menu had, plus unwatch is now reachable without a separate control). `SeasonSection`'s "mark all watched" button becomes a `Checkbox` (checked = season complete, disabled when complete or nothing aired yet); a season now auto-collapses on mount once it's complete (still starts expanded otherwise, season 0 still starts collapsed). |
 
 ## Non-goals
 
