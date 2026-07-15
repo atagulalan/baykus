@@ -392,6 +392,12 @@ active trio, specials tagged, past-unwatched quick-markable.
 
 - [ ] M11.4 CHECKPOINT M11 — browser pass (both modes, both locales) + M10
   regression (home sections unaffected) + full green suite.
+  <!-- DECISION: box left unchecked, same reason as M10.8 — no
+  browser-automation tool available. Full green suite IS confirmed:
+  `pnpm lint && pnpm -r typecheck && pnpm exec vitest run` all clean
+  across every package as of M11.3's commit. The interactive browser
+  pass (timeline + month, both locales, M10 regression) is pending
+  xava. -->
 
 ---
 
