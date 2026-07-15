@@ -27,7 +27,7 @@ convention) and mechanically verifies everything else.
 Checkpoint goal: a re-import of the real export puts Suits in Bırakıldı and
 silently-but-visibly skips Troy/Gotham/Y Gwyll.
 
-- [ ] M18.1 importer: archived remap + relic skip in the parse layer
+- [x] M18.1 importer: archived remap + relic skip in the parse layer
   - **Files:** `packages/importer-tvtime/src/{parse.ts,parse.test.ts}`
     (+ `index.ts` if `TvTimeStatus`/parse-result types are re-exported —
     grep)
