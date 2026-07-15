@@ -91,7 +91,13 @@
     "watchAgain": "watch again",
     "editDate": "edit date",
     "watchedUpToHere": "watched up to here",
-    "save": "Save"
+    "save": "Save",
+    "tag": {
+      "new": "NEW",
+      "premiere": "PREMIER",
+      "special": "SPECIAL",
+      "ova": "OVA"
+    }
   },
   "rating": {
     "label": "Rating",
@@ -162,12 +168,17 @@
     "empty": "No watch history yet"
   },
   "calendar": {
-    "upcoming": "Upcoming 30 days",
-    "recentlyAired": "Last 14 days · unwatched",
+    "mode": {
+      "timeline": "Timeline",
+      "month": "Calendar"
+    },
     "today": "TODAY {{date}}",
+    "overflow": "+{{count}}",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month",
     "empty": {
-      "upcoming": "No upcoming episodes",
-      "recentlyAired": "No unwatched episodes"
+      "today": "(empty)",
+      "month": "No episodes this month"
     }
   },
   "auth": {

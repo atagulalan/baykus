@@ -349,7 +349,7 @@ active trio, specials tagged, past-unwatched quick-markable.
   - **Tests:** happy path shape; both validation failures; defaults applied.
   - **Verify:** `pnpm test apps/server`
 
-- [ ] M11.3 web: calendar page modes + EpisodeTags
+- [x] M11.3 web: calendar page modes + EpisodeTags
   - **Files:** `apps/web/src/pages/CalendarPage.tsx`, new
     `src/components/{EpisodeTags.tsx,MonthGrid.tsx}`, `src/i18n/{tr,en}.json`
   - **DoD:** ui.md 002 §Calendar: mode tabs (state, default timeline);
@@ -364,6 +364,31 @@ active trio, specials tagged, past-unwatched quick-markable.
   - **Verify:** `pnpm dev` → both modes render; today anchor works; marking
     a past episode removes it after refetch; month navigation to a past
     month shows only unwatched.
+  <!-- DECISION: E25's NEW rule text ("airDate ≥ today − 3d, and ≤
+  today+∞ — future episodes can also be 'new' on release day") literally
+  has no upper bound, but ui.md's own timeline mockup shows a +4-day entry
+  tagged YENİ and a +11-day entry (same show, next episode) NOT tagged
+  YENİ — which only makes sense with an upper bound. Implemented E25
+  literally as written (no upper bound: `airDate >= today-3d`) since
+  spec.md's edge-case table is explicitly marked normative ("do not
+  re-decide these in code") and ui.md's ASCII art is illustrative, not a
+  second normative source for the exact rule. Net effect: most/all future
+  entries in the calendar's default 90-day-forward window will carry a
+  YENİ chip, which may look off once this renders in a browser — flagging
+  in case the intended rule was actually a symmetric ±3d window (matching
+  the mockup) rather than an unbounded lower-bound-only one. -->
+  <!-- DECISION: same as M10.7 — no browser-automation tool available, so
+  the actual interactive pass (both modes, today-anchor scroll, month nav,
+  mobile fallback) was not performed by me. Verified instead: tsc --noEmit
+  clean, vite build clean, i18n parity green, every new/touched file
+  transforms through Vite's dev endpoint, and a live curl pass against the
+  running dev server confirming GET /api/calendar's new { days } shape
+  (seasonName, unconditional airDate) and the from/to validation (200 on
+  a valid month range, 400 on from>to and >124-day spans) all match. Used
+  xava's already-running dev session for this rather than starting a
+  second one (which collided on the same ports). -->
+  <!-- DECISION: the "İzleme" nav item deferral from M10.7 still stands —
+  not revisited here, still waiting on M12.3's /watch page. -->
 
 - [ ] M11.4 CHECKPOINT M11 — browser pass (both modes, both locales) + M10
   regression (home sections unaffected) + full green suite.

@@ -91,7 +91,13 @@
     "watchAgain": "tekrar izledim",
     "editDate": "tarihi düzenle",
     "watchedUpToHere": "buraya kadar izledim",
-    "save": "Kaydet"
+    "save": "Kaydet",
+    "tag": {
+      "new": "YENİ",
+      "premiere": "PREMIER",
+      "special": "SPECIAL",
+      "ova": "OVA"
+    }
   },
   "rating": {
     "label": "Puan",
@@ -162,12 +168,17 @@
     "empty": "Henüz izleme kaydı yok"
   },
   "calendar": {
-    "upcoming": "Yaklaşan 30 gün",
-    "recentlyAired": "Son 14 gün · izlenmemiş",
+    "mode": {
+      "timeline": "Zaman çizelgesi",
+      "month": "Takvim"
+    },
     "today": "BUGÜN {{date}}",
+    "overflow": "+{{count}}",
+    "prevMonth": "Önceki ay",
+    "nextMonth": "Sonraki ay",
     "empty": {
-      "upcoming": "Yaklaşan bölüm yok",
-      "recentlyAired": "İzlenmemiş bölüm yok"
+      "today": "(boş)",
+      "month": "Bu ay için bölüm yok"
     }
   },
   "auth": {

@@ -268,9 +268,11 @@ export interface CalendarEntry {
   e: number;
   episodeTitle: string | null;
   episodeType: EpisodeType | null;
+  /** From seasons.name — feeds the OVA heuristic (E23). */
+  seasonName: string | null;
+  airDate: string;
   network: string | null;
   watchProviders: WatchProviderInfo[];
-  airDate?: string;
 }
 
 export interface CalendarDay {
@@ -279,8 +281,7 @@ export interface CalendarDay {
 }
 
 export interface CalendarResponse {
-  upcoming: CalendarDay[];
-  recentlyAired: CalendarEntry[];
+  days: CalendarDay[];
 }
 
 export type ImportMode = "replace" | "merge";
