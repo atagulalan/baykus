@@ -194,7 +194,7 @@ describe("server app", () => {
       });
     });
 
-    it("omitting manualList lands a freshly added series in category not_started", async () => {
+    it("omitting manualList lands a freshly added series in category watching (E30 rung 3a)", async () => {
       const app = createTestApp();
       const res = await app.request("/api/library/series", {
         method: "POST",
@@ -202,7 +202,7 @@ describe("server app", () => {
         body: JSON.stringify({ externalIds: { tvmazeId: 1 } }),
       });
       expect(res.status).toBe(201);
-      expect(await res.json()).toMatchObject({ manualList: null, category: "not_started" });
+      expect(await res.json()).toMatchObject({ manualList: null, category: "watching" });
     });
 
     it("rejects the old status field (400 — unknown field under strict zod)", async () => {
@@ -232,9 +232,10 @@ describe("server app", () => {
         body: JSON.stringify({ externalIds: { tvmazeId: 2 }, manualList: "watch_later" }),
       });
 
-      const notStarted = await app.request("/api/library/series?category=not_started");
-      expect(notStarted.status).toBe(200);
-      expect(await notStarted.json()).toMatchObject({ total: 1 });
+      // A fresh manual add with zero watches sits in "watching" for the window (E30 rung 3a).
+      const watching = await app.request("/api/library/series?category=watching");
+      expect(watching.status).toBe(200);
+      expect(await watching.json()).toMatchObject({ total: 1 });
 
       const watchLater = await app.request("/api/library/series?category=watch_later");
       expect(await watchLater.json()).toMatchObject({ total: 1 });

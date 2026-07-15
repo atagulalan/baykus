@@ -11,7 +11,7 @@ export {
   computeCategoryInfo,
   computeDynamicCategories,
   computeDynamicCategory,
-  WATCHING_WINDOW_DAYS,
+  DEFAULT_WATCHING_WINDOW_DAYS,
   type WatchCategory,
 } from "./library/category.ts";
 export {

@@ -3,24 +3,30 @@ import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import type { LibraryDatabase } from "../db/open.ts";
 import { openLibraryDb } from "../db/open.ts";
-import type { ManualList, WatchSource } from "../db/schema.ts";
+import type { AddedVia, ManualList, WatchSource } from "../db/schema.ts";
 import * as schema from "../db/schema.ts";
 import {
   CATEGORY_ORDER,
   computeCategories,
   computeCategory,
   computeDynamicCategory,
-  WATCHING_WINDOW_DAYS,
+  DEFAULT_WATCHING_WINDOW_DAYS,
 } from "./category.ts";
+import { updateSettings } from "./settings.ts";
 
-function insertItem(db: LibraryDatabase, releaseStatus: ReleaseStatus | null = null): number {
+function insertItem(
+  db: LibraryDatabase,
+  releaseStatus: ReleaseStatus | null = null,
+  opts: { addedAt?: string; addedVia?: AddedVia } = {},
+): number {
   const id = db
     .insert(schema.items)
     .values({
       mediaType: "series",
       title: "Test Show",
       releaseStatus,
-      addedAt: "2026-01-01T00:00:00Z",
+      addedAt: opts.addedAt ?? "2026-01-01T00:00:00Z",
+      ...(opts.addedVia !== undefined ? { addedVia: opts.addedVia } : {}),
     })
     .returning({ id: schema.items.id })
     .get().id;
@@ -160,7 +166,10 @@ describe("computeCategory — E16 precedence", () => {
     const { db } = openLibraryDb(":memory:");
     const itemId = insertItem(db, "returning");
     const e1 = insertEpisode(db, itemId, 1, 1, dateOnly(NOW.toISOString(), -60));
-    insertEpisode(db, itemId, 1, 2, dateOnly(NOW.toISOString(), -2));
+    // Filler episode kept outside the window too (E33: an in-window air date
+    // would independently lift this to "watching" via the new-episode operand
+    // — see the rung 6 "new-episode lift" describe block for that case).
+    insertEpisode(db, itemId, 1, 2, dateOnly(NOW.toISOString(), -40));
     insertWatch(db, e1, itemId, daysAgoIso(NOW, 45));
 
     expect(computeCategory(db, itemId, NOW)).toBe("not_watched_recently");
@@ -178,12 +187,12 @@ describe("computeCategory — E17 30-day window boundary", () => {
     expect(computeCategory(db, itemId, NOW)).toBe("watching");
   });
 
-  it(`exactly ${WATCHING_WINDOW_DAYS} days old is still watching (inclusive per E17)`, () => {
+  it(`exactly ${DEFAULT_WATCHING_WINDOW_DAYS} days old is still watching (inclusive per E17)`, () => {
     const { db } = openLibraryDb(":memory:");
     const itemId = insertItem(db, "returning");
     const e1 = insertEpisode(db, itemId, 1, 1, dateOnly(NOW.toISOString(), -30));
     insertEpisode(db, itemId, 1, 2, dateOnly(NOW.toISOString(), -2));
-    insertWatch(db, e1, itemId, daysAgoIso(NOW, WATCHING_WINDOW_DAYS));
+    insertWatch(db, e1, itemId, daysAgoIso(NOW, DEFAULT_WATCHING_WINDOW_DAYS));
 
     expect(computeCategory(db, itemId, NOW)).toBe("watching");
   });
@@ -192,7 +201,9 @@ describe("computeCategory — E17 30-day window boundary", () => {
     const { db } = openLibraryDb(":memory:");
     const itemId = insertItem(db, "returning");
     const e1 = insertEpisode(db, itemId, 1, 1, dateOnly(NOW.toISOString(), -31));
-    insertEpisode(db, itemId, 1, 2, dateOnly(NOW.toISOString(), -2));
+    // Filler episode kept outside the window too (E33 — see comment on the
+    // rung 7 test above).
+    insertEpisode(db, itemId, 1, 2, dateOnly(NOW.toISOString(), -40));
     insertWatch(db, e1, itemId, daysAgoIso(NOW, 31));
 
     expect(computeCategory(db, itemId, NOW)).toBe("not_watched_recently");
@@ -272,7 +283,8 @@ describe("computeCategories — batch matches per-item on a mixed library", () =
 
     const notWatchedRecently = insertItem(db, "returning");
     const nwrEp1 = insertEpisode(db, notWatchedRecently, 1, 1, dateOnly(NOW.toISOString(), -60));
-    insertEpisode(db, notWatchedRecently, 1, 2, dateOnly(NOW.toISOString(), -2));
+    // Filler kept outside the window too — see the rung 7 comment above.
+    insertEpisode(db, notWatchedRecently, 1, 2, dateOnly(NOW.toISOString(), -40));
     insertWatch(db, nwrEp1, notWatchedRecently, daysAgoIso(NOW, 45));
 
     const allIds = [
@@ -307,5 +319,148 @@ describe("computeCategories — batch matches per-item on a mixed library", () =
       "finished",
       "stopped",
     ]);
+  });
+});
+
+describe("computeCategory — rung 3a: the newly-added lift (E30, E32)", () => {
+  it("a fresh manual add with zero watches is watching", () => {
+    const { db } = openLibraryDb(":memory:");
+    const itemId = insertItem(db, null, { addedAt: daysAgoIso(NOW, 5), addedVia: "manual" });
+
+    expect(computeCategory(db, itemId, NOW)).toBe("watching");
+  });
+
+  it(`added exactly ${DEFAULT_WATCHING_WINDOW_DAYS} days ago is still watching (inclusive)`, () => {
+    const { db } = openLibraryDb(":memory:");
+    const itemId = insertItem(db, null, {
+      addedAt: daysAgoIso(NOW, DEFAULT_WATCHING_WINDOW_DAYS),
+      addedVia: "manual",
+    });
+
+    expect(computeCategory(db, itemId, NOW)).toBe("watching");
+  });
+
+  it(`added ${DEFAULT_WATCHING_WINDOW_DAYS + 1} days ago has already fallen to not_started`, () => {
+    const { db } = openLibraryDb(":memory:");
+    const itemId = insertItem(db, null, {
+      addedAt: daysAgoIso(NOW, DEFAULT_WATCHING_WINDOW_DAYS + 1),
+      addedVia: "manual",
+    });
+
+    expect(computeCategory(db, itemId, NOW)).toBe("not_started");
+  });
+
+  it.each([
+    "import:zip",
+    "import:tvtime",
+  ] as const)("a fresh %s add with zero watches is not_started — imports never flood İzleniyor (E32)", (addedVia) => {
+    const { db } = openLibraryDb(":memory:");
+    const itemId = insertItem(db, null, { addedAt: daysAgoIso(NOW, 1), addedVia });
+
+    expect(computeCategory(db, itemId, NOW)).toBe("not_started");
+  });
+});
+
+describe("computeCategory — rung 6: the new-episode lift (E30, E33)", () => {
+  it(`a dormant watched show whose newest episode aired ${DEFAULT_WATCHING_WINDOW_DAYS - 1} days ago is watching`, () => {
+    const { db } = openLibraryDb(":memory:");
+    const itemId = insertItem(db, "returning", { addedAt: "2026-01-01T00:00:00Z" });
+    const e1 = insertEpisode(db, itemId, 1, 1, dateOnly(NOW.toISOString(), -200));
+    insertEpisode(
+      db,
+      itemId,
+      1,
+      2,
+      dateOnly(NOW.toISOString(), -(DEFAULT_WATCHING_WINDOW_DAYS - 1)),
+    );
+    insertWatch(db, e1, itemId, daysAgoIso(NOW, 200));
+
+    expect(computeCategory(db, itemId, NOW)).toBe("watching");
+  });
+
+  it(`newest episode aired exactly ${DEFAULT_WATCHING_WINDOW_DAYS} days ago is watching (inclusive boundary)`, () => {
+    const { db } = openLibraryDb(":memory:");
+    const itemId = insertItem(db, "returning", { addedAt: "2026-01-01T00:00:00Z" });
+    const e1 = insertEpisode(db, itemId, 1, 1, dateOnly(NOW.toISOString(), -200));
+    insertEpisode(db, itemId, 1, 2, dateOnly(NOW.toISOString(), -DEFAULT_WATCHING_WINDOW_DAYS));
+    insertWatch(db, e1, itemId, daysAgoIso(NOW, 200));
+
+    expect(computeCategory(db, itemId, NOW)).toBe("watching");
+  });
+
+  it(`newest episode aired ${DEFAULT_WATCHING_WINDOW_DAYS + 1} days ago falls to not_watched_recently`, () => {
+    const { db } = openLibraryDb(":memory:");
+    const itemId = insertItem(db, "returning", { addedAt: "2026-01-01T00:00:00Z" });
+    const e1 = insertEpisode(db, itemId, 1, 1, dateOnly(NOW.toISOString(), -200));
+    insertEpisode(
+      db,
+      itemId,
+      1,
+      2,
+      dateOnly(NOW.toISOString(), -(DEFAULT_WATCHING_WINDOW_DAYS + 1)),
+    );
+    insertWatch(db, e1, itemId, daysAgoIso(NOW, 200));
+
+    expect(computeCategory(db, itemId, NOW)).toBe("not_watched_recently");
+  });
+
+  it("a zero-watch show whose episode aired yesterday stays not_started — the lift never reaches zero-watch items (E33)", () => {
+    const { db } = openLibraryDb(":memory:");
+    const itemId = insertItem(db, "returning", { addedAt: "2026-01-01T00:00:00Z" });
+    insertEpisode(db, itemId, 1, 1, dateOnly(NOW.toISOString(), -1));
+
+    expect(computeCategory(db, itemId, NOW)).toBe("not_started");
+  });
+});
+
+describe("computeCategory — manual lists still win over both new lifts (E30 rungs 1-2)", () => {
+  it("watch_later beats a fresh manual add", () => {
+    const { db } = openLibraryDb(":memory:");
+    const itemId = insertItem(db, null, { addedAt: daysAgoIso(NOW, 1), addedVia: "manual" });
+    setManualList(db, itemId, "watch_later");
+
+    expect(computeCategory(db, itemId, NOW)).toBe("watch_later");
+  });
+
+  it("stopped beats a dormant show with a fresh episode", () => {
+    const { db } = openLibraryDb(":memory:");
+    const itemId = insertItem(db, "returning", { addedAt: "2026-01-01T00:00:00Z" });
+    const e1 = insertEpisode(db, itemId, 1, 1, dateOnly(NOW.toISOString(), -200));
+    insertEpisode(db, itemId, 1, 2, dateOnly(NOW.toISOString(), -1));
+    insertWatch(db, e1, itemId, daysAgoIso(NOW, 200));
+    setManualList(db, itemId, "stopped");
+
+    expect(computeCategory(db, itemId, NOW)).toBe("stopped");
+  });
+});
+
+describe("computeCategory — custom watching window (E31)", () => {
+  it("a 7-day window tightens both the added-at lift and the new-episode lift", () => {
+    const { db } = openLibraryDb(":memory:");
+    updateSettings(db, { watchingWindowDays: 7 });
+
+    const withinAddWindow = insertItem(db, null, {
+      addedAt: daysAgoIso(NOW, 7),
+      addedVia: "manual",
+    });
+    expect(computeCategory(db, withinAddWindow, NOW)).toBe("watching");
+
+    const outsideAddWindow = insertItem(db, null, {
+      addedAt: daysAgoIso(NOW, 8),
+      addedVia: "manual",
+    });
+    expect(computeCategory(db, outsideAddWindow, NOW)).toBe("not_started");
+
+    const withinEpisodeWindow = insertItem(db, "returning", { addedAt: "2026-01-01T00:00:00Z" });
+    const e1 = insertEpisode(db, withinEpisodeWindow, 1, 1, dateOnly(NOW.toISOString(), -200));
+    insertEpisode(db, withinEpisodeWindow, 1, 2, dateOnly(NOW.toISOString(), -7));
+    insertWatch(db, e1, withinEpisodeWindow, daysAgoIso(NOW, 200));
+    expect(computeCategory(db, withinEpisodeWindow, NOW)).toBe("watching");
+
+    const outsideEpisodeWindow = insertItem(db, "returning", { addedAt: "2026-01-01T00:00:00Z" });
+    const e2 = insertEpisode(db, outsideEpisodeWindow, 1, 1, dateOnly(NOW.toISOString(), -200));
+    insertEpisode(db, outsideEpisodeWindow, 1, 2, dateOnly(NOW.toISOString(), -8));
+    insertWatch(db, e2, outsideEpisodeWindow, daysAgoIso(NOW, 200));
+    expect(computeCategory(db, outsideEpisodeWindow, NOW)).toBe("not_watched_recently");
   });
 });

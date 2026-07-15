@@ -68,7 +68,7 @@ window; imports don't; the window length is a setting.
     value ("abc", "0", "9999") reads as 30; patch leaves other keys intact.
   - **Verify:** `pnpm test packages/core -- settings`
 
-- [ ] M14.3 core: category engine v2 (E30, E33)
+- [x] M14.3 core: category engine v2 (E30, E33)
   - **Files:** `packages/core/src/library/{category.ts,category.test.ts}`
     (+ any importer of `WATCHING_WINDOW_DAYS` — grep; update
     `packages/core/src/index.ts` exports if the const is re-exported)
@@ -90,6 +90,24 @@ window; imports don't; the window length is a setting.
     lift, E33); custom window (settings 7) respected by both new operands;
     manual lists still win over both lifts.
   - **Verify:** `pnpm test packages/core -- category`
+  <!-- DECISION: "every 002 category test stays green unmodified" holds for
+  rungs 1-2/4-5 exactly as promised, but not literally for every rung-6/7 and
+  E17-window-boundary fixture — spec.md's own header lists "E16's rungs 3-7
+  (replaced by E30 here)" under Supersedes, and those old fixtures use a
+  filler unwatched episode dated "-2 days" (to keep airedUnwatched>0 without
+  affecting the watch-recency assertion being tested). Under E33 that filler
+  date is *inside* the default window, so it now independently triggers the
+  new-episode lift and flips the expected result. Fixed by moving the filler
+  date outside the window (-40 days) in the 3 affected tests (rung 7, "exactly
+  31 days", and the batch test's notWatchedRecently fixture) — assertions
+  unchanged, only the incidental filler date moved. Separately,
+  packages/core/src/library/service.test.ts and apps/server/src/app.test.ts
+  had tests asserting a freshly-added zero-watch series lands in
+  not_started; that assumption is exactly what US-18/E30 rung 3a changes
+  (a manual add now lifts to watching for the window), so those assertions
+  were updated to "watching" rather than left broken — out of M14.3's Files
+  list but required for the mandatory full-green-suite-before-commit gate,
+  same precedent as 002's M10.1/M10.3 mechanical-fixture-fix notes. -->
 
 - [ ] M14.4 core: `addSeries` options object + zip schemaVersion 3 (E32,
       FR-031)

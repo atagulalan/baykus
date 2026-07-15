@@ -74,7 +74,8 @@ describe("createLibrary.addSeries", () => {
     const summary = library.addSeries(houseOfTheDragonDetails());
 
     expect(summary.title).toBe("House of the Dragon");
-    expect(summary.category).toBe("not_started");
+    // A fresh manual add with zero watches sits in "watching" for the window (E30 rung 3a).
+    expect(summary.category).toBe("watching");
     expect(summary.manualList).toBeNull();
     expect(summary.network).toBe("HBO");
     expect(summary.year).toBe(2022);
@@ -146,7 +147,8 @@ describe("createLibrary listSeries/getSeries/removeSeries", () => {
     const library = createLibrary(db);
     library.addSeries(houseOfTheDragonDetails());
 
-    expect(library.listSeries({ category: "not_started" }).total).toBe(1);
+    // A fresh manual add with zero watches sits in "watching" for the window (E30 rung 3a).
+    expect(library.listSeries({ category: "watching" }).total).toBe(1);
     expect(library.listSeries({ category: "finished" }).total).toBe(0);
   });
 
