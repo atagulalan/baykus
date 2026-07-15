@@ -406,7 +406,7 @@ active trio, specials tagged, past-unwatched quick-markable.
 Checkpoint goal: `/watch` shows history, watch-next with quick-mark and
 badges, and the not-watched-recently section.
 
-- [ ] M12.1 core: watch history query (FR-023, E27)
+- [x] M12.1 core: watch history query (FR-023, E27)
   - **Files:** `packages/core/src/library/{history.ts,history.test.ts}`,
     service wiring in `service.ts` + `index.ts`
   - **DoD:** `getWatchHistory(db, limit)` → newest-first rows

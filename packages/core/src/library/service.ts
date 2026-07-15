@@ -22,6 +22,7 @@ import {
   computeDynamicCategory,
 } from "./category.ts";
 import { AlreadyInLibraryError, ManualListConflictError } from "./errors.ts";
+import { getWatchHistory, type WatchHistoryEntry } from "./history.ts";
 import { getNextAirDate, getNextUnwatchedEpisode, getSeriesProgress } from "./progress.ts";
 import {
   addPushSubscription,
@@ -234,6 +235,8 @@ export interface Library {
     concurrency?: number,
   ): AsyncGenerator<RefreshResult>;
   getCalendar(opts?: { from?: string; to?: string }): CalendarResponse;
+  /** E27: newest-first watch log; `limit` is trusted as already-clamped 1-100 (the route validates). */
+  getWatchHistory(limit: number): WatchHistoryEntry[];
   addPushSubscription(sub: PushSubscriptionRecord): void;
   removePushSubscription(endpoint: string): boolean;
   listPushSubscriptions(): PushSubscriptionRecord[];
@@ -545,6 +548,10 @@ export function createLibrary(db: LibraryDatabase): Library {
 
     getCalendar(opts?: { from?: string; to?: string }): CalendarResponse {
       return getCalendar(db, opts);
+    },
+
+    getWatchHistory(limit: number): WatchHistoryEntry[] {
+      return getWatchHistory(db, limit);
     },
 
     addPushSubscription(sub: PushSubscriptionRecord): void {
