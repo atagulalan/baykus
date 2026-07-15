@@ -83,7 +83,10 @@ const routeTree = rootRoute.addChildren([
   importRoute,
 ]);
 
-export const router = createRouter({ routeTree });
+// E51: subtle root cross-fade on every route change (CSS tunes duration in
+// index.css); reduced-motion and unsupporting browsers (Firefox <139) both
+// degrade to an instant navigation with no JS feature-detect needed.
+export const router = createRouter({ routeTree, defaultViewTransition: true });
 
 declare module "@tanstack/react-router" {
   interface Register {

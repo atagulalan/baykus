@@ -363,9 +363,13 @@ export function SeriesDetailPage() {
             src={imageUrl}
             alt={detail.title}
             className="w-40 h-auto shrink-0 rounded-lg bg-zinc-800"
+            style={{ viewTransitionName: `poster-${detail.id}` }}
           />
         ) : (
-          <div className="flex aspect-[2/3] w-40 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-zinc-800 p-2 text-center text-sm text-zinc-400">
+          <div
+            className="flex aspect-[2/3] w-40 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-zinc-800 p-2 text-center text-sm text-zinc-400"
+            style={{ viewTransitionName: `poster-${detail.id}` }}
+          >
             {detail.title}
           </div>
         )}

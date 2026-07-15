@@ -29,7 +29,10 @@ export function Layout() {
 
   return (
     <div className="min-h-screen bg-void text-snow font-sans">
-      <header className="sticky top-0 z-40 bg-void/90 backdrop-blur-md border-b border-white/5">
+      <header
+        className="sticky top-0 z-40 bg-void/90 backdrop-blur-md border-b border-white/5"
+        style={{ viewTransitionName: "app-header" }}
+      >
         <nav className="mx-auto flex max-w-5xl flex-wrap items-center justify-between px-6 py-4">
           <Link
             to="/"
@@ -56,7 +59,10 @@ export function Layout() {
       <main className="mx-auto max-w-5xl px-6 py-8 pb-20 sm:pb-8">
         <Outlet />
       </main>
-      <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t border-white/5 bg-void/90 backdrop-blur pb-[env(safe-area-inset-bottom)] sm:hidden">
+      <nav
+        className="fixed inset-x-0 bottom-0 z-40 flex border-t border-white/5 bg-void/90 backdrop-blur pb-[env(safe-area-inset-bottom)] sm:hidden"
+        style={{ viewTransitionName: "app-tabbar" }}
+      >
         {navItems.map(({ to, key, Icon }) => (
           <Link
             key={to}

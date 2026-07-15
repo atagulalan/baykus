@@ -171,7 +171,7 @@ TMDB form after a keyed refresh.
 Checkpoint goal: library card → detail morphs the poster in Chrome; instant
 under reduced-motion; Firefox <139 just navigates.
 
-- [ ] M21.1 web: router transitions + poster morph + chrome opt-out
+- [x] M21.1 web: router transitions + poster morph + chrome opt-out
   - **Files:** `apps/web/src/router.tsx`, `apps/web/src/index.css`,
     `apps/web/src/components/{SeriesCard,Layout}.tsx`,
     `apps/web/src/pages/SeriesDetailPage.tsx`

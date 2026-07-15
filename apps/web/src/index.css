@@ -16,3 +16,20 @@ body {
   color: var(--color-snow);
   font-family: var(--font-sans);
 }
+
+/* E51: subtle root cross-fade on route changes; poster morph opts in per-item
+   via view-transition-name="poster-${id}" on SeriesCard/detail containers.
+   The app-header/app-tabbar names are set inline (Layout.tsx) so the chrome
+   renders as its own unchanged group instead of cross-fading with the root. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 160ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
