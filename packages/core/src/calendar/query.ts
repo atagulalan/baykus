@@ -1,7 +1,8 @@
 import type { EpisodeType, ImageRef, WatchProviderInfo } from "@baykus/provider-sdk";
-import { and, eq, gte, isNotNull, isNull, lte, ne } from "drizzle-orm";
+import { and, eq, gte, inArray, isNotNull, lte } from "drizzle-orm";
 import type { LibraryDatabase } from "../db/open.ts";
 import * as schema from "../db/schema.ts";
+import { computeCategories, type WatchCategory } from "../library/category.ts";
 import { todayUtc } from "../library/progress.ts";
 
 export interface CalendarEntry {
@@ -13,10 +14,11 @@ export interface CalendarEntry {
   e: number;
   episodeTitle: string | null;
   episodeType: EpisodeType | null;
+  /** From seasons.name, joined on (itemId, seasonNumber) — feeds the OVA heuristic (E23). */
+  seasonName: string | null;
+  airDate: string;
   network: string | null;
   watchProviders: WatchProviderInfo[];
-  /** Only set on recentlyAired entries — upcoming entries are already grouped by date. */
-  airDate?: string;
 }
 
 export interface CalendarDay {
@@ -25,11 +27,18 @@ export interface CalendarDay {
 }
 
 export interface CalendarResponse {
-  upcoming: CalendarDay[];
-  recentlyAired: CalendarEntry[];
+  days: CalendarDay[];
 }
 
-const RECENTLY_AIRED_WINDOW_DAYS = 14;
+/** E22: calendar (both modes) is scoped to the active trio. */
+const ACTIVE_TRIO: ReadonlySet<WatchCategory> = new Set([
+  "watching",
+  "not_watched_recently",
+  "up_to_date",
+]);
+
+const DEFAULT_FROM_DAYS = -14;
+const DEFAULT_TO_DAYS = 90;
 
 function addDaysToDate(date: string, days: number): string {
   const d = new Date(`${date}T00:00:00Z`);
@@ -37,7 +46,7 @@ function addDaysToDate(date: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-type EntryRow = {
+interface EntryRow {
   itemId: number;
   title: string;
   posterRef: ImageRef | null;
@@ -48,8 +57,9 @@ type EntryRow = {
   e: number;
   episodeTitle: string | null;
   episodeType: EpisodeType | null;
-  airDate: string | null;
-};
+  seasonName: string | null;
+  airDate: string;
+}
 
 function toEntry(row: EntryRow): CalendarEntry {
   return {
@@ -61,92 +71,95 @@ function toEntry(row: EntryRow): CalendarEntry {
     e: row.e,
     episodeTitle: row.episodeTitle,
     episodeType: row.episodeType,
+    seasonName: row.seasonName,
+    airDate: row.airDate,
     network: row.networks?.[0]?.name ?? null,
     watchProviders: row.watchProviders ?? [],
   };
 }
 
-const entryColumns = {
-  itemId: schema.items.id,
-  title: schema.items.title,
-  posterRef: schema.items.posterRef,
-  networks: schema.items.networks,
-  watchProviders: schema.items.watchProviders,
-  episodeId: schema.episodes.id,
-  s: schema.episodes.seasonNumber,
-  e: schema.episodes.episodeNumber,
-  episodeTitle: schema.episodes.title,
-  episodeType: schema.episodes.episodeType,
-  airDate: schema.episodes.airDate,
-};
-
 /**
- * contracts/api.md §Calendar. Both windows are scoped to `watching`-status
- * items only (E9 + tasks.md M5.3's DoD phrasing). `upcoming` is grouped by
- * date; `recentlyAired` is a flat list (last 14 days, unwatched only) with
- * an explicit `airDate` per entry since there's no day-grouping wrapper.
+ * contracts/api.md 002 §Calendar. Single ascending `days` list (the 001
+ * upcoming/recentlyAired split is gone). Scope: item category ∈ active trio
+ * (E22, computed via computeCategories — never a raw tracking column).
+ * Specials (season 0) are included (E23). Entry filter (E24): airDate > today
+ * always included; airDate <= today only when the episode has zero watch
+ * events. Range validation is the route's job (M11.2), not this function's.
  */
 export function getCalendar(
   db: LibraryDatabase,
   opts: { from?: string; to?: string } = {},
 ): CalendarResponse {
   const today = todayUtc();
-  const from = opts.from ?? today;
-  const to = opts.to ?? addDaysToDate(today, 30);
+  const from = opts.from ?? addDaysToDate(today, DEFAULT_FROM_DAYS);
+  const to = opts.to ?? addDaysToDate(today, DEFAULT_TO_DAYS);
 
-  const upcomingRows = db
-    .select(entryColumns)
+  const rows: EntryRow[] = db
+    .select({
+      itemId: schema.items.id,
+      title: schema.items.title,
+      posterRef: schema.items.posterRef,
+      networks: schema.items.networks,
+      watchProviders: schema.items.watchProviders,
+      episodeId: schema.episodes.id,
+      s: schema.episodes.seasonNumber,
+      e: schema.episodes.episodeNumber,
+      episodeTitle: schema.episodes.title,
+      episodeType: schema.episodes.episodeType,
+      seasonName: schema.seasons.name,
+      airDate: schema.episodes.airDate,
+    })
     .from(schema.episodes)
     .innerJoin(schema.items, eq(schema.items.id, schema.episodes.itemId))
-    .innerJoin(schema.tracking, eq(schema.tracking.itemId, schema.items.id))
+    .leftJoin(
+      schema.seasons,
+      and(
+        eq(schema.seasons.itemId, schema.episodes.itemId),
+        eq(schema.seasons.number, schema.episodes.seasonNumber),
+      ),
+    )
     .where(
       and(
-        eq(schema.tracking.status, "watching"),
-        ne(schema.episodes.seasonNumber, 0),
         isNotNull(schema.episodes.airDate),
         gte(schema.episodes.airDate, from),
         lte(schema.episodes.airDate, to),
       ),
     )
     .orderBy(schema.episodes.airDate)
-    .all();
+    .all() as EntryRow[];
+
+  if (rows.length === 0) return { days: [] };
+
+  const itemIds = [...new Set(rows.map((r) => r.itemId))];
+  const categories = computeCategories(db, itemIds);
+  const inTrio = rows.filter((r) => {
+    const category = categories.get(r.itemId);
+    return category !== undefined && ACTIVE_TRIO.has(category);
+  });
+  if (inTrio.length === 0) return { days: [] };
+
+  const episodeIds = inTrio.map((r) => r.episodeId);
+  const watchedEpisodeIds = new Set(
+    db
+      .select({ episodeId: schema.watches.episodeId })
+      .from(schema.watches)
+      .where(inArray(schema.watches.episodeId, episodeIds))
+      .all()
+      .map((w) => w.episodeId),
+  );
+
+  const included = inTrio.filter((r) => r.airDate > today || !watchedEpisodeIds.has(r.episodeId));
 
   const byDate = new Map<string, CalendarEntry[]>();
-  for (const row of upcomingRows) {
-    const date = row.airDate;
-    if (!date) continue;
-    const list = byDate.get(date) ?? [];
+  for (const row of included) {
+    const list = byDate.get(row.airDate) ?? [];
     list.push(toEntry(row));
-    byDate.set(date, list);
+    byDate.set(row.airDate, list);
   }
-  const upcoming = [...byDate.entries()]
+
+  const days = [...byDate.entries()]
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
     .map(([date, entries]) => ({ date, entries }));
 
-  const recentFrom = addDaysToDate(today, -RECENTLY_AIRED_WINDOW_DAYS);
-  const recentRows = db
-    .select(entryColumns)
-    .from(schema.episodes)
-    .innerJoin(schema.items, eq(schema.items.id, schema.episodes.itemId))
-    .innerJoin(schema.tracking, eq(schema.tracking.itemId, schema.items.id))
-    .leftJoin(schema.watches, eq(schema.watches.episodeId, schema.episodes.id))
-    .where(
-      and(
-        eq(schema.tracking.status, "watching"),
-        ne(schema.episodes.seasonNumber, 0),
-        isNotNull(schema.episodes.airDate),
-        gte(schema.episodes.airDate, recentFrom),
-        lte(schema.episodes.airDate, today),
-        isNull(schema.watches.id),
-      ),
-    )
-    .orderBy(schema.episodes.airDate)
-    .all();
-
-  const recentlyAired = recentRows.map((row) => {
-    const entry = toEntry(row);
-    return row.airDate ? { ...entry, airDate: row.airDate } : entry;
-  });
-
-  return { upcoming, recentlyAired };
+  return { days };
 }

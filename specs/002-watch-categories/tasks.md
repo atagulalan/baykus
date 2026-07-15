@@ -326,7 +326,7 @@ on schemaVersion 2.
 Checkpoint goal: calendar page with both modes in the browser, scoped to the
 active trio, specials tagged, past-unwatched quick-markable.
 
-- [ ] M11.1 core: range calendar query (E22–E24)
+- [x] M11.1 core: range calendar query (E22–E24)
   - **Files:** `packages/core/src/calendar/{query.ts,query.test.ts}`
   - **DoD:** `getCalendar(db, {from?, to?})` returns `{ days: [{date,
     entries}] }` per contracts 002 §Calendar: defaults today−14 / today+90;

@@ -1,8 +1,8 @@
-import type { EpisodeType, WatchProviderInfo } from "@baykus/provider-sdk";
+import type { EpisodeType, ReleaseStatus, WatchProviderInfo } from "@baykus/provider-sdk";
 import { describe, expect, it } from "vitest";
 import type { LibraryDatabase } from "../db/open.ts";
 import { openLibraryDb } from "../db/open.ts";
-import type { TrackingStatus } from "../db/schema.ts";
+import type { ManualList } from "../db/schema.ts";
 import * as schema from "../db/schema.ts";
 import { getCalendar } from "./query.ts";
 
@@ -12,18 +12,23 @@ function addDays(days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-function setupItem(
+function insertItem(
   db: LibraryDatabase,
-  status: TrackingStatus,
-  overrides: { networks?: { name: string }[]; watchProviders?: WatchProviderInfo[] } = {},
+  opts: {
+    manualList?: ManualList | null;
+    releaseStatus?: ReleaseStatus | null;
+    networks?: { name: string }[];
+    watchProviders?: WatchProviderInfo[];
+  } = {},
 ): number {
   const item = db
     .insert(schema.items)
     .values({
       mediaType: "series",
       title: "Test Show",
-      networks: overrides.networks ?? null,
-      watchProviders: overrides.watchProviders ?? null,
+      releaseStatus: opts.releaseStatus ?? null,
+      networks: opts.networks ?? null,
+      watchProviders: opts.watchProviders ?? null,
       addedAt: "2026-01-01T00:00:00Z",
     })
     .returning({ id: schema.items.id })
@@ -31,10 +36,10 @@ function setupItem(
   db.insert(schema.tracking)
     .values({
       itemId: item.id,
-      status,
+      manualList: opts.manualList ?? null,
       pushMuted: false,
       note: null,
-      statusChangedAt: "2026-01-01T00:00:00Z",
+      listChangedAt: "2026-01-01T00:00:00Z",
     })
     .run();
   return item.id;
@@ -55,83 +60,147 @@ function insertEpisode(
     .get().id;
 }
 
+/**
+ * Puts an item in category "watching", robustly against whatever else a test
+ * adds afterwards: one long-aired watched episode + one long-aired UNWATCHED
+ * episode (so airedUnwatched stays > 0 regardless of later future episodes),
+ * with a watch dated "now" so the 30-day window always holds.
+ */
+function markWatching(db: LibraryDatabase, itemId: number): void {
+  const watched = insertEpisode(db, itemId, 9, 1, addDays(-40));
+  insertEpisode(db, itemId, 9, 2, addDays(-35));
+  db.insert(schema.watches)
+    .values({ episodeId: watched, itemId, watchedAt: new Date().toISOString() })
+    .run();
+}
+
 describe("getCalendar", () => {
-  it("groups upcoming episodes by date within the default 30-day window", () => {
+  it("groups episodes by date within the default -14/+90 window", () => {
     const { db } = openLibraryDb(":memory:");
-    const itemId = setupItem(db, "watching", { networks: [{ name: "HBO" }] });
+    const itemId = insertItem(db, { networks: [{ name: "HBO" }] });
+    markWatching(db, itemId);
     insertEpisode(db, itemId, 1, 1, addDays(5));
     insertEpisode(db, itemId, 1, 2, addDays(5));
     insertEpisode(db, itemId, 1, 3, addDays(10));
-    insertEpisode(db, itemId, 1, 4, addDays(40)); // outside the window
+    insertEpisode(db, itemId, 1, 4, addDays(95)); // outside the default window
 
     const result = getCalendar(db);
 
-    expect(result.upcoming).toHaveLength(2);
-    expect(result.upcoming[0]).toMatchObject({ date: addDays(5) });
-    expect(result.upcoming[0]?.entries).toHaveLength(2);
-    expect(result.upcoming[0]?.entries[0]).toMatchObject({ title: "Test Show", network: "HBO" });
-    expect(result.upcoming[1]).toMatchObject({ date: addDays(10) });
+    expect(result.days).toHaveLength(2);
+    expect(result.days[0]).toMatchObject({ date: addDays(5) });
+    expect(result.days[0]?.entries).toHaveLength(2);
+    expect(result.days[0]?.entries[0]).toMatchObject({ title: "Test Show", network: "HBO" });
+    expect(result.days[1]).toMatchObject({ date: addDays(10) });
   });
 
-  it("excludes specials and non-watching items from upcoming", () => {
+  it("scopes to the active trio — excludes stopped/watch_later/not_started/finished (E22)", () => {
     const { db } = openLibraryDb(":memory:");
-    const watchingId = setupItem(db, "watching");
-    const droppedId = setupItem(db, "dropped");
-    insertEpisode(db, watchingId, 0, 1, addDays(3)); // special
-    insertEpisode(db, droppedId, 1, 1, addDays(3)); // dropped status
+
+    const watching = insertItem(db);
+    markWatching(db, watching);
+    insertEpisode(db, watching, 1, 1, addDays(3));
+
+    const stopped = insertItem(db, { manualList: "stopped" });
+    insertEpisode(db, stopped, 1, 1, addDays(3));
+
+    const watchLater = insertItem(db, { manualList: "watch_later" });
+    insertEpisode(db, watchLater, 1, 1, addDays(3));
+
+    const notStarted = insertItem(db);
+    insertEpisode(db, notStarted, 1, 1, addDays(3)); // zero watches -> not_started
+
+    const finished = insertItem(db, { releaseStatus: "ended" });
+    const finishedEp = insertEpisode(db, finished, 1, 1, addDays(-1));
+    db.insert(schema.watches)
+      .values({ episodeId: finishedEp, itemId: finished, watchedAt: "2026-01-01T00:00:00Z" })
+      .run();
+    insertEpisode(db, finished, 1, 2, addDays(3)); // scheduled but doesn't change airedUnwatched yet
 
     const result = getCalendar(db);
-    expect(result.upcoming).toHaveLength(0);
+    const itemIds = result.days.flatMap((d) => d.entries.map((e) => e.itemId));
+    expect(itemIds).toEqual([watching]);
+  });
+
+  it("includes specials (season 0) with seasonName (E23)", () => {
+    const { db } = openLibraryDb(":memory:");
+    const itemId = insertItem(db);
+    markWatching(db, itemId);
+    db.insert(schema.seasons).values({ itemId, number: 0, name: "Specials" }).run();
+    insertEpisode(db, itemId, 0, 1, addDays(3));
+
+    const result = getCalendar(db);
+    expect(result.days).toHaveLength(1);
+    expect(result.days[0]?.entries[0]).toMatchObject({ s: 0, seasonName: "Specials" });
   });
 
   it("respects explicit from/to query bounds", () => {
     const { db } = openLibraryDb(":memory:");
-    const itemId = setupItem(db, "watching");
+    const itemId = insertItem(db);
+    markWatching(db, itemId);
     insertEpisode(db, itemId, 1, 1, addDays(2));
     insertEpisode(db, itemId, 1, 2, addDays(8));
 
     const result = getCalendar(db, { from: addDays(5), to: addDays(10) });
-    expect(result.upcoming).toHaveLength(1);
-    expect(result.upcoming[0]?.date).toBe(addDays(8));
+    expect(result.days).toHaveLength(1);
+    expect(result.days[0]?.date).toBe(addDays(8));
   });
 
-  it("recentlyAired lists unwatched episodes from the last 14 days, watching only", () => {
+  it("E24: future episodes are always included regardless of watch state", () => {
     const { db } = openLibraryDb(":memory:");
-    const itemId = setupItem(db, "watching", {
-      watchProviders: [{ provider: "HBO Max", type: "flatrate", region: "TR" }],
-    });
-    const recentUnwatched = insertEpisode(db, itemId, 1, 1, addDays(-5));
-    const recentWatched = insertEpisode(db, itemId, 1, 2, addDays(-3));
-    insertEpisode(db, itemId, 1, 3, addDays(-20)); // outside the 14-day window
-
+    const itemId = insertItem(db);
+    markWatching(db, itemId);
+    const futureEp = insertEpisode(db, itemId, 1, 1, addDays(3));
+    // A future episode watched in advance (e.g. an early screener) still shows.
     db.insert(schema.watches)
-      .values({ episodeId: recentWatched, itemId, watchedAt: "2026-01-01T00:00:00Z" })
+      .values({ episodeId: futureEp, itemId, watchedAt: new Date().toISOString() })
       .run();
 
     const result = getCalendar(db);
-    expect(result.recentlyAired).toHaveLength(1);
-    expect(result.recentlyAired[0]).toMatchObject({
-      episodeId: recentUnwatched,
-      airDate: addDays(-5),
-      watchProviders: [{ provider: "HBO Max", type: "flatrate", region: "TR" }],
-    });
+    expect(result.days.flatMap((d) => d.entries.map((e) => e.episodeId))).toContain(futureEp);
   });
 
-  it("recentlyAired excludes non-watching items", () => {
+  it("E24: past/today episodes are included only when unwatched", () => {
     const { db } = openLibraryDb(":memory:");
-    const itemId = setupItem(db, "completed");
-    insertEpisode(db, itemId, 1, 1, addDays(-2));
+    const itemId = insertItem(db);
+    markWatching(db, itemId);
+    const pastUnwatched = insertEpisode(db, itemId, 1, 1, addDays(-3));
+    const pastWatched = insertEpisode(db, itemId, 1, 2, addDays(-2));
+    db.insert(schema.watches)
+      .values({ episodeId: pastWatched, itemId, watchedAt: new Date().toISOString() })
+      .run();
+    const todayEp = insertEpisode(db, itemId, 1, 3, addDays(0));
 
     const result = getCalendar(db);
-    expect(result.recentlyAired).toHaveLength(0);
+    const episodeIds = result.days.flatMap((d) => d.entries.map((e) => e.episodeId));
+    expect(episodeIds).toContain(pastUnwatched);
+    expect(episodeIds).not.toContain(pastWatched);
+    expect(episodeIds).toContain(todayEp);
   });
 
-  it("carries episodeType through for finale badges", () => {
+  it("groups sorted ascending by date", () => {
     const { db } = openLibraryDb(":memory:");
-    const itemId = setupItem(db, "watching");
+    const itemId = insertItem(db);
+    markWatching(db, itemId);
+    insertEpisode(db, itemId, 1, 1, addDays(10));
+    insertEpisode(db, itemId, 1, 2, addDays(1));
+    insertEpisode(db, itemId, 1, 3, addDays(5));
+
+    const result = getCalendar(db);
+    expect(result.days.map((d) => d.date)).toEqual([addDays(1), addDays(5), addDays(10)]);
+  });
+
+  it("carries episodeType and watchProviders through for finale badges", () => {
+    const { db } = openLibraryDb(":memory:");
+    const itemId = insertItem(db, {
+      watchProviders: [{ provider: "HBO Max", type: "flatrate", region: "TR" }],
+    });
+    markWatching(db, itemId);
     insertEpisode(db, itemId, 1, 1, addDays(5), "finale");
 
     const result = getCalendar(db);
-    expect(result.upcoming[0]?.entries[0]?.episodeType).toBe("finale");
+    expect(result.days[0]?.entries[0]).toMatchObject({
+      episodeType: "finale",
+      watchProviders: [{ provider: "HBO Max", type: "flatrate", region: "TR" }],
+    });
   });
 });
