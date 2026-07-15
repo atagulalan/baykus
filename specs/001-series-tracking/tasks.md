@@ -464,7 +464,9 @@ second handle is isolated; single mode password gate works.
   user_show_special_status.csv fields (already parsed by M8.1) were being
   discarded — imports always hardcoded status "watching". Now propagated
   through matchShows and threaded into importOneShow, so a show followed as
-  "for_later" imports as plan_to_watch, archived as paused, and
+  "for_later" imports as plan_to_watch, archived as paused *(SUPERSEDED by
+  004 E48: archived=1 is TV Time's "stop watching" and now maps to
+  dropped/stopped; the paused status is deleted)*, and
   active=0 as dropped, instead of everything landing in "watching".
   The same real-export audit also caught two remaining parser bugs beyond
   the name-keyed-rows fix above: episode_comment.csv's header satisfied

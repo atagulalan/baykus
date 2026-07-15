@@ -51,9 +51,11 @@ interface SeasonProgress { seasons: SeasonProgressEntry[]; sequential: boolean }
 
 - `seasons`: non-special seasons with ≥1 episode, ascending by number.
   `total` counts announced episodes (aired + scheduled); `watched` counts
-  episodes with ≥1 watch.
+  episodes with ≥1 watch. *(SUPERSEDED by 004 E50: aired-only counts,
+  zero-aired seasons omitted.)*
 - `sequential`: watched episodes form a contiguous prefix of the
-  (s,e)-ordered non-special episode list.
+  (s,e)-ordered non-special episode list. *(SUPERSEDED by 004 E50: the list
+  is aired-only.)*
 - Present on `SeriesSummary` and `SeriesDetail` (detail inherits via
   `buildSummary`). Rendering rules live in spec.md E34 / ui.md.
 

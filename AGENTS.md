@@ -30,9 +30,13 @@ baykus.xava.me (multi mode, handle-claim accounts).
    watch page. Same file structure; its docs are deltas that override the
    matching 001 sections. Its tasks.md (M10–M13) is implemented; only
    browser-checkpoint confirmations remain (see root MANUELTEST.md).
-4. `specs/003-dynamic-watching-ux/` — **the active spec** (dynamic İzleniyor
-   signals, configurable window, UI polish). Deltas over 002 + 001; 003 wins
-   where they overlap. Work happens in its tasks.md (M14+).
+4. `specs/003-dynamic-watching-ux/` — dynamic İzleniyor signals, configurable
+   window, UI polish + brand refresh. Deltas over 002 + 001. Its tasks.md
+   (M14–M17) is implemented; only the M17.7 browser checkpoint remains.
+5. `specs/004-import-fidelity-ux/` — **the active spec** (TV Time import
+   fidelity, aired-only progress, view transitions, TMDB-parity URLs).
+   Deltas over 003 + 002 + 001; 004 wins where they overlap. Work happens
+   in its tasks.md (M18+).
 
 ## Normative sources — order of truth
 
@@ -42,8 +46,9 @@ When documents disagree, the higher one wins; fix the lower one in the same PR:
 2. **Code contracts:** `packages/provider-sdk/src/types.ts` (DTOs),
    `packages/core/src/db/schema.ts` (DB)
 3. Contracts: `specs/001-series-tracking/contracts/api.md` (HTTP) as amended
-   by 002's and then 003's `contracts/api.md`, and the spec.md §Edge-case
-   decisions tables (001 + 002 + 003; **newer spec wins on overlap**)
+   by 002's, 003's and then 004's `contracts/api.md`, and the spec.md
+   §Edge-case decisions tables (001 + 002 + 003 + 004; **newer spec wins on
+   overlap**)
 4. Prose specs (spec.md, plan.md, data-model.md, ui.md — same newest-wins rule)
 
 **Never invent a field, endpoint, or behavior.** If something you need is not
@@ -70,14 +75,15 @@ comment. Silent divergence is the one unforgivable failure mode.
 |---|---|
 | any provider package | provider-sdk `types.ts` + `errors.ts`, research.md §that provider, its `fixtures/` files |
 | core storage / Library service | `schema.ts`, data-model.md, spec.md §Edge-case decisions |
-| categories / manual lists / calendar / watch page | 002 spec.md §Edge-case decisions (E16–E29) as amended by 003 (E30–E41), 002+003 plan.md, `packages/core/src/library/category.ts` |
-| watching window / added_via / zip v3 / UI polish | 003 spec.md §Edge-case decisions (E30–E41), 003 plan.md + data-model.md |
+| categories / manual lists / calendar / watch page | 002 spec.md §Edge-case decisions (E16–E29) as amended by 003 (E30–E47) and 004 E50, 002+003 plan.md, `packages/core/src/library/category.ts` |
+| watching window / added_via / zip v3 / UI polish | 003 spec.md §Edge-case decisions (E30–E47), 003 plan.md + data-model.md |
+| import fidelity / season progress / series URLs / transitions | 004 spec.md §Edge-case decisions (E48–E56), 004 plan.md + data-model.md |
 | zip export/import | data-model.md §Zip + §Merge, constitution Article III |
 | server routes | contracts/api.md (that section), the core service it wraps |
 | web pages/components | ui.md §that screen, contracts/api.md (endpoints it calls) |
 | refresh/push | spec.md US-6/US-7, contracts §Refresh §Push |
 | auth/multi mode | spec.md US-10/US-11, contracts §Auth, plan.md §Modes |
-| importers | research.md §TV Time, contracts §tvtime, fixtures/tvtime |
+| importers | research.md §TV Time, contracts §tvtime (001 as amended by 003 E44 + 004 E48/E49), 004 spec.md E48/E49, fixtures/tvtime |
 
 ## Commands
 

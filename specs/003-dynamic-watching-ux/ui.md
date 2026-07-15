@@ -96,6 +96,10 @@ all watched:                  ◼ ◼ ◼ ◼
 fallback (gap / >12 seasons): ▰▰▰▰▰▰▱▱▱▱   ← today's single bar
 ```
 
+*(AMENDED by 004 E50: all counts feeding this component are aired-only —
+a caught-up series renders the "all watched" row even with announced future
+episodes; zero-aired seasons produce no square.)*
+
 - Input: `seasonProgress` off SeriesSummary. Pure helper
   `buildProgressSegments(sp): Segment[] | null` decides; `null` → render the
   existing percentage bar (unchanged markup). Unit-test the helper
