@@ -4,19 +4,69 @@
 **To:** whoever runs the final browser pass (xava, or the next agent once a
 browser tool is available) ·
 **Status:** Spec 003 (`specs/003-dynamic-watching-ux/`) is fully implemented,
-M14.1 through M17.6, one task per commit, full green gate
+M14.1 through M17.14, one task per commit, full green gate
 (`pnpm lint && pnpm typecheck && pnpm test && pnpm build`) after every
-commit. **Only M17.7 remains** — the consolidated browser pass.
+commit. **Only M17.7 remains** — the consolidated browser pass, now
+covering M17.9–M17.14 too (see below).
 
 ## What's left
 
 **M17.7 CHECKPOINT 003** — a full browser walkthrough of every
-`MANUELTEST.md` section for spec 003 (M14.7, M15.4, M16.4, M17) **in both
-locales**, plus a spot-check of the 002 milestones (M10–M13) for regressions,
-then check the M17.7 box in
+`MANUELTEST.md` section for spec 003 (M14.7, M15.4, M16.4, M17, **and the
+M17.9–M17.14 section added this session**) **in both locales**, plus a
+spot-check of the 002 milestones (M10–M13) for regressions, then check the
+M17.7 box in
 [`specs/003-dynamic-watching-ux/tasks.md`](specs/003-dynamic-watching-ux/tasks.md)
 and commit. This is explicitly left for a human/browser-capable session —
-no browser-automation tool was available while implementing.
+no browser-automation tool was available while implementing (confirmed
+again this session: no chromium/playwright in this environment either).
+
+## What was done this session (M17.9–M17.14, out-of-plan)
+
+A second implementing session found a large batch of uncommitted,
+partially-broken work already sitting in the working tree (not from
+tasks.md — no task numbers, a duplicate prop that failed typecheck,
+missing i18n keys, non-project code formatting) and a standalone
+`brand-identity.html` design mockup at the repo root. Reviewed it, fixed
+what was broken, retroactively wrote it up as new out-of-plan milestones
+(same pattern M17.8 established), and shipped it as six commits:
+
+- **M17.9** (E43) — two TV Time parser bugs found against a real GDPR
+  export: a stale `for_later` status could override a show's current
+  active/archived state; `collapseDriftingDuplicates` could drop a
+  duplicate watch's season/episode numbers depending on file order.
+- **M17.10** (E44) — `POST /api/import/tvtime` now streams per-show
+  matching progress over SSE (same pattern `/confirm` already used); the
+  import wizard shows a progress bar + live match log.
+- **M17.11** (E45) — brand refresh: new void/snow/muted/yellow dark theme,
+  DM Serif Display/DM Sans/JetBrains Mono, lucide arrow icons replacing
+  emoji, new shared `Checkbox` primitive. Design reference now lives at
+  `specs/003-dynamic-watching-ux/design/brand-identity.html`. Fixed a
+  `lang="en"` regression back to `"tr"` along the way (leaked from the
+  mockup; no runtime lang-switching exists).
+- **M17.13** (E46, no M17.12 — renamed into M17.11 mid-session, see
+  tasks.md's own note at M17.13) — `SeriesCard` drops its hover action
+  buttons; they (plus mute/unmute) now live in one "⋮" menu on the series
+  detail page. Extracted a shared `lib/categoryColors.ts` (was duplicated 3×).
+- **M17.14** (E47) — episode row's "⋮" dropdown replaced by checkbox-
+  driven modals ("mark up to here?" / watch-again-edit-unwatch sheet);
+  `SeasonSection`'s button becomes a checkbox, auto-collapses when
+  complete.
+
+Bugs fixed along the way (found during review, not part of the original
+diff's intent): `EpisodeRow.tsx` had a duplicate `onBulkUpToHere` prop
+(TS2300, failed typecheck) and was formatted with single-quotes/no-
+semicolons (not this project's Biome style); four new modal strings and
+the series-menu aria-label were missing from both i18n catalogs (English
+fallback text would've shown in the Turkish-default UI); `Checkbox` and
+one `<label>` wrapping it needed `biome-ignore` a11y comments (custom
+button-based checkbox, not a native input); `index.css`'s new `@theme`
+block needed `css.parser.tailwindDirectives: true` in `biome.json`, which
+wasn't set. All caught by running the full gate per commit, not just
+trusting the diff. Mechanically verified beyond the gate: `pnpm dev` +
+curl smoke check (server health, real dev library via
+`/api/library/series`, web root serving the new markup), server stopped
+cleanly after.
 
 Also still outstanding from **spec 002** (never blocking, just not yet
 confirmed):

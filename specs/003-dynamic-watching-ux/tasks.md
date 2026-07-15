@@ -552,6 +552,10 @@ happen to land alongside the new look are E46/E47, separate tasks/commits).
 
 ## M17.13 — Series actions consolidated into the detail menu (E46, out-of-plan)
 
+<!-- Numbering note: M17.12 was renamed into M17.11 mid-session (both
+covered E45's single commit) — no M17.12 milestone exists; not a deleted
+task. -->
+
 Paired with M17.11/E45: `SeriesCard`'s hover-button grid (remove, refresh,
 move-to-list) was the last chrome that didn't fit the new palette, and six
 overlapping hover targets on a card that's also a link was already awkward.
