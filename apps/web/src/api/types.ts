@@ -58,6 +58,17 @@ export interface SeriesProgress {
   total: number;
 }
 
+export interface SeasonProgressEntry {
+  number: number;
+  watched: number;
+  total: number;
+}
+
+export interface SeasonProgress {
+  seasons: SeasonProgressEntry[];
+  sequential: boolean;
+}
+
 export interface NextUnwatchedEpisode {
   episodeId: number;
   s: number;
@@ -79,6 +90,7 @@ export interface SeriesSummary {
   releaseStatus: string | null;
   network: string | null;
   progress: SeriesProgress;
+  seasonProgress: SeasonProgress;
   nextUnwatched: NextUnwatchedEpisode | null;
   nextAirDate: string | null;
   pushMuted: boolean;

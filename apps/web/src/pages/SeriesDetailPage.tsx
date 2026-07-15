@@ -24,6 +24,7 @@ import type {
 } from "../api/types.ts";
 import { RatingControl } from "../components/RatingControl.tsx";
 import { SeasonSection } from "../components/SeasonSection.tsx";
+import { SegmentedProgress } from "../components/SegmentedProgress.tsx";
 import { WatchDateDialog } from "../components/WatchDateDialog.tsx";
 import { useToast } from "../lib/toast.tsx";
 
@@ -277,7 +278,6 @@ export function SeriesDetailPage() {
 
   const imageUrl = buildImageUrl(detail.posterRef, "large");
   const { watched, aired } = detail.progress;
-  const percent = aired > 0 ? Math.round((watched / aired) * 100) : 0;
   const contentRating =
     detail.contentRatings.find((r) => r.region === activeRegion) ?? detail.contentRatings[0];
   const regionWatchProviders = detail.watchProviders.filter((wp) => wp.region === activeRegion);
@@ -425,9 +425,13 @@ export function SeriesDetailPage() {
           )}
 
           <div className="mt-2 flex flex-col gap-1">
-            <div className="h-2 w-full max-w-sm overflow-hidden rounded-full bg-zinc-800">
-              <div className="h-full bg-emerald-500" style={{ width: `${percent}%` }} />
-            </div>
+            <SegmentedProgress
+              seasonProgress={detail.seasonProgress}
+              watched={watched}
+              aired={aired}
+              size="md"
+              className="max-w-sm"
+            />
             <p className="text-sm text-zinc-400">
               {watched}/{aired}
               {detail.nextUnwatched && (

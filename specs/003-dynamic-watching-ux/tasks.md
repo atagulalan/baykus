@@ -222,7 +222,7 @@ Checkpoint goal: cards and the detail header show the season-segmented bar
     watched == total; unaired episodes count in `total` only.
   - **Verify:** `pnpm test packages/core -- progress`
 
-- [ ] M15.2 web: `SegmentedProgress` component (E34)
+- [x] M15.2 web: `SegmentedProgress` component (E34)
   - **Files:** new `apps/web/src/components/SegmentedProgress.tsx` +
     `SegmentedProgress.test.ts`, `apps/web/src/api/types.ts`,
     `apps/web/src/components/SeriesCard.tsx`,

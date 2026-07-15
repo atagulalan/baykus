@@ -1,0 +1,89 @@
+import type { SeasonProgress } from "../api/types.ts";
+
+export type Segment =
+  | { kind: "filled" }
+  | { kind: "frontier"; percent: number }
+  | { kind: "hollow" };
+
+const MAX_SEGMENTED_SEASONS = 12;
+
+/**
+ * E34: null means "fall back to the plain percentage bar" — a skip-around
+ * watch history, zero seasons, or more than 12 seasons.
+ */
+export function buildProgressSegments(sp: SeasonProgress): Segment[] | null {
+  if (!sp.sequential) return null;
+  const { seasons } = sp;
+  if (seasons.length < 1 || seasons.length > MAX_SEGMENTED_SEASONS) return null;
+
+  const frontierIndex = seasons.findIndex((s) => s.watched < s.total);
+  return seasons.map((s, i) => {
+    if (frontierIndex === -1 || i < frontierIndex) return { kind: "filled" };
+    if (i === frontierIndex) {
+      const percent = s.total > 0 ? Math.round((s.watched / s.total) * 100) : 0;
+      return { kind: "frontier", percent };
+    }
+    return { kind: "hollow" };
+  });
+}
+
+type Size = "sm" | "md";
+
+const TRACK_HEIGHT: Record<Size, string> = { sm: "h-1.5", md: "h-2" };
+const SQUARE_SIZE: Record<Size, string> = { sm: "h-1.5 w-1.5", md: "h-2 w-2" };
+
+interface SegmentedProgressProps {
+  seasonProgress: SeasonProgress;
+  watched: number;
+  aired: number;
+  size?: Size;
+  className?: string;
+}
+
+/** Season-segmented progress bar with a plain-percentage fallback (E34). */
+export function SegmentedProgress({
+  seasonProgress,
+  watched,
+  aired,
+  size = "sm",
+  className = "",
+}: SegmentedProgressProps) {
+  const segments = buildProgressSegments(seasonProgress);
+
+  if (segments === null) {
+    const percent = aired > 0 ? Math.round((watched / aired) * 100) : 0;
+    return (
+      <div
+        className={`w-full overflow-hidden rounded-full bg-zinc-800 ${TRACK_HEIGHT[size]} ${className}`}
+      >
+        <div className="h-full bg-emerald-500" style={{ width: `${percent}%` }} />
+      </div>
+    );
+  }
+
+  return (
+    <div className={`flex w-full items-center gap-0.5 ${className}`}>
+      {segments.map((segment, i) => {
+        const key = `${segment.kind}-${i}`;
+        if (segment.kind === "frontier") {
+          return (
+            <div
+              key={key}
+              className={`flex-1 overflow-hidden rounded-full bg-zinc-800 ${TRACK_HEIGHT[size]}`}
+            >
+              <div className="h-full bg-emerald-500" style={{ width: `${segment.percent}%` }} />
+            </div>
+          );
+        }
+        return (
+          <div
+            key={key}
+            className={`shrink-0 rounded-sm ${SQUARE_SIZE[size]} ${
+              segment.kind === "filled" ? "bg-emerald-500" : "border border-zinc-700"
+            }`}
+          />
+        );
+      })}
+    </div>
+  );
+}

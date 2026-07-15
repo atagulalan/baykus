@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { buildImageUrl } from "../api/images.ts";
 import type { ManualList, SeriesSummary } from "../api/types.ts";
+import { SegmentedProgress } from "./SegmentedProgress.tsx";
 
 interface SeriesCardProps {
   series: SeriesSummary;
@@ -19,7 +20,6 @@ export function SeriesCard({ series, onRemove, onRefresh, onSetManualList }: Ser
   const imageUrl = buildImageUrl(series.posterRef);
   const { watched, aired } = series.progress;
   const isFinished = series.category === "finished";
-  const percent = aired > 0 ? Math.round((watched / aired) * 100) : 0;
 
   // Contextual manual-list actions — never offer the option already in effect,
   // and never offer "stopped" on a finished series (E20 guard mirrors the server 409).
@@ -56,9 +56,12 @@ export function SeriesCard({ series, onRemove, onRefresh, onSetManualList }: Ser
               </span>
             )}
           </div>
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
-            <div className="h-full bg-emerald-500" style={{ width: `${percent}%` }} />
-          </div>
+          <SegmentedProgress
+            seasonProgress={series.seasonProgress}
+            watched={watched}
+            aired={aired}
+            size="sm"
+          />
         </div>
       </Link>
       {series.rating !== null && (
