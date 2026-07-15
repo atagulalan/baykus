@@ -261,6 +261,8 @@
     "fuzzy": "Emin değilim ({{count}})",
     "pickCandidate": "aday seç",
     "unmatched": "Eşleşmedi ({{count}})",
+    "skippedRelics": "{{count}} kalıntı takip atlandı (izleme kaydı yok)",
+    "skippedRelicsHint": "TV Time'da takipten çıkarılmış ve hiç izleme kaydı olmayan diziler içe aktarılmaz.",
     "confirmError": "İçe aktarılamadı",
     "confirm": "Onayla",
     "confirming": "İçe aktarılıyor…",

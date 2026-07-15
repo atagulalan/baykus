@@ -291,6 +291,18 @@ export function ImportPage() {
           </section>
         </div>
 
+        {report.skippedRelics.length > 0 && (
+          <details className="rounded-lg bg-zinc-900 p-4 text-sm text-zinc-400">
+            <summary className="cursor-pointer select-none">
+              {t("importWizard.skippedRelics", { count: report.skippedRelics.length })}
+            </summary>
+            <p className="mt-2 text-xs text-zinc-500">{t("importWizard.skippedRelicsHint")}</p>
+            <p className="mt-2 text-xs text-zinc-300">
+              {report.skippedRelics.map((relic) => relic.name).join(" · ")}
+            </p>
+          </details>
+        )}
+
         {confirmError && <p className="text-sm text-red-400">{t("importWizard.confirmError")}</p>}
         <button
           type="button"

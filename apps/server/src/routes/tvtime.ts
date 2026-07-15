@@ -61,13 +61,12 @@ function episodePositionKey(seasonNumber: number, episodeNumber: number): string
   return `${seasonNumber}-${episodeNumber}`;
 }
 
-/** E26: TvTimeStatus (the importer package's legacy 5-value status) maps to v2 manualList. */
+/** E26: TvTimeStatus (the importer package's legacy status) maps to v2 manualList. */
 const TVTIME_STATUS_TO_MANUAL_LIST: Record<TvTimeStatus, ManualList | null> = {
   plan_to_watch: "watch_later",
   dropped: "stopped",
   watching: null,
   completed: null,
-  paused: null,
 };
 
 /**
@@ -170,7 +169,7 @@ export function createTvTimeRoutes(library: Library, providers: MetadataProvider
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const csvContents = await extractCsvContents(buffer);
-    const { shows, watches } = parseTvTimeFiles(csvContents);
+    const { shows, watches, skippedRelics } = parseTvTimeFiles(csvContents);
 
     return streamSSE(c, async (stream) => {
       const { matched, fuzzy, unmatched } = await matchShows(
@@ -207,6 +206,7 @@ export function createTvTimeRoutes(library: Library, providers: MetadataProvider
             episodes: f.episodeCount,
           })),
           unmatched: unmatched.map((u) => ({ name: u.name, episodes: u.episodeCount })),
+          skippedRelics,
         }),
       });
     });

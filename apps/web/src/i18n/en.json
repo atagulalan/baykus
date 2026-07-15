@@ -261,6 +261,8 @@
     "fuzzy": "Not sure ({{count}})",
     "pickCandidate": "pick a candidate",
     "unmatched": "Unmatched ({{count}})",
+    "skippedRelics": "{{count}} stale follows skipped (no watch history)",
+    "skippedRelicsHint": "Shows you unfollowed on TV Time with no watch history are not imported.",
     "confirmError": "Import failed",
     "confirm": "Confirm",
     "confirming": "Importing…",

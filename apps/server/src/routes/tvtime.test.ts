@@ -65,8 +65,8 @@ function darkDetails(): SeriesDetails {
       {
         number: 1,
         episodes: [
-          { seasonNumber: 1, episodeNumber: 1, title: "Secrets" },
-          { seasonNumber: 1, episodeNumber: 2, title: "Lies" },
+          { seasonNumber: 1, episodeNumber: 1, title: "Secrets", airDate: "2020-06-27" },
+          { seasonNumber: 1, episodeNumber: 2, title: "Lies", airDate: "2020-06-28" },
         ],
       },
     ],
@@ -192,6 +192,7 @@ interface ImportReport {
   matched: { name: string; tvdbId: number; episodes: number }[];
   fuzzy: { name: string; candidates: unknown[]; episodes: number }[];
   unmatched: { name: string; episodes: number }[];
+  skippedRelics: { name: string; tvdbId: number }[];
 }
 
 /**
@@ -266,6 +267,31 @@ describe("POST /api/import/tvtime", () => {
       body: new FormData(),
     });
     expect(res.status).toBe(400);
+  });
+
+  it("reports an unfollowed zero-watch relic in skippedRelics and nowhere else, excluding it from progress total, while an archived show with watches still matches (E48/E49)", async () => {
+    const { app } = setup();
+    const zip = await zipBuffer({
+      "followed_tv_show.csv":
+        "tv_show_id,tv_show_name,active,archived,created_at\n" +
+        "305288,Dark,1,1,2020-06-27 14:00:00\n" +
+        "278460,Troy,0,0,2019-02-16 21:35:13\n",
+      "seen_episode.csv": readFixture("seen_episode.csv"),
+    });
+
+    const res = await postImport(app, zip, "export.zip");
+    const { progress, report } = await readImportReport(res);
+
+    expect(report.matched).toEqual(
+      expect.arrayContaining([expect.objectContaining({ name: "Dark", tvdbId: 305288 })]),
+    );
+    expect(report.matched.some((m) => m.name === "Troy")).toBe(false);
+    expect(report.fuzzy.some((f) => f.name === "Troy")).toBe(false);
+    expect(report.unmatched.some((u) => u.name === "Troy")).toBe(false);
+    expect(report.skippedRelics).toEqual([{ name: "Troy", tvdbId: 278460 }]);
+
+    expect(progress).toHaveLength(1);
+    expect(progress[0]).toMatchObject({ total: 1, name: "Dark" });
   });
 });
 
@@ -411,11 +437,15 @@ describe("POST /api/import/tvtime/confirm", () => {
     expect(series?.progress.watched).toBe(2);
   });
 
-  it("maps a dropped-status show to manualList 'stopped' (E26)", async () => {
+  it("maps an archived show (Suits-shape: active=1, archived=1) to manualList 'stopped' (E26/E48)", async () => {
     const { app, library } = setup();
     const zip = await zipBuffer({
       "followed_tv_show.csv":
-        "tv_show_id,tv_show_name,active,created_at\n305288,Dark,0,2020-06-27 14:00:00\n",
+        "tv_show_id,tv_show_name,active,archived,created_at\n305288,Dark,1,1,2020-06-27 14:00:00\n",
+      // Only one of Dark's two episodes — not fully watched, so the E26
+      // stale-stopped cleanup below leaves manual_list alone.
+      "seen_episode.csv":
+        "tv_show_id,episode_id,created_at,updated_at\n305288,7250041,2020-06-27 20:15:00,2020-06-27 20:15:00\n",
     });
 
     const importRes = await postImport(app, zip, "export.zip");
@@ -431,6 +461,34 @@ describe("POST /api/import/tvtime/confirm", () => {
 
     const dark = library.listSeries().items.find((i) => i.title === "Dark");
     expect(dark?.manualList).toBe("stopped");
+  });
+
+  it("clears manual_list on a fully-watched, ended archived show — E26 cleanup keeps it Bitirildi, not Bırakıldı (E48)", async () => {
+    const { app, library } = setup();
+    const zip = await zipBuffer({
+      "followed_tv_show.csv":
+        "tv_show_id,tv_show_name,active,archived,created_at\n305288,Dark,1,1,2020-06-27 14:00:00\n",
+      "seen_episode.csv": readFixture("seen_episode.csv"),
+    });
+
+    const importRes = await postImport(app, zip, "export.zip");
+    const { report } = await readImportReport(importRes);
+    const { reportId } = report;
+
+    const confirmRes = await app.request("/api/import/tvtime/confirm", {
+      method: "POST",
+      headers: HEADERS,
+      body: JSON.stringify({ reportId, resolutions: [] }),
+    });
+    expect(confirmRes.status).toBe(200);
+    // Drain the SSE body — clearStaleStoppedLists() runs after the streamed
+    // per-job progress events, so the stream must be fully consumed (no
+    // backpressure stall) before its effect is observable below.
+    await parseSSE(confirmRes);
+
+    const dark = library.listSeries().items.find((i) => i.title === "Dark");
+    expect(dark?.manualList).toBeNull();
+    expect(dark?.category).toBe("finished");
   });
 
   it("a zero-watch imported show computes as not_started, not watching — import:tvtime bypasses the newly-added lift (E32)", async () => {

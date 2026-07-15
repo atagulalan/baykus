@@ -52,7 +52,7 @@ silently-but-visibly skips Troy/Gotham/Y Gwyll.
     still-followed show still → plan_to_watch (E43 order intact).
   - **Verify:** `pnpm test packages/importer-tvtime`
 
-- [ ] M18.2 server+web: skippedRelics through the route into the wizard
+- [x] M18.2 server+web: skippedRelics through the route into the wizard
   - **Files:** `apps/server/src/routes/{tvtime.ts,tvtime.test.ts}`,
     `apps/web/src/pages/ImportPage.tsx`, `apps/web/src/api/types.ts`,
     `apps/web/src/i18n/{tr,en}.json`

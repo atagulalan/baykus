@@ -365,11 +365,17 @@ export interface TvTimeUnmatchedShow {
   episodes: number;
 }
 
+export interface TvTimeSkippedRelic {
+  name: string;
+  tvdbId: number;
+}
+
 export interface TvTimeReport {
   reportId: string;
   matched: TvTimeMatchedShow[];
   fuzzy: TvTimeFuzzyShow[];
   unmatched: TvTimeUnmatchedShow[];
+  skippedRelics: TvTimeSkippedRelic[];
 }
 
 export interface TvTimeImportProgressEvent {
