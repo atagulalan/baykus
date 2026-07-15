@@ -149,21 +149,49 @@ function insertWatch(db: LibraryDatabase, episodeId: number, itemId: number, wat
   db.insert(schema.watches).values({ episodeId, itemId, watchedAt, source: "manual" }).run();
 }
 
-describe("getSeasonProgress (E34)", () => {
-  it("groups watched/total by season, ascending, excluding specials", () => {
+describe("getSeasonProgress (E34/E50)", () => {
+  it("groups watched/total by season, ascending, excluding specials — a wholly-unaired season is omitted (E50)", () => {
     const { db } = openLibraryDb(":memory:");
     const itemId = insertItem(db);
     insertEpisode(db, itemId, 0, 1, addDays(-30)); // special, excluded
     const s1e1 = insertEpisode(db, itemId, 1, 1, addDays(-10));
     insertEpisode(db, itemId, 1, 2, addDays(-5));
-    insertEpisode(db, itemId, 2, 1, addDays(5)); // unaired, still counts in total
+    insertEpisode(db, itemId, 2, 1, addDays(5)); // unaired — season 2 has zero aired episodes
     insertWatch(db, s1e1, itemId, "2026-01-01T00:00:00Z");
 
     expect(getSeasonProgress(db, itemId)).toEqual({
-      seasons: [
-        { number: 1, watched: 1, total: 2 },
-        { number: 2, watched: 0, total: 1 },
-      ],
+      seasons: [{ number: 1, watched: 1, total: 2 }],
+      sequential: true,
+    });
+  });
+
+  it("a season with an announced future episode reports watched == total for its aired episodes (E50)", () => {
+    const { db } = openLibraryDb(":memory:");
+    const itemId = insertItem(db);
+    const e1 = insertEpisode(db, itemId, 1, 1, addDays(-10));
+    const e2 = insertEpisode(db, itemId, 1, 2, addDays(-5));
+    insertEpisode(db, itemId, 1, 3, addDays(10)); // announced, unaired — excluded from total
+    insertWatch(db, e1, itemId, "2026-01-01T00:00:00Z");
+    insertWatch(db, e2, itemId, "2026-01-02T00:00:00Z");
+
+    expect(getSeasonProgress(db, itemId)).toEqual({
+      seasons: [{ number: 1, watched: 2, total: 2 }],
+      sequential: true,
+    });
+  });
+
+  it("ignores a watch on an unaired episode (edit-date scenario) — excluded from watched/total, doesn't break sequential (E50)", () => {
+    const { db } = openLibraryDb(":memory:");
+    const itemId = insertItem(db);
+    const e1 = insertEpisode(db, itemId, 1, 1, addDays(-10));
+    const future = insertEpisode(db, itemId, 1, 2, addDays(5));
+    insertWatch(db, e1, itemId, "2026-01-01T00:00:00Z");
+    // Marking a future episode watched is not a real-world path (UI disables it),
+    // but a stale/edited watch date must not leak into aired counts or sequential.
+    insertWatch(db, future, itemId, "2026-01-02T00:00:00Z");
+
+    expect(getSeasonProgress(db, itemId)).toEqual({
+      seasons: [{ number: 1, watched: 1, total: 1 }],
       sequential: true,
     });
   });
@@ -226,15 +254,12 @@ describe("getSeasonProgress (E34)", () => {
     ]);
   });
 
-  it("unaired episodes count in total only, never watched", () => {
+  it("a series with no aired episodes at all reports seasons: [] (E50)", () => {
     const { db } = openLibraryDb(":memory:");
     const itemId = insertItem(db);
     insertEpisode(db, itemId, 1, 1, addDays(10)); // unaired, unwatched
 
-    expect(getSeasonProgress(db, itemId)).toEqual({
-      seasons: [{ number: 1, watched: 0, total: 1 }],
-      sequential: true,
-    });
+    expect(getSeasonProgress(db, itemId)).toEqual({ seasons: [], sequential: true });
   });
 });
 

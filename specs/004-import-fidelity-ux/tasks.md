@@ -78,7 +78,7 @@ silently-but-visibly skips Troy/Gotham/Y Gwyll.
 Checkpoint goal: a Re:Zero-shaped series (77/77 aired watched, future
 episodes announced) renders an all-filled segmented bar on card and detail.
 
-- [ ] M19.1 core: `getSeasonProgress` counts aired only
+- [x] M19.1 core: `getSeasonProgress` counts aired only
   - **Files:** `packages/core/src/library/{progress.ts,progress.test.ts}`
   - **DoD:** data-model 004 §seasonProgress: all counts restricted to
     episodes with non-null `air_date ≤ todayUtc()` (same plain-date compare

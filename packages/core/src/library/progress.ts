@@ -62,21 +62,26 @@ export function getSeriesProgress(db: LibraryDatabase, itemId: number): SeriesPr
 }
 
 /**
- * E34: per-season watched/total (total = announced, not just aired) plus
+ * E34/E50: per-season watched/total (total = aired, not announced) plus
  * `sequential` — whether the watched set is a contiguous (s,e)-ordered
- * prefix. One episode query + one grouped watch query, then a single JS
- * scan; never per-episode.
+ * prefix of the aired list. One episode query + one grouped watch query,
+ * then a single JS scan; never per-episode. Seasons with zero aired
+ * episodes are omitted entirely (E50).
  */
 export function getSeasonProgress(db: LibraryDatabase, itemId: number): SeasonProgress {
+  const today = todayUtc();
+
   const episodes = db
     .select({
       id: schema.episodes.id,
       seasonNumber: schema.episodes.seasonNumber,
+      airDate: schema.episodes.airDate,
     })
     .from(schema.episodes)
     .where(and(eq(schema.episodes.itemId, itemId), ne(schema.episodes.seasonNumber, 0)))
     .orderBy(schema.episodes.seasonNumber, schema.episodes.episodeNumber)
-    .all();
+    .all()
+    .filter((ep) => ep.airDate !== null && ep.airDate <= today);
 
   if (episodes.length === 0) return { seasons: [], sequential: true };
 
