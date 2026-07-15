@@ -341,7 +341,7 @@ active trio, specials tagged, past-unwatched quick-markable.
     ascending; defaults window.
   - **Verify:** `pnpm test packages/core -- calendar`
 
-- [ ] M11.2 server: calendar route validation
+- [x] M11.2 server: calendar route validation
   - **Files:** `apps/server/src/routes/{calendar.ts,calendar.test.ts}`
   - **DoD:** zod: optional `from`/`to` as `YYYY-MM-DD`; reject `from > to`
     and spans > 124 days with 400 `VALIDATION_FAILED`; response = new shape

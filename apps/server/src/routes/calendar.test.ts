@@ -32,7 +32,13 @@ function fixtureSeries(): SeriesDetails {
 
 function setup() {
   const library = createLibrary(openLibraryDb(":memory:").db);
-  const summary = library.addSeries(fixtureSeries(), "watching");
+  const summary = library.addSeries(fixtureSeries());
+  const detail = library.getSeries(summary.id);
+  // A watch on the future episode puts the item in category "watching" (active trio, E22)
+  // without removing either fixture episode from the calendar (future eps always show — E24).
+  const futureEpisodeId = detail?.seasons[0]?.episodes.find((ep) => ep.e === 1)?.id;
+  if (futureEpisodeId === undefined) throw new Error("setup: fixture episode missing");
+  library.addWatch(futureEpisodeId, new Date().toISOString());
   const app = createApp(loadConfig({}), {
     library,
     providers: [],
@@ -44,31 +50,47 @@ function setup() {
 }
 
 describe("GET /api/calendar", () => {
-  it("returns upcoming grouped by date and recentlyAired unwatched", async () => {
+  it("returns the { days } shape, both fixture dates inside the default -14/+90 window", async () => {
     const { app } = setup();
     const res = await app.request("/api/calendar");
     expect(res.status).toBe(200);
-    const body = (await res.json()) as {
-      upcoming: { date: string; entries: unknown[] }[];
-      recentlyAired: { airDate: string }[];
-    };
-    expect(body.upcoming).toHaveLength(1);
-    expect(body.upcoming[0]?.date).toBe(addDays(5));
-    expect(body.recentlyAired).toHaveLength(1);
-    expect(body.recentlyAired[0]?.airDate).toBe(addDays(-3));
+    const body = (await res.json()) as { days: { date: string; entries: unknown[] }[] };
+    expect(body.days.map((d) => d.date)).toEqual([addDays(-3), addDays(5)]);
   });
 
   it("accepts from/to query params", async () => {
     const { app } = setup();
     const res = await app.request(`/api/calendar?from=${addDays(0)}&to=${addDays(4)}`);
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { upcoming: unknown[] };
-    expect(body.upcoming).toHaveLength(0); // the only upcoming episode airs on day 5, outside this range
+    const body = (await res.json()) as { days: unknown[] };
+    expect(body.days).toHaveLength(0); // both fixture episodes fall outside this range
   });
 
   it("400 VALIDATION_FAILED for a malformed date", async () => {
     const { app } = setup();
     const res = await app.request("/api/calendar?from=not-a-date");
     expect(res.status).toBe(400);
+  });
+
+  it("400 VALIDATION_FAILED when from is after to", async () => {
+    const { app } = setup();
+    const res = await app.request(`/api/calendar?from=${addDays(10)}&to=${addDays(5)}`);
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error: { code: string } };
+    expect(body.error.code).toBe("VALIDATION_FAILED");
+  });
+
+  it("400 VALIDATION_FAILED when the range exceeds 124 days", async () => {
+    const { app } = setup();
+    const res = await app.request(`/api/calendar?from=${addDays(0)}&to=${addDays(125)}`);
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error: { code: string } };
+    expect(body.error.code).toBe("VALIDATION_FAILED");
+  });
+
+  it("allows an exactly-124-day range", async () => {
+    const { app } = setup();
+    const res = await app.request(`/api/calendar?from=${addDays(0)}&to=${addDays(124)}`);
+    expect(res.status).toBe(200);
   });
 });
