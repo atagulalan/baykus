@@ -1,4 +1,5 @@
 import type { SeasonProgress, WatchCategory } from "../api/types.ts";
+import { CATEGORY_BG_COLORS } from "../lib/categoryColors.ts";
 
 export type Segment =
   | { kind: "filled" }
@@ -32,17 +33,6 @@ type Size = "sm" | "md";
 const TRACK_HEIGHT: Record<Size, string> = { sm: "h-1.5", md: "h-2" };
 const SQUARE_SIZE: Record<Size, string> = { sm: "h-1.5 w-1.5", md: "h-2 w-2" };
 
-const CATEGORY_COLORS: Record<WatchCategory | "default", string> = {
-  stopped: "bg-red-500",
-  finished: "bg-purple-500",
-  up_to_date: "bg-green-500",
-  watching: "bg-yellow",
-  not_watched_recently: "bg-yellow",
-  not_started: "bg-yellow",
-  watch_later: "bg-yellow",
-  default: "bg-yellow",
-};
-
 interface SegmentedProgressProps {
   seasonProgress: SeasonProgress;
   watched: number;
@@ -62,7 +52,7 @@ export function SegmentedProgress({
   className = "",
 }: SegmentedProgressProps) {
   const segments = buildProgressSegments(seasonProgress);
-  const colorClass = category ? CATEGORY_COLORS[category] : CATEGORY_COLORS.default;
+  const colorClass = category ? CATEGORY_BG_COLORS[category] : CATEGORY_BG_COLORS.default;
 
   if (segments === null) {
     const percent = aired > 0 ? Math.round((watched / aired) * 100) : 0;

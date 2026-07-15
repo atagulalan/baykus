@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useParams } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { Link, useNavigate, useParams } from "@tanstack/react-router";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ApiError,
@@ -11,6 +11,7 @@ import {
   getSettings,
   refreshSeries,
   removeLatestEpisodeWatch,
+  removeSeries,
   setRating,
   updateSeries,
 } from "../api/client.ts";
@@ -26,6 +27,7 @@ import { RatingControl } from "../components/RatingControl.tsx";
 import { SeasonSection } from "../components/SeasonSection.tsx";
 import { SegmentedProgress } from "../components/SegmentedProgress.tsx";
 import { WatchDateDialog } from "../components/WatchDateDialog.tsx";
+import { CATEGORY_TEXT_COLORS } from "../lib/categoryColors.ts";
 import { sortSeasonsSpecialsLast } from "../lib/seasons.ts";
 import { useToast } from "../lib/toast.tsx";
 
@@ -79,6 +81,10 @@ export function SeriesDetailPage() {
 
   const [dateDialogEpisode, setDateDialogEpisode] = useState<EpisodeSummary | null>(null);
   const [promptEpisodeId, setPromptEpisodeId] = useState<number | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const navigate = useNavigate();
 
   const query = useQuery({ queryKey, queryFn: () => getSeries(id) });
   const settingsQuery = useQuery({ queryKey: ["settings"], queryFn: getSettings });
@@ -89,6 +95,15 @@ export function SeriesDetailPage() {
     const timer = setTimeout(() => setPromptEpisodeId(null), RATING_PROMPT_TIMEOUT_MS);
     return () => clearTimeout(timer);
   }, [promptEpisodeId]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, [menuOpen]);
 
   function invalidate() {
     queryClient.invalidateQueries({ queryKey });
@@ -220,6 +235,21 @@ export function SeriesDetailPage() {
     onSettled: invalidate,
   });
 
+  const removeMutation = useMutation({
+    mutationFn: () => removeSeries(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["library"] });
+      navigate({ to: "/" });
+    },
+    onError: () => toast.show(t("library.removeError"), "error"),
+  });
+
+  function handleRemove() {
+    if (detail && window.confirm(t("library.removeConfirm", { title: detail.title }))) {
+      removeMutation.mutate();
+    }
+  }
+
   const rateItem = useMutation<
     unknown,
     unknown,
@@ -298,55 +328,106 @@ export function SeriesDetailPage() {
             {detail.title}
           </div>
         )}
-        <div className="flex flex-1 flex-col gap-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="font-semibold text-2xl">
+        <div className="flex flex-1 flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="font-display italic text-snow text-4xl leading-none tracking-tight">
               {detail.title}
-              {detail.year ? ` (${detail.year})` : ""}
+              {detail.year ? (
+                <span className="font-sans not-italic text-2xl text-muted ml-2">
+                  ({detail.year})
+                </span>
+              ) : (
+                ""
+              )}
             </h1>
-            <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-xs font-medium text-zinc-300 uppercase">
+            <RatingControl
+              value={detail.rating}
+              onChange={(value) => rateItem.mutate(value)}
+              size="sm"
+            />
+            <span className="font-mono text-[10px] uppercase tracking-widest bg-white/5 px-2 py-1 text-muted">
               {t(`category.${detail.category}`)}
             </span>
-            <span className="flex items-center gap-1 text-sm text-zinc-400">
-              {t("manualList.label")}:
-              <select
-                value={detail.manualList ?? ""}
-                onChange={(e) =>
-                  changeManualList.mutate(
-                    e.target.value === "" ? null : (e.target.value as ManualList),
-                  )
-                }
-                aria-label={t("manualList.label")}
-                className="rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-sm text-zinc-100"
+            <div ref={menuRef} className="relative shrink-0 ml-auto">
+              <button
+                type="button"
+                onClick={() => setMenuOpen((v) => !v)}
+                aria-label={t("series.menu")}
+                className="px-2 py-1 text-muted hover:text-snow transition-colors"
               >
-                <option value="">{t("manualList.none")}</option>
-                <option value="watch_later">{t("manualList.watch_later")}</option>
-                <option
-                  value="stopped"
-                  disabled={detail.category === "finished"}
-                  title={detail.category === "finished" ? t("series.stoppedBlocked") : undefined}
-                >
-                  {t("manualList.stopped")}
-                </option>
-              </select>
-            </span>
-            <button
-              type="button"
-              onClick={() => refreshSeriesMutation.mutate()}
-              disabled={refreshSeriesMutation.isPending}
-              aria-label={t("series.refresh")}
-              className="rounded px-2 py-1 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100 disabled:opacity-50"
-            >
-              {refreshSeriesMutation.isPending ? "…" : "⟳"}
-            </button>
-            <button
-              type="button"
-              onClick={() => toggleMute.mutate(!detail.pushMuted)}
-              aria-label={detail.pushMuted ? t("series.unmute") : t("series.mute")}
-              className="rounded px-2 py-1 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"
-            >
-              {detail.pushMuted ? "🔕" : "🔔"}
-            </button>
+                ⋮
+              </button>
+              {menuOpen && (
+                <div className="absolute right-0 z-10 mt-1 w-56 overflow-hidden border border-white/10 bg-[#101010] shadow-2xl backdrop-blur-md">
+                  {detail.manualList !== null && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        changeManualList.mutate(null);
+                      }}
+                      className="block w-full px-4 py-3 text-left text-xs font-mono text-muted hover:text-snow hover:bg-white/5 transition-colors border-b border-white/5"
+                    >
+                      {t("category.watching")}
+                    </button>
+                  )}
+                  {detail.manualList !== "watch_later" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        changeManualList.mutate("watch_later");
+                      }}
+                      className="block w-full px-4 py-3 text-left text-xs font-mono text-muted hover:text-snow hover:bg-white/5 transition-colors border-b border-white/5"
+                    >
+                      {t("manualList.watch_later")}
+                    </button>
+                  )}
+                  {detail.manualList !== "stopped" && detail.category !== "finished" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        changeManualList.mutate("stopped");
+                      }}
+                      className="block w-full px-4 py-3 text-left text-xs font-mono text-muted hover:text-snow hover:bg-white/5 transition-colors border-b border-white/5"
+                    >
+                      {t("manualList.stopped")}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      refreshSeriesMutation.mutate();
+                    }}
+                    className="block w-full px-4 py-3 text-left text-xs font-mono text-muted hover:text-snow hover:bg-white/5 transition-colors border-b border-white/5"
+                  >
+                    {t("series.refresh")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      toggleMute.mutate(!detail.pushMuted);
+                    }}
+                    className="block w-full px-4 py-3 text-left text-xs font-mono text-muted hover:text-snow hover:bg-white/5 transition-colors border-b border-white/5"
+                  >
+                    {detail.pushMuted ? t("series.unmute") : t("series.mute")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      handleRemove();
+                    }}
+                    className="block w-full px-4 py-3 text-left text-xs font-mono text-red-400 hover:text-red-300 hover:bg-white/5 transition-colors"
+                  >
+                    {t("library.card.remove")}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
           {detail.tagline && <p className="text-sm text-zinc-400 italic">"{detail.tagline}"</p>}
 
@@ -400,12 +481,6 @@ export function SeriesDetailPage() {
             </p>
           )}
 
-          <RatingControl
-            value={detail.rating}
-            onChange={(value) => rateItem.mutate(value)}
-            size="sm"
-          />
-
           {regionWatchProviders.length > 0 && (
             <div className="flex flex-col gap-1">
               <div className="flex flex-wrap items-center gap-2">
@@ -433,15 +508,18 @@ export function SeriesDetailPage() {
               seasonProgress={detail.seasonProgress}
               watched={watched}
               aired={aired}
+              category={detail.category}
               size="md"
               className="max-w-sm"
             />
-            <p className="text-sm text-zinc-400">
+            <p className={`text-sm ${CATEGORY_TEXT_COLORS[detail.category]}`}>
               {watched}/{aired}
               {detail.nextUnwatched && (
                 <>
-                  {" · "}
-                  {t("series.nextUp", { s: detail.nextUnwatched.s, e: detail.nextUnwatched.e })}
+                  <span className="text-zinc-400">{" · "}</span>
+                  <span className="text-zinc-400">
+                    {t("series.nextUp", { s: detail.nextUnwatched.s, e: detail.nextUnwatched.e })}
+                  </span>
                 </>
               )}
             </p>

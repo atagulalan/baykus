@@ -547,3 +547,37 @@ happen to land alongside the new look are E46/E47, separate tasks/commits).
     `leading` slot (both callers — watch-next quick-mark and history's
     timestamp — always used `trailing`, even before this task).
   - **Verify:** `pnpm lint && pnpm typecheck` clean; `pnpm build` succeeds.
+
+---
+
+## M17.13 — Series actions consolidated into the detail menu (E46, out-of-plan)
+
+Paired with M17.11/E45: `SeriesCard`'s hover-button grid (remove, refresh,
+move-to-list) was the last chrome that didn't fit the new palette, and six
+overlapping hover targets on a card that's also a link was already awkward.
+
+- [x] M17.13 web: move card actions into a series-detail "⋮" menu (E46)
+  - **Files:** `apps/web/src/components/{SeriesCard,CategorySection}.tsx`,
+    `apps/web/src/pages/{LibraryPage,SeriesDetailPage}.tsx`,
+    `apps/web/src/lib/categoryColors.ts` (new),
+    `apps/web/src/i18n/{tr,en}.json`.
+  - **DoD:** ui.md §SeriesCard: card drops `onRemove`/`onRefresh`/
+    `onSetManualList` — pure link (poster/title/progress), no hover
+    buttons. `LibraryPage`/`CategorySection` drop the now-dead handlers/
+    props that fed them. `SeriesDetailPage` header gains a "⋮" menu
+    (existing outside-click-close pattern, same as the old per-episode
+    menu) with: move to list / back to automatic (existing manual-list
+    guards unchanged), refresh, mute/unmute, remove (existing confirm +
+    toast pattern, ported from `LibraryPage`'s old `handleRemove`).
+    `RatingControl` and the category-colored watched/aired text move up
+    next to the title in the same header restructure. New shared
+    `lib/categoryColors.ts` (`CATEGORY_BG_COLORS`/`CATEGORY_TEXT_COLORS`)
+    replaces three copies of the same category→color map that had
+    accumulated across `SegmentedProgress`/`SeriesCard`/`SeriesDetailPage`.
+  - **Tests:** none beyond typecheck — presentational + a straight handler
+    relocation (remove/refresh/manual-list mutations are unchanged, just
+    moved to the page that already had a `removeSeries`-shaped gap).
+    i18n: new `series.menu` key (the "⋮" button's aria-label — reuses the
+    existing `library.removeConfirm`/`removeError` strings, unchanged).
+  - **Verify:** `pnpm lint && pnpm typecheck && pnpm test` green;
+    `pnpm build` succeeds.

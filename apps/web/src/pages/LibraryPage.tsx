@@ -1,14 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  listSeries,
-  refreshAllSeries,
-  refreshSeries,
-  removeSeries,
-  updateSeries,
-} from "../api/client.ts";
-import { CATEGORY_ORDER, type ManualList, type SeriesSummary } from "../api/types.ts";
+import { listSeries, refreshAllSeries } from "../api/client.ts";
+import { CATEGORY_ORDER, type SeriesSummary } from "../api/types.ts";
 import { CategorySection } from "../components/CategorySection.tsx";
 import {
   DEFAULT_LIBRARY_CATEGORY,
@@ -46,35 +40,6 @@ export function LibraryPage() {
     queryFn: () => listSeries({ sort }),
   });
 
-  const removeMutation = useMutation({
-    mutationFn: (id: number) => removeSeries(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["library"] });
-    },
-    onError: () => {
-      toast.show(t("library.removeError"), "error");
-    },
-  });
-
-  function handleRemove(id: number, title: string) {
-    if (window.confirm(t("library.removeConfirm", { title }))) {
-      removeMutation.mutate(id);
-    }
-  }
-
-  const refreshOneMutation = useMutation({
-    mutationFn: (id: number) => refreshSeries(id),
-    onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ["library"] });
-      toast.show(
-        result.newEpisodes > 0
-          ? t("series.refreshFoundNew", { count: result.newEpisodes })
-          : t("series.refreshUpToDate"),
-      );
-    },
-    onError: () => toast.show(t("errors.generic"), "error"),
-  });
-
   const refreshAllMutation = useMutation({
     mutationFn: () =>
       refreshAllSeries((event) => setRefreshProgress({ done: event.done, total: event.total })),
@@ -88,19 +53,6 @@ export function LibraryPage() {
       toast.show(t("errors.generic"), "error");
     },
   });
-
-  const setManualListMutation = useMutation({
-    mutationFn: ({ id, manualList }: { id: number; manualList: ManualList | null }) =>
-      updateSeries(id, { manualList }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["library"] });
-    },
-    onError: () => toast.show(t("errors.generic"), "error"),
-  });
-
-  function handleSetManualList(id: number, manualList: ManualList | null) {
-    setManualListMutation.mutate({ id, manualList });
-  }
 
   const items = query.data?.items ?? [];
   const byCategory = groupByCategory(items);
@@ -125,7 +77,7 @@ export function LibraryPage() {
           type="button"
           onClick={() => refreshAllMutation.mutate()}
           disabled={refreshAllMutation.isPending}
-          className="rounded bg-zinc-800 px-3 py-1 text-sm text-zinc-300 disabled:opacity-50"
+          className="font-mono text-[10px] tracking-widest uppercase border border-white/10 text-muted px-4 py-2 hover:text-snow hover:border-white/20 transition-colors disabled:opacity-50"
         >
           {t("library.refreshAll")}
         </button>
@@ -134,48 +86,42 @@ export function LibraryPage() {
       {query.isLoading ? (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-6">
           {["a", "b", "c", "d", "e", "f"].map((key) => (
-            <div key={key} className="aspect-[2/3] animate-pulse rounded-lg bg-zinc-900" />
+            <div
+              key={key}
+              className="aspect-[2/3] animate-pulse bg-[#101010] border border-white/5"
+            />
           ))}
         </div>
       ) : query.isError ? (
-        <div className="flex flex-col items-center gap-2 py-24 text-center">
-          <p className="text-zinc-400">{t("errors.generic")}</p>
+        <div className="flex flex-col items-center gap-4 py-24 text-center border border-white/5 bg-[#101010] p-6 mt-4">
+          <p className="font-mono text-xs text-muted uppercase tracking-widest">
+            {t("errors.generic")}
+          </p>
           <button
             type="button"
             onClick={() => query.refetch()}
-            className="rounded bg-zinc-800 px-3 py-1.5 text-sm"
+            className="font-mono text-[10px] tracking-widest uppercase border border-white/10 text-snow px-4 py-2 hover:bg-white/5 transition-colors"
           >
             {t("errors.retry")}
           </button>
         </div>
       ) : items.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 py-24 text-center">
-          <h1 className="font-semibold text-2xl">{t("library.empty.title")}</h1>
-          <p className="text-zinc-400">{t("library.empty.hint")}</p>
+        <div className="flex flex-col items-center gap-4 py-24 text-center border border-white/5 bg-[#101010] p-6 mt-4">
+          <h1 className="font-display italic text-snow text-4xl tracking-tight">
+            {t("library.empty.title")}
+          </h1>
+          <p className="font-mono text-xs text-muted/70">{t("library.empty.hint")}</p>
         </div>
       ) : category === "all" ? (
         <div className="flex flex-col gap-8">
           {CATEGORY_ORDER.map((c) => (
-            <CategorySection
-              key={c}
-              category={c}
-              items={byCategory.get(c) ?? []}
-              onRemove={handleRemove}
-              onRefresh={(id) => refreshOneMutation.mutate(id)}
-              onSetManualList={handleSetManualList}
-            />
+            <CategorySection key={c} category={c} items={byCategory.get(c) ?? []} />
           ))}
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-6">
           {(byCategory.get(category) ?? []).map((series) => (
-            <SeriesCard
-              key={series.id}
-              series={series}
-              onRemove={() => handleRemove(series.id, series.title)}
-              onRefresh={() => refreshOneMutation.mutate(series.id)}
-              onSetManualList={(manualList) => handleSetManualList(series.id, manualList)}
-            />
+            <SeriesCard key={series.id} series={series} />
           ))}
         </div>
       )}

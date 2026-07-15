@@ -82,7 +82,8 @@
     "refreshFoundNew": "Found {{count}} new episodes",
     "refreshUpToDate": "Up to date — no new episodes",
     "mute": "Mute notifications",
-    "unmute": "Unmute notifications"
+    "unmute": "Unmute notifications",
+    "menu": "Series menu"
   },
   "episode": {
     "toggleWatched": "Mark as watched",

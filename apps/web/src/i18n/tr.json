@@ -82,7 +82,8 @@
     "refreshFoundNew": "{{count}} yeni bölüm bulundu",
     "refreshUpToDate": "Güncel — yeni bölüm yok",
     "mute": "Bildirimleri kapat",
-    "unmute": "Bildirimleri aç"
+    "unmute": "Bildirimleri aç",
+    "menu": "Dizi menüsü"
   },
   "episode": {
     "toggleWatched": "İzlendi olarak işaretle",

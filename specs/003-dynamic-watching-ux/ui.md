@@ -75,6 +75,19 @@ Desktop (sm+):                          Mobile (<sm):
   sticky header height so the header doesn't cover the anchor row.
 - **Never FontAwesome; no icon fonts; no CDN assets** (self-host rule).
 
+## SeriesCard + detail header (changed — actions moved, E46)
+
+`SeriesCard` is now a pure link: poster + title + year + category-colored
+`watched/aired` + `SegmentedProgress`, no hover buttons. Every mutating
+action (remove, refresh, move-to-watch_later/stopped/back-to-automatic,
+mute/unmute) moved to a single "⋮" menu on the **series detail** page
+header (outside-click-to-close, same pattern the old per-episode menu
+used) — items conditionally rendered with the same guards the card's
+buttons used to have (never offer the manual list already in effect;
+never offer `stopped` on a `finished` series). `RatingControl` moves up
+next to the title in the same header restructure. Rationale + full item
+list: spec.md E46.
+
 ## SeriesCard + detail header — `SegmentedProgress` (NEW component, E34)
 
 ```
