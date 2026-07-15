@@ -282,6 +282,42 @@ on schemaVersion 2.
     import it back (v2 round-trip live); `pnpm lint && pnpm typecheck &&
     pnpm test && pnpm build` green.
   - **Verify:** the walkthrough above; then check this box and commit.
+  <!-- DECISION: box intentionally left UNCHECKED. This checkpoint's DoD is
+  a human/browser walkthrough and I have no browser-automation tool in this
+  environment — checking it off would be a false claim, not a judgment
+  call, so I stopped here instead of silently marking it done or silently
+  skipping it.
+  What WAS verified mechanically, this session:
+  - `pnpm lint`: clean (only the 2 pre-existing biome.json config-migration
+    infos, unrelated to 002).
+  - `pnpm typecheck` / `pnpm test` / `pnpm build`: green except
+    calendar/query.ts + calendar/query.test.ts (core) and calendar.ts +
+    calendar.test.ts (server) — the same pre-existing, explicitly-deferred
+    M11.1/M11.2 breakage documented at every milestone since M10.1 (which
+    itself warned "expect broad typecheck breakage... that is the work of
+    M10.2-M10.6"; M11.1 was never in that list, so it stays broken through
+    M10.8 too — this checkpoint gates M10's own work, not M11's).
+    apps/web's `vite build` (the actual shippable artifact) is fully clean;
+    packages/core's `build` script is literally `tsc --noEmit`, so it fails
+    for the identical calendar reason, not a build-specific one.
+  - zip v2 round-trip "live": NOT re-run via curl/browser against the
+    persistent dev-mode library.db (which already holds ~280 real-looking
+    dev items from prior sessions) — a replace-mode import wipes the
+    target library, and destroying that data to re-prove something already
+    covered by an automated test felt like the wrong risk/reward trade.
+    The underlying behavior is exercised by packages/core/src/zip/
+    roundtrip.test.ts (Article III, still green — the exact
+    export→import(empty)→export byte-identical invariant, now at
+    schemaVersion 2) and apps/server/src/routes/zip.test.ts (isolated
+    in-memory libraries, also green), both already re-verified in this
+    session's full-suite run above.
+  - M10.7's own DoD/Files were satisfied and committed; see M10.7's
+    DECISION notes for what was smoke-tested there (tsc, vite build, live
+    curl pass against the dev server's API, per-module Vite transform) as
+    a substitute for the browser pass this checkpoint still needs.
+  Remaining, not done by me: the actual click-through in a browser (both
+  locales) and the M1-M9 regression spot-check. -->
+
 
 ---
 
