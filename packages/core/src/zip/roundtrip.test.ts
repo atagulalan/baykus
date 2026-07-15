@@ -36,10 +36,10 @@ function buildPopulatedDb() {
   db.insert(schema.tracking)
     .values({
       itemId: item1.id,
-      status: "watching",
+      manualList: null,
       pushMuted: true,
       note: "great show",
-      statusChangedAt: "2026-01-01T00:00:00Z",
+      listChangedAt: "2026-01-01T00:00:00Z",
     })
     .run();
   db.insert(schema.seasons).values({ itemId: item1.id, number: 0, name: "Specials" }).run();
@@ -138,10 +138,44 @@ function buildPopulatedDb() {
   db.insert(schema.tracking)
     .values({
       itemId: item2.id,
-      status: "plan_to_watch",
+      manualList: "watch_later",
       pushMuted: false,
       note: null,
-      statusChangedAt: "2026-01-03T00:00:00Z",
+      listChangedAt: "2026-01-03T00:00:00Z",
+    })
+    .run();
+
+  // Third item: manualList "stopped", with zero watches (not_started, never "finished") so
+  // the E26 cleanup never touches it — a "stopped" item that WAS finished isn't round-trip-safe,
+  // reimporting would clear it and break the byte-identical assertion.
+  const item3 = db
+    .insert(schema.items)
+    .values({
+      mediaType: "series",
+      title: "The Wire",
+      tvdbId: 79126,
+      addedAt: "2026-01-04T00:00:00Z",
+      lastRefreshedAt: "2026-01-04T00:00:00Z",
+    })
+    .returning({ id: schema.items.id })
+    .get();
+  db.insert(schema.tracking)
+    .values({
+      itemId: item3.id,
+      manualList: "stopped",
+      pushMuted: false,
+      note: null,
+      listChangedAt: "2026-01-04T00:00:00Z",
+    })
+    .run();
+  db.insert(schema.seasons).values({ itemId: item3.id, number: 1, name: "Season 1" }).run();
+  db.insert(schema.episodes)
+    .values({
+      itemId: item3.id,
+      seasonNumber: 1,
+      episodeNumber: 1,
+      title: "The Target",
+      airDate: "2002-06-02",
     })
     .run();
 

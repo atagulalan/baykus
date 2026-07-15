@@ -14,7 +14,7 @@ import type {
 } from "./types.ts";
 
 const APP_VERSION = "0.1.0";
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 type ItemRow = typeof schema.items.$inferSelect;
 type TrackingRow = typeof schema.tracking.$inferSelect;
@@ -78,10 +78,10 @@ function buildItemEntry(
     title: item.title,
     externalIds: toExternalIds(item),
     tracking: {
-      status: tracking.status,
+      manualList: tracking.manualList,
       pushMuted: tracking.pushMuted,
       note: tracking.note,
-      statusChangedAt: tracking.statusChangedAt,
+      listChangedAt: tracking.listChangedAt,
     },
     metadata: {
       originalTitle: item.originalTitle,

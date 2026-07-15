@@ -109,7 +109,7 @@ on schemaVersion 2.
   fixture rename (no logic change) and leaving it broken would have no
   future owner, it was fixed here rather than left dangling. -->
 
-- [ ] M10.4 core: zip schemaVersion 2 + v1 import (FR-025, E26)
+- [x] M10.4 core: zip schemaVersion 2 + v1 import (FR-025, E26)
   - **Files:** `packages/core/src/zip/{types.ts,export.ts,import.ts}`,
     `{export,import,roundtrip}.test.ts`
   - **DoD:** `SCHEMA_VERSION = 2`; items.json tracking block per

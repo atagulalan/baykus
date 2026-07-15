@@ -55,10 +55,10 @@ function setupSeries() {
   db.insert(schema.tracking)
     .values({
       itemId: item.id,
-      status: "watching",
+      manualList: null,
       pushMuted: false,
       note: null,
-      statusChangedAt: "2026-01-01T00:00:00Z",
+      listChangedAt: "2026-01-01T00:00:00Z",
     })
     .run();
   db.insert(schema.seasons).values({ itemId: item.id, number: 1, name: "Season 1" }).run();
@@ -115,7 +115,7 @@ describe("exportLibraryZip", () => {
 
     expect(manifest).toMatchObject({
       app: "baykus",
-      schemaVersion: 1,
+      schemaVersion: 2,
       exportedAt: "2026-01-03T00:00:00Z",
       mediaTypes: ["series"],
       counts: { items: 1, watches: 1, ratings: 2 },
@@ -132,7 +132,7 @@ describe("exportLibraryZip", () => {
     expect(items[0]).toMatchObject({
       title: "Test Show",
       externalIds: { tmdbId: 42 },
-      tracking: { status: "watching" },
+      tracking: { manualList: null },
     });
     expect(items[0]?.metadata.seasons).toEqual([
       {

@@ -1,6 +1,7 @@
 import { ZipArchive } from "archiver";
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
+import type { LibraryDatabase } from "../db/open.ts";
 import { openLibraryDb } from "../db/open.ts";
 import * as schema from "../db/schema.ts";
 import { exportLibraryZip } from "./export.ts";
@@ -45,10 +46,10 @@ function setupOneItem(title: string, tmdbId: number) {
   db.insert(schema.tracking)
     .values({
       itemId: item.id,
-      status: "watching",
+      manualList: null,
       pushMuted: false,
       note: null,
-      statusChangedAt: "2026-01-01T00:00:00Z",
+      listChangedAt: "2026-01-01T00:00:00Z",
     })
     .run();
   const ep = db
@@ -66,9 +67,9 @@ function setupOneItem(title: string, tmdbId: number) {
 }
 
 describe("importLibraryZip — schema validation", () => {
-  it("rejects an unsupported schemaVersion", async () => {
+  it("rejects an unsupported schemaVersion (3)", async () => {
     const { db } = openLibraryDb(":memory:");
-    const badZip = await manifestOnlyZip({ schemaVersion: 999 });
+    const badZip = await manifestOnlyZip({ schemaVersion: 3 });
 
     await expect(importLibraryZip(db, badZip, "replace")).rejects.toMatchObject({
       code: "UNSUPPORTED_SCHEMA",
@@ -178,10 +179,10 @@ describe("importLibraryZip — merge mode", () => {
       .insert(schema.tracking)
       .values({
         itemId: item.id,
-        status: "watching",
+        manualList: null,
         pushMuted: false,
         note: null,
-        statusChangedAt: "2026-01-01T00:00:00Z",
+        listChangedAt: "2026-01-01T00:00:00Z",
       })
       .run();
 
@@ -191,12 +192,12 @@ describe("importLibraryZip — merge mode", () => {
     expect(merged?.title).toBe("New Title"); // libB's newer metadata wins — the older zip loses
   });
 
-  it("tracking status/note: incoming always wins regardless of lastRefreshedAt", async () => {
+  it("tracking manualList/note: incoming always wins regardless of lastRefreshedAt", async () => {
     const { db, itemId } = setupOneItem("Show A", 1);
-    const zip = await streamToBuffer(exportLibraryZip(db)); // status "watching", note null
+    const zip = await streamToBuffer(exportLibraryZip(db)); // manualList null, note null
 
     db.update(schema.tracking)
-      .set({ status: "completed", note: "finished it" })
+      .set({ manualList: "watch_later", note: "finished it" })
       .where(eq(schema.tracking.itemId, itemId))
       .run();
 
@@ -207,8 +208,158 @@ describe("importLibraryZip — merge mode", () => {
       .from(schema.tracking)
       .where(eq(schema.tracking.itemId, itemId))
       .get();
-    expect(tracking?.status).toBe("watching");
+    expect(tracking?.manualList).toBeNull();
     expect(tracking?.note).toBeNull();
+  });
+});
+
+/** Hand-builds a v1 zip (legacy {status, statusChangedAt} tracking blocks) to exercise the E26 mapping. */
+async function buildV1Zip(
+  items: Array<{
+    tmdbId: number;
+    title: string;
+    status: string;
+    seasons?: unknown[];
+  }>,
+  watches: Array<{ tmdbId: number; s: number; e: number; watchedAt: string }> = [],
+): Promise<Buffer> {
+  const manifest = {
+    app: "baykus",
+    schemaVersion: 1,
+    exportedAt: "2026-01-01T00:00:00Z",
+    appVersion: "0.1.0",
+    mediaTypes: ["series"],
+    counts: { items: items.length, watches: watches.length, ratings: 0 },
+  };
+  const itemEntries = items.map((it) => ({
+    mediaType: "series",
+    title: it.title,
+    externalIds: { tmdbId: it.tmdbId },
+    tracking: {
+      status: it.status,
+      pushMuted: false,
+      note: null,
+      statusChangedAt: "2026-01-01T00:00:00Z",
+    },
+    metadata: {
+      originalTitle: null,
+      overview: null,
+      tagline: null,
+      releaseStatus: null,
+      firstAirDate: null,
+      lastAirDate: null,
+      originCountry: null,
+      originalLanguage: null,
+      episodeRunTimes: null,
+      networks: null,
+      genres: null,
+      tags: null,
+      contentRatings: null,
+      posterRef: null,
+      backdropRef: null,
+      logoRef: null,
+      watchProviders: null,
+      externalRatings: null,
+      seasons: it.seasons ?? [],
+    },
+    addedAt: "2026-01-01T00:00:00Z",
+    lastRefreshedAt: null,
+  }));
+  const watchEntries = watches.map((w) => ({
+    series: { tmdbId: w.tmdbId },
+    s: w.s,
+    e: w.e,
+    watchedAt: w.watchedAt,
+    source: "import:zip",
+  }));
+
+  const archive = new ZipArchive({ zlib: { level: 9 } });
+  archive.append(JSON.stringify(manifest), { name: "manifest.json" });
+  archive.append(JSON.stringify(itemEntries), { name: "library/items.json" });
+  archive.append(JSON.stringify(watchEntries), { name: "library/watches.json" });
+  archive.append(JSON.stringify([]), { name: "library/ratings.json" });
+  archive.append(JSON.stringify({}), { name: "library/settings.json" });
+  void archive.finalize();
+  return streamToBuffer(archive);
+}
+
+function manualListByTmdbId(db: LibraryDatabase) {
+  const rows = db
+    .select({ tmdbId: schema.items.tmdbId, manualList: schema.tracking.manualList })
+    .from(schema.items)
+    .innerJoin(schema.tracking, eq(schema.tracking.itemId, schema.items.id))
+    .all();
+  return new Map(rows.map((r) => [r.tmdbId, r.manualList]));
+}
+
+describe("importLibraryZip — v1 import (E26)", () => {
+  it("maps all five legacy statuses to their v2 manualList", async () => {
+    const { db } = openLibraryDb(":memory:");
+    const zip = await buildV1Zip([
+      { tmdbId: 1, title: "Plan", status: "plan_to_watch" },
+      { tmdbId: 2, title: "Dropped", status: "dropped" },
+      { tmdbId: 3, title: "Watching", status: "watching" },
+      { tmdbId: 4, title: "Completed", status: "completed" },
+      { tmdbId: 5, title: "Paused", status: "paused" },
+    ]);
+
+    await importLibraryZip(db, zip, "replace");
+    const byTmdbId = manualListByTmdbId(db);
+
+    expect(byTmdbId.get(1)).toBe("watch_later");
+    expect(byTmdbId.get(2)).toBe("stopped");
+    expect(byTmdbId.get(3)).toBeNull();
+    expect(byTmdbId.get(4)).toBeNull();
+    expect(byTmdbId.get(5)).toBeNull();
+  });
+
+  it("dropped + all aired episodes watched → manual_list cleared by the E26 cleanup", async () => {
+    const { db } = openLibraryDb(":memory:");
+    const zip = await buildV1Zip(
+      [
+        {
+          tmdbId: 6,
+          title: "Finished But Dropped",
+          status: "dropped",
+          seasons: [
+            {
+              number: 1,
+              name: null,
+              overview: null,
+              posterRef: null,
+              airDate: null,
+              episodes: [
+                {
+                  s: 1,
+                  e: 1,
+                  title: "Pilot",
+                  overview: null,
+                  airDate: "2020-01-01",
+                  runtimeMin: null,
+                  type: null,
+                  stillRef: null,
+                  externalRatings: null,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      [{ tmdbId: 6, s: 1, e: 1, watchedAt: "2026-01-02T00:00:00Z" }],
+    );
+
+    await importLibraryZip(db, zip, "replace");
+
+    expect(manualListByTmdbId(db).get(6)).toBeNull();
+  });
+
+  it("dropped + zero watches stays stopped (not_started is not finished)", async () => {
+    const { db } = openLibraryDb(":memory:");
+    const zip = await buildV1Zip([{ tmdbId: 7, title: "Dropped, untouched", status: "dropped" }]);
+
+    await importLibraryZip(db, zip, "replace");
+
+    expect(manualListByTmdbId(db).get(7)).toBe("stopped");
   });
 });
 

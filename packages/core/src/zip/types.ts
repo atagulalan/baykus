@@ -16,11 +16,11 @@ import type {
   TagInfo,
   WatchProviderInfo,
 } from "@baykus/provider-sdk";
-import type { RatingTargetType, TrackingStatus, WatchSource } from "../db/schema.ts";
+import type { ManualList, RatingTargetType, WatchSource } from "../db/schema.ts";
 
 export interface ZipManifest {
   app: "baykus";
-  schemaVersion: 1;
+  schemaVersion: 2;
   exportedAt: string;
   appVersion: string;
   mediaTypes: MediaType[];
@@ -53,10 +53,10 @@ export interface ZipItemEntry {
   title: string;
   externalIds: ExternalIds;
   tracking: {
-    status: TrackingStatus;
+    manualList: ManualList | null;
     pushMuted: boolean;
     note: string | null;
-    statusChangedAt: string;
+    listChangedAt: string;
   };
   metadata: {
     originalTitle: string | null;

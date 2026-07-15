@@ -1,9 +1,10 @@
 import type { ExternalIds } from "@baykus/provider-sdk";
-import { and, eq, or } from "drizzle-orm";
+import { and, eq, inArray, or } from "drizzle-orm";
 import * as yauzl from "yauzl";
 import type { LibraryDatabase } from "../db/open.ts";
-import type { RatingTargetType } from "../db/schema.ts";
+import type { ManualList, RatingTargetType } from "../db/schema.ts";
 import * as schema from "../db/schema.ts";
+import { computeDynamicCategories } from "../library/category.ts";
 import type {
   ZipItemEntry,
   ZipManifest,
@@ -11,6 +12,38 @@ import type {
   ZipSettings,
   ZipWatchEntry,
 } from "./types.ts";
+
+/** v1 zip tracking block (see specs/001) — mapped to v2 shape per E26 before the shared import path. */
+type LegacyTrackingStatus = "watching" | "completed" | "plan_to_watch" | "dropped" | "paused";
+
+interface ZipItemEntryV1 extends Omit<ZipItemEntry, "tracking"> {
+  tracking: {
+    status: LegacyTrackingStatus;
+    pushMuted: boolean;
+    note: string | null;
+    statusChangedAt: string;
+  };
+}
+
+const LEGACY_STATUS_TO_MANUAL_LIST: Record<LegacyTrackingStatus, ManualList | null> = {
+  plan_to_watch: "watch_later",
+  dropped: "stopped",
+  watching: null,
+  completed: null,
+  paused: null,
+};
+
+function mapV1ItemEntry(raw: ZipItemEntryV1): ZipItemEntry {
+  return {
+    ...raw,
+    tracking: {
+      manualList: LEGACY_STATUS_TO_MANUAL_LIST[raw.tracking.status],
+      pushMuted: raw.tracking.pushMuted,
+      note: raw.tracking.note,
+      listChangedAt: raw.tracking.statusChangedAt,
+    },
+  };
+}
 
 export type ImportMode = "replace" | "merge";
 
@@ -34,7 +67,7 @@ export interface ImportResult {
   warnings: string[];
 }
 
-const SUPPORTED_SCHEMA_VERSIONS = [1];
+const SUPPORTED_SCHEMA_VERSIONS = [1, 2];
 
 interface ParsedZip {
   manifest: ZipManifest;
@@ -90,29 +123,37 @@ async function parseZip(buffer: Buffer): Promise<ParsedZip> {
   if (manifestRaw === undefined) {
     throw new ZipImportError("BAD_MANIFEST", "manifest.json missing from zip");
   }
-  let manifest: ZipManifest;
+  let manifestRawParsed: Record<string, unknown>;
   try {
-    manifest = JSON.parse(manifestRaw) as ZipManifest;
+    manifestRawParsed = JSON.parse(manifestRaw) as Record<string, unknown>;
   } catch {
     throw new ZipImportError("BAD_MANIFEST", "manifest.json is not valid JSON");
   }
-  if (manifest.app !== "baykus" || typeof manifest.schemaVersion !== "number") {
+  if (manifestRawParsed.app !== "baykus" || typeof manifestRawParsed.schemaVersion !== "number") {
     throw new ZipImportError("BAD_MANIFEST", "manifest.json is missing required fields");
   }
-  if (!SUPPORTED_SCHEMA_VERSIONS.includes(manifest.schemaVersion)) {
-    throw new ZipImportError(
-      "UNSUPPORTED_SCHEMA",
-      `unsupported schemaVersion ${manifest.schemaVersion}`,
-    );
+  const schemaVersion = manifestRawParsed.schemaVersion;
+  if (!SUPPORTED_SCHEMA_VERSIONS.includes(schemaVersion)) {
+    throw new ZipImportError("UNSUPPORTED_SCHEMA", `unsupported schemaVersion ${schemaVersion}`);
   }
+  const manifest = manifestRawParsed as unknown as ZipManifest;
 
-  const items = parseJsonEntry<ZipItemEntry[]>(entries, "library/items.json", []);
+  const rawItems = parseJsonEntry<ZipItemEntry[] | ZipItemEntryV1[]>(
+    entries,
+    "library/items.json",
+    [],
+  );
   const watches = parseJsonEntry<ZipWatchEntry[]>(entries, "library/watches.json", []);
   const ratings = parseJsonEntry<ZipRatingEntry[]>(entries, "library/ratings.json", []);
   const settings = parseJsonEntry<ZipSettings>(entries, "library/settings.json", {});
-  if (!Array.isArray(items) || !Array.isArray(watches) || !Array.isArray(ratings)) {
+  if (!Array.isArray(rawItems) || !Array.isArray(watches) || !Array.isArray(ratings)) {
     throw new ZipImportError("BAD_MANIFEST", "library/*.json entries must be arrays");
   }
+
+  const items =
+    schemaVersion === 1
+      ? (rawItems as ZipItemEntryV1[]).map(mapV1ItemEntry)
+      : (rawItems as ZipItemEntry[]);
 
   return { manifest, items, watches, ratings, settings };
 }
@@ -244,10 +285,10 @@ function insertItemWholesale(db: LibraryDatabase, entry: ZipItemEntry): number {
   db.insert(schema.tracking)
     .values({
       itemId: inserted.id,
-      status: entry.tracking.status,
+      manualList: entry.tracking.manualList,
       pushMuted: entry.tracking.pushMuted,
       note: entry.tracking.note,
-      statusChangedAt: entry.tracking.statusChangedAt,
+      listChangedAt: entry.tracking.listChangedAt,
     })
     .run();
 
@@ -309,13 +350,13 @@ function mergeItem(db: LibraryDatabase, existingId: number, entry: ZipItemEntry)
       .run();
   }
 
-  // tracking: incoming always wins (status/note/pushMuted).
+  // tracking: incoming always wins (manualList/note/pushMuted).
   db.update(schema.tracking)
     .set({
-      status: entry.tracking.status,
+      manualList: entry.tracking.manualList,
       pushMuted: entry.tracking.pushMuted,
       note: entry.tracking.note,
-      statusChangedAt: entry.tracking.statusChangedAt,
+      listChangedAt: entry.tracking.listChangedAt,
     })
     .where(eq(schema.tracking.itemId, existingId))
     .run();
@@ -334,6 +375,28 @@ function upsertRating(
       target: [schema.ratings.targetType, schema.ratings.targetId],
       set: { value, ratedAt },
     })
+    .run();
+}
+
+/** E26 cleanup: imports write tracking directly (bypassing the E20 live guard), so a
+ * v1 `dropped` mapping (or stale data) can leave manual_list='stopped' on an item that's
+ * already dynamically finished. Clear those after every import to restore the invariant. */
+function clearStaleStoppedLists(db: LibraryDatabase): void {
+  const stopped = db
+    .select({ itemId: schema.tracking.itemId })
+    .from(schema.tracking)
+    .where(eq(schema.tracking.manualList, "stopped"))
+    .all();
+  if (stopped.length === 0) return;
+
+  const itemIds = stopped.map((row) => row.itemId);
+  const categories = computeDynamicCategories(db, itemIds);
+  const toClear = itemIds.filter((id) => categories.get(id) === "finished");
+  if (toClear.length === 0) return;
+
+  db.update(schema.tracking)
+    .set({ manualList: null, listChangedAt: new Date().toISOString() })
+    .where(inArray(schema.tracking.itemId, toClear))
     .run();
 }
 
@@ -408,6 +471,8 @@ export async function importLibraryZip(
         .run();
       watchesWritten++;
     }
+
+    clearStaleStoppedLists(tx);
 
     for (const rating of parsed.ratings) {
       const itemId = findItemByExternalIds(tx, rating.series);
