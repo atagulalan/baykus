@@ -160,6 +160,18 @@ describe("removeLatestWatch", () => {
     const epId = insertEpisode(db, itemId, 1, 1, addDays(-10));
     expect(removeLatestWatch(db, epId)).toBe(false);
   });
+
+  it("never restores a manual_list that E19 auto-cleared — one-way (E21)", () => {
+    const { db } = openLibraryDb(":memory:");
+    const itemId = setupItem(db, "watch_later");
+    const epId = insertEpisode(db, itemId, 1, 1, addDays(-10));
+
+    addWatch(db, epId, "2026-01-01T10:00:00Z", "manual");
+    expect(manualListOf(db, itemId)).toBeNull();
+
+    expect(removeLatestWatch(db, epId)).toBe(true);
+    expect(manualListOf(db, itemId)).toBeNull();
+  });
 });
 
 describe("bulkWatch", () => {

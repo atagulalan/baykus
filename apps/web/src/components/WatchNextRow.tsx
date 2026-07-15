@@ -9,6 +9,16 @@ interface WatchNextRowProps {
   onQuickMark: (episodeId: number) => void;
 }
 
+/** E28: how many more aired episodes queue behind the shown next one, hidden when 0. */
+export function computeOverflowBadge(progress: { aired: number; watched: number }): number {
+  return Math.max(0, progress.aired - progress.watched - 1);
+}
+
+/** E29: hide the quick-mark checkbox when the next episode's airDate is null or in the future. */
+export function shouldShowQuickMarkCheckbox(airDate: string | null, today: string): boolean {
+  return airDate !== null && airDate <= today;
+}
+
 /** One row in the watch page's "next up" / "haven't watched for a while" sections. */
 export function WatchNextRow({ series, onQuickMark }: WatchNextRowProps) {
   const { t } = useTranslation();
@@ -16,11 +26,9 @@ export function WatchNextRow({ series, onQuickMark }: WatchNextRowProps) {
   if (!next) return null; // E29 says this shouldn't happen for these categories; defensive.
 
   const imageUrl = buildImageUrl(series.posterRef);
-  // E28: how many more aired episodes queue behind this one, hidden when 0.
-  const overflow = Math.max(0, series.progress.aired - series.progress.watched - 1);
+  const overflow = computeOverflowBadge(series.progress);
   const today = new Date().toISOString().slice(0, 10);
-  // E29: hide the checkbox when the next episode's airDate is null or in the future.
-  const showCheckbox = next.airDate !== null && next.airDate <= today;
+  const showCheckbox = shouldShowQuickMarkCheckbox(next.airDate, today);
 
   return (
     <div className="flex items-center gap-3 rounded px-2 py-2 hover:bg-zinc-900">

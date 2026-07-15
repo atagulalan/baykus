@@ -470,15 +470,40 @@ badges, and the not-watched-recently section.
 
 - [ ] M12.4 CHECKPOINT M12 — full browser pass of US-16 in both locales +
   M10/M11 regression + green suite.
+  <!-- DECISION: box left unchecked, same reason as M10.8/M11.4. Full gate
+  confirmed green (49 test files, 375 tests, zero typecheck errors,
+  clean build) as of M12.3's commit. Browser checklist written to
+  MANUELTEST.md's M12.4 section, per xava's instruction to batch all
+  browser verification into one pass at the end. -->
 
 ---
 
 ## M13 — Acceptance & docs
 
-- [ ] M13.1 acceptance: walk spec.md 002 §Acceptance checklist item by item,
+- [x] M13.1 acceptance: walk spec.md 002 §Acceptance checklist item by item,
   checking boxes with evidence (same discipline as 001's M9.4); confirm every
   E16–E29 has a named test; run the i18n parity test; grep `apps/web/src` for
   leftover `status.` i18n usages.
+  <!-- DECISION: walked spec.md's acceptance checklist line by line (see
+  its own inline notes for evidence per line). Found E23/E25/E28/E29 had
+  zero test coverage — those decisions live entirely in web components
+  (EpisodeTags.tsx, WatchNextRow.tsx) that M11.3/M12.3 explicitly marked
+  "no tests required" (a call about not needing component-rendering
+  tests, since apps/web has no React-testing-library/jsdom setup at
+  all). Closed the gap by extracting the pure decision logic
+  (computeEpisodeTagKinds, computeOverflowBadge,
+  shouldShowQuickMarkCheckbox) out of the components into exported
+  functions and unit-testing those directly with plain vitest — no new
+  test tooling, no component rendering, just the E23/E25/E28/E29 logic
+  itself. Also added one test for E21 (removeLatestWatch never restores
+  an E19-auto-cleared manual_list) which had no explicit assertion
+  despite the underlying code already being correct by omission. Full
+  gate after all additions: 51 test files, 394 tests, 0 typecheck
+  errors, clean build. The five browser-only checklist lines in spec.md
+  (home sections, calendar both modes, watch page, watch_later/stopped
+  live UI transition, "UI complete") are left unchecked there — no
+  browser tool available; steps are in MANUELTEST.md for xava's final
+  pass. -->
 - [ ] M13.2 docs: README.md feature bullets (statuses → categories line,
   calendar modes, watch page), `docs/self-hosting.md` only if it mentions
   statuses (check), refresh `docs/images/` screenshots if a browser is
