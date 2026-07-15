@@ -27,45 +27,48 @@ Takvim sayfası: zaman çizelgesi + ay modu, her ikisi tarayıcıda; M10
 regresyonu; tam yeşil suite.
 
 ### Zaman çizelgesi modu
-- [ ] `/calendar`'a git — varsayılan sekme "Zaman çizelgesi" olmalı.
-- [ ] Sayfa açılışında BUGÜN satırına otomatik scroll olmalı (o gün boş
+- [x] `/calendar`'a git — varsayılan sekme "Zaman çizelgesi" olmalı.
+- [x] Sayfa açılışında BUGÜN satırına otomatik scroll olmalı (o gün boş
       olsa bile "(boş)" yazıp göstermeli).
-- [ ] `airDate ≤ bugün` olan satırlarda ✓ checkbox olmalı, gelecek
+- [x] `airDate ≤ bugün` olan satırlarda ✓ checkbox olmalı, gelecek
       satırlarda **olmamalı**.
-- [ ] Geçmiş bir satırı işaretle → refetch sonrası listeden kaybolmalı
+- [x] Geçmiş bir satırı işaretle → refetch sonrası listeden kaybolmalı
       (aynı optimistic mutation, sayfa yenilenmeden).
 
 ### Takvim (ay) modu
 - [ ] "Takvim" sekmesine geç — Pazartesi başlangıçlı 7 sütunlu grid,
-      bugünün hücresi vurgulu olmalı.
-- [ ] ‹ › ile ay değiştir — her navigasyonda o ayın tam aralığı
+      bugünün hücresi vurgulu olmalı. **Düzeltildi (2026-07-15):** kök
+      neden bulundu — "bugün" UTC'ye göre kesiliyordu, Türkiye (UTC+3)
+      için yerel gece yarısından UTC'nin gün değiştirmesine kadar olan
+      aralıkta yanlış günü işaret ediyordu (aynı hata timeline modunda,
+      izleme sayfasında ve dizi detay sayfasında da vardı, hepsi
+      düzeltildi). Tekrar test et.
+- [x] ‹ › ile ay değiştir — her navigasyonda o ayın tam aralığı
       (`from`=1. gün, `to`=son gün) yeniden çekilmeli.
-- [ ] 3'ten fazla bölümü olan bir hücrede "+n" göstergesi çıkmalı.
-- [ ] Geçmiş bir aya git → sadece izlenmemiş bölümler görünmeli (E24 —
+- [x] 3'ten fazla bölümü olan bir hücrede "+n" göstergesi çıkmalı.
+- [x] Geçmiş bir aya git → sadece izlenmemiş bölümler görünmeli (E24 —
       sunucu zaten filtreliyor).
-- [ ] Pencereyi 640px altına daralt (veya DevTools mobil görünüm) →
+- [x] Pencereyi 640px altına daralt (veya DevTools mobil görünüm) →
       grid, dolu günlerin dikey listesine dönüşmeli.
 
 ### Etiketler (EpisodeTags)
-- [ ] Bölüm satırlarında/hücrelerinde YENİ, PREMIER, FİNAL, OVA/SPECIAL
+- [x] Bölüm satırlarında/hücrelerinde YENİ, PREMIER, FİNAL, OVA/SPECIAL
       rozetlerinin doğru göründüğünü kontrol et.
-- [ ] ⚠️ **Bilinen nokta:** YENİ rozetinin üst sınırı yok (spec.md E25'in
-      literal metnine göre uygulandı: `airDate ≥ bugün−3g`, üst sınır
-      yok) — bu yüzden takvimdeki hemen hemen tüm gelecek bölümler YENİ
-      rozeti taşıyacak. ui.md'deki mockup bunun yerine ±3 günlük simetrik
-      bir pencere gösteriyor gibi duruyordu (spec metniyle çelişkili).
-      Tarayıcıda tuhaf/gürültülü görünürse haber ver, simetrik pencereye
-      çevirebilirim.
+- [ ] ⚠️ **Karar bekliyor** (sohbette soruldu): YENİ rozetinin üst sınırı
+      yok, bu yüzden gelecekteki hemen her bölüm YENİ görünüyor. Senin
+      önerin: henüz airlenmemişlere "YENİ" değil "yaklaşan" gibi ayrı bir
+      etiket mi olsun? Bu spec.md'de olmayan yeni bir karar, spec.md +
+      koda yansıtmadan önce netleştirmemiz lazım.
 
 ### İki dil
-- [ ] Ayarlar → Dil'den EN'e geç, yukarıdaki adımların tamamını tekrarla.
+- [x] Ayarlar → Dil'den EN'e geç, yukarıdaki adımların tamamını tekrarla.
 
 ### M10 regresyonu
-- [ ] Ana sayfaya dön — bölümler hâlâ doğru görünüyor mu (kategori
+- [x] Ana sayfaya dön — bölümler hâlâ doğru görünüyor mu (kategori
       mantığına M11'de dokunulmadı, ama yine de bir bakış).
 
 ### Tam gate
-- [ ] `pnpm lint && pnpm -r typecheck && pnpm exec vitest run` — hepsi
+- [x] `pnpm lint && pnpm -r typecheck && pnpm exec vitest run` — hepsi
       yeşil (ben zaten doğruladım, sen de istersen tekrar çalıştırabilirsin).
 
 ---
@@ -76,47 +79,47 @@ regresyonu; tam yeşil suite.
 süredir izlenmedi bölümü.
 
 ### Nav + sayfa
-- [ ] Üst navda "Kütüphane" ile "Takvim" arasında yeni "İzleme" linki
+- [x] Üst navda "Kütüphane" ile "Takvim" arasında yeni "İzleme" linki
       olmalı, `/watch`'a gitmeli.
-- [ ] Sayfa başlığı ("İzleme"), İzleme geçmişi, Sıradaki bölümler, Bir
+- [x] Sayfa başlığı ("İzleme"), İzleme geçmişi, Sıradaki bölümler, Bir
       süredir izlenmedi bölümleri sırayla görünmeli.
 
 ### İzleme geçmişi
-- [ ] Liste en eski **üstte**, en yeni **altta** olmalı (API newest-first
+- [x] Liste en eski **üstte**, en yeni **altta** olmalı (API newest-first
       döndürüyor, sayfa client-side ters çeviriyor).
-- [ ] Sayfa açılışında otomatik olarak listenin **en altına** scroll
+- [x] Sayfa açılışında otomatik olarak listenin **en altına** scroll
       olmalı.
-- [ ] Bugün izlenen bir bölüm "Bugün {saat}" formatında, dün izlenen
+- [x] Bugün izlenen bir bölüm "Bugün {saat}" formatında, dün izlenen
       "Dün {saat}" formatında, daha eskiler "{gün} {ay} {saat}"
       formatında görünmeli.
-- [ ] Hiç izleme yoksa boş durum mesajı çıkmalı.
+- [x] Hiç izleme yoksa boş durum mesajı çıkmalı.
 
 ### Sıradaki bölümler (category = watching)
-- [ ] Her satırda poster, başlık, SxEy, (varsa) +N rozeti, bölüm adı,
+- [x] Her satırda poster, başlık, SxEy, (varsa) +N rozeti, bölüm adı,
       EpisodeTags rozetleri görünmeli.
-- [ ] `nextUnwatched.airDate` bugüne eşit veya geçmişse checkbox olmalı;
+- [x] `nextUnwatched.airDate` bugüne eşit veya geçmişse checkbox olmalı;
       null veya gelecekse checkbox **olmamalı** (E29).
-- [ ] Bir satırı işaretle → o dizinin `nextUnwatched`'ı bir sonraki
+- [x] Bir satırı işaretle → o dizinin `nextUnwatched`'ı bir sonraki
       bölüme ilerlemeli (yeniden fetch sonrası).
-- [ ] Bir dizinin son izlenmemiş bölümünü işaretle → kategori
+- [x] Bir dizinin son izlenmemiş bölümünü işaretle → kategori
       up_to_date/finished'a döner, satır bu bölümden tamamen kaybolmalı.
-- [ ] Boşsa boş durum mesajı çıkmalı.
+- [x] Boşsa boş durum mesajı çıkmalı.
 
 ### Bir süredir izlenmedi (category = not_watched_recently)
-- [ ] Aynı satır bileşeni, doğru kategori filtrelemesiyle çalışmalı.
+- [x] Aynı satır bileşeni, doğru kategori filtrelemesiyle çalışmalı.
 
 ### Takvim/kütüphane senkronizasyonu
-- [ ] Bir bölümü işaretledikten sonra `/calendar` ve `/` (ana sayfa)
+- [x] Bir bölümü işaretledikten sonra `/calendar` ve `/` (ana sayfa)
       sayfalarına gidip verinin güncel olduğunu doğrula (aynı invalidate
       zinciri).
 
 ### İki dil + M10/M11 regresyonu
-- [ ] Ayarlar → Dil'den EN'e geç, yukarıdaki adımları tekrarla.
-- [ ] Ana sayfa (M10) ve takvim (M11) hâlâ doğru çalışıyor mu, hızlıca
+- [x] Ayarlar → Dil'den EN'e geç, yukarıdaki adımları tekrarla.
+- [x] Ana sayfa (M10) ve takvim (M11) hâlâ doğru çalışıyor mu, hızlıca
       bak.
 
 ### Tam gate
-- [ ] `pnpm lint && pnpm -r typecheck && pnpm exec vitest run` — hepsi
+- [x] `pnpm lint && pnpm -r typecheck && pnpm exec vitest run` — hepsi
       yeşil (ben zaten doğruladım).
 
 ---
