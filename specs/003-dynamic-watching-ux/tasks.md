@@ -581,3 +581,35 @@ overlapping hover targets on a card that's also a link was already awkward.
     existing `library.removeConfirm`/`removeError` strings, unchanged).
   - **Verify:** `pnpm lint && pnpm typecheck && pnpm test` green;
     `pnpm build` succeeds.
+
+---
+
+## M17.14 — Episode watch-action redesign (E47, out-of-plan)
+
+Paired with M17.11/E45. The episode row's "⋮" dropdown (watch again / edit
+date / mark up to here) becomes two checkbox-driven modals, and the season
+"mark all watched" button becomes a checkbox.
+
+- [x] M17.14 web: checkbox-driven watch-action modals + season auto-collapse (E47)
+  - **Files:** `apps/web/src/components/{EpisodeRow,SeasonSection}.tsx`,
+    `apps/web/src/pages/SeriesDetailPage.tsx` (passes `nextUnwatched` to
+    `SeasonSection`), `apps/web/src/i18n/{tr,en}.json`.
+  - **DoD:** ui.md §Episode watch actions: `EpisodeRow` gains
+    `hasUnwatchedBefore: boolean`; clicking the checkbox on an unwatched
+    aired episode opens the "mark up to here?" modal only when
+    `hasUnwatchedBefore` (otherwise marks directly, unchanged one-tap
+    behavior); clicking a watched episode's checkbox opens the "watch
+    again / edit date / mark as unwatched" sheet (same three actions the
+    old menu had). `SeasonSection` computes `hasUnwatchedBefore` per
+    episode from the series' `nextUnwatched` cursor (passed down from
+    `SeriesDetailPage`), swaps its "mark all watched" button for a
+    `Checkbox` (checked = season complete, disabled when complete or
+    nothing aired), and auto-collapses on mount once already complete.
+  - **Tests:** none beyond typecheck — presentational + a straight
+    conditional-modal swap over existing mutations (`onToggleWatch`/
+    `onBulkUpToHere`/`onWatchAgain`/`onEditDate` unchanged). i18n: new
+    `episode.{watchedUpToHereTitle,watchedUpToHereDesc,markOnlyThis,
+    markAsUnwatched}` keys (both locales); removes the now-dead
+    `episode.menu` key (the dropdown it labeled no longer exists).
+  - **Verify:** `pnpm lint && pnpm typecheck && pnpm test` green (i18n
+    parity included); `pnpm build` succeeds.

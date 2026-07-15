@@ -142,6 +142,39 @@ local-date fix) — re-verify in the checkpoint, no new work.
 - Poster: `w-40 h-auto rounded-lg` (natural aspect, no crop). No-image
   placeholder keeps the current `aspect-[2/3]` box.
 
+## Episode watch actions (changed — checkbox-driven modals, E47)
+
+```
+unwatched, nothing earlier pending:  [ ] tap → marked directly (unchanged)
+unwatched, earlier episode pending:  [ ] tap → "Mark previous episodes?"
+                                            ┌───────────────────────┐
+                                            │ buraya kadar izledim  │ (yellow, primary)
+                                            │ sadece bu bölüm       │
+                                            └───────────────────────┘
+watched:                             [x] tap → sheet:
+                                            ┌───────────────────────┐
+                                            │ tekrar izledim        │
+                                            │ tarihi düzenle        │
+                                            │ izlenmedi işaretle    │ (red)
+                                            └───────────────────────┘
+```
+
+- Replaces the old "⋮" dropdown (watch again / edit date / mark up to
+  here) on the episode row — same underlying mutations
+  (`onToggleWatch`/`onBulkUpToHere`/`onWatchAgain`/`onEditDate`), different
+  entry point: the row's own `Checkbox` (E45), gated on click by watch
+  state and `hasUnwatchedBefore`.
+- `hasUnwatchedBefore` (computed in `SeasonSection` from the series-level
+  `nextUnwatched` cursor: any episode whose (s,e) is after the cursor has
+  something unwatched before it) decides whether marking an unwatched
+  episode prompts first or applies immediately — the single-tap fast path
+  from before E47 stays for the common case (no backlog before this one).
+- `SeasonSection`'s header "mark all watched" text button is now a
+  `Checkbox` (checked = season complete: `airedCount > 0 && watchedCount
+  >= airedCount`; disabled when already complete or nothing aired yet). A
+  season that's already complete on mount starts collapsed (previously
+  only season 0/Specials started collapsed).
+
 ## Watch page `/watch` (reworked, E38)
 
 ```

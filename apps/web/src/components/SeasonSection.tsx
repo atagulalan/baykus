@@ -1,11 +1,14 @@
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { SeasonSummary } from "../api/types.ts";
 import { todayIso } from "../lib/date.ts";
+import { Checkbox } from "./Checkbox.tsx";
 import { EpisodeRow } from "./EpisodeRow.tsx";
 
 interface SeasonSectionProps {
   season: SeasonSummary;
+  nextUnwatched: { s: number; e: number } | null;
   onToggleWatch: (episodeId: number) => void;
   onWatchAgain: (episodeId: number) => void;
   onEditDate: (episodeId: number) => void;
@@ -18,6 +21,7 @@ interface SeasonSectionProps {
 
 export function SeasonSection({
   season,
+  nextUnwatched,
   onToggleWatch,
   onWatchAgain,
   onEditDate,
@@ -28,17 +32,19 @@ export function SeasonSection({
   onDismissPrompt,
 }: SeasonSectionProps) {
   const { t } = useTranslation();
-  const [expanded, setExpanded] = useState(season.number !== 0);
 
   const today = todayIso();
   const airedCount = season.episodes.filter((e) => e.airDate !== null && e.airDate <= today).length;
   const watchedCount = season.episodes.filter((e) => e.watchCount > 0).length;
+  const complete = airedCount > 0 && watchedCount >= airedCount;
+
+  const [expanded, setExpanded] = useState(season.number !== 0 && !complete);
+
   const label =
     season.name ??
     (season.number === 0
       ? t("series.specials")
       : t("series.seasonNumber", { number: season.number }));
-  const complete = airedCount > 0 && watchedCount >= airedCount;
 
   return (
     <div className="border-zinc-800 border-b py-2">
@@ -48,35 +54,47 @@ export function SeasonSection({
           onClick={() => setExpanded((v) => !v)}
           className="flex flex-1 items-center gap-2 text-left text-sm"
         >
-          <span className="text-zinc-500">{expanded ? "▾" : "▸"}</span>
+          <span className="text-zinc-500">
+            {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+          </span>
           <span className="font-medium">{label}</span>
           <span className="text-xs text-zinc-500">
-            ({watchedCount}/{season.episodes.length}){complete ? " ✓" : ""}
+            ({watchedCount}/{season.episodes.length})
           </span>
         </button>
-        <button
-          type="button"
-          onClick={onMarkSeasonWatched}
-          className="shrink-0 rounded bg-zinc-800 px-2 py-1 text-xs text-zinc-300 hover:bg-zinc-700"
-        >
-          {t("series.markSeasonWatched")}
-        </button>
+        <div className="flex items-center gap-2 pr-2">
+          <Checkbox
+            checked={complete}
+            disabled={complete || airedCount === 0}
+            onChange={(checked) => {
+              if (checked && !complete) onMarkSeasonWatched();
+            }}
+            aria-label={t("series.markSeasonWatched")}
+          />
+        </div>
       </div>
       {expanded && (
         <div className="flex flex-col gap-0.5">
-          {season.episodes.map((episode) => (
-            <EpisodeRow
-              key={episode.id}
-              episode={episode}
-              onToggleWatch={() => onToggleWatch(episode.id)}
-              onWatchAgain={() => onWatchAgain(episode.id)}
-              onEditDate={() => onEditDate(episode.id)}
-              onBulkUpToHere={() => onBulkUpToHere(episode.id)}
-              showRatingPrompt={promptEpisodeId === episode.id}
-              onRate={(value) => onRateEpisode(episode.id, value)}
-              onDismissPrompt={onDismissPrompt}
-            />
-          ))}
+          {season.episodes.map((episode) => {
+            const hasUnwatchedBefore =
+              nextUnwatched !== null &&
+              (episode.s > nextUnwatched.s ||
+                (episode.s === nextUnwatched.s && episode.e > nextUnwatched.e));
+            return (
+              <EpisodeRow
+                key={episode.id}
+                episode={episode}
+                onToggleWatch={() => onToggleWatch(episode.id)}
+                onWatchAgain={() => onWatchAgain(episode.id)}
+                onEditDate={() => onEditDate(episode.id)}
+                onBulkUpToHere={() => onBulkUpToHere(episode.id)}
+                hasUnwatchedBefore={hasUnwatchedBefore}
+                showRatingPrompt={promptEpisodeId === episode.id}
+                onRate={(value) => onRateEpisode(episode.id, value)}
+                onDismissPrompt={onDismissPrompt}
+              />
+            );
+          })}
         </div>
       )}
     </div>

@@ -532,6 +532,7 @@ export function SeriesDetailPage() {
           <SeasonSection
             key={season.number}
             season={season}
+            nextUnwatched={detail.nextUnwatched}
             onToggleWatch={(episodeId) => {
               const episode = season.episodes.find((e) => e.id === episodeId);
               if (episode) toggleWatch.mutate(episode);
