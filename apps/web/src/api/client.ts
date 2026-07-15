@@ -1,3 +1,4 @@
+import { parseSeriesParam } from "../lib/seriesPath.ts";
 import type {
   AddWatchResult,
   ApiErrorEnvelope,
@@ -106,6 +107,27 @@ export function getSeries(id: number): Promise<SeriesDetail> {
 /** E52: TMDB-parity URL — 404s when no item carries this tmdbId (yet). */
 export function getSeriesByTmdb(tmdbId: number): Promise<SeriesDetail> {
   return request<SeriesDetail>(`/library/series/by-tmdb/${tmdbId}`);
+}
+
+/**
+ * E52: resolves a `/series/$id` URL param (`i<internal id>` or a bare TMDB
+ * id) to a SeriesDetail — `i`-prefix goes straight to the internal endpoint;
+ * a bare number tries TMDB first, falling back to the internal endpoint on
+ * 404 (pre-004 bookmarks were bare internal numbers). An invalid param
+ * (junk) resolves as not-found, matching an unknown id.
+ */
+export async function getSeriesByParam(param: string): Promise<SeriesDetail> {
+  const parsed = parseSeriesParam(param);
+  if (parsed.kind === "internal") return getSeries(parsed.id);
+  if (parsed.kind === "tmdb") {
+    try {
+      return await getSeriesByTmdb(parsed.id);
+    } catch (err) {
+      if (err instanceof ApiError && err.code === "NOT_FOUND") return getSeries(parsed.id);
+      throw err;
+    }
+  }
+  throw new ApiError("NOT_FOUND", `invalid series param "${param}"`, 404, null);
 }
 
 export function updateSeries(

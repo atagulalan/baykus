@@ -1,6 +1,8 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { ArrowDown, ArrowUp, Minus } from "lucide-react";
 import { useState } from "react";
+import { getSeriesByParam } from "../api/client.ts";
 import { buildImageUrl } from "../api/images.ts";
 import type { SeriesSummary } from "../api/types.ts";
 import { CATEGORY_TEXT_COLORS } from "../lib/categoryColors.ts";
@@ -22,10 +24,30 @@ export function SeriesCard({ series }: SeriesCardProps) {
   const imageUrl = buildImageUrl(series.posterRef);
   const { watched, aired } = series.progress;
   const textColor = CATEGORY_TEXT_COLORS[series.category] || CATEGORY_TEXT_COLORS.default;
+  const queryClient = useQueryClient();
+  const param = seriesParam(series);
+
+  // Prefetch the detail query on hover/focus/touch so it's already in cache
+  // by click time — the view-transition poster morph needs the detail
+  // page's poster to exist on its very first paint, not after a fetch that
+  // starts only once navigation has already begun.
+  function prefetchDetail() {
+    queryClient.prefetchQuery({
+      queryKey: ["series", param],
+      queryFn: () => getSeriesByParam(param),
+    });
+  }
 
   return (
     <div className="group relative flex flex-col overflow-hidden bg-void border border-white/5 transition-colors hover:border-white/10">
-      <Link to="/series/$id" params={{ id: seriesParam(series) }} className="contents">
+      <Link
+        to="/series/$id"
+        params={{ id: param }}
+        className="contents"
+        onMouseEnter={prefetchDetail}
+        onFocus={prefetchDetail}
+        onTouchStart={prefetchDetail}
+      >
         <div
           className="relative aspect-[2/3] w-full bg-[#101010]"
           style={{ viewTransitionName: `poster-${series.id}` }}

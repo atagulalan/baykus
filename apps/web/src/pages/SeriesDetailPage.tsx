@@ -7,8 +7,7 @@ import {
   addEpisodeWatch,
   bulkWatch,
   clearRating,
-  getSeries,
-  getSeriesByTmdb,
+  getSeriesByParam,
   getSettings,
   refreshSeries,
   removeLatestEpisodeWatch,
@@ -30,7 +29,7 @@ import { SegmentedProgress } from "../components/SegmentedProgress.tsx";
 import { WatchDateDialog } from "../components/WatchDateDialog.tsx";
 import { CATEGORY_TEXT_COLORS } from "../lib/categoryColors.ts";
 import { sortSeasonsSpecialsLast } from "../lib/seasons.ts";
-import { parseSeriesParam, seriesParam } from "../lib/seriesPath.ts";
+import { seriesParam } from "../lib/seriesPath.ts";
 import { useToast } from "../lib/toast.tsx";
 
 const RATING_PROMPT_TIMEOUT_MS = 5000;
@@ -73,26 +72,6 @@ function updateEpisodeInDetail(
   };
 }
 
-/**
- * E52: `i`-prefix resolves via the internal endpoint; a bare number resolves
- * TMDB-first, falling back to the internal endpoint on 404 (pre-004
- * bookmarks were bare internal numbers). Junk params resolve as not-found,
- * same as an unknown id, so the page's existing NOT_FOUND branch handles it.
- */
-async function fetchSeriesByParam(param: string): Promise<SeriesDetail> {
-  const parsed = parseSeriesParam(param);
-  if (parsed.kind === "internal") return getSeries(parsed.id);
-  if (parsed.kind === "tmdb") {
-    try {
-      return await getSeriesByTmdb(parsed.id);
-    } catch (err) {
-      if (err instanceof ApiError && err.code === "NOT_FOUND") return getSeries(parsed.id);
-      throw err;
-    }
-  }
-  throw new ApiError("NOT_FOUND", `invalid series param "${param}"`, 404, null);
-}
-
 export function SeriesDetailPage() {
   const { id: param } = useParams({ from: "/series/$id" });
   const { t } = useTranslation();
@@ -107,7 +86,7 @@ export function SeriesDetailPage() {
 
   const navigate = useNavigate();
 
-  const query = useQuery({ queryKey, queryFn: () => fetchSeriesByParam(param) });
+  const query = useQuery({ queryKey, queryFn: () => getSeriesByParam(param) });
   const settingsQuery = useQuery({ queryKey: ["settings"], queryFn: getSettings });
   const activeRegion = settingsQuery.data?.region ?? "TR";
 
@@ -348,7 +327,10 @@ export function SeriesDetailPage() {
   const detail = query.data;
   if (!detail) return null;
 
-  const imageUrl = buildImageUrl(detail.posterRef, "large");
+  // Same size as SeriesCard's poster (buildImageUrl's "medium" default) so the
+  // <img> src doesn't change across the card->detail view-transition morph —
+  // a differing size forces a reload mid-transition instead of a smooth flow.
+  const imageUrl = buildImageUrl(detail.posterRef);
   const { watched, aired } = detail.progress;
   const sortedSeasons = sortSeasonsSpecialsLast(detail.seasons);
   const contentRating =
