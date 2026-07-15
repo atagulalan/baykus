@@ -144,7 +144,9 @@
       "enable": "Bildirimleri etkinleştir",
       "disable": "Bildirimleri kaldır",
       "subscribed": "Bildirimler etkinleştirildi",
-      "unsupported": "Bu tarayıcı push bildirimlerini desteklemiyor"
+      "unsupported": "Bu tarayıcı push bildirimlerini desteklemiyor",
+      "test": "Test bildirimi gönder",
+      "testSent": "Test bildirimi gönderildi"
     },
     "data": {
       "title": "Veri",

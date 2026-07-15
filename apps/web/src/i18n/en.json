@@ -144,7 +144,9 @@
       "enable": "Enable notifications",
       "disable": "Remove notifications",
       "subscribed": "Notifications enabled",
-      "unsupported": "This browser doesn't support push notifications"
+      "unsupported": "This browser doesn't support push notifications",
+      "test": "Send test notification",
+      "testSent": "Test notification sent"
     },
     "data": {
       "title": "Data",

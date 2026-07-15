@@ -376,7 +376,7 @@ acceptance walked, docs refreshed.
     send → subscription removed + 404; extra body fields → 400 (strict).
   - **Verify:** `pnpm test apps/server`
 
-- [ ] M17.4 web: test-notification button (E39)
+- [x] M17.4 web: test-notification button (E39)
   - **Files:** `apps/web/src/api/client.ts`,
     `apps/web/src/pages/SettingsPage.tsx`, `apps/web/src/lib/push.ts` (only
     if a small endpoint-getter is needed), `apps/web/src/i18n/{tr,en}.json`

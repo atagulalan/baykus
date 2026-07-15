@@ -9,6 +9,7 @@ import {
   getSettings,
   importZip,
   logout,
+  sendTestPush,
   updateSettings,
 } from "../api/client.ts";
 import type { ImportMode, ImportZipResult, Locale, Settings, SettingsPatch } from "../api/types.ts";
@@ -87,6 +88,16 @@ export function SettingsPage() {
   const unsubscribeMutation = useMutation({
     mutationFn: unsubscribeFromPush,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["push-subscription"] }),
+    onError: () => toast.show(t("errors.generic"), "error"),
+  });
+
+  const testPushMutation = useMutation({
+    mutationFn: async () => {
+      const subscription = await getCurrentPushSubscription();
+      if (!subscription) throw new Error("no active push subscription");
+      return sendTestPush(subscription.endpoint);
+    },
+    onSuccess: () => toast.show(t("settings.notifications.testSent")),
     onError: () => toast.show(t("errors.generic"), "error"),
   });
 
@@ -266,14 +277,24 @@ export function SettingsPage() {
         {!pushSupported ? (
           <p className="text-xs text-zinc-500">{t("settings.notifications.unsupported")}</p>
         ) : pushStatusQuery.data ? (
-          <button
-            type="button"
-            onClick={() => unsubscribeMutation.mutate()}
-            disabled={unsubscribeMutation.isPending}
-            className="self-start rounded bg-zinc-800 px-3 py-1.5 text-sm text-zinc-300 disabled:opacity-50"
-          >
-            {t("settings.notifications.disable")}
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => unsubscribeMutation.mutate()}
+              disabled={unsubscribeMutation.isPending}
+              className="self-start rounded bg-zinc-800 px-3 py-1.5 text-sm text-zinc-300 disabled:opacity-50"
+            >
+              {t("settings.notifications.disable")}
+            </button>
+            <button
+              type="button"
+              onClick={() => testPushMutation.mutate()}
+              disabled={testPushMutation.isPending}
+              className="self-start rounded bg-zinc-800 px-3 py-1.5 text-sm text-zinc-300 disabled:opacity-50"
+            >
+              {t("settings.notifications.test")}
+            </button>
+          </div>
         ) : (
           <button
             type="button"

@@ -345,3 +345,7 @@ export function subscribePush(subscription: PushSubscriptionJSON): Promise<void>
 export function unsubscribePush(endpoint: string): Promise<void> {
   return request<void>("/push/subscribe", { method: "DELETE", body: JSON.stringify({ endpoint }) });
 }
+
+export function sendTestPush(endpoint: string): Promise<void> {
+  return request<void>("/push/test", { method: "POST", body: JSON.stringify({ endpoint }) });
+}
