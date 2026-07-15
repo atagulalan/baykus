@@ -316,3 +316,66 @@ kısımlar listeleniyor.
 ### Tam gate
 - [x] `pnpm lint && pnpm typecheck && pnpm test && pnpm build` — hepsi
       yeşil (ben zaten doğruladım).
+
+---
+
+## M17.9–M17.14 — Plan dışı: tvtime düzeltmeleri, marka yenileme, aksiyon
+## menüsü, bölüm işaretleme modalleri (bekliyor)
+
+Spec 003, M17.9–M17.14 (E43–E47). Bu round tamamen uygulama içinde
+tarayıcı erişimi olmadan geliştirildi (bu ortamda da chromium/playwright
+bulunamadı — `pnpm dev` başlatılıp curl ile smoke test yapıldı, ama görsel
+doğrulama insan gözü gerektiriyor). Sunucu/paket tarafı testleri
+(parse.test.ts, match.test.ts, tvtime.test.ts) zaten yeşil; burada sadece
+tarayıcı gerektiren kısımlar listeleniyor.
+
+### TV Time içe aktarma canlı ilerleme (E44)
+- [ ] Ayarlar → Veri → "TV Time'dan içe aktar" → gerçek/büyük bir GDPR
+      zip'i yükle → yükleme sırasında ilerleme çubuğu + son eşleşmelerin
+      canlı listesi (✓/?/✗ işaretli, en fazla 8 satır) görünmeli.
+
+### Marka yenileme — tasarım sistemi (E45)
+- [ ] Genel görünüm: koyu `#080808` zemin, sarı (`#f0e000`) tek vurgu
+      rengi, başlıklarda italik serif font (DM Serif Display), etiket/
+      buton metinlerinde mono+büyük harf; hiçbir yerde yuvarlatılmış köşe
+      (`rounded-*`) kalmamalı.
+- [ ] Puan kontrolü (RatingControl) ve istatistikler sayfasındaki puan
+      dağılımı artık emoji değil, ok ikonları (yukarı/yatay/aşağı,
+      yeşil/sarı/kırmızı) göstermeli.
+- [ ] Tüm checkbox'lar (bölüm satırı, sezon "tümünü izledim", takvim,
+      sıradaki bölümler, Ayarlar → ek kaynaklar) artık yeni sarı dolgulu
+      kare bileşen — tarayıcının native checkbox'ı değil.
+- [ ] Kütüphane kartlarında ve dizi detay başlığında watched/aired metni
+      kategoriye göre renkleniyor mu (bırakıldı=kırmızı, bitirildi=mor,
+      güncel=yeşil, diğerleri=sarı).
+
+### Dizi aksiyonları — detay sayfası menüsü (E46)
+- [ ] Kütüphane kartının üzerine gelince artık **hiçbir buton** çıkmamalı
+      (kart sadece bir link).
+- [ ] Bir diziye tıkla → detay sayfası başlığında "⋮" menüsü: listeye
+      taşı / otomatiğe döndür / yenile / sessize al-aç / kaldır
+      seçenekleri, eskisiyle aynı davranışta çalışmalı (ör. bitirilmiş
+      dizide "bırakıldı" seçeneği görünmemeli).
+- [ ] "Kaldır" → onay diyaloğu → kütüphaneden silinip ana sayfaya
+      dönmeli.
+
+### Bölüm işaretleme modalleri (E47)
+- [ ] Daha önce izlenmemiş bölümü olan bir sezonda, aradaki bir bölümü
+      işaretlemeye çalış → "Önceki bölümler işaretlensin mi?" modalı
+      çıkmalı; "buraya kadar izledim" hepsini işaretlemeli, "sadece bu
+      bölüm" yalnızca o bölümü işaretlemeli.
+- [ ] Öncesinde izlenmemiş bölüm yoksa tek dokunuşla direkt işaretlenmeli
+      (modal çıkmamalı — eski davranış).
+- [ ] İzlenmiş bir bölümün checkbox'ına tıkla → "tekrar izledim / tarihi
+      düzenle / izlenmedi işaretle" sayfası (sheet) açılmalı, üçü de
+      çalışmalı.
+- [ ] Sezon başlığındaki "tümünü izledim" butonu artık bir checkbox;
+      sezon tamamlanmışsa işaretli ve devre dışı olmalı, sayfa
+      açıldığında tamamlanmış sezonlar kapalı başlamalı.
+
+### İki dil
+- [ ] Ayarlar → Dil'den EN'e geç, yukarıdaki adımların tamamını tekrarla.
+
+### Tam gate
+- [x] `pnpm lint && pnpm typecheck && pnpm test && pnpm build` — hepsi
+      yeşil, her M17.9–M17.14 commit'inde ayrı ayrı doğrulandı.
