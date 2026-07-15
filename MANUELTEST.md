@@ -128,3 +128,50 @@ süredir izlenmedi bölümü.
 
 spec 002'nin tam kabul checklist'i (`spec.md` §Acceptance checklist).
 İmplementasyon tamamlanınca bu bölüm doldurulacak.
+
+---
+
+## M14.7 — CHECKPOINT M14 (bekliyor)
+
+Spec 003, M14: dinamik İzleniyor sinyalleri (yeni bölüm lift'i, yeni
+eklenen lift'i), yapılandırılabilir pencere, zip v3. Mekanik kısımlar
+(tam gate + curl testi) benim tarafımdan doğrulandı; aşağıdaki üç satır
+tarayıcı gerektiriyor (spec.md 003 §Acceptance checklist).
+
+### HotD senaryosu — yeni bölüm lift'i (E33)
+- [ ] Daha önce izlenmiş ama uzun süredir izlenmemiş (`up_to_date` veya
+      `not_watched_recently`) bir dizinin yeni bir bölümü, pencere
+      içinde airlendiğinde (gerçek veri yoksa episode air_date'i elle
+      geçmişe/pencereye çekip refresh ile simüle edilebilir) dizi
+      İzleniyor'a düşmeli — hiç izlenmemiş bölüm izlenmeden.
+- [ ] Pencere geçip yeni izleme olmazsa dizi "Bir süredir izlenmedi"ye
+      düşmeli.
+- [ ] Hiç izlenmemiş (`not_started`) bir dizinin yeni bölümü airlense
+      bile İzleniyor'a **atlamamalı** (lift sıfır-izlemeli dizilere
+      ulaşmıyor — E33).
+
+### Arama çubuğundan ekleme — yeni eklenen lift'i (E32)
+- [x] Arama çubuğundan bir dizi ekle → hiç izlenmemiş olsa bile hemen
+      İzleniyor'da görünmeli. **Mekanik olarak doğrulandı:** gerçek dev
+      kütüphanesine "Pluribus" (tvmazeId 86175) POST `/api/library/series`
+      ile eklendi, response'ta `"category": "watching"` döndü, sonra
+      DELETE ile temizlendi. Yine de tarayıcıda arama kutusundan aynı
+      akışı bir kez dene.
+- [ ] TV Time / zip import'tan gelen bir dizi (sıfır izlemeyle) İzleniyor'a
+      **düşmemeli** — `not_started` kalmalı. (Sunucu testi zaten
+      kanıtlıyor: `tvtime.test.ts` "a zero-watch imported show computes
+      as not_started" — M14.5; tarayıcıda gerçek bir TV Time export'u
+      import ederek tekrar doğrula.)
+
+### Pencere ayarı canlı re-bucketing
+- [x] Ayarlar → İzleniyor penceresi (gün) alanını 30'dan 7'ye düşür →
+      ana sayfadaki İzleniyor kovası refresh sonrası küçülmeli.
+      **Mekanik olarak doğrulandı:** gerçek dev kütüphanesinde
+      (280 dizi) PATCH `watchingWindowDays=7` sonrası İzleniyor toplamı
+      75'ten 74'e düştü, PATCH `=30` ile geri eski haline döndü. Yine de
+      tarayıcıda alanı değiştirip sayfayı yenileyerek görsel olarak
+      doğrula.
+
+### Tam gate
+- [x] `pnpm lint && pnpm typecheck && pnpm test && pnpm build` — hepsi
+      yeşil (ben zaten doğruladım).

@@ -176,7 +176,7 @@ window; imports don't; the window length is a setting.
   - _(Home/watch/calendar need no code — categories come computed from the
     server.)_
 
-- [ ] M14.7 CHECKPOINT M14
+- [x] M14.7 CHECKPOINT M14
   - **DoD:** append a "M14.7" section to root `MANUELTEST.md` covering: the
     three browser lines of spec.md §Acceptance (HotD lift, search-add lift
     + import non-lift, window re-bucketing); mechanically verify everything
@@ -184,6 +184,21 @@ window; imports don't; the window length is a setting.
     pnpm build`) + curl pass against a dev server (PATCH window, add a
     series, confirm `category` in responses).
   - **Verify:** the above; then check this box and commit.
+  <!-- DECISION: full gate green (51 test files, 427 tests, zero
+  typecheck errors, clean build incl. apps/web + apps/server). Curl pass
+  against xava's real running dev library (280 items): POST a fresh
+  manual add (Pluribus, tvmazeId 86175) → response had category
+  "watching" immediately (E30 rung 3a), then deleted it again; PATCH
+  watchingWindowDays 30→7 visibly shrank the İzleniyor bucket 75→74,
+  restored to 30 after. The HotD new-episode-lift line and the TV
+  Time/zip import non-lift line aren't mechanically checkable against
+  live data without seeding specific air dates / a real TV Time export,
+  so they're left as unchecked MANUELTEST.md items backed by the
+  category.test.ts rung-6 unit tests and M14.5's tvtime.test.ts
+  assertion respectively — box checked per the task's own "then check
+  this box and commit" instruction (unlike 002's convention, 003 defers
+  only the final M17.7 sweep to xava, per its own "leave the box for
+  them" note). -->
 
 ---
 
