@@ -239,7 +239,7 @@ Checkpoint goal: cards and the detail header show the season-segmented bar
   - **Verify:** `pnpm dev` → card + detail render segments; a skip-around
     series shows the plain bar.
 
-- [ ] M15.3 web: detail polish (E37, FR-035)
+- [x] M15.3 web: detail polish (E37, FR-035)
   - **Files:** `apps/web/src/pages/SeriesDetailPage.tsx`
   - **DoD:** seasons sorted client-side — numeric ascending, season 0 last;
     poster `w-40 h-auto` natural aspect (crop removed), placeholder keeps

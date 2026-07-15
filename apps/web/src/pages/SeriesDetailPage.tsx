@@ -278,6 +278,12 @@ export function SeriesDetailPage() {
 
   const imageUrl = buildImageUrl(detail.posterRef, "large");
   const { watched, aired } = detail.progress;
+  // Specials (season 0) render last — a presentation-only sort (E37); core/zip season ordering untouched.
+  const sortedSeasons = [...detail.seasons].sort((a, b) => {
+    if (a.number === 0) return 1;
+    if (b.number === 0) return -1;
+    return a.number - b.number;
+  });
   const contentRating =
     detail.contentRatings.find((r) => r.region === activeRegion) ?? detail.contentRatings[0];
   const regionWatchProviders = detail.watchProviders.filter((wp) => wp.region === activeRegion);
@@ -285,15 +291,17 @@ export function SeriesDetailPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-4 sm:flex-row">
-        <div className="aspect-[2/3] w-40 shrink-0 overflow-hidden rounded-lg bg-zinc-800">
-          {imageUrl ? (
-            <img src={imageUrl} alt={detail.title} className="h-full w-full object-cover" />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center p-2 text-center text-sm text-zinc-400">
-              {detail.title}
-            </div>
-          )}
-        </div>
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={detail.title}
+            className="w-40 h-auto shrink-0 rounded-lg bg-zinc-800"
+          />
+        ) : (
+          <div className="flex aspect-[2/3] w-40 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-zinc-800 p-2 text-center text-sm text-zinc-400">
+            {detail.title}
+          </div>
+        )}
         <div className="flex flex-1 flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="font-semibold text-2xl">
@@ -446,7 +454,7 @@ export function SeriesDetailPage() {
       </div>
 
       <div className="flex flex-col">
-        {detail.seasons.map((season) => (
+        {sortedSeasons.map((season) => (
           <SeasonSection
             key={season.number}
             season={season}
