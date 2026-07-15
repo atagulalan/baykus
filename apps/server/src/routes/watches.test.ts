@@ -201,3 +201,83 @@ describe("POST /api/library/series/:id/watches/bulk", () => {
     expect(res.status).toBe(404);
   });
 });
+
+describe("GET /api/watches/history", () => {
+  it("returns watched episodes newest-first with the default limit", async () => {
+    const { app, ep1, ep2 } = setup();
+    await app.request(`/api/episodes/${ep1}/watches`, {
+      method: "POST",
+      headers: HEADERS,
+      body: JSON.stringify({ watchedAt: "2026-01-01T10:00:00Z" }),
+    });
+    await app.request(`/api/episodes/${ep2}/watches`, {
+      method: "POST",
+      headers: HEADERS,
+      body: JSON.stringify({ watchedAt: "2026-01-02T10:00:00Z" }),
+    });
+
+    const res = await app.request("/api/watches/history");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      items: { episodeId: number; watchedAt: string }[];
+      total: number;
+    };
+    expect(body.total).toBe(2);
+    expect(body.items.map((i) => i.episodeId)).toEqual([ep2, ep1]);
+  });
+
+  it("respects an explicit limit", async () => {
+    const { app, ep1, ep2 } = setup();
+    await app.request(`/api/episodes/${ep1}/watches`, {
+      method: "POST",
+      headers: HEADERS,
+      body: JSON.stringify({}),
+    });
+    await app.request(`/api/episodes/${ep2}/watches`, {
+      method: "POST",
+      headers: HEADERS,
+      body: JSON.stringify({}),
+    });
+
+    const res = await app.request("/api/watches/history?limit=1");
+    const body = (await res.json()) as { items: unknown[]; total: number };
+    expect(body.items).toHaveLength(1);
+    expect(body.total).toBe(1);
+  });
+
+  it("400 VALIDATION_FAILED for limit=0", async () => {
+    const { app } = setup();
+    const res = await app.request("/api/watches/history?limit=0");
+    expect(res.status).toBe(400);
+  });
+
+  it("400 VALIDATION_FAILED for limit=101", async () => {
+    const { app } = setup();
+    const res = await app.request("/api/watches/history?limit=101");
+    expect(res.status).toBe(400);
+  });
+
+  it("returns the joined item/episode shape", async () => {
+    const { app, itemId, ep1 } = setup();
+    await app.request(`/api/episodes/${ep1}/watches`, {
+      method: "POST",
+      headers: HEADERS,
+      body: JSON.stringify({ watchedAt: "2026-01-01T10:00:00Z" }),
+    });
+
+    const res = await app.request("/api/watches/history");
+    const body = (await res.json()) as { items: Record<string, unknown>[] };
+    expect(body.items[0]).toMatchObject({
+      watchedAt: "2026-01-01T10:00:00Z",
+      source: "manual",
+      itemId,
+      title: "Test Show",
+      episodeId: ep1,
+      s: 1,
+      e: 1,
+      episodeTitle: "Pilot",
+    });
+    expect(body.items[0]).toHaveProperty("watchId");
+    expect(body.items[0]).toHaveProperty("posterRef");
+  });
+});

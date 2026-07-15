@@ -416,7 +416,7 @@ badges, and the not-watched-recently section.
   - **Tests:** ordering, limit, specials included, fields joined correctly.
   - **Verify:** `pnpm test packages/core -- history`
 
-- [ ] M12.2 server: history route
+- [x] M12.2 server: history route
   - **Files:** `apps/server/src/routes/{watches.ts,watches.test.ts}`
   - **DoD:** `GET /api/watches/history?limit=` per contracts 002 (zod int
     1–100 default 30; `total` = returned count).
