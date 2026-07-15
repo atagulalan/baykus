@@ -37,8 +37,12 @@ baykus.xava.me (multi mode, handle-claim accounts).
    progress, view transitions, TMDB-parity URLs. Deltas over 003 + 002 +
    001; 004 wins where they overlap. Its tasks.md (M18–M22) is
    implemented; only the M22 browser checkpoint remains (see root
-   `MANUELTEST.md` §M22). No spec 005 exists yet — check for a root
-   `HANDOVER.md` or ask the user what's next.
+   `MANUELTEST.md` §M22).
+6. `specs/005-mobile-profile-ux/` — mobile-first UX pass, profile hub
+   (`/user/:handle`), favorites (zip v4), stale auto-refresh. Deltas over
+   all four earlier specs; 005 wins where they overlap. Its tasks.md
+   (M23–M27) is **approved and not started** — see root `HANDOVER.md` for
+   the entry point.
 
 ## Normative sources — order of truth
 
@@ -80,6 +84,7 @@ comment. Silent divergence is the one unforgivable failure mode.
 | categories / manual lists / calendar / watch page | 002 spec.md §Edge-case decisions (E16–E29) as amended by 003 (E30–E47) and 004 E50, 002+003 plan.md, `packages/core/src/library/category.ts` |
 | watching window / added_via / zip v3 / UI polish | 003 spec.md §Edge-case decisions (E30–E47), 003 plan.md + data-model.md |
 | import fidelity / season progress / series URLs / transitions | 004 spec.md §Edge-case decisions (E48–E56), 004 plan.md + data-model.md |
+| profile hub / favorites / stale refresh / mobile chrome & ergonomics | 005 spec.md §Edge-case decisions (E57–E73), 005 plan.md + data-model.md + ui.md |
 | zip export/import | data-model.md §Zip + §Merge, constitution Article III |
 | server routes | contracts/api.md (that section), the core service it wraps |
 | web pages/components | ui.md §that screen, contracts/api.md (endpoints it calls) |
