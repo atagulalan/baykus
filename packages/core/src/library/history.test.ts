@@ -1,3 +1,4 @@
+import type { EpisodeType } from "@baykus/provider-sdk";
 import { describe, expect, it } from "vitest";
 import type { LibraryDatabase } from "../db/open.ts";
 import { openLibraryDb } from "../db/open.ts";
@@ -34,10 +35,18 @@ function insertEpisode(
   seasonNumber: number,
   episodeNumber: number,
   title: string | null = null,
+  opts: { airDate?: string | null; episodeType?: EpisodeType | null } = {},
 ): number {
   return db
     .insert(schema.episodes)
-    .values({ itemId, seasonNumber, episodeNumber, title })
+    .values({
+      itemId,
+      seasonNumber,
+      episodeNumber,
+      title,
+      airDate: opts.airDate ?? null,
+      episodeType: opts.episodeType ?? null,
+    })
     .returning({ id: schema.episodes.id })
     .get().id;
 }
@@ -112,7 +121,10 @@ describe("getWatchHistory", () => {
   it("joins itemId/title/posterRef and episode s/e/title correctly", () => {
     const { db } = openLibraryDb(":memory:");
     const itemId = insertItem(db, "House of the Dragon");
-    const ep = insertEpisode(db, itemId, 2, 7, "The Red Sowing");
+    const ep = insertEpisode(db, itemId, 2, 7, "The Red Sowing", {
+      airDate: "2026-07-14",
+      episodeType: "finale",
+    });
     const watchId = addWatch(db, ep, itemId, "2026-07-14T21:30:00Z", "manual");
 
     const result = getWatchHistory(db, 30);
@@ -127,6 +139,18 @@ describe("getWatchHistory", () => {
       s: 2,
       e: 7,
       episodeTitle: "The Red Sowing",
+      airDate: "2026-07-14",
+      episodeType: "finale",
     });
+  });
+
+  it("airDate/episodeType are null-safe when the episode has neither (E38)", () => {
+    const { db } = openLibraryDb(":memory:");
+    const itemId = insertItem(db, "Test Show");
+    const ep = insertEpisode(db, itemId, 1, 1);
+    addWatch(db, ep, itemId, "2026-01-01T10:00:00Z");
+
+    const result = getWatchHistory(db, 30);
+    expect(result[0]).toMatchObject({ airDate: null, episodeType: null });
   });
 });

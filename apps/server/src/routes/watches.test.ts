@@ -276,6 +276,8 @@ describe("GET /api/watches/history", () => {
       s: 1,
       e: 1,
       episodeTitle: "Pilot",
+      airDate: addDays(-10),
+      episodeType: null,
     });
     expect(body.items[0]).toHaveProperty("watchId");
     expect(body.items[0]).toHaveProperty("posterRef");

@@ -1,4 +1,4 @@
-import type { ImageRef } from "@baykus/provider-sdk";
+import type { EpisodeType, ImageRef } from "@baykus/provider-sdk";
 import { desc, eq } from "drizzle-orm";
 import type { LibraryDatabase } from "../db/open.ts";
 import type { WatchSource } from "../db/schema.ts";
@@ -15,6 +15,9 @@ export interface WatchHistoryEntry {
   s: number;
   e: number;
   episodeTitle: string | null;
+  /** Straight off the joined episode row (E38). */
+  airDate: string | null;
+  episodeType: EpisodeType | null;
 }
 
 /**
@@ -35,6 +38,8 @@ export function getWatchHistory(db: LibraryDatabase, limit: number): WatchHistor
       s: schema.episodes.seasonNumber,
       e: schema.episodes.episodeNumber,
       episodeTitle: schema.episodes.title,
+      airDate: schema.episodes.airDate,
+      episodeType: schema.episodes.episodeType,
     })
     .from(schema.watches)
     .innerJoin(schema.episodes, eq(schema.episodes.id, schema.watches.episodeId))

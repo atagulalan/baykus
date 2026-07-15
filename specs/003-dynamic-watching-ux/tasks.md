@@ -326,7 +326,7 @@ calendar, filter reset fixed.
 Checkpoint goal: unified watch page, working test notification, 003
 acceptance walked, docs refreshed.
 
-- [ ] M17.1 core+server: history entries gain airDate/episodeType (E38)
+- [x] M17.1 core+server: history entries gain airDate/episodeType (E38)
   - **Files:** `packages/core/src/library/{history.ts,history.test.ts}`,
     `apps/server/src/routes/watches.test.ts`
   - **DoD:** `WatchHistoryEntry` + the select gain `airDate`,
