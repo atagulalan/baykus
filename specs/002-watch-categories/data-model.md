@@ -29,6 +29,10 @@ the upgrade-test strategy).
 
 ## Category engine inputs (per item)
 
+*(AMENDED by 003: the engine additionally consumes `newestAiredAt`,
+`items.added_at`, `items.added_via` and the `watching_window_days` setting —
+see data-model 003 §Category engine inputs.)*
+
 All aggregates exclude `season_number = 0` (E1/E17):
 
 - `manual_list`
@@ -39,6 +43,10 @@ All aggregates exclude `season_number = 0` (E1/E17):
 - `items.release_status`
 
 ## Zip format (`schemaVersion: 2`)
+
+*(SUPERSEDED by 003: current schemaVersion is 3 — items gain `addedVia`; v2
+remains importable. See data-model 003 §Zip format. The v1→v2 mapping below
+still governs v1 imports.)*
 
 File layout, canonical JSON rules, and every file except items.json are
 unchanged from 001. manifest.json: `"schemaVersion": 2`.

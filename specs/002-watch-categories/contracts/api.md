@@ -21,8 +21,10 @@ WatchCategory = "watching" | "not_watched_recently" | "not_started"
 ← 201 { SeriesSummary }
 ```
 `manualList` optional (`watch_later` | `stopped`); omitted/null = dynamic.
-The old `status` field is **rejected** (unknown field → 400). A freshly added
-series with no watches lands in category `not_started` by itself.
+The old `status` field is **rejected** (unknown field → 400). ~~A freshly
+added series with no watches lands in category `not_started` by itself.~~
+*SUPERSEDED by 003 (E30 rung 3a): a fresh manual add computes as `watching`
+while inside the window, then falls to `not_started`.*
 
 ### GET /api/library/series?category=watching&sort=lastWatched
 - `category` optional ∈ WatchCategory (7 values — computed server-side).
@@ -79,6 +81,7 @@ Side effect (E19): a `manual`/`bulk` watch clears the item's `manualList`.
   } ], "total": 30 }
 ```
 `total` = number of items returned. Includes specials and every source (E27).
+*(AMENDED by 003 E38: entries gain nullable `airDate` + `episodeType`.)*
 
 ## Calendar (changed)
 
@@ -123,8 +126,9 @@ E26 (`watching`/`paused` → dynamic, `plan_to_watch` → watch_later,
 
 ## Zip (behavior note)
 
-Endpoints unchanged. Export emits schemaVersion 2; import accepts 1 and 2
-(422 `UNSUPPORTED_SCHEMA` otherwise, as before).
+Endpoints unchanged. ~~Export emits schemaVersion 2; import accepts 1 and 2~~
+*SUPERSEDED by 003 (E32): export emits schemaVersion 3; import accepts 1, 2
+and 3* (422 `UNSUPPORTED_SCHEMA` otherwise, as before).
 
 ## Push (behavior note)
 

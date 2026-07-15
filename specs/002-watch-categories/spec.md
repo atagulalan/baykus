@@ -12,6 +12,11 @@ DB), and the "5 statuses at add time" part of US-1. Spec 001 carries inline
 `SUPERSEDED by 002` markers at each affected spot. Everything else in 001
 stays normative.
 
+**Amended by spec 003** (`specs/003-dynamic-watching-ux/`): the fixed 30-day
+window, E16's rungs 3–7, the filter RESET rule, the watch-page history
+rendering, and the zip schemaVersion. Each affected spot below carries an
+inline `SUPERSEDED/AMENDED by 003` marker; 003 wins where they overlap.
+
 ## Summary
 
 baykuş v1 tracks series with five manually managed statuses. In practice most
@@ -29,7 +34,7 @@ which is what Article V demands.
 |---|---|
 | Storage model | DB stores only `manual_list` (`watch_later` / `stopped` / NULL). The 7 display categories are computed on read, never stored. |
 | Category set | watching · not_watched_recently · not_started · watch_later · up_to_date · finished · stopped |
-| "Recently" window | 30 days, rolling, from the newest non-special watch event |
+| "Recently" window | 30 days, rolling, from the newest non-special watch event *(SUPERSEDED by 003 E31: configurable `watching_window_days`, default 30)* |
 | finished vs up_to_date | `releaseStatus` decides: `returning`/`in_production` → up_to_date; `ended`/`canceled`/NULL → finished |
 | Calendar + push scope | The **active trio**: watching + not_watched_recently + up_to_date. Watch later / not started / stopped / finished are excluded. (A revived finished show flips to up_to_date on refresh and re-enters the scope by itself.) |
 | Specials (S0) | Appear in the calendar with SPECIAL/OVA tags; still **never** count toward progress or categories (E1 upheld). OVA is a name heuristic — providers don't distinguish it. |
@@ -124,8 +129,8 @@ As a user, I get new-episode push notifications for series in the active trio
 
 | # | Question | Decision |
 |---|---|---|
-| E16 | Category precedence? | First match wins: **1)** `manual_list = watch_later` → watch_later **2)** `manual_list = stopped` → stopped **3)** zero watch events on non-special episodes → not_started **4)** aired non-special count > 0 AND every aired non-special episode watched AND `releaseStatus` ∉ {returning, in_production} → finished **5)** same but `releaseStatus` ∈ {returning, in_production} → up_to_date **6)** newest non-special watch ≥ now − 30 days → watching **7)** else → not_watched_recently. Display order everywhere: watching, not_watched_recently, not_started, watch_later, up_to_date, finished, stopped. |
-| E17 | What counts for the 30-day window? | Non-special watch events only (E1 extended: specials never influence categories). Comparison: `watched_at ≥ nowUtc − 30d`, plain ISO string compare, rolling — a series drifts categories with no user action, which is expected and correct. |
+| E16 | Category precedence? | First match wins: **1)** `manual_list = watch_later` → watch_later **2)** `manual_list = stopped` → stopped **3)** zero watch events on non-special episodes → not_started **4)** aired non-special count > 0 AND every aired non-special episode watched AND `releaseStatus` ∉ {returning, in_production} → finished **5)** same but `releaseStatus` ∈ {returning, in_production} → up_to_date **6)** newest non-special watch ≥ now − 30 days → watching **7)** else → not_watched_recently. Display order everywhere: watching, not_watched_recently, not_started, watch_later, up_to_date, finished, stopped. *(AMENDED by 003 E30: rungs 3–7 replaced — fresh manual adds compute as watching, rung 6 gains a new-episode operand, window configurable. Rungs 1–2/4–5 and the display order are unchanged.)* |
+| E17 | What counts for the 30-day window? | Non-special watch events only (E1 extended: specials never influence categories). Comparison: `watched_at ≥ nowUtc − 30d`, plain ISO string compare, rolling — a series drifts categories with no user action, which is expected and correct. *(AMENDED by 003 E31: the 30-day constant becomes the `watching_window_days` setting.)* |
 | E18 | Unknown `releaseStatus`? | NULL / `ended` / `canceled` → treated as "no more episodes coming" (finished branch). Only `returning` / `in_production` count as ongoing. |
 | E19 | Which watch events auto-clear `manual_list`? | Sources `manual` and `bulk` only. `import:tvtime` / `import:zip` never clear a manual list (bulk imports must not silently empty curated lists). Auto-clear happens in the same transaction as the watch insert. |
 | E20 | Guard details? | `setManualList(id, "stopped")` throws a typed conflict when the item's *dynamic* category (computed as if `manual_list` were NULL) is `finished` → HTTP 409 `CONFLICT`. `watch_later` has no guard. The guard applies to user-facing writes (PATCH); imports instead run the E26 cleanup. |
@@ -141,7 +146,8 @@ As a user, I get new-episode push notifications for series in the active trio
 
 ## Non-goals
 
-- Configurable window length (30 days is fixed in v1 of this spec).
+- ~~Configurable window length (30 days is fixed in v1 of this spec).~~
+  *SUPERSEDED by 003 (E31): the window is now a setting.*
 - A "rewatching" category or rewatch progress tracking.
 - Reliable OVA detection (name heuristic only; wrong/missing OVA tags are
   acceptable).

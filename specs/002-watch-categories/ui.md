@@ -15,6 +15,8 @@ covers only the changed/new screens.
 - The `🦉 baykuş` logo becomes a `<Link to="/">` (today it is a plain span).
 - New nav item **İzleme** (`/watch`) between Kütüphane and Takvim
   (`app.nav.watch`; existing nav keys follow the same area).
+- *AMENDED by 003 (E36): header becomes sticky; on `<sm` the nav moves to a
+  fixed bottom icon tab bar — see 003 ui.md §Layout.*
 
 ## Home / Library `/` (reworked)
 
@@ -50,8 +52,9 @@ Daha başlanmadı (4)
 │              [SIFIRLA]   [UYGULA]    │
 └──────────────────────────────────────┘
 ```
-- APPLY applies both choices; RESET = Tümü + Son eklenen. State is component
-  state only (not persisted, not URL).
+- APPLY applies both choices; ~~RESET = Tümü + Son eklenen~~ *(SUPERSEDED by
+  003 E41: RESET = the page-load defaults, Tümü + Son izlenen)*. State is
+  component state only (not persisted, not URL).
 - Progress = a single category → flat grid (no section headers), still
   sorted by the chosen sort. Tümü → sections; sort orders cards *within*
   each section.
@@ -144,6 +147,9 @@ Bir süredir izlenmedi                   ← category = not_watched_recently
 ```
 - **İzleme geçmişi**: `GET /api/watches/history` (default 30), rendered
   oldest→top, newest→bottom (E27); relative day formatting like the calendar.
+  *(AMENDED by 003 E38: rows use the shared poster-row component, no inner
+  scroll container, and the page anchors to "Sıradaki bölümler" instead of
+  bottom-scrolling the history — see 003 ui.md §Watch page.)*
 - **Sıradaki bölümler** / **Bir süredir izlenmedi**: derived from the same
   `listSeries` data the home page uses — filter by category, one row per
   series showing `nextUnwatched`. `+N` badge per E28. Checkbox = quick-mark
