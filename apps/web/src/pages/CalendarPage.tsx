@@ -130,7 +130,7 @@ function TimelineView({ onToggleWatched }: { onToggleWatched: (episodeId: number
         <div
           key={day.date}
           ref={day.date === today ? todayRef : undefined}
-          className="flex flex-col gap-1"
+          className="flex scroll-mt-16 flex-col gap-1"
         >
           <h3 className="text-xs text-zinc-500 uppercase">
             {day.date === today

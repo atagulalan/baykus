@@ -1,15 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, Navigate, Outlet, useRouterState } from "@tanstack/react-router";
+import { CalendarDays, ChartColumn, LayoutGrid, Play, Settings } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { getAuthSession } from "../api/client.ts";
 import { SearchBar } from "./SearchBar.tsx";
 
 const navItems = [
-  { to: "/", key: "app.nav.library" },
-  { to: "/watch", key: "app.nav.watch" },
-  { to: "/calendar", key: "app.nav.calendar" },
-  { to: "/stats", key: "app.nav.stats" },
-  { to: "/settings", key: "app.nav.settings" },
+  { to: "/", key: "app.nav.library", Icon: LayoutGrid },
+  { to: "/watch", key: "app.nav.watch", Icon: Play },
+  { to: "/calendar", key: "app.nav.calendar", Icon: CalendarDays },
+  { to: "/stats", key: "app.nav.stats", Icon: ChartColumn },
+  { to: "/settings", key: "app.nav.settings", Icon: Settings },
 ] as const;
 
 const BARE_PATHS = new Set(["/login", "/claim"]);
@@ -28,13 +29,13 @@ export function Layout() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
-      <header className="border-zinc-800 border-b">
+      <header className="sticky top-0 z-40 border-zinc-800 border-b bg-zinc-950">
         <nav className="mx-auto flex max-w-5xl flex-wrap items-center gap-4 px-4 py-3 sm:gap-6">
           <Link to="/" className="font-bold text-lg">
             🦉 {t("app.name")}
           </Link>
           <SearchBar />
-          <div className="flex items-center gap-6">
+          <div className="hidden items-center gap-6 sm:flex">
             {navItems.map((item) => (
               <Link
                 key={item.to}
@@ -47,9 +48,21 @@ export function Layout() {
           </div>
         </nav>
       </header>
-      <main className="mx-auto max-w-5xl px-4 py-6">
+      <main className="mx-auto max-w-5xl px-4 py-6 pb-20 sm:pb-6">
         <Outlet />
       </main>
+      <nav className="fixed inset-x-0 bottom-0 z-40 flex border-zinc-800 border-t bg-zinc-950 pb-[env(safe-area-inset-bottom)] sm:hidden">
+        {navItems.map(({ to, key, Icon }) => (
+          <Link
+            key={to}
+            to={to}
+            className="flex flex-1 flex-col items-center gap-0.5 py-2 text-zinc-500 [&.active]:text-zinc-100"
+          >
+            <Icon size={20} />
+            <span className="text-[10px]">{t(key)}</span>
+          </Link>
+        ))}
+      </nav>
     </div>
   );
 }

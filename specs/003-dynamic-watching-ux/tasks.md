@@ -266,7 +266,7 @@ Checkpoint goal: cards and the detail header show the season-segmented bar
 Checkpoint goal: sticky header, mobile bottom tabs, posters throughout the
 calendar, filter reset fixed.
 
-- [ ] M16.1 web: sticky header + mobile bottom nav (E36, FR-034)
+- [x] M16.1 web: sticky header + mobile bottom nav (E36, FR-034)
   - **Files:** `apps/web/package.json` (+ lockfile — add `lucide-react`),
     `apps/web/src/components/Layout.tsx`
   - **DoD:** ui.md 003 §Layout: sticky header (opaque bg, z-40); `<sm` nav
