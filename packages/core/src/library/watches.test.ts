@@ -2,9 +2,9 @@ import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import type { LibraryDatabase } from "../db/open.ts";
 import { openLibraryDb } from "../db/open.ts";
-import type { TrackingStatus } from "../db/schema.ts";
+import type { ManualList, WatchSource } from "../db/schema.ts";
 import * as schema from "../db/schema.ts";
-import { addWatch, bulkWatch, removeLatestWatch, suggestCompleted } from "./watches.ts";
+import { addWatch, bulkWatch, removeLatestWatch } from "./watches.ts";
 
 function addDays(days: number): string {
   const d = new Date();
@@ -12,7 +12,7 @@ function addDays(days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-function setupItem(db: LibraryDatabase, status: TrackingStatus = "watching"): number {
+function setupItem(db: LibraryDatabase, manualList: ManualList | null = null): number {
   const item = db
     .insert(schema.items)
     .values({ mediaType: "series", title: "Test Show", addedAt: "2026-01-01T00:00:00Z" })
@@ -21,10 +21,10 @@ function setupItem(db: LibraryDatabase, status: TrackingStatus = "watching"): nu
   db.insert(schema.tracking)
     .values({
       itemId: item.id,
-      status,
+      manualList,
       pushMuted: false,
       note: null,
-      statusChangedAt: "2026-01-01T00:00:00Z",
+      listChangedAt: "2026-01-01T00:00:00Z",
     })
     .run();
   return item.id;
@@ -46,6 +46,16 @@ function insertEpisode(
 
 function watchesFor(db: LibraryDatabase, episodeId: number) {
   return db.select().from(schema.watches).where(eq(schema.watches.episodeId, episodeId)).all();
+}
+
+function manualListOf(db: LibraryDatabase, itemId: number): ManualList | null {
+  return (
+    db
+      .select({ manualList: schema.tracking.manualList })
+      .from(schema.tracking)
+      .where(eq(schema.tracking.itemId, itemId))
+      .get()?.manualList ?? null
+  );
 }
 
 describe("addWatch", () => {
@@ -79,6 +89,52 @@ describe("addWatch", () => {
   it("returns null for an unknown episode", () => {
     const { db } = openLibraryDb(":memory:");
     expect(addWatch(db, 999, "2026-01-01T00:00:00Z")).toBeNull();
+  });
+});
+
+describe("addWatch — E19 auto-clear", () => {
+  it.each<ManualList>([
+    "watch_later",
+    "stopped",
+  ])("a manual-source watch clears manual_list=%s and bumps list_changed_at", (manualList) => {
+    const { db } = openLibraryDb(":memory:");
+    const itemId = setupItem(db, manualList);
+    const epId = insertEpisode(db, itemId, 1, 1, addDays(-10));
+
+    addWatch(db, epId, "2026-01-01T10:00:00Z", "manual");
+
+    const row = db.select().from(schema.tracking).where(eq(schema.tracking.itemId, itemId)).get();
+    expect(row?.manualList).toBeNull();
+    expect(row?.listChangedAt).not.toBe("2026-01-01T00:00:00Z");
+  });
+
+  it.each<WatchSource>([
+    "import:tvtime",
+    "import:zip",
+  ])("a %s watch never clears manual_list", (source) => {
+    const { db } = openLibraryDb(":memory:");
+    const itemId = setupItem(db, "stopped");
+    const epId = insertEpisode(db, itemId, 1, 1, addDays(-10));
+
+    addWatch(db, epId, "2026-01-01T10:00:00Z", source);
+
+    expect(manualListOf(db, itemId)).toBe("stopped");
+  });
+
+  it("an idempotent replay of an existing watch does not re-trigger the clear", () => {
+    const { db } = openLibraryDb(":memory:");
+    const itemId = setupItem(db);
+    const epId = insertEpisode(db, itemId, 1, 1, addDays(-10));
+    addWatch(db, epId, "2026-01-01T10:00:00Z", "manual");
+
+    // Set the manual list back after the first watch, then replay the same watch event.
+    db.update(schema.tracking)
+      .set({ manualList: "stopped", listChangedAt: "2026-02-01T00:00:00Z" })
+      .where(eq(schema.tracking.itemId, itemId))
+      .run();
+
+    addWatch(db, epId, "2026-01-01T10:00:00Z", "manual");
+    expect(manualListOf(db, itemId)).toBe("stopped");
   });
 });
 
@@ -158,47 +214,25 @@ describe("bulkWatch", () => {
   });
 });
 
-describe("suggestCompleted", () => {
-  it("flips to true exactly when the last aired episode is watched", () => {
+describe("bulkWatch — E19 auto-clear", () => {
+  it("clears a non-null manual_list when it actually creates a watch", () => {
     const { db } = openLibraryDb(":memory:");
-    const itemId = setupItem(db);
-    const e1 = insertEpisode(db, itemId, 1, 1, addDays(-10));
-    const e2 = insertEpisode(db, itemId, 1, 2, addDays(-5));
+    const itemId = setupItem(db, "watch_later");
+    insertEpisode(db, itemId, 1, 1, addDays(-10));
 
-    expect(suggestCompleted(db, itemId)).toBe(false);
+    bulkWatch(db, itemId, { seasonNumber: 1 });
 
-    addWatch(db, e1, "2026-01-01T00:00:00Z");
-    expect(suggestCompleted(db, itemId)).toBe(false);
-
-    const result = addWatch(db, e2, "2026-01-02T00:00:00Z");
-    expect(suggestCompleted(db, itemId)).toBe(true);
-    expect(result?.suggestCompleted).toBe(true);
+    expect(manualListOf(db, itemId)).toBeNull();
   });
 
-  it("is false once status is already completed", () => {
+  it("does not touch manual_list when every candidate was already watched", () => {
     const { db } = openLibraryDb(":memory:");
-    const itemId = setupItem(db, "completed");
+    const itemId = setupItem(db, "stopped");
     const e1 = insertEpisode(db, itemId, 1, 1, addDays(-10));
-    addWatch(db, e1, "2026-01-01T00:00:00Z");
+    addWatch(db, e1, "2026-01-01T00:00:00Z", "import:zip");
 
-    expect(suggestCompleted(db, itemId)).toBe(false);
-  });
+    bulkWatch(db, itemId, { seasonNumber: 1 });
 
-  it("is false when nothing has aired yet", () => {
-    const { db } = openLibraryDb(":memory:");
-    const itemId = setupItem(db);
-    insertEpisode(db, itemId, 1, 1, addDays(5));
-
-    expect(suggestCompleted(db, itemId)).toBe(false);
-  });
-
-  it("ignores unwatched future episodes — they never block or require watching", () => {
-    const { db } = openLibraryDb(":memory:");
-    const itemId = setupItem(db);
-    const e1 = insertEpisode(db, itemId, 1, 1, addDays(-10));
-    insertEpisode(db, itemId, 1, 2, addDays(10));
-
-    addWatch(db, e1, "2026-01-01T00:00:00Z");
-    expect(suggestCompleted(db, itemId)).toBe(true);
+    expect(manualListOf(db, itemId)).toBe("stopped");
   });
 });

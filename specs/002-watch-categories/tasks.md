@@ -67,7 +67,7 @@ on schemaVersion 2.
     per-item result on a mixed library.
   - **Verify:** `pnpm test packages/core -- category`
 
-- [ ] M10.3 core: service rework — manual lists, filters, sorts, auto-clear
+- [x] M10.3 core: service rework — manual lists, filters, sorts, auto-clear
   - **Files:** `packages/core/src/library/{service.ts,types.ts,watches.ts,
     progress.ts,errors.ts}` + their tests, `packages/core/src/index.ts`
   - **DoD:**
@@ -98,6 +98,16 @@ on schemaVersion 2.
     airDate/episodeType.
   - **Verify:** `pnpm lint && pnpm typecheck && pnpm test packages/core`
     (full gate for the M10.1–M10.3 train; server/web untouched so far)
+  <!-- DECISION: full-gate typecheck/test still fails in
+  calendar/query.ts(.test), library/stats.ts(.test), zip/{types,export,import}.ts
+  and their tests — all pre-existing breakage from M10.1's schema change,
+  explicitly deferred to M10.4/M10.5/M11.1 per M10.1's own note ("expect
+  broad typecheck breakage across core/server"); left untouched here as
+  out of M10.3's Files list. One extra file, refresh/engine.test.ts, hit the
+  same `status`/`statusChangedAt` fixture breakage but is not owned by any
+  M10-M13 task in this document; since its fix was a one-line mechanical
+  fixture rename (no logic change) and leaving it broken would have no
+  future owner, it was fixed here rather than left dangling. -->
 
 - [ ] M10.4 core: zip schemaVersion 2 + v1 import (FR-025, E26)
   - **Files:** `packages/core/src/zip/{types.ts,export.ts,import.ts}`,

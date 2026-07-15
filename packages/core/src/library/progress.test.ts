@@ -101,7 +101,35 @@ describe("getNextUnwatchedEpisode", () => {
       .values({ episodeId: e1, itemId, watchedAt: "2026-01-01T00:00:00Z", source: "manual" })
       .run();
 
-    expect(getNextUnwatchedEpisode(db, itemId)).toEqual({ episodeId: e2, s: 1, e: 2, title: null });
+    expect(getNextUnwatchedEpisode(db, itemId)).toEqual({
+      episodeId: e2,
+      s: 1,
+      e: 2,
+      title: null,
+      airDate: addDays(-5),
+      episodeType: null,
+    });
+  });
+
+  it("carries episodeType through (FR-024)", () => {
+    const { db } = openLibraryDb(":memory:");
+    const itemId = insertItem(db);
+    const e1 = db
+      .insert(schema.episodes)
+      .values({
+        itemId,
+        seasonNumber: 1,
+        episodeNumber: 1,
+        airDate: addDays(-1),
+        episodeType: "finale",
+      })
+      .returning({ id: schema.episodes.id })
+      .get().id;
+
+    expect(getNextUnwatchedEpisode(db, itemId)).toMatchObject({
+      episodeId: e1,
+      episodeType: "finale",
+    });
   });
 
   it("returns null once every non-special episode is watched", () => {

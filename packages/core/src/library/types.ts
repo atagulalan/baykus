@@ -9,7 +9,8 @@ import type {
   TagInfo,
   WatchProviderInfo,
 } from "@baykus/provider-sdk";
-import type { TrackingStatus } from "../db/schema.ts";
+import type { ManualList } from "../db/schema.ts";
+import type { WatchCategory } from "./category.ts";
 import type { NextUnwatchedEpisode, SeriesProgress } from "./progress.ts";
 
 export type { NextUnwatchedEpisode, SeriesProgress };
@@ -19,7 +20,10 @@ export interface SeriesSummary {
   title: string;
   posterRef: ImageRef | null;
   year: number | null;
-  status: TrackingStatus;
+  category: WatchCategory;
+  manualList: ManualList | null;
+  /** Max watched_at over non-special watches, or null if never watched. */
+  lastWatchedAt: string | null;
   /** My item rating (1-3), or null if unrated. */
   rating: 1 | 2 | 3 | null;
   releaseStatus: ReleaseStatus | null;
@@ -76,13 +80,13 @@ export interface SeriesDetail extends SeriesSummary {
 }
 
 export interface ListSeriesOptions {
-  status?: TrackingStatus;
-  sort?: "title" | "added" | "rating" | "nextAir";
+  category?: WatchCategory;
+  sort?: "title" | "added" | "rating" | "nextAir" | "lastWatched";
 }
 
 /** Partial update to a series' tracking row; any subset of fields. */
 export interface TrackingPatch {
-  status?: TrackingStatus;
+  manualList?: ManualList | null;
   pushMuted?: boolean;
   note?: string | null;
 }

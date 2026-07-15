@@ -1,4 +1,4 @@
-import { and, eq, isNotNull, isNull, lte, ne } from "drizzle-orm";
+import { and, eq, isNotNull, lte, ne } from "drizzle-orm";
 import type { LibraryDatabase } from "../db/open.ts";
 import type { WatchSource } from "../db/schema.ts";
 import * as schema from "../db/schema.ts";
@@ -6,39 +6,16 @@ import { todayUtc } from "./progress.ts";
 
 type WatchRow = typeof schema.watches.$inferSelect;
 
-/** E7: pure predicate — every aired non-special episode has >=1 watch and status != completed. */
-export function suggestCompleted(db: LibraryDatabase, itemId: number): boolean {
-  const tracking = db
-    .select({ status: schema.tracking.status })
-    .from(schema.tracking)
-    .where(eq(schema.tracking.itemId, itemId))
-    .get();
-  if (!tracking || tracking.status === "completed") return false;
+/** E19: only these sources auto-clear a manual list; imports never do. */
+const AUTO_CLEAR_SOURCES: ReadonlySet<WatchSource> = new Set(["manual", "bulk"]);
 
-  const today = todayUtc();
-  const airedNonSpecial = and(
-    eq(schema.episodes.itemId, itemId),
-    ne(schema.episodes.seasonNumber, 0),
-    isNotNull(schema.episodes.airDate),
-    lte(schema.episodes.airDate, today),
-  );
-
-  const unwatchedAired = db
-    .select({ id: schema.episodes.id })
-    .from(schema.episodes)
-    .leftJoin(schema.watches, eq(schema.watches.episodeId, schema.episodes.id))
-    .where(and(airedNonSpecial, isNull(schema.watches.id)))
-    .limit(1)
-    .all();
-  if (unwatchedAired.length > 0) return false;
-
-  const anyAired = db
-    .select({ id: schema.episodes.id })
-    .from(schema.episodes)
-    .where(airedNonSpecial)
-    .limit(1)
-    .all();
-  return anyAired.length > 0;
+/** E19: clears a non-null manual_list (and bumps list_changed_at) in the caller's transaction. */
+function autoClearManualList(tx: LibraryDatabase, itemId: number, source: WatchSource): void {
+  if (!AUTO_CLEAR_SOURCES.has(source)) return;
+  tx.update(schema.tracking)
+    .set({ manualList: null, listChangedAt: new Date().toISOString() })
+    .where(and(eq(schema.tracking.itemId, itemId), isNotNull(schema.tracking.manualList)))
+    .run();
 }
 
 export interface AddWatchResult {
@@ -46,7 +23,6 @@ export interface AddWatchResult {
   episodeId: number;
   watchedAt: string;
   source: WatchSource;
-  suggestCompleted: boolean;
   /** false when an identical (episodeId, watchedAt) watch already existed (idempotent replay, E6). */
   created: boolean;
 }
@@ -67,28 +43,31 @@ export function addWatch(
 
   const at = watchedAt ?? new Date().toISOString();
 
-  const existing = db
-    .select()
-    .from(schema.watches)
-    .where(and(eq(schema.watches.episodeId, episodeId), eq(schema.watches.watchedAt, at)))
-    .get();
-
-  const watch: WatchRow =
-    existing ??
-    db
-      .insert(schema.watches)
-      .values({ episodeId, itemId: episode.itemId, watchedAt: at, source })
-      .returning()
+  return db.transaction((tx) => {
+    const existing = tx
+      .select()
+      .from(schema.watches)
+      .where(and(eq(schema.watches.episodeId, episodeId), eq(schema.watches.watchedAt, at)))
       .get();
 
-  return {
-    id: watch.id,
-    episodeId: watch.episodeId,
-    watchedAt: watch.watchedAt,
-    source: watch.source,
-    suggestCompleted: suggestCompleted(db, episode.itemId),
-    created: !existing,
-  };
+    const watch: WatchRow =
+      existing ??
+      tx
+        .insert(schema.watches)
+        .values({ episodeId, itemId: episode.itemId, watchedAt: at, source })
+        .returning()
+        .get();
+
+    if (!existing) autoClearManualList(tx, episode.itemId, source);
+
+    return {
+      id: watch.id,
+      episodeId: watch.episodeId,
+      watchedAt: watch.watchedAt,
+      source: watch.source,
+      created: !existing,
+    };
+  });
 }
 
 /** E5: removes the watch event with the newest watchedAt for that episode. Returns false if none exists. */
@@ -110,7 +89,6 @@ export type BulkWatchTarget = { upToEpisodeId: number } | { seasonNumber: number
 export interface BulkWatchResult {
   created: number;
   skippedAlreadyWatched: number;
-  suggestCompleted: boolean;
 }
 
 /**
@@ -192,7 +170,9 @@ export function bulkWatch(
         .run();
       created++;
     }
+
+    if (created > 0) autoClearManualList(tx, itemId, "bulk");
   });
 
-  return { created, skippedAlreadyWatched, suggestCompleted: suggestCompleted(db, itemId) };
+  return { created, skippedAlreadyWatched };
 }

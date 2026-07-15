@@ -73,13 +73,19 @@ function categorize(
   return "not_watched_recently";
 }
 
+export interface CategoryInfo {
+  category: WatchCategory;
+  /** Max watched_at over non-special watches, or null if never watched. */
+  lastWatchedAt: string | null;
+}
+
 function computeCategoriesInternal(
   db: LibraryDatabase,
   itemIds: number[],
   now: Date,
   opts: { ignoreManualList: boolean },
-): Map<number, WatchCategory> {
-  const result = new Map<number, WatchCategory>();
+): Map<number, CategoryInfo> {
+  const result = new Map<number, CategoryInfo>();
   if (itemIds.length === 0) return result;
 
   const today = isoNow(now).slice(0, 10);
@@ -135,13 +141,13 @@ function computeCategoriesInternal(
     const airedEpisodes = airedByItem.get(row.id) ?? 0;
     const airedWatched = airedWatchedByItem.get(row.id) ?? 0;
 
-    result.set(
-      row.id,
-      categorize(
+    const lastWatchedAt = watch?.lastWatchedAt ?? null;
+    result.set(row.id, {
+      category: categorize(
         {
           manualList: row.manualList,
           watchedEpisodes: watch?.watchedEpisodes ?? 0,
-          lastWatchedAt: watch?.lastWatchedAt ?? null,
+          lastWatchedAt,
           airedEpisodes,
           airedUnwatched: airedEpisodes - airedWatched,
           releaseStatus: row.releaseStatus,
@@ -149,10 +155,17 @@ function computeCategoriesInternal(
         now,
         opts,
       ),
-    );
+      lastWatchedAt,
+    });
   }
 
   return result;
+}
+
+function categoriesOnly(info: Map<number, CategoryInfo>): Map<number, WatchCategory> {
+  const out = new Map<number, WatchCategory>();
+  for (const [id, v] of info) out.set(id, v.category);
+  return out;
 }
 
 /** Batch: one grouped query per aggregate, merged in JS — never call per-item in a loop. */
@@ -161,7 +174,7 @@ export function computeCategories(
   itemIds: number[],
   now: Date = new Date(),
 ): Map<number, WatchCategory> {
-  return computeCategoriesInternal(db, itemIds, now, { ignoreManualList: false });
+  return categoriesOnly(computeCategoriesInternal(db, itemIds, now, { ignoreManualList: false }));
 }
 
 export function computeCategory(
@@ -178,7 +191,7 @@ export function computeDynamicCategories(
   itemIds: number[],
   now: Date = new Date(),
 ): Map<number, WatchCategory> {
-  return computeCategoriesInternal(db, itemIds, now, { ignoreManualList: true });
+  return categoriesOnly(computeCategoriesInternal(db, itemIds, now, { ignoreManualList: true }));
 }
 
 export function computeDynamicCategory(
@@ -187,4 +200,16 @@ export function computeDynamicCategory(
   now: Date = new Date(),
 ): WatchCategory | null {
   return computeDynamicCategories(db, [itemId], now).get(itemId) ?? null;
+}
+
+/**
+ * Batch category + lastWatchedAt together, reusing the same watch aggregate —
+ * SeriesSummary needs both and must not run a second per-item query for the latter.
+ */
+export function computeCategoryInfo(
+  db: LibraryDatabase,
+  itemIds: number[],
+  now: Date = new Date(),
+): Map<number, CategoryInfo> {
+  return computeCategoriesInternal(db, itemIds, now, { ignoreManualList: false });
 }

@@ -10,12 +10,13 @@ import type { Archiver } from "archiver";
 import { and, eq, or, sql } from "drizzle-orm";
 import { type CalendarResponse, getCalendar } from "../calendar/query.ts";
 import type { LibraryDatabase } from "../db/open.ts";
-import type { RatingTargetType, TrackingStatus, WatchSource } from "../db/schema.ts";
+import type { ManualList, RatingTargetType, WatchSource } from "../db/schema.ts";
 import * as schema from "../db/schema.ts";
 import { type RefreshResult, refreshAll, refreshItem } from "../refresh/engine.ts";
 import { type ExportOptions, exportLibraryZip } from "../zip/export.ts";
 import { type ImportMode, type ImportResult, importLibraryZip } from "../zip/import.ts";
-import { AlreadyInLibraryError } from "./errors.ts";
+import { type CategoryInfo, computeCategoryInfo, computeDynamicCategory } from "./category.ts";
+import { AlreadyInLibraryError, ManualListConflictError } from "./errors.ts";
 import { getNextAirDate, getNextUnwatchedEpisode, getSeriesProgress } from "./progress.ts";
 import {
   addPushSubscription,
@@ -47,7 +48,6 @@ import {
   type BulkWatchTarget,
   bulkWatch,
   removeLatestWatch,
-  suggestCompleted,
 } from "./watches.ts";
 
 type ItemRow = typeof schema.items.$inferSelect;
@@ -118,13 +118,20 @@ function yearOf(dateStr: string | null): number | null {
   return Number.isFinite(year) ? year : null;
 }
 
-function buildSummary(db: LibraryDatabase, item: ItemRow, tracking: TrackingRow): SeriesSummary {
+function buildSummary(
+  db: LibraryDatabase,
+  item: ItemRow,
+  tracking: TrackingRow,
+  categoryInfo: CategoryInfo,
+): SeriesSummary {
   return {
     id: item.id,
     title: item.title,
     posterRef: item.posterRef,
     year: yearOf(item.firstAirDate),
-    status: tracking.status,
+    category: categoryInfo.category,
+    manualList: tracking.manualList,
+    lastWatchedAt: categoryInfo.lastWatchedAt,
     rating: getRating(db, "item", item.id)?.value ?? null,
     releaseStatus: item.releaseStatus,
     network: item.networks?.[0]?.name ?? null,
@@ -145,6 +152,12 @@ function getItemAndTracking(
     .innerJoin(schema.tracking, eq(schema.tracking.itemId, schema.items.id))
     .where(eq(schema.items.id, itemId))
     .get();
+}
+
+function requireCategoryInfo(map: Map<number, CategoryInfo>, itemId: number): CategoryInfo {
+  const info = map.get(itemId);
+  if (!info) throw new Error(`category info missing for itemId=${itemId}`);
+  return info;
 }
 
 type SortKey = NonNullable<ListSeriesOptions["sort"]>;
@@ -168,6 +181,15 @@ function sortEnriched(
         return a.summary.nextAirDate < b.summary.nextAirDate ? -1 : 1;
       });
       return;
+    case "lastWatched":
+      enriched.sort((a, b) => {
+        if (a.summary.lastWatchedAt === b.summary.lastWatchedAt) return 0;
+        if (a.summary.lastWatchedAt === null) return 1;
+        if (b.summary.lastWatchedAt === null) return -1;
+        // Most recently watched first.
+        return a.summary.lastWatchedAt < b.summary.lastWatchedAt ? 1 : -1;
+      });
+      return;
     default:
       // "added" — most recently added first.
       enriched.sort((a, b) => (a.addedAt < b.addedAt ? 1 : a.addedAt > b.addedAt ? -1 : 0));
@@ -177,7 +199,7 @@ function sortEnriched(
 export interface Library {
   addSeries(
     details: SeriesDetails,
-    status: TrackingStatus,
+    manualList?: ManualList,
     externalRatings?: ExternalRating[],
     watchProviders?: WatchProviderInfo[],
     tags?: TagInfo[],
@@ -185,11 +207,11 @@ export interface Library {
   listSeries(opts?: ListSeriesOptions): { items: SeriesSummary[]; total: number };
   getSeries(id: number): SeriesDetail | null;
   removeSeries(id: number): boolean;
+  /** E20 guard: throws ManualListConflictError when manualList="stopped" on a dynamically-finished series. */
   updateTracking(itemId: number, patch: TrackingPatch): SeriesSummary | null;
   addWatch(episodeId: number, watchedAt?: string, source?: WatchSource): AddWatchResult | null;
   bulkWatch(itemId: number, target: BulkWatchTarget): BulkWatchResult | null;
   removeLatestWatch(episodeId: number): boolean;
-  suggestCompleted(itemId: number): boolean;
   setRating(targetType: RatingTargetType, targetId: number, value: 1 | 2 | 3): Rating;
   clearRating(targetType: RatingTargetType, targetId: number): boolean;
   getStats(): Stats;
@@ -215,7 +237,7 @@ export function createLibrary(db: LibraryDatabase): Library {
   return {
     addSeries(
       details: SeriesDetails,
-      status: TrackingStatus,
+      manualList?: ManualList,
       externalRatings?: ExternalRating[],
       watchProviders?: WatchProviderInfo[],
       tags?: TagInfo[],
@@ -243,10 +265,10 @@ export function createLibrary(db: LibraryDatabase): Library {
         tx.insert(schema.tracking)
           .values({
             itemId: inserted.id,
-            status,
+            manualList: manualList ?? null,
             pushMuted: false,
             note: null,
-            statusChangedAt: now,
+            listChangedAt: now,
           })
           .run();
 
@@ -285,7 +307,8 @@ export function createLibrary(db: LibraryDatabase): Library {
 
       const row = getItemAndTracking(db, itemId);
       if (!row) throw new Error("addSeries: item vanished after insert");
-      return buildSummary(db, row.item, row.tracking);
+      const info = requireCategoryInfo(computeCategoryInfo(db, [itemId]), itemId);
+      return buildSummary(db, row.item, row.tracking, info);
     },
 
     listSeries(opts: ListSeriesOptions = {}): { items: SeriesSummary[]; total: number } {
@@ -293,13 +316,27 @@ export function createLibrary(db: LibraryDatabase): Library {
         .select({ item: schema.items, tracking: schema.tracking })
         .from(schema.items)
         .innerJoin(schema.tracking, eq(schema.tracking.itemId, schema.items.id))
-        .where(opts.status ? eq(schema.tracking.status, opts.status) : undefined)
         .all();
 
-      const enriched = rows.map((row) => ({
+      const categoryInfo = computeCategoryInfo(
+        db,
+        rows.map((r) => r.item.id),
+      );
+
+      let enriched = rows.map((row) => ({
         addedAt: row.item.addedAt,
-        summary: buildSummary(db, row.item, row.tracking),
+        summary: buildSummary(
+          db,
+          row.item,
+          row.tracking,
+          requireCategoryInfo(categoryInfo, row.item.id),
+        ),
       }));
+
+      if (opts.category) {
+        enriched = enriched.filter((e) => e.summary.category === opts.category);
+      }
+
       sortEnriched(enriched, opts.sort ?? "added");
 
       return { items: enriched.map((e) => e.summary), total: enriched.length };
@@ -309,6 +346,7 @@ export function createLibrary(db: LibraryDatabase): Library {
       const row = getItemAndTracking(db, id);
       if (!row) return null;
       const { item, tracking } = row;
+      const info = requireCategoryInfo(computeCategoryInfo(db, [id]), id);
 
       const seasonRows = db
         .select()
@@ -378,7 +416,7 @@ export function createLibrary(db: LibraryDatabase): Library {
       }));
 
       return {
-        ...buildSummary(db, item, tracking),
+        ...buildSummary(db, item, tracking, info),
         tagline: item.tagline,
         overview: item.overview,
         genres: item.genres ?? [],
@@ -408,10 +446,14 @@ export function createLibrary(db: LibraryDatabase): Library {
       const existing = getItemAndTracking(db, itemId);
       if (!existing) return null;
 
+      if (patch.manualList === "stopped" && computeDynamicCategory(db, itemId) === "finished") {
+        throw new ManualListConflictError(itemId);
+      }
+
       const updates: Partial<typeof schema.tracking.$inferInsert> = {};
-      if (patch.status !== undefined) {
-        updates.status = patch.status;
-        updates.statusChangedAt = new Date().toISOString();
+      if (patch.manualList !== undefined) {
+        updates.manualList = patch.manualList;
+        updates.listChangedAt = new Date().toISOString();
       }
       if (patch.pushMuted !== undefined) updates.pushMuted = patch.pushMuted;
       if (patch.note !== undefined) updates.note = patch.note;
@@ -422,7 +464,8 @@ export function createLibrary(db: LibraryDatabase): Library {
 
       const row = getItemAndTracking(db, itemId);
       if (!row) return null;
-      return buildSummary(db, row.item, row.tracking);
+      const info = requireCategoryInfo(computeCategoryInfo(db, [itemId]), itemId);
+      return buildSummary(db, row.item, row.tracking, info);
     },
 
     addWatch(episodeId: number, watchedAt?: string, source?: WatchSource): AddWatchResult | null {
@@ -435,10 +478,6 @@ export function createLibrary(db: LibraryDatabase): Library {
 
     removeLatestWatch(episodeId: number): boolean {
       return removeLatestWatch(db, episodeId);
-    },
-
-    suggestCompleted(itemId: number): boolean {
-      return suggestCompleted(db, itemId);
     },
 
     setRating(targetType: RatingTargetType, targetId: number, value: 1 | 2 | 3): Rating {

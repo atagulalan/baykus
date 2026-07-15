@@ -29,10 +29,10 @@ function setupItem(db: LibraryDatabase, lastRefreshedAt: string): number {
   db.insert(schema.tracking)
     .values({
       itemId: item.id,
-      status: "watching",
+      manualList: null,
       pushMuted: false,
       note: null,
-      statusChangedAt: "2026-01-01T00:00:00Z",
+      listChangedAt: "2026-01-01T00:00:00Z",
     })
     .run();
   return item.id;

@@ -1,18 +1,25 @@
 export type { CalendarDay, CalendarEntry, CalendarResponse } from "./calendar/query.ts";
 export { type LibraryDatabase, type LibraryDb, openLibraryDb } from "./db/open.ts";
-export type { RatingTargetType, TrackingStatus, WatchSource } from "./db/schema.ts";
+export type { ManualList, RatingTargetType, WatchSource } from "./db/schema.ts";
 export * as schema from "./db/schema.ts";
 export { type CachedImage, getCachedImage } from "./images/cache.ts";
 export {
   CATEGORY_ORDER,
+  type CategoryInfo,
   computeCategories,
   computeCategory,
+  computeCategoryInfo,
   computeDynamicCategories,
   computeDynamicCategory,
   WATCHING_WINDOW_DAYS,
   type WatchCategory,
 } from "./library/category.ts";
-export { AlreadyInLibraryError, isAlreadyInLibraryError } from "./library/errors.ts";
+export {
+  AlreadyInLibraryError,
+  isAlreadyInLibraryError,
+  isManualListConflictError,
+  ManualListConflictError,
+} from "./library/errors.ts";
 export { todayUtc } from "./library/progress.ts";
 export type { PushSubscriptionRecord } from "./library/push.ts";
 export type { Rating } from "./library/ratings.ts";

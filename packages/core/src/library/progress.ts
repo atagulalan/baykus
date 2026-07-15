@@ -1,3 +1,4 @@
+import type { EpisodeType } from "@baykus/provider-sdk";
 import { and, eq, ne, sql } from "drizzle-orm";
 import type { LibraryDatabase } from "../db/open.ts";
 import * as schema from "../db/schema.ts";
@@ -19,6 +20,8 @@ export interface NextUnwatchedEpisode {
   s: number;
   e: number;
   title: string | null;
+  airDate: string | null;
+  episodeType: EpisodeType | null;
 }
 
 /** E1/E4: progress excludes season 0 (specials); denominator is aired, not announced. */
@@ -58,6 +61,8 @@ export function getNextUnwatchedEpisode(
       s: schema.episodes.seasonNumber,
       e: schema.episodes.episodeNumber,
       title: schema.episodes.title,
+      airDate: schema.episodes.airDate,
+      episodeType: schema.episodes.episodeType,
     })
     .from(schema.episodes)
     .leftJoin(schema.watches, eq(schema.watches.episodeId, schema.episodes.id))
@@ -73,7 +78,14 @@ export function getNextUnwatchedEpisode(
     .get();
 
   if (!row) return null;
-  return { episodeId: row.id, s: row.s, e: row.e, title: row.title };
+  return {
+    episodeId: row.id,
+    s: row.s,
+    e: row.e,
+    title: row.title,
+    airDate: row.airDate,
+    episodeType: row.episodeType,
+  };
 }
 
 /** Earliest strictly-future non-special air date, or null if none scheduled. */
