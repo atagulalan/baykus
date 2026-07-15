@@ -20,7 +20,8 @@ Dizi (ve ileride film + kitap) takip uygulaması. TV Time / Serializd benzeri, a
   geri düşer
 - Sezon-segmentli ilerleme çubuğu: izlediğin sezonlar dolu kare, üzerinde olduğun sezon mini bar,
   kalanlar boş kare (◼◼◼[▰▰▰▱▱]◻◻) — atlama yaparak izlediysen veya 12'den fazla sezon varsa eski
-  düz yüzde çubuğuna döner
+  düz yüzde çubuğuna döner. Sadece **yayınlanmış** bölümler sayılır: duyurulmuş ama henüz
+  yayınlanmamış bölümlerin olması, güncel yakaladığın bir dizinin çubuğunu eksik göstermez
 - 3'lü puanlama: **1 = kötü, 2 = normal, 3 = iyi** (dizi ve bölüm seviyesinde)
 - Takvim: zaman çizelgesi (gün gün, BUGÜN'e otomatik scroll, poster görselli) ve ay görünümü
   modları, artı web push bildirimi (ayarlardan test bildirimi gönderilebilir) — ikisi de sadece
@@ -32,7 +33,15 @@ Dizi (ve ileride film + kitap) takip uygulaması. TV Time / Serializd benzeri, a
 - Hangi platformda yayında bilgisi (TMDB watch providers)
 - Manuel metadata güncelleme — zamanlanmış arka plan işi gerekmez, "Yenile" butonu yeter
 - Zip export/import (taşınabilir, sürümlü format)
-- TV Time'dan veri aktarımı (GDPR export'u)
+- TV Time'dan veri aktarımı (GDPR export'u): TV Time'da "izlemeyi bıraktım" dediğin diziler
+  Bırakıldı listesine düşer; TV Time'da zaten takipten çıkardığın ve hiç izlemediğin "kalıntı"
+  takipler sessizce ama görünür şekilde (sihirbazda bir açıklama ile) atlanır
+- Provider-parity dizi adresleri: `/series/<tmdbId>` — Serializd'in kullandığı aynı TMDB
+  numarasıyla açılır; henüz bir TMDB eşleşmesi olmayan diziler `/series/i<dahili id>` adresinde
+  kalır ve bir "Yenile" sonrası otomatik olarak TMDB adresine geçer
+- Sayfa geçişleri: kütüphane kartından dizi detayına geçişte poster yerinde akarak morph olur,
+  diğer sayfa değişimlerinde hafif bir cross-fade olur; "hareketi azalt" ayarında veya View
+  Transitions API'yi desteklemeyen tarayıcılarda anlık geçişe düşer
 - Türkçe + İngilizce arayüz
 
 Sonraki modüller: film, kitap. Mimari en baştan çoklu medya tipine göre tasarlandı; bkz. [specs/](specs/).
@@ -86,6 +95,8 @@ baykus/  (pnpm monorepo — paketler npm'e yayınlanmaz, workspace olarak yaşar
 | [specs/002-watch-categories/tasks.md](specs/002-watch-categories/tasks.md) | 002'nin milestone'ları (M10–M13) |
 | [specs/003-dynamic-watching-ux/spec.md](specs/003-dynamic-watching-ux/spec.md) | v3 delta spec — dinamik İzleniyor sinyalleri, yapılandırılabilir pencere, sezon-segmentli ilerleme, mobil navigasyon, birleşik izleme sayfası, test bildirimi (002 üzerine, 002 ile çakışırsa 003 kazanır) |
 | [specs/003-dynamic-watching-ux/tasks.md](specs/003-dynamic-watching-ux/tasks.md) | 003'ün milestone'ları (M14–M17) |
+| [specs/004-import-fidelity-ux/spec.md](specs/004-import-fidelity-ux/spec.md) | v4 delta spec — TV Time içe aktarma sadakati, aired-only sezon ilerlemesi, TMDB-parity dizi adresleri, sayfa geçişleri (003 üzerine, 003 ile çakışırsa 004 kazanır) |
+| [specs/004-import-fidelity-ux/tasks.md](specs/004-import-fidelity-ux/tasks.md) | 004'ün milestone'ları (M18–M22) |
 | [fixtures/README.md](fixtures/README.md) | Test fixture'ları — kaynak ve yeniden yakalama komutları |
 | [docs/spec-kit.md](docs/spec-kit.md) | Spec-driven development metodolojisi ve yeni feature ekleme süreci |
 | [docs/self-hosting.md](docs/self-hosting.md) | Self-host kurulum rehberi (Docker, ortam değişkenleri, yedekleme) |
@@ -116,12 +127,18 @@ M10.8/M11.4/M12.4 checkpoint'lerinin tarayıcı doğrulaması — otonom yürüt
 tarayıcı erişimi yok, adımlar [MANUELTEST.md](MANUELTEST.md)'de toplandı.
 
 **Spec 003 (dinamik İzleniyor sinyalleri, yapılandırılabilir pencere, UI
-cilası) — M14–M17.6 tamam** (bkz. [003 tasks.md](specs/003-dynamic-watching-ux/tasks.md)):
-lint + typecheck + test yeşil (449 test), her E30–E41 kararının en az bir
-testi ya da mekanik doğrulaması var, zip round-trip v3'te yeşil (v1/v2 hâlâ
-import edilebiliyor). Kalan iş: M17.7 — tüm checkpoint'lerin (002'nin
-bekleyenleri dahil) tek seferlik tarayıcı doğrulaması; adımlar
-[MANUELTEST.md](MANUELTEST.md)'de toplandı.
+cilası) — M14–M17.14 tamam** (bkz. [003 tasks.md](specs/003-dynamic-watching-ux/tasks.md)).
+Kalan iş: M17.7 — tüm checkpoint'lerin (002'nin bekleyenleri dahil) tek
+seferlik tarayıcı doğrulaması; adımlar [MANUELTEST.md](MANUELTEST.md)'de
+toplandı.
+
+**Spec 004 (TV Time içe aktarma sadakati, aired-only sezon ilerlemesi,
+TMDB-parity dizi adresleri, sayfa geçişleri) — M18–M21 tamam** (bkz.
+[004 tasks.md](specs/004-import-fidelity-ux/tasks.md)): lint + typecheck +
+test yeşil (484 test), her E48–E53 kararının en az bir testi var, zip
+round-trip hâlâ yeşil ve dokunulmadı. Kalan iş: M22 — tüm checkpoint'lerin
+tek seferlik tarayıcı doğrulaması; adımlar [MANUELTEST.md](MANUELTEST.md)'de
+toplandı.
 
 ```bash
 pnpm install

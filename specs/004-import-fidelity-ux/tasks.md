@@ -193,7 +193,7 @@ under reduced-motion; Firefox <139 just navigates.
 
 ## M22 — CHECKPOINT 004 + docs
 
-- [ ] M22.1 CHECKPOINT: MANUELTEST section + acceptance walk + README
+- [x] M22.1 CHECKPOINT: MANUELTEST section + acceptance walk + README
   - **Files:** root `MANUELTEST.md`, `README.md`,
     `specs/004-import-fidelity-ux/spec.md` (checklist boxes)
   - **DoD:** append an "M22" section to `MANUELTEST.md` covering, in both

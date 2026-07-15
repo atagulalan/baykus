@@ -155,30 +155,82 @@ refresh fills the id in (E52, E53).
 
 ## Acceptance checklist (definition of done for 004)
 
-- [ ] All FRs implemented; every E48–E53 decision has at least one test
+- [~] All FRs implemented; every E48–E53 decision has at least one test
       asserting it (E54–E56 are browser-checkpoint rows by design).
-- [ ] `pnpm lint && pnpm typecheck && pnpm test` green across the workspace.
-- [ ] Zip round-trip test green and untouched (schemaVersion 3, Article III —
+      <!-- E48/E49: packages/importer-tvtime/src/parse.test.ts (archived
+      -> dropped remap, unfollowed flag, relic skip, unfollowed-with-
+      watches kept, fallback-shape never unfollowed) + apps/server/src/
+      routes/tvtime.test.ts (skippedRelics in matched/report/complete
+      payloads and nowhere else, progress total excludes it, archived+
+      watches -> manual_list 'stopped', E26 cleanup still clears a
+      fully-watched ended archived show back to Bitirildi) (M18.1/M18.2).
+      E50: packages/core/src/library/progress.test.ts "getSeasonProgress
+      (E34/E50)" (wholly-unaired season omitted, caught-up-with-
+      announced-future season reports watched==total, edit-date watch on
+      an unaired episode excluded, zero-aired series -> seasons: []) +
+      apps/web/src/components/SegmentedProgress.test.ts caught-up fixture
+      (M19.1/M19.2). E52: core service.test.ts tmdbId null/non-null +
+      apps/server/src/app.test.ts "GET .../by-tmdb/:tmdbId" (200 parity,
+      404, 400) + apps/web/src/lib/seriesPath.test.ts (param grammar,
+      canonical-replace no-loop predicate) (M20.2/M20.3). E53: core
+      refresh/engine.test.ts "external id fill (E53)" (fills a NULL
+      column, never overwrites non-null, drops a same-column conflict
+      from a different item without failing the refresh) (M20.1). E51
+      has no dedicated unit test — presentational (CSS + one router flag
+      + inline `viewTransitionName`s), per M21.1's own DoD ("Tests: none
+      beyond typecheck"). Marked partial rather than done because E51
+      and E54–E56 rely on a human browser pass, not an automated
+      assertion — see MANUELTEST.md §M22. -->
+- [x] `pnpm lint && pnpm typecheck && pnpm test` green across the workspace.
+      <!-- 54 test files, 484 tests, zero typecheck errors across all 10
+      packages, confirmed after M21.1. -->
+- [x] Zip round-trip test green and untouched (schemaVersion 3, Article III —
       nothing in 004 changes the zip format).
-- [ ] Importer: a fixture modeled on the real export (Suits-like archived
+      <!-- packages/core/src/zip/roundtrip.test.ts unmodified, re-run
+      green after every 004 task that touched packages/core. -->
+- [x] Importer: a fixture modeled on the real export (Suits-like archived
       row, Troy/Gotham/Y Gwyll-like relic rows) produces: archived show →
       stopped; relics absent from report + present in `skippedRelics`;
       active=0-with-watches show still imported as stopped.
+      <!-- parse.test.ts's Suits-shape/Troy-shape/Gotham-shape cases +
+      tvtime.test.ts's combined archived-show-with-watches + relic
+      fixture (M18.1/M18.2). -->
 - [ ] Browser: re-import (or fixture walkthrough) shows the skipped-relics
       disclosure in the wizard.
+      <!-- Wizard disclosure implemented (ImportPage.tsx, M18.2); the
+      report-payload shape it renders from is fixture-tested end to end
+      at the route level. Needs a human browser pass. See MANUELTEST.md
+      §M22. -->
 - [ ] Browser: Re:Zero-shaped series (all aired watched, future episodes
       announced) renders an all-filled segmented bar on card and detail.
+      <!-- Pure logic unit-tested (progress.test.ts + SegmentedProgress.
+      test.ts, M19.1/M19.2). Visual pass pending. See MANUELTEST.md §M22. -->
 - [ ] Browser: library card → detail animates the poster (Chrome);
       reduced-motion renders instantly; Firefox <139 degrades to instant.
+      <!-- Implemented (M21.1); needs a human browser pass across the
+      Chrome/reduced-motion/Firefox matrix. See MANUELTEST.md §M22. -->
 - [ ] Browser: a series with `tmdbId` opens at `/series/<tmdbId>` and the
       number matches `serializd.com/show/<same>`; an item without one opens
       at `/series/i<id>`; visiting the `i`-form of an item that has a tmdbId
       replace-redirects to the bare-number form.
+      <!-- Server route + param grammar + canonical-replace unit-tested
+      (M20.2/M20.3); mechanically verified via curl against the real dev
+      library (by-tmdb 404/400/200 cases). Visual click-through pass
+      pending. See MANUELTEST.md §M22. -->
 - [ ] With a TMDB key set: refresh-all fills `tmdb_id` (spot-check via
       sqlite); URLs flip to TMDB form on next navigation.
+      <!-- fillExternalIds unit-tested (engine.test.ts, M20.1); this dev
+      environment has no TMDB key configured (library is 100% TVmaze-
+      matched, per HANDOVER.md), so the end-to-end backfill needs a
+      session with a real key. See MANUELTEST.md §M22. -->
 - [ ] Browser (E54): quick-mark on a 2-behind series → replacement row's
       checkbox unchecked. (E55): one series each of red/purple/green/yellow
       bar. (E56): touch-viewport pass — every action reachable without hover.
-- [ ] UI complete in TR and EN; i18n parity test green.
-- [ ] README feature list updated (TMDB-parity URLs, page transitions,
+      <!-- All three are verification-only per E54-E56 (no code change in
+      004). See MANUELTEST.md §M22. -->
+- [~] UI complete in TR and EN; i18n parity test green.
+      <!-- apps/web/src/i18n/parity.test.ts green (importWizard.
+      skippedRelics(+Hint) added to both catalogs, M18.2). Full visual TR/
+      EN pass pending a browser session. See MANUELTEST.md §M22. -->
+- [x] README feature list updated (TMDB-parity URLs, page transitions,
       import fidelity notes).

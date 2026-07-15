@@ -379,3 +379,90 @@ tarayıcı gerektiren kısımlar listeleniyor.
 ### Tam gate
 - [x] `pnpm lint && pnpm typecheck && pnpm test && pnpm build` — hepsi
       yeşil, her M17.9–M17.14 commit'inde ayrı ayrı doğrulandı.
+
+---
+
+## M22 — Spec 004 CHECKPOINT: içe aktarma sadakati, aired-only ilerleme,
+## TMDB URL'leri, sayfa geçişleri (bekliyor)
+
+Spec 004, M18–M21 (E48–E56). Bu round da tamamen tarayıcı erişimi olmadan
+geliştirildi (bu ortamda da chromium/playwright bulunamadı). Sunucu/paket/
+web tarafı testleri zaten yeşil — `parse.test.ts` (archived→dropped remap +
+relic skip), `tvtime.test.ts` (skippedRelics rapor akışı, Suits-şekilli
+archived→stopped, E26 temizliğinin fully-watached bir archived diziyi hâlâ
+Bitirildi'de bıraktığı), `progress.test.ts` + `SegmentedProgress.test.ts`
+(aired-only sezon sayımı, caught-up all-filled fixture'ı), `service.test.ts`
++ `engine.test.ts` (tmdbId özeti, fill-only external-id backfill,
+uniqueness-conflict düşürme) ve `seriesPath.test.ts` (param grameri,
+canonical-replace no-loop guard'ı) — burada sadece tarayıcı gerektiren
+kısımlar listeleniyor. Mekanik doğrulama: `pnpm dev` ile gerçek
+`library.db`'ye karşı `curl`: `/api/library/series/by-tmdb/1` → 404
+`NOT_FOUND`, `/api/library/series/by-tmdb/abc` → 400 `VALIDATION_FAILED`,
+`/api/library/series/840` → 200 ve `"tmdbId":null` (bu geliştirme
+kütüphanesindeki her öğe gibi — tamamı TVmaze ile eşleşmiş, HANDOVER.md'de
+belirtilen durumla tutarlı).
+
+### TV Time içe aktarma sadakati (E48/E49)
+- [ ] Ayarlar → Veri → "TV Time'dan içe aktar" → gerçek/büyük bir GDPR
+      zip'i yükle (veya `active=1,archived=1` satırlı bir dizi + `active=0`
+      ve hiç izleme kaydı olmayan bir dizi içeren küçük bir fixture CSV) →
+      rapor adımında, kalıntı varsa "n kalıntı takip atlandı (izleme kaydı
+      yok)" şeklinde katlanır bir açıklama görünmeli; genişletince atlanan
+      dizilerin isimleri virgülle/noktayla ayrılmış listelenmeli.
+- [ ] Suits gibi `archived=1` (`active=1`) bir dizi onaylandıktan sonra
+      kütüphanede **Bırakıldı** listesinde görünmeli; bitmiş ve tüm
+      yayınlanmış bölümleri izlenmiş bir archived dizi bunun yerine
+      **Bitirildi**'de kalmalı (E26 temizliğinin hâlâ çalıştığını
+      doğrula).
+
+### Aired-only sezon ilerlemesi (E50)
+- [ ] Tüm yayınlanmış bölümleri izlenmiş ama gelecekte duyurulmuş bölümü
+      olan bir dizi (Re:Zero benzeri) hem kütüphane kartında hem dizi
+      detayında **tamamen dolu** segmentli çubuk göstermeli (mini
+      ilerleme çubuğu/frontier bar görünmemeli).
+
+### Sayfa geçişleri (E51)
+- [ ] Kütüphaneden bir kart → detay sayfasına geçişte poster, kart
+      konumundan detay sayfasındaki yerine **morph** olarak akmalı
+      (Chrome/Edge/Safari 18+).
+- [ ] Diğer sayfa geçişlerinde (İzleme, Takvim, İstatistik, Ayarlar)
+      hafif bir **cross-fade** (~160ms) olmalı; üst menü ve mobil alt
+      sekme çubuğu geçişe katılmadan sabit kalmalı.
+- [ ] İşletim sistemi/tarayıcı "hareketi azalt" (reduced motion) ayarı
+      açıkken tüm geçişler **anlık** olmalı (morph/fade yok).
+- [ ] Firefox <139'da (veya View Transitions API desteklemeyen bir
+      tarayıcıda) geçişler sorunsuz şekilde anlık gerçekleşmeli — hata
+      veya beyaz ekran olmamalı.
+
+### TMDB-parity URL'ler (E52/E53)
+- [ ] `tmdbId`'si olan bir dizi `/series/<tmdbId>` adresinde açılmalı ve
+      bu numara serializd.com/show/<aynı numara> ile eşleşmeli.
+- [ ] `tmdbId`'si olmayan bir dizi (bu geliştirme kütüphanesindeki her
+      öğe gibi — TVmaze ile eşleşmiş) `/series/i<dahili id>` adresinde
+      açılmalı.
+- [ ] `i<id>` formundaki bir bağlantıyı ziyaret et; öğenin `tmdbId`'si
+      varsa adres çubuğu otomatik olarak (geri tuşuna yeni kayıt
+      eklemeden) çıplak sayı formuna **replace-redirect** olmalı; ağ
+      sekmesinde sonsuz yönlendirme döngüsü olmamalı.
+- [ ] TMDB anahtarı ayarlanmış bir kurulumda: bir dizi detayından toplu
+      "Yenile" çalıştır → `items.tmdb_id` sütununun dolduğunu sqlite ile
+      doğrula (`sqlite3 library.db "select tmdb_id from items where
+      tvdb_id=<id>"`); bir sonraki ziyarette URL TMDB formuna geçmeli.
+
+### E54/E55/E56 doğrulamaları (kod değişikliği yok, sadece tekrar teyit)
+- [ ] (E54) İki bölüm geride kalmış bir dizide hızlı-işaretle → yerine
+      gelen satırın checkbox'ı **işaretsiz** başlamalı.
+- [ ] (E55) Kırmızı (bırakıldı), mor (bitirildi), yeşil (güncel), sarı
+      (diğer) renklerinden birer örnek dizi kontrol et.
+- [ ] (E56) DevTools mobil/dokunmatik emülasyonuyla kütüphane, detay,
+      izleme, takvim, ayarlar sayfalarını gez — her aksiyon hover
+      olmadan dokunuşla ulaşılabilir olmalı.
+
+### İki dil
+- [ ] Ayarlar → Dil'den EN'e geç, yukarıdaki adımların tamamını tekrarla.
+
+### Tam gate
+- [x] `pnpm lint && pnpm typecheck && pnpm test && pnpm build` — hepsi
+      yeşil (workspace: 484 test).
+- [x] Mekanik doğrulama: yukarıdaki curl komutları + gerçek `library.db`
+      spot-check bu bölümün girişinde kayıtlı.
