@@ -1,3 +1,4 @@
+import { ArrowDown, ArrowUp, Minus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 interface RatingControlProps {
@@ -6,16 +7,41 @@ interface RatingControlProps {
   size?: "sm" | "md";
 }
 
-const OPTIONS: { value: 1 | 2 | 3; emoji: string; key: "bad" | "okay" | "good" }[] = [
-  { value: 1, emoji: "👎", key: "bad" },
-  { value: 2, emoji: "😐", key: "okay" },
-  { value: 3, emoji: "👍", key: "good" },
+const OPTIONS: {
+  value: 1 | 2 | 3;
+  Icon: React.ElementType;
+  key: "bad" | "okay" | "good";
+  activeBg: string;
+  iconColor: string;
+}[] = [
+  {
+    value: 1,
+    Icon: ArrowDown,
+    key: "bad",
+    activeBg: "bg-red-500 text-white",
+    iconColor: "text-red-500",
+  },
+  {
+    value: 2,
+    Icon: Minus,
+    key: "okay",
+    activeBg: "bg-yellow text-zinc-900",
+    iconColor: "text-yellow",
+  },
+  {
+    value: 3,
+    Icon: ArrowUp,
+    key: "good",
+    activeBg: "bg-green-500 text-white",
+    iconColor: "text-green-500",
+  },
 ];
 
 /** One-tap set/clear: clicking the already-active option clears the rating. */
 export function RatingControl({ value, onChange, size = "md" }: RatingControlProps) {
   const { t } = useTranslation();
   const padding = size === "sm" ? "px-1.5 py-0.5 text-xs" : "px-2 py-1 text-sm";
+  const iconSize = size === "sm" ? 14 : 16;
 
   return (
     <fieldset aria-label={t("rating.label")} className="m-0 flex gap-1 border-0 p-0">
@@ -27,11 +53,12 @@ export function RatingControl({ value, onChange, size = "md" }: RatingControlPro
             type="button"
             aria-pressed={active}
             onClick={() => onChange(active ? null : opt.value)}
-            className={`rounded ${padding} ${
-              active ? "bg-emerald-600 text-white" : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+            className={`flex items-center gap-1.5 rounded ${padding} ${
+              active ? opt.activeBg : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
             }`}
           >
-            {opt.emoji} {t(`rating.${opt.key}`)}
+            <opt.Icon size={iconSize} className={active ? "" : opt.iconColor} />{" "}
+            <span>{t(`rating.${opt.key}`)}</span>
           </button>
         );
       })}

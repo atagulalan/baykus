@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { buildImageUrl } from "../api/images.ts";
 import type { EpisodeType, SeriesSummary } from "../api/types.ts";
 import { todayIso } from "../lib/date.ts";
+import { Checkbox } from "./Checkbox.tsx";
 import { EpisodeTags } from "./EpisodeTags.tsx";
 
 /** E28: how many more aired episodes queue behind the shown next one, hidden when 0. */
@@ -26,14 +27,12 @@ export interface EpisodeRowProps {
   episodeTitle: string | null;
   airDate: string | null;
   episodeType: EpisodeType | null;
-  /** Leading quick-mark checkbox (watch-next sections) — mutually exclusive with `trailing`. */
-  leading?: ReactNode;
-  /** Trailing relative timestamp (history) — mutually exclusive with `leading`. */
+  /** Trailing quick-mark checkbox (watch-next sections) or relative timestamp (history), E38/E45. */
   trailing?: ReactNode;
 }
 
 /** Shared row shell: poster / title / SxEy(+overflow) / episode title / EpisodeTags,
- * with either a leading checkbox or a trailing timestamp (E38). */
+ * with a trailing checkbox or timestamp (E38, trailing-only layout since E45). */
 export function EpisodeRow({
   itemId,
   posterRef,
@@ -44,30 +43,36 @@ export function EpisodeRow({
   episodeTitle,
   airDate,
   episodeType,
-  leading,
   trailing,
 }: EpisodeRowProps) {
   const imageUrl = buildImageUrl(posterRef);
 
   return (
-    <div className="flex items-center gap-3 rounded px-2 py-2 hover:bg-zinc-900">
-      {leading}
+    <div className="flex items-center gap-4 px-6 py-4 transition-colors border-b border-white/5 hover:bg-white/5">
       <Link
         to="/series/$id"
         params={{ id: String(itemId) }}
-        className="flex flex-1 items-center gap-3 overflow-hidden"
+        className="flex flex-1 items-center gap-4 overflow-hidden"
       >
-        <div className="h-14 w-10 shrink-0 overflow-hidden rounded bg-zinc-800">
-          {imageUrl && <img src={imageUrl} alt="" className="h-full w-full object-cover" />}
-        </div>
-        <div className="flex flex-1 flex-col gap-0.5 overflow-hidden">
-          <span className="truncate font-medium text-sm">{title}</span>
-          <span className="flex items-center gap-1 truncate text-xs text-zinc-400">
-            S{s}E{e}
-            {overflow > 0 && <span className="text-zinc-500">+{overflow}</span>}
-            {episodeTitle && <span className="truncate">{episodeTitle}</span>}
-          </span>
-          <EpisodeTags s={s} e={e} airDate={airDate} episodeType={episodeType} />
+        {imageUrl && (
+          <div className="h-12 w-8 shrink-0 overflow-hidden bg-[#101010]">
+            <img src={imageUrl} alt="" className="h-full w-full object-cover opacity-90" />
+          </div>
+        )}
+        <div className="flex flex-1 flex-col justify-center overflow-hidden">
+          <div className="flex items-baseline gap-3">
+            <span className="font-display italic text-snow text-base truncate">{title}</span>
+            <span className="font-mono text-xs text-muted shrink-0">
+              S{s < 10 ? `0${s}` : s}E{e < 10 ? `0${e}` : e}
+              {overflow > 0 && <span className="opacity-50 ml-1">+{overflow}</span>}
+            </span>
+          </div>
+          <div className="flex items-center gap-3 mt-1">
+            {episodeTitle && (
+              <span className="font-mono text-[10px] text-muted/70 truncate">{episodeTitle}</span>
+            )}
+            <EpisodeTags s={s} e={e} airDate={airDate} episodeType={episodeType} />
+          </div>
         </div>
       </Link>
       {trailing}
@@ -100,13 +105,12 @@ export function WatchNextRow({ series, onQuickMark }: WatchNextRowProps) {
       episodeTitle={next.title}
       airDate={next.airDate}
       episodeType={next.episodeType}
-      leading={
+      trailing={
         showCheckbox ? (
-          <input
-            type="checkbox"
+          <Checkbox
+            checked={false}
             onChange={() => onQuickMark(next.episodeId)}
             aria-label={t("episode.toggleWatched")}
-            className="h-4 w-4 shrink-0 accent-emerald-500"
           />
         ) : undefined
       }

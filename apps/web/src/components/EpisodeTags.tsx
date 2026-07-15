@@ -58,12 +58,12 @@ export function computeEpisodeTagKinds(
 }
 
 const TAG_STYLES: Record<EpisodeTagKind, string> = {
-  new: "bg-emerald-900 text-emerald-100",
-  upcoming: "bg-emerald-900 text-emerald-100",
-  premiere: "bg-sky-900 text-sky-100",
-  finale: "bg-red-900 text-red-100",
-  special: "bg-violet-900 text-violet-100",
-  ova: "bg-violet-900 text-violet-100",
+  new: "border border-yellow/35 text-yellow",
+  upcoming: "border border-yellow/35 text-yellow",
+  premiere: "border border-white/20 text-snow",
+  finale: "border border-white/20 text-snow",
+  special: "border border-white/20 text-snow",
+  ova: "border border-white/20 text-snow",
 };
 
 const TAG_LABEL_KEYS: Record<EpisodeTagKind, string> = {
@@ -82,11 +82,11 @@ export function EpisodeTags(props: EpisodeTagsProps) {
   if (kinds.length === 0) return null;
 
   return (
-    <span className="inline-flex flex-wrap items-center gap-1">
+    <span className="inline-flex flex-wrap items-center gap-2">
       {kinds.map((kind) => (
         <span
           key={kind}
-          className={`rounded px-1.5 py-0.5 font-semibold text-[10px] ${TAG_STYLES[kind]}`}
+          className={`font-mono text-[9px] uppercase tracking-widest px-1.5 py-0.5 ${TAG_STYLES[kind]}`}
         >
           {t(TAG_LABEL_KEYS[kind])}
         </span>

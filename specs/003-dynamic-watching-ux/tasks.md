@@ -514,3 +514,36 @@ fix pattern `/confirm` already has, extended to the upload step.
   - **Verify:** `pnpm test packages/importer-tvtime apps/server` green;
     `pnpm typecheck` clean (generic `readSseStream<TProgress, TComplete>`
     reused as-is, no new client-side parsing code).
+
+---
+
+## M17.11 — Brand refresh: design system (E45, out-of-plan)
+
+Design-led (not in `fikir.txt`), reference mockup explored separately
+(`specs/003-dynamic-watching-ux/design/brand-identity.html`) then applied
+across the app. Visual only — no behavior change (behavior changes that
+happen to land alongside the new look are E46/E47, separate tasks/commits).
+
+- [x] M17.11 web: void/snow/yellow design system + `Checkbox` primitive (E45)
+  - **Files:** `apps/web/index.html`, `apps/web/src/index.css`,
+    `apps/web/src/components/Checkbox.tsx` (new),
+    `apps/web/src/components/{Layout,SearchBar,FilterPanel,MonthGrid,
+    CalendarEntryRow,WatchNextRow,SegmentedProgress,EpisodeTags,
+    RatingControl}.tsx`, `apps/web/src/pages/{StatsPage,SettingsPage}.tsx`,
+    `biome.json` (design-reference ignore + `css.parser.tailwindDirectives`
+    for the new `@theme` block).
+  - **DoD:** ui.md §Design system: new `@theme` tokens, DM Serif Display/DM
+    Sans/JetBrains Mono fonts, sharp-corner hairline-border surfaces,
+    lucide arrow icons for rating (replaces emoji), `Checkbox` replacing
+    every native checkbox app-wide, `SegmentedProgress` category coloring.
+    `index.html` keeps `lang="tr"` (no runtime lang switching exists;
+    the mockup's `lang="en"` doesn't apply here).
+  - **Tests:** none beyond typecheck — presentational (same precedent as
+    E35/E36/E37(b)/E41 in M17.5). Two a11y lint findings fixed inline:
+    `Checkbox`'s `button[role=checkbox]` and one `<label>` wrapping it
+    (biome can't see that the wrapped custom component renders a labelable
+    native `<button>`) both get a `biome-ignore` with the reasoning noted
+    at the site. `WatchNextRow`'s shared row shell drops the now-fully-dead
+    `leading` slot (both callers — watch-next quick-mark and history's
+    timestamp — always used `trailing`, even before this task).
+  - **Verify:** `pnpm lint && pnpm typecheck` clean; `pnpm build` succeeds.

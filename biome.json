@@ -2,7 +2,15 @@
   "$schema": "https://biomejs.dev/schemas/2.1.2/schema.json",
   "files": {
     "ignoreUnknown": true,
-    "includes": ["**", "!**/dist", "!**/node_modules", "!**/*.gen.ts", "!fixtures", "!**/data"]
+    "includes": [
+      "**",
+      "!**/dist",
+      "!**/node_modules",
+      "!**/*.gen.ts",
+      "!fixtures",
+      "!**/data",
+      "!specs/**/design"
+    ]
   },
   "formatter": {
     "enabled": true,
@@ -19,6 +27,11 @@
   "javascript": {
     "formatter": {
       "quoteStyle": "double"
+    }
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
     }
   }
 }

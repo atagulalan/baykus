@@ -4,6 +4,47 @@ Conventions (three data states, optimistic mutations, `/img` handling,
 component/file layout, i18n key style) inherited from ui.md 001 + 002. This
 doc covers only the changed/new surfaces.
 
+## Design system (changed — brand refresh, E45)
+
+Added post-checklist (2026-07-15, design-led, not in `fikir.txt`). Reference
+mockup: `specs/003-dynamic-watching-ux/design/brand-identity.html` (static
+Tailwind-CDN page, not part of the built app — excluded from biome). This
+row **supersedes** every literal `zinc-*`/`emerald-*` color and rounded-
+corner mention elsewhere in 001/002/003 ui.md; treat those as illustrative
+layout only, not the current palette.
+
+- **Tokens** (`apps/web/src/index.css` `@theme`): `--color-void: #080808`
+  (page/card background), `--color-snow: #ebebeb` (primary text),
+  `--color-muted: #666666` (secondary text/labels), `--color-yellow:
+  #f0e000` (the one accent color — replaces emerald everywhere: primary
+  buttons, active nav, focus rings, "watching" category tint).
+  `--font-display: "DM Serif Display"` (italic, titles/headings),
+  `--font-sans: "DM Sans"` (body), `--font-mono: "JetBrains Mono"`
+  (labels/metadata/buttons, typically uppercase + `tracking-widest`).
+  Self-hosted-rule exception: these three fonts load from Google Fonts
+  `<link>` tags in `index.html` (not bundled) — acceptable since it's fonts,
+  not the icon-font/CDN-script rule that's actually banned (lucide-react
+  stays the only icon source, unchanged from E36).
+- **Surfaces:** sharp corners everywhere (no `rounded-*`); panels/cards use
+  a hairline `border-white/5` or `border-white/10` instead of a filled
+  `bg-zinc-900` block; dropdowns/modals use `bg-[#101010]` + `border-white/
+  10` + `shadow-2xl` (`backdrop-blur-md` where they float over content).
+- **Rating & category color:** the 👍/😐/👎 rating control and stats bars
+  move from emoji to lucide arrows (`ArrowUp`/`Minus`/`ArrowDown`) colored
+  green/yellow/red. `SegmentedProgress` and `SeriesCard`/detail-header
+  watched/aired text take an optional `category` prop and tint via a
+  `WatchCategory → color` map (red `stopped`, purple `finished`, green
+  `up_to_date`, yellow everything else) — falls back to yellow when
+  `category` is omitted.
+- **`Checkbox` (NEW, `components/Checkbox.tsx`):** a `button[role=checkbox]`
+  + `Check` icon, filled yellow when checked — replaces every native
+  `<input type="checkbox">` in the app (episode/season/calendar/watch-next/
+  settings scrapers toggle). Same controlled `checked`/`onChange(checked)`
+  contract as a native checkbox; `aria-checked` mirrors `checked`.
+- **Locale note:** `index.html`'s `<html lang>` stays `"tr"` (the app has no
+  runtime lang-attribute switching) — matches the tr-default convention,
+  not the mockup's `en`.
+
 ## Layout (changed — sticky header + mobile bottom nav, E36)
 
 ```

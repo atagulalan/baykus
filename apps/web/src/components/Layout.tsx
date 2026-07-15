@@ -28,19 +28,24 @@ export function Layout() {
   if (sessionQuery.data && !sessionQuery.data.authenticated) return <Navigate to="/login" />;
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
-      <header className="sticky top-0 z-40 border-zinc-800 border-b bg-zinc-950">
-        <nav className="mx-auto flex max-w-5xl flex-wrap items-center gap-4 px-4 py-3 sm:gap-6">
-          <Link to="/" className="font-bold text-lg">
-            🦉 {t("app.name")}
+    <div className="min-h-screen bg-void text-snow font-sans">
+      <header className="sticky top-0 z-40 bg-void/90 backdrop-blur-md border-b border-white/5">
+        <nav className="mx-auto flex max-w-5xl flex-wrap items-center justify-between px-6 py-4">
+          <Link
+            to="/"
+            className="font-display italic text-snow text-2xl tracking-tight leading-none"
+          >
+            baykuş
           </Link>
-          <SearchBar />
+          <div className="flex-1 max-w-md mx-6">
+            <SearchBar />
+          </div>
           <div className="hidden items-center gap-6 sm:flex">
             {navItems.map((item) => (
               <Link
                 key={item.to}
                 to={item.to}
-                className="text-zinc-400 hover:text-zinc-100 [&.active]:text-zinc-100"
+                className="font-mono text-xs tracking-widest uppercase text-muted hover:text-snow transition-colors [&.active]:text-yellow"
               >
                 {t(item.key)}
               </Link>
@@ -48,18 +53,18 @@ export function Layout() {
           </div>
         </nav>
       </header>
-      <main className="mx-auto max-w-5xl px-4 py-6 pb-20 sm:pb-6">
+      <main className="mx-auto max-w-5xl px-6 py-8 pb-20 sm:pb-8">
         <Outlet />
       </main>
-      <nav className="fixed inset-x-0 bottom-0 z-40 flex border-zinc-800 border-t bg-zinc-950 pb-[env(safe-area-inset-bottom)] sm:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t border-white/5 bg-void/90 backdrop-blur pb-[env(safe-area-inset-bottom)] sm:hidden">
         {navItems.map(({ to, key, Icon }) => (
           <Link
             key={to}
             to={to}
-            className="flex flex-1 flex-col items-center gap-0.5 py-2 text-zinc-500 [&.active]:text-zinc-100"
+            className="flex flex-1 flex-col items-center gap-1 py-3 text-muted hover:text-snow transition-colors [&.active]:text-yellow"
           >
-            <Icon size={20} />
-            <span className="text-[10px]">{t(key)}</span>
+            <Icon size={20} strokeWidth={1.5} />
+            <span className="font-mono text-[9px] tracking-widest uppercase">{t(key)}</span>
           </Link>
         ))}
       </nav>

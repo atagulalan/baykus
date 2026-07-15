@@ -14,6 +14,7 @@ import {
   updateSettings,
 } from "../api/client.ts";
 import type { ImportMode, ImportZipResult, Locale, Settings, SettingsPatch } from "../api/types.ts";
+import { Checkbox } from "../components/Checkbox.tsx";
 import { DeleteAccountDialog } from "../components/DeleteAccountDialog.tsx";
 import { ResetLibraryDialog } from "../components/ResetLibraryDialog.tsx";
 import {
@@ -171,43 +172,47 @@ export function SettingsPage() {
   if (!settings) return null;
 
   return (
-    <div className="flex max-w-lg flex-col gap-4">
-      <h1 className="font-semibold text-2xl">{t("settings.title")}</h1>
+    <div className="flex max-w-2xl flex-col gap-6">
+      <h1 className="font-display italic text-snow text-4xl leading-none tracking-tight mb-2">
+        {t("settings.title")}
+      </h1>
 
-      <section className="flex flex-col gap-3 rounded-lg bg-zinc-900 p-4">
-        <h2 className="font-medium text-sm text-zinc-300">{t("settings.general.title")}</h2>
+      <section className="flex flex-col gap-4 border border-white/5 bg-[#101010] p-6">
+        <h2 className="font-mono text-xs text-yellow tracking-widest uppercase mb-2">
+          {t("settings.general.title")}
+        </h2>
 
-        <label className="flex flex-col gap-1 text-sm">
+        <label className="flex flex-col gap-1 text-sm font-sans text-snow">
           {t("settings.general.locale")}
           <select
             value={settings.locale}
             onChange={(e) => handleLocaleChange(e.target.value as Locale)}
-            className="rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5"
+            className="border-b border-white/20 bg-transparent px-2 py-2 text-snow focus:outline-none focus:border-yellow transition-colors mt-1"
           >
             {LOCALES.map((locale) => (
-              <option key={locale} value={locale}>
+              <option key={locale} value={locale} className="bg-[#101010]">
                 {t(`settings.general.localeName.${locale}`)}
               </option>
             ))}
           </select>
         </label>
 
-        <label className="flex flex-col gap-1 text-sm">
+        <label className="flex flex-col gap-1 text-sm font-sans text-snow mt-2">
           {t("settings.general.region")}
           <select
             value={settings.region}
             onChange={(e) => patch.mutate({ region: e.target.value })}
-            className="rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5"
+            className="border-b border-white/20 bg-transparent px-2 py-2 text-snow focus:outline-none focus:border-yellow transition-colors mt-1"
           >
             {REGIONS.map((region) => (
-              <option key={region} value={region}>
+              <option key={region} value={region} className="bg-[#101010]">
                 {region}
               </option>
             ))}
           </select>
         </label>
 
-        <label className="flex flex-col gap-1 text-sm">
+        <label className="flex flex-col gap-1 text-sm font-sans text-snow mt-2">
           {t("settings.general.watchingWindow")}
           <input
             type="number"
@@ -216,48 +221,56 @@ export function SettingsPage() {
             value={windowInput ?? String(settings.watchingWindowDays)}
             onChange={(e) => setWindowInput(e.target.value)}
             onBlur={() => handleWindowBlur(settings.watchingWindowDays)}
-            className="rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5"
+            className="border-b border-white/20 bg-transparent px-2 py-2 text-snow focus:outline-none focus:border-yellow transition-colors mt-1"
           />
-          <span className="text-xs text-zinc-500">{t("settings.general.watchingWindowHint")}</span>
+          <span className="font-mono text-[10px] text-muted mt-1">
+            {t("settings.general.watchingWindowHint")}
+          </span>
         </label>
 
-        <label className="flex flex-col gap-1 text-sm text-zinc-500">
+        <label className="flex flex-col gap-1 text-sm font-sans text-muted mt-2">
           {t("settings.general.theme")}
           <select
             disabled
             value="dark"
-            className="rounded border border-zinc-800 bg-zinc-900 px-2 py-1.5 text-zinc-500"
+            className="border-b border-white/10 bg-transparent px-2 py-2 text-muted mt-1"
           >
             <option value="dark">{t("settings.general.themeDark")}</option>
           </select>
-          <span className="text-xs">{t("settings.general.themeSoon")}</span>
+          <span className="font-mono text-[10px] text-muted mt-1">
+            {t("settings.general.themeSoon")}
+          </span>
         </label>
       </section>
 
-      <section className="flex flex-col gap-3 rounded-lg bg-zinc-900 p-4">
-        <h2 className="font-medium text-sm text-zinc-300">{t("settings.providers.title")}</h2>
+      <section className="flex flex-col gap-4 border border-white/5 bg-[#101010] p-6">
+        <h2 className="font-mono text-xs text-yellow tracking-widest uppercase mb-2">
+          {t("settings.providers.title")}
+        </h2>
 
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2 text-sm">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2 text-sm text-snow">
             <span>{t("settings.providers.tmdbKey")}</span>
             {settings.tmdbApiKeySet && (
-              <span className="text-emerald-400 text-xs">{t("settings.providers.tmdbKeySet")}</span>
+              <span className="text-yellow text-xs font-mono">
+                {t("settings.providers.tmdbKeySet")}
+              </span>
             )}
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-4">
             <input
               type="password"
               value={tmdbKeyInput}
               onChange={(e) => setTmdbKeyInput(e.target.value)}
               placeholder={t("settings.providers.tmdbKeyPlaceholder")}
-              className="flex-1 rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm"
+              className="flex-1 border-b border-white/20 bg-transparent px-2 py-2 text-sm text-snow focus:outline-none focus:border-yellow transition-colors"
               autoComplete="off"
             />
             <button
               type="button"
               onClick={handleSaveTmdbKey}
               disabled={!tmdbKeyInput.trim()}
-              className="shrink-0 rounded bg-emerald-600 px-3 py-1.5 text-sm text-white disabled:opacity-50"
+              className="font-mono text-[10px] tracking-widest uppercase bg-yellow text-[#080808] px-4 py-2 transition-opacity disabled:opacity-50 hover:opacity-90"
             >
               {t("settings.save")}
             </button>
@@ -265,7 +278,7 @@ export function SettingsPage() {
               <button
                 type="button"
                 onClick={() => patch.mutate({ tmdbApiKey: null })}
-                className="shrink-0 rounded bg-zinc-800 px-3 py-1.5 text-sm text-zinc-300"
+                className="font-mono text-[10px] tracking-widest uppercase border border-white/10 text-muted px-4 py-2 hover:text-snow hover:border-white/20 transition-colors"
               >
                 {t("settings.providers.clear")}
               </button>
@@ -273,29 +286,32 @@ export function SettingsPage() {
           </div>
         </div>
 
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
+        {/* biome-ignore lint/a11y/noLabelWithoutControl: wraps Checkbox, which renders a native <button> — a labelable element per the HTML spec, so click-to-toggle still works. */}
+        <label className="flex items-center gap-3 text-sm text-snow mt-4 cursor-pointer">
+          <Checkbox
             checked={settings.scrapersEnabled}
-            onChange={(e) => patch.mutate({ scrapersEnabled: e.target.checked })}
-            className="h-4 w-4 accent-emerald-500"
+            onChange={(checked) => patch.mutate({ scrapersEnabled: checked })}
           />
           {t("settings.providers.scrapers")}
         </label>
-        <p className="text-xs text-zinc-500">{t("settings.providers.scrapersTos")}</p>
+        <p className="font-mono text-[10px] text-muted">{t("settings.providers.scrapersTos")}</p>
       </section>
 
-      <section className="flex flex-col gap-3 rounded-lg bg-zinc-900 p-4">
-        <h2 className="font-medium text-sm text-zinc-300">{t("settings.notifications.title")}</h2>
+      <section className="flex flex-col gap-4 border border-white/5 bg-[#101010] p-6">
+        <h2 className="font-mono text-xs text-yellow tracking-widest uppercase mb-2">
+          {t("settings.notifications.title")}
+        </h2>
         {!pushSupported ? (
-          <p className="text-xs text-zinc-500">{t("settings.notifications.unsupported")}</p>
+          <p className="font-mono text-[10px] text-muted">
+            {t("settings.notifications.unsupported")}
+          </p>
         ) : pushStatusQuery.data ? (
-          <div className="flex gap-2">
+          <div className="flex gap-4">
             <button
               type="button"
               onClick={() => unsubscribeMutation.mutate()}
               disabled={unsubscribeMutation.isPending}
-              className="self-start rounded bg-zinc-800 px-3 py-1.5 text-sm text-zinc-300 disabled:opacity-50"
+              className="font-mono text-[10px] tracking-widest uppercase border border-white/10 text-muted px-4 py-2 hover:text-snow hover:border-white/20 transition-colors disabled:opacity-50"
             >
               {t("settings.notifications.disable")}
             </button>
@@ -303,7 +319,7 @@ export function SettingsPage() {
               type="button"
               onClick={() => testPushMutation.mutate()}
               disabled={testPushMutation.isPending}
-              className="self-start rounded bg-zinc-800 px-3 py-1.5 text-sm text-zinc-300 disabled:opacity-50"
+              className="font-mono text-[10px] tracking-widest uppercase border border-white/10 text-snow px-4 py-2 hover:bg-white/5 transition-colors disabled:opacity-50"
             >
               {t("settings.notifications.test")}
             </button>
@@ -313,51 +329,53 @@ export function SettingsPage() {
             type="button"
             onClick={() => subscribeMutation.mutate()}
             disabled={subscribeMutation.isPending}
-            className="self-start rounded bg-emerald-600 px-3 py-1.5 text-sm text-white disabled:opacity-50"
+            className="self-start font-mono text-[10px] tracking-widest uppercase bg-yellow text-[#080808] px-4 py-2 transition-opacity disabled:opacity-50 hover:opacity-90"
           >
             {t("settings.notifications.enable")}
           </button>
         )}
       </section>
 
-      <section className="flex flex-col gap-3 rounded-lg bg-zinc-900 p-4">
-        <h2 className="font-medium text-sm text-zinc-300">{t("settings.data.title")}</h2>
+      <section className="flex flex-col gap-4 border border-white/5 bg-[#101010] p-6">
+        <h2 className="font-mono text-xs text-yellow tracking-widest uppercase mb-2">
+          {t("settings.data.title")}
+        </h2>
 
         <a
           href={exportZipUrl()}
           download
-          className="self-start rounded bg-zinc-800 px-3 py-1.5 text-sm text-zinc-300"
+          className="self-start font-mono text-[10px] tracking-widest uppercase border border-white/10 text-muted px-4 py-2 hover:text-snow hover:border-white/20 transition-colors"
         >
           {t("settings.data.export")}
         </a>
 
-        <div className="flex flex-col gap-2 border-zinc-800 border-t pt-3">
-          <span className="text-sm">{t("settings.data.importTitle")}</span>
+        <div className="flex flex-col gap-4 border-t border-white/5 pt-4 mt-2">
+          <span className="text-sm font-sans text-snow">{t("settings.data.importTitle")}</span>
 
-          <div className="flex flex-col gap-1 text-sm">
-            <label className="flex items-center gap-2">
+          <div className="flex flex-col gap-2 text-sm text-snow">
+            <label className="flex items-center gap-3 cursor-pointer">
               <input
                 type="radio"
                 name="import-mode"
                 checked={importMode === "merge"}
                 onChange={() => setImportMode("merge")}
-                className="accent-emerald-500"
+                className="accent-yellow"
               />
               {t("settings.data.mode.merge")}
             </label>
-            <label className="flex items-center gap-2">
+            <label className="flex items-center gap-3 cursor-pointer">
               <input
                 type="radio"
                 name="import-mode"
                 checked={importMode === "replace"}
                 onChange={() => setImportMode("replace")}
-                className="accent-emerald-500"
+                className="accent-yellow"
               />
               {t("settings.data.mode.replace")}
             </label>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex gap-4 items-center">
             <input
               type="file"
               accept=".zip,application/zip"
@@ -365,13 +383,13 @@ export function SettingsPage() {
                 setImportFile(e.target.files?.[0] ?? null);
                 setImportResult(null);
               }}
-              className="flex-1 text-sm text-zinc-400"
+              className="flex-1 font-mono text-xs text-muted file:bg-[#101010] file:border file:border-white/10 file:px-3 file:py-1 file:text-muted file:font-mono file:text-[10px] file:uppercase file:tracking-widest file:mr-4 hover:file:text-snow transition-colors"
             />
             <button
               type="button"
               onClick={() => importMutation.mutate()}
               disabled={!importFile || importMutation.isPending}
-              className="shrink-0 rounded bg-emerald-600 px-3 py-1.5 text-sm text-white disabled:opacity-50"
+              className="shrink-0 font-mono text-[10px] tracking-widest uppercase bg-yellow text-[#080808] px-4 py-2 transition-opacity disabled:opacity-50 hover:opacity-90"
             >
               {importMutation.isPending
                 ? t("settings.data.importing")
@@ -380,8 +398,8 @@ export function SettingsPage() {
           </div>
 
           {importResult && (
-            <div className="flex flex-col gap-1 rounded bg-zinc-800 p-3 text-sm">
-              <p className="text-emerald-400">
+            <div className="flex flex-col gap-2 border border-white/5 bg-white/5 p-4 text-sm">
+              <p className="text-yellow font-mono text-xs">
                 {t("settings.data.success", {
                   items: importResult.items,
                   watches: importResult.watches,
@@ -389,8 +407,10 @@ export function SettingsPage() {
                 })}
               </p>
               {importResult.warnings.length > 0 && (
-                <div className="flex flex-col gap-1 text-xs text-zinc-400">
-                  <span className="font-medium">{t("settings.data.warnings")}</span>
+                <div className="flex flex-col gap-1 text-[10px] font-mono text-muted/70">
+                  <span className="text-muted tracking-widest uppercase">
+                    {t("settings.data.warnings")}
+                  </span>
                   <ul className="list-inside list-disc">
                     {importResult.warnings.map((warning) => (
                       <li key={warning}>{warning}</li>
@@ -404,43 +424,47 @@ export function SettingsPage() {
 
         <Link
           to="/import"
-          className="self-start rounded bg-zinc-800 px-3 py-1.5 text-sm text-zinc-300"
+          className="self-start font-mono text-[10px] tracking-widest uppercase border border-white/10 text-muted px-4 py-2 hover:text-snow hover:border-white/20 transition-colors mt-2"
         >
           {t("settings.data.tvtimeImport")}
         </Link>
       </section>
 
-      <section className="flex flex-col gap-3 rounded-lg border border-red-950 bg-zinc-900 p-4">
-        <h2 className="font-medium text-red-400 text-sm">{t("settings.dangerZone.title")}</h2>
-        <p className="text-xs text-zinc-500">{t("settings.dangerZone.description")}</p>
+      <section className="flex flex-col gap-4 border border-red-900/20 bg-[#101010] p-6">
+        <h2 className="font-mono text-xs text-red-400 tracking-widest uppercase mb-2">
+          {t("settings.dangerZone.title")}
+        </h2>
+        <p className="font-mono text-[10px] text-muted">{t("settings.dangerZone.description")}</p>
         <button
           type="button"
           onClick={() => setResetDialogOpen(true)}
-          className="self-start rounded bg-red-950 px-3 py-1.5 text-red-400 text-sm"
+          className="self-start font-mono text-[10px] tracking-widest uppercase border border-red-900/50 text-red-400 px-4 py-2 hover:bg-red-900/20 transition-colors mt-2"
         >
           {t("settings.dangerZone.button")}
         </button>
       </section>
 
       {sessionQuery.data?.mode === "multi" && (
-        <section className="flex flex-col gap-3 rounded-lg bg-zinc-900 p-4">
-          <h2 className="font-medium text-sm text-zinc-300">{t("auth.account.title")}</h2>
-          <p className="text-sm text-zinc-400">
+        <section className="flex flex-col gap-4 border border-white/5 bg-[#101010] p-6">
+          <h2 className="font-mono text-xs text-yellow tracking-widest uppercase mb-2">
+            {t("auth.account.title")}
+          </h2>
+          <p className="font-sans text-sm text-snow">
             {t("auth.account.handle", { handle: sessionQuery.data.handle ?? "" })}
           </p>
-          <div className="flex gap-2">
+          <div className="flex gap-4 mt-2">
             <button
               type="button"
               onClick={() => logoutMutation.mutate()}
               disabled={logoutMutation.isPending}
-              className="rounded bg-zinc-800 px-3 py-1.5 text-sm text-zinc-300 disabled:opacity-50"
+              className="font-mono text-[10px] tracking-widest uppercase border border-white/10 text-muted px-4 py-2 hover:text-snow hover:border-white/20 transition-colors disabled:opacity-50"
             >
               {t("auth.account.logout")}
             </button>
             <button
               type="button"
               onClick={() => setDeleteDialogOpen(true)}
-              className="rounded bg-red-950 px-3 py-1.5 text-red-400 text-sm"
+              className="font-mono text-[10px] tracking-widest uppercase border border-red-900/50 text-red-400 px-4 py-2 hover:bg-red-900/20 transition-colors"
             >
               {t("auth.account.delete")}
             </button>

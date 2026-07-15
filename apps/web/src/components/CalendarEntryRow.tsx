@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { buildImageUrl } from "../api/images.ts";
 import type { CalendarEntry } from "../api/types.ts";
+import { Checkbox } from "./Checkbox.tsx";
 import { EpisodeTags } from "./EpisodeTags.tsx";
 
 interface CalendarEntryRowProps {
@@ -19,14 +20,6 @@ export function CalendarEntryRow({ entry, onToggleWatched }: CalendarEntryRowPro
   const provider = entry.watchProviders[0];
   return (
     <div className="flex items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-zinc-900">
-      {onToggleWatched && (
-        <input
-          type="checkbox"
-          onChange={onToggleWatched}
-          aria-label={t("episode.toggleWatched")}
-          className="h-4 w-4 shrink-0 accent-emerald-500"
-        />
-      )}
       <Link
         to="/series/$id"
         params={{ id: String(entry.itemId) }}
@@ -59,6 +52,13 @@ export function CalendarEntryRow({ entry, onToggleWatched }: CalendarEntryRowPro
           </span>
         )}
       </Link>
+      {onToggleWatched && (
+        <Checkbox
+          checked={false}
+          onChange={onToggleWatched}
+          aria-label={t("episode.toggleWatched")}
+        />
+      )}
     </div>
   );
 }

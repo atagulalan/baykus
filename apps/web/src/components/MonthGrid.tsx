@@ -51,19 +51,22 @@ function CompactEntry({ entry }: { entry: CalendarEntry }) {
     <Link
       to="/series/$id"
       params={{ id: String(entry.itemId) }}
-      className="flex items-start gap-1 rounded px-1 py-0.5 text-[11px] leading-tight hover:bg-zinc-800"
+      className="flex items-start gap-2 rounded px-1.5 py-1 text-[11px] leading-tight hover:bg-white/5 transition-colors"
     >
       {imageUrl && !imageFailed && (
         <img
           src={imageUrl}
           alt=""
-          className="aspect-[2/3] w-6 shrink-0 rounded object-cover"
+          className="aspect-[2/3] w-6 shrink-0 object-cover opacity-90"
           onError={() => setImageFailed(true)}
         />
       )}
       <div className="flex min-w-0 flex-col gap-0.5">
-        <span className="truncate">
-          {entry.title} S{entry.s}E{entry.e}
+        <span className="truncate font-display italic text-snow">
+          {entry.title}{" "}
+          <span className="font-sans not-italic text-muted text-[10px]">
+            S{entry.s}E{entry.e}
+          </span>
         </span>
         <EpisodeTags
           s={entry.s}
@@ -96,9 +99,12 @@ export function MonthGrid({ year, month, days }: MonthGridProps) {
   return (
     <div>
       <div className="hidden sm:block">
-        <div className="grid grid-cols-7 gap-px overflow-hidden rounded-lg bg-zinc-800 text-xs text-zinc-400">
+        <div className="grid grid-cols-7 gap-px overflow-hidden border border-white/5 bg-white/5 font-mono">
           {weekdayLabels.map((label) => (
-            <div key={label} className="bg-zinc-900 px-2 py-1 text-center">
+            <div
+              key={label}
+              className="bg-void px-2 py-3 text-center uppercase tracking-widest text-[9px] text-muted"
+            >
               {label}
             </div>
           ))}
@@ -110,16 +116,18 @@ export function MonthGrid({ year, month, days }: MonthGridProps) {
             return (
               <div
                 key={date}
-                className={`flex min-h-20 flex-col gap-0.5 bg-zinc-900 p-1 ${
-                  inMonth ? "" : "opacity-40"
-                } ${isToday ? "ring-1 ring-inset ring-emerald-500" : ""}`}
+                className={`flex min-h-24 flex-col gap-1 bg-[#101010] p-1.5 ${
+                  inMonth ? "" : "opacity-30"
+                } ${isToday ? "ring-1 ring-inset ring-yellow/50 bg-yellow/5" : "hover:bg-white/5 transition-colors"}`}
               >
-                <span className="px-1 text-[11px] text-zinc-500">{Number(date.slice(8, 10))}</span>
+                <span className={`px-1 text-[10px] ${isToday ? "text-yellow" : "text-muted/50"}`}>
+                  {Number(date.slice(8, 10))}
+                </span>
                 {entries.slice(0, MAX_CELL_ENTRIES).map((entry) => (
                   <CompactEntry key={entry.episodeId} entry={entry} />
                 ))}
                 {overflow > 0 && (
-                  <span className="px-1 text-[10px] text-zinc-500">
+                  <span className="px-1 text-[9px] text-muted/70">
                     {t("calendar.overflow", { count: overflow })}
                   </span>
                 )}

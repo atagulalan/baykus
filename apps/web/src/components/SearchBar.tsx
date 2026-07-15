@@ -136,55 +136,61 @@ export function SearchBar() {
         onKeyDown={onKeyDown}
         placeholder={t("search.placeholder")}
         aria-label={t("search.placeholder")}
-        className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+        className="w-full border-b border-white/20 bg-transparent px-3 py-2 text-sm text-snow placeholder:text-muted/50 focus:outline-none focus:border-yellow transition-colors"
       />
       {open && enabled && (
-        <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900 shadow-xl">
+        <div className="absolute z-20 mt-2 w-full overflow-hidden border border-white/5 bg-[#101010] shadow-2xl backdrop-blur-md">
           {pending ? (
-            <div className="flex items-center gap-2 p-3">
-              <span className="flex-1 truncate text-sm">{pending.title}</span>
+            <div className="flex items-center gap-3 p-4 border-b border-white/5">
+              <span className="flex-1 truncate text-sm font-display italic">{pending.title}</span>
               <ManualListPicker value={manualList} onChange={setManualList} />
               <button
                 type="button"
                 disabled={addMutation.isPending}
                 onClick={() => addMutation.mutate(pending)}
-                className="rounded bg-emerald-600 px-2 py-1 text-xs font-medium text-white disabled:opacity-50"
+                className="font-mono text-[10px] tracking-widest uppercase bg-yellow text-[#080808] px-3 py-1.5 transition-opacity disabled:opacity-50 hover:opacity-90"
               >
                 {t("search.add")}
               </button>
               <button
                 type="button"
                 onClick={() => setPending(null)}
-                className="rounded px-2 py-1 text-xs text-zinc-400 hover:text-zinc-100"
+                className="font-mono text-[10px] tracking-widest uppercase text-muted hover:text-snow transition-colors px-2 py-1.5"
               >
                 {t("search.cancel")}
               </button>
             </div>
           ) : searchQuery.isLoading ? (
-            <div className="p-3 text-sm text-zinc-400">{t("search.loading")}</div>
+            <div className="p-4 text-sm font-mono text-muted">{t("search.loading")}</div>
           ) : searchQuery.isError ? (
-            <div className="flex items-center justify-between p-3 text-sm text-red-400">
+            <div className="flex items-center justify-between p-4 text-sm text-red-400 font-mono">
               <span>{t("search.providerError")}</span>
-              <button type="button" onClick={() => searchQuery.refetch()} className="underline">
+              <button
+                type="button"
+                onClick={() => searchQuery.refetch()}
+                className="underline text-snow"
+              >
                 {t("search.retry")}
               </button>
             </div>
           ) : results.length === 0 ? (
-            <div className="p-3 text-sm text-zinc-400">{t("search.noResults")}</div>
+            <div className="p-4 text-sm font-mono text-muted">{t("search.noResults")}</div>
           ) : (
-            <ul>
+            <ul className="max-h-[60vh] overflow-y-auto">
               {results.map((result, index) => (
                 <li key={resultKey(result)}>
                   <button
                     type="button"
                     onClick={() => selectResult(result)}
-                    className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-zinc-800 ${
-                      index === highlighted ? "bg-zinc-800" : ""
+                    className={`flex w-full items-center gap-4 px-4 py-3 text-left transition-colors border-b border-white/5 last:border-0 hover:bg-white/5 ${
+                      index === highlighted ? "bg-white/5" : ""
                     }`}
                   >
                     <SearchResultThumb result={result} />
-                    <span className="flex-1 truncate">{result.title}</span>
-                    <span className="text-xs text-zinc-500">
+                    <span className="flex-1 truncate font-display italic text-snow text-lg">
+                      {result.title}
+                    </span>
+                    <span className="font-mono text-[10px] text-muted tracking-wide">
                       {[result.year, result.network].filter(Boolean).join(" · ")}
                     </span>
                   </button>

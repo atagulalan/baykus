@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { ArrowDown, ArrowUp, Minus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { getStats } from "../api/client.ts";
 
@@ -21,20 +22,21 @@ function monthLabel(month: string): string {
 
 const RATING_BARS: {
   value: "1" | "2" | "3";
-  emoji: string;
+  Icon: React.ElementType;
   key: "bad" | "okay" | "good";
   color: string;
+  iconColor: string;
 }[] = [
-  { value: "1", emoji: "👎", key: "bad", color: "bg-red-500" },
-  { value: "2", emoji: "😐", key: "okay", color: "bg-zinc-500" },
-  { value: "3", emoji: "👍", key: "good", color: "bg-emerald-500" },
+  { value: "3", Icon: ArrowUp, key: "good", color: "bg-green-500/80", iconColor: "text-green-500" },
+  { value: "2", Icon: Minus, key: "okay", color: "bg-yellow/80", iconColor: "text-yellow" },
+  { value: "1", Icon: ArrowDown, key: "bad", color: "bg-red-500/80", iconColor: "text-red-500" },
 ];
 
 function StatTile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg bg-zinc-900 p-4">
-      <p className="text-xs text-zinc-400">{label}</p>
-      <p className="font-semibold text-2xl">{value}</p>
+    <div className="flex flex-col items-center gap-3 border border-white/5 bg-[#101010] p-6 text-center">
+      <p className="font-mono text-xs uppercase tracking-widest text-muted">{label}</p>
+      <p className="font-display italic text-snow text-4xl leading-none tracking-tight">{value}</p>
     </div>
   );
 }
@@ -97,17 +99,21 @@ export function StatsPage() {
         />
       </div>
 
-      {stats.episodesWatched === 0 && <p className="text-sm text-zinc-400">{t("stats.empty")}</p>}
+      {stats.episodesWatched === 0 && (
+        <p className="text-sm font-mono text-muted text-center">{t("stats.empty")}</p>
+      )}
 
-      <section className="flex flex-col gap-2">
-        <h2 className="font-medium text-sm text-zinc-300">{t("stats.monthsChart")}</h2>
-        <div className="flex items-end gap-2 border-zinc-800 border-b">
+      <section className="flex flex-col gap-4 mt-4">
+        <h2 className="font-display italic text-snow text-2xl tracking-tight">
+          {t("stats.monthsChart")}
+        </h2>
+        <div className="flex items-end gap-2 border-b border-white/5 pb-2">
           {monthCounts.map(({ month, count }) => (
             <div key={month} className="flex h-32 flex-1 flex-col items-center justify-end gap-1">
-              {count > 0 && <span className="text-[10px] text-zinc-400">{count}</span>}
+              {count > 0 && <span className="font-mono text-[9px] text-muted/50">{count}</span>}
               <div
                 title={`${monthLabel(month)}: ${count}`}
-                className="w-full max-w-5 rounded-t bg-emerald-500"
+                className="w-full max-w-5 bg-yellow/60 transition-all duration-500"
                 style={{ height: `${Math.max(count > 0 ? 4 : 0, (count / maxMonthCount) * 100)}%` }}
               />
             </div>
@@ -115,34 +121,39 @@ export function StatsPage() {
         </div>
         <div className="flex gap-2">
           {monthCounts.map(({ month }) => (
-            <span key={month} className="flex-1 text-center text-[10px] text-zinc-500">
+            <span
+              key={month}
+              className="flex-1 text-center font-mono text-[9px] uppercase tracking-widest text-muted/50"
+            >
               {monthLabel(month)}
             </span>
           ))}
         </div>
       </section>
 
-      <section className="flex flex-col gap-2">
-        <h2 className="font-medium text-sm text-zinc-300">{t("stats.ratingDistribution")}</h2>
-        <div className="flex flex-col gap-2">
+      <section className="flex flex-col gap-4 mt-8">
+        <h2 className="font-display italic text-snow text-2xl tracking-tight">
+          {t("stats.ratingDistribution")}
+        </h2>
+        <div className="flex flex-col gap-3">
           {RATING_BARS.map((r) => {
             const count = stats.ratingDistribution[r.value];
             const label = t(`rating.${r.key}`);
             return (
-              <div key={r.value} className="flex items-center gap-2 text-sm">
-                <span className="w-20 shrink-0 text-zinc-400">
-                  {r.emoji} {label}
+              <div key={r.value} className="flex items-center gap-4 text-sm">
+                <span className="flex w-24 shrink-0 items-center gap-1.5 font-mono text-xs uppercase tracking-widest text-muted">
+                  <r.Icon size={14} className={r.iconColor} /> {label}
                 </span>
-                <div className="h-4 flex-1 overflow-hidden rounded bg-zinc-900">
+                <div className="h-2 flex-1 overflow-hidden bg-white/5">
                   <div
                     title={`${label}: ${count}`}
-                    className={`h-full rounded-r ${r.color}`}
+                    className={`h-full ${r.color} transition-all duration-500`}
                     style={{
                       width: `${Math.max(count > 0 ? 4 : 0, (count / maxRatingCount) * 100)}%`,
                     }}
                   />
                 </div>
-                <span className="w-8 shrink-0 text-right text-xs text-zinc-400 tabular-nums">
+                <span className="w-8 shrink-0 text-right font-mono text-xs text-muted tabular-nums">
                   {count}
                 </span>
               </div>

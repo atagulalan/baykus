@@ -1,1 +1,18 @@
 @import "tailwindcss";
+
+@theme {
+  --color-void: #080808;
+  --color-snow: #ebebeb;
+  --color-muted: #666666;
+  --color-yellow: #f0e000;
+
+  --font-display: "DM Serif Display", serif;
+  --font-sans: "DM Sans", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+}
+
+body {
+  background-color: var(--color-void);
+  color: var(--color-snow);
+  font-family: var(--font-sans);
+}
