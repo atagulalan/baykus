@@ -114,7 +114,7 @@ Bir süredir izlenmedi
   "Sıradaki bölümler" heading (replaces the history bottom-anchor effect).
   Respect `scroll-mt` for the sticky header.
 
-## Settings `/settings` (changed, E31 + E39)
+## Settings `/settings` (changed, E31 + E39 + E42)
 
 - **General** section gains:
   ```
@@ -129,6 +129,14 @@ Bir süredir izlenmedi
   **Test bildirimi gönder** → reads the current subscription endpoint
   (`getCurrentPushSubscription()`), `POST /api/push/test { endpoint }`,
   success toast on 200 / error toast otherwise.
+- **Danger zone** section (new, E42): always visible, red-bordered, below
+  Data. One button **Tüm verimi sil** opens `ResetLibraryDialog` — export
+  link, a text input that must exactly match `settings.dangerZone.
+  confirmPhrase` ("SİL" / "DELETE") before the confirm button enables,
+  `DELETE /api/library { confirm: "DELETE" }` on confirm. Success:
+  invalidate every query, close the dialog, toast
+  `settings.dangerZone.success`; failure: generic error toast, dialog
+  stays open.
 
 ## i18n keys (new)
 
@@ -138,6 +146,9 @@ Bir süredir izlenmedi
 - `settings.notifications.test` "Test bildirimi gönder" ·
   `settings.notifications.testSent` "Test bildirimi gönderildi"
   (EN: "Send test notification" / "Test notification sent").
+- `settings.dangerZone.{title,description,button,warning,confirmLabel,
+  confirmPhrase,confirm,success}` (E42) — see spec.md's E42 row for the
+  exact TR/EN copy.
 - No other new keys: mobile nav reuses `app.nav.*`; watch/history reuse
   `watch.*`; segmented bar and posters are non-textual. Both catalogs in the
   same commit; parity test guards skew.

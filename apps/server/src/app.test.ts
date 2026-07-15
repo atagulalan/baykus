@@ -354,6 +354,37 @@ describe("server app", () => {
       expect(goneAgain.status).toBe(404);
     });
   });
+
+  describe("DELETE /api/library (danger zone)", () => {
+    it("204s and wipes every series, requiring the strict confirm body", async () => {
+      const app = createTestApp();
+      await app.request("/api/library/series", {
+        method: "POST",
+        headers: MUTATION_HEADERS,
+        body: JSON.stringify({ externalIds: { tvmazeId: 1 } }),
+      });
+
+      const res = await app.request("/api/library", {
+        method: "DELETE",
+        headers: MUTATION_HEADERS,
+        body: JSON.stringify({ confirm: "DELETE" }),
+      });
+      expect(res.status).toBe(204);
+
+      const listRes = await app.request("/api/library/series");
+      expect((await listRes.json()) as { total: number }).toMatchObject({ total: 0 });
+    });
+
+    it("400 VALIDATION_FAILED without the exact confirm literal", async () => {
+      const app = createTestApp();
+      const res = await app.request("/api/library", {
+        method: "DELETE",
+        headers: MUTATION_HEADERS,
+        body: JSON.stringify({ confirm: "delete" }),
+      });
+      expect(res.status).toBe(400);
+    });
+  });
 });
 
 describe("multi mode — library isolation (M7.3)", () => {

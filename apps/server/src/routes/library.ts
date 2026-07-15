@@ -132,5 +132,15 @@ export function createLibraryRoutes(library: Library, providers: MetadataProvide
     return c.body(null, 204);
   });
 
+  // Danger zone (Settings): the client-side confirmation dialog is the real guard; this
+  // strict body just protects against an accidental bare DELETE from some other caller.
+  app.delete("/", async (c) => {
+    z.object({ confirm: z.literal("DELETE") })
+      .strict()
+      .parse(await c.req.json());
+    library.resetLibrary();
+    return c.body(null, 204);
+  });
+
   return app;
 }

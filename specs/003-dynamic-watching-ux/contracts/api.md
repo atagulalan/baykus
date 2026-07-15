@@ -66,6 +66,20 @@ Entries gain two nullable fields (E38):
 { "…": "002 shape", "airDate": "2026-07-14", "episodeType": "standard" }
 ```
 
+## Library (new endpoint — danger zone)
+
+### DELETE /api/library
+```json
+→ { "confirm": "DELETE" }
+← 204
+```
+- Strict body: exactly `{ confirm: "DELETE" }` (literal, not locale-dependent —
+  the web UI's locale-specific confirm phrase is a client-side gate only).
+- Irreversibly deletes items (cascades tracking/seasons/episodes/watches),
+  ratings, settings, push subscriptions, and the refresh log (E42).
+- No auth beyond the existing session/X-Baykus requirements — same as every
+  other mutating endpoint.
+
 ## Push (new endpoint)
 
 ### POST /api/push/test

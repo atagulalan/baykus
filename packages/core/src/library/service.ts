@@ -224,6 +224,8 @@ export interface Library {
   listSeries(opts?: ListSeriesOptions): { items: SeriesSummary[]; total: number };
   getSeries(id: number): SeriesDetail | null;
   removeSeries(id: number): boolean;
+  /** Danger zone (Settings): irreversibly deletes every row in the library. */
+  resetLibrary(): void;
   /** E20 guard: throws ManualListConflictError when manualList="stopped" on a dynamically-finished series. */
   updateTracking(itemId: number, patch: TrackingPatch): SeriesSummary | null;
   /** E26 cleanup: clears manual_list='stopped' on items whose dynamic category is finished — for import
@@ -457,6 +459,17 @@ export function createLibrary(db: LibraryDatabase): Library {
     removeSeries(id: number): boolean {
       const result = db.delete(schema.items).where(eq(schema.items.id, id)).run();
       return result.changes > 0;
+    },
+
+    /** Danger zone (Settings): irreversibly deletes every row in the library — items
+     * (cascades tracking/seasons/episodes/watches), ratings, settings, push
+     * subscriptions, and the refresh log. The caller (route) owns confirmation. */
+    resetLibrary(): void {
+      db.delete(schema.items).run();
+      db.delete(schema.ratings).run();
+      db.delete(schema.settings).run();
+      db.delete(schema.pushSubscriptions).run();
+      db.delete(schema.refreshLog).run();
     },
 
     updateTracking(itemId: number, patch: TrackingPatch): SeriesSummary | null {

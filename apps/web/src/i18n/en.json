@@ -163,6 +163,16 @@
       "success": "Imported {{items}} series, {{watches}} watches, {{ratings}} ratings",
       "error": "Import failed",
       "tvtimeImport": "Import from TV Time"
+    },
+    "dangerZone": {
+      "title": "Danger zone",
+      "description": "Permanently deletes your entire library (series, watch history, ratings, settings). This cannot be undone.",
+      "button": "Delete all my data",
+      "warning": "This action cannot be undone. We recommend downloading a backup first.",
+      "confirmLabel": "Type \"{{phrase}}\" to confirm",
+      "confirmPhrase": "DELETE",
+      "confirm": "Permanently delete",
+      "success": "Library deleted"
     }
   },
   "stats": {

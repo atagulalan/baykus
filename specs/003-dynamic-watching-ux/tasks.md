@@ -425,3 +425,40 @@ acceptance walked, docs refreshed.
   (`pnpm lint && pnpm typecheck && pnpm test && pnpm build`) green. This is
   xava's pass if no browser tool is available — leave the box for them, per
   the M10.8 precedent.
+
+---
+
+## M17.8 — Danger zone: delete all library data (E42, out-of-plan)
+
+Not in the original `fikir.txt` set — surfaced while investigating a real
+E32 edge case with xava (a fresh TV Time import + an almost-immediate
+migration run left ~72 zero-watch shows backfilled to `added_via='manual'`
+with a very recent `added_at`, correctly but confusingly landing them in
+İzleniyor per E30 rung 3a). xava asked for a "danger zone" reset instead of
+a targeted data fix, so this became a small permanent feature rather than
+a one-off SQL correction.
+
+- [x] M17.8 core+server+web: `DELETE /api/library` danger zone (E42, FR-040)
+  - **Files:** `packages/core/src/library/{service.ts,service.test.ts}`,
+    `apps/server/src/routes/library.ts`, `apps/server/src/app.test.ts`,
+    `apps/web/src/api/client.ts`, `apps/web/src/components/
+    ResetLibraryDialog.tsx` (new), `apps/web/src/pages/SettingsPage.tsx`,
+    `apps/web/src/i18n/{tr,en}.json`, spec.md (FR-040, E42), contracts/
+    api.md, ui.md.
+  - **DoD:** `Library.resetLibrary()` deletes items (cascade), ratings,
+    settings, push subscriptions, refresh log — a superset of zip-replace's
+    wipe. Route: strict `{ confirm: "DELETE" }` body, 204 on success.
+    Settings gains an always-visible (not mode-gated) red "Danger zone"
+    section; `ResetLibraryDialog` requires typing a locale-specific phrase
+    before enabling the confirm button (no password — single mode has
+    none), offers an export-first link (mirrors `DeleteAccountDialog`).
+  - **Tests:** core `resetLibrary` clears items/watches/ratings/settings/
+    push subscriptions; server 204 + wipes series, 400 on a non-literal
+    confirm value. i18n parity.
+  - **Verify:** `pnpm lint && pnpm typecheck && pnpm test && pnpm build`
+    green (452 tests). Mechanically verified the validation path against
+    the real dev library via curl (wrong confirm → 400, 280 items
+    untouched) without ever sending the real confirm — the actual wipe
+    was deliberately never exercised against xava's real data; the
+    destructive path itself is covered by the in-memory server/core
+    tests. Browser confirmation of the dialog UX deferred to M17.7.

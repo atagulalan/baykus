@@ -162,6 +162,23 @@ describe("createLibrary listSeries/getSeries/removeSeries", () => {
     expect(library.removeSeries(added.id)).toBe(false);
   });
 
+  it("resetLibrary deletes items (cascading watches/ratings), settings, and push subscriptions", () => {
+    const { db } = openLibraryDb(":memory:");
+    const library = createLibrary(db);
+    const added = library.addSeries(houseOfTheDragonDetails());
+    library.addWatch(added.nextUnwatched?.episodeId ?? -1);
+    library.setRating("item", added.id, 3);
+    library.updateSettings({ locale: "en" });
+    library.addPushSubscription({ endpoint: "https://push.test/a", p256dh: "p1", auth: "a1" });
+
+    library.resetLibrary();
+
+    expect(library.listSeries().total).toBe(0);
+    expect(library.getSeries(added.id)).toBeNull();
+    expect(library.getSettings().locale).toBe("tr"); // back to default, row deleted
+    expect(library.listPushSubscriptions()).toEqual([]);
+  });
+
   it("updateTracking sets manualList and returns the updated summary", () => {
     const { db } = openLibraryDb(":memory:");
     const library = createLibrary(db);

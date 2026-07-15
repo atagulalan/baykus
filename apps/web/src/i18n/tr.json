@@ -163,6 +163,16 @@
       "success": "{{items}} dizi, {{watches}} izleme, {{ratings}} puan içe aktarıldı",
       "error": "İçe aktarma başarısız oldu",
       "tvtimeImport": "TV Time'dan içe aktar"
+    },
+    "dangerZone": {
+      "title": "Tehlikeli bölge",
+      "description": "Tüm kütüphaneni (diziler, izleme geçmişi, puanlar, ayarlar) kalıcı olarak siler. Bu işlem geri alınamaz.",
+      "button": "Tüm verimi sil",
+      "warning": "Bu işlem geri alınamaz. Devam etmeden önce bir yedek indirmeni öneririz.",
+      "confirmLabel": "Onaylamak için \"{{phrase}}\" yaz",
+      "confirmPhrase": "SİL",
+      "confirm": "Kalıcı olarak sil",
+      "success": "Kütüphane silindi"
     }
   },
   "stats": {

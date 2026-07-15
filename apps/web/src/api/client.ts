@@ -282,6 +282,14 @@ export function deleteAccount(password: string): Promise<void> {
   return request<void>("/auth/account", { method: "DELETE", body: JSON.stringify({ password }) });
 }
 
+/** Danger zone: irreversibly wipes every series/watch/rating/setting in the library. */
+export function resetLibrary(): Promise<void> {
+  return request<void>("/library", {
+    method: "DELETE",
+    body: JSON.stringify({ confirm: "DELETE" }),
+  });
+}
+
 export async function importTvTime(file: File): Promise<TvTimeReport> {
   const formData = new FormData();
   formData.append("file", file);

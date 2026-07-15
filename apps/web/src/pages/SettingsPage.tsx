@@ -9,11 +9,13 @@ import {
   getSettings,
   importZip,
   logout,
+  resetLibrary,
   sendTestPush,
   updateSettings,
 } from "../api/client.ts";
 import type { ImportMode, ImportZipResult, Locale, Settings, SettingsPatch } from "../api/types.ts";
 import { DeleteAccountDialog } from "../components/DeleteAccountDialog.tsx";
+import { ResetLibraryDialog } from "../components/ResetLibraryDialog.tsx";
 import {
   getCurrentPushSubscription,
   isPushSupported,
@@ -36,6 +38,7 @@ export function SettingsPage() {
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importResult, setImportResult] = useState<ImportZipResult | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
   const query = useQuery({ queryKey: ["settings"], queryFn: getSettings });
   const sessionQuery = useQuery({ queryKey: ["auth-session"], queryFn: getAuthSession });
@@ -128,6 +131,16 @@ export function SettingsPage() {
       queryClient.invalidateQueries({ queryKey: ["auth-session"] });
       navigate({ to: "/login" });
     },
+  });
+
+  const resetLibraryMutation = useMutation({
+    mutationFn: resetLibrary,
+    onSuccess: () => {
+      setResetDialogOpen(false);
+      queryClient.invalidateQueries();
+      toast.show(t("settings.dangerZone.success"));
+    },
+    onError: () => toast.show(t("errors.generic"), "error"),
   });
 
   if (query.isLoading) {
@@ -397,6 +410,18 @@ export function SettingsPage() {
         </Link>
       </section>
 
+      <section className="flex flex-col gap-3 rounded-lg border border-red-950 bg-zinc-900 p-4">
+        <h2 className="font-medium text-red-400 text-sm">{t("settings.dangerZone.title")}</h2>
+        <p className="text-xs text-zinc-500">{t("settings.dangerZone.description")}</p>
+        <button
+          type="button"
+          onClick={() => setResetDialogOpen(true)}
+          className="self-start rounded bg-red-950 px-3 py-1.5 text-red-400 text-sm"
+        >
+          {t("settings.dangerZone.button")}
+        </button>
+      </section>
+
       {sessionQuery.data?.mode === "multi" && (
         <section className="flex flex-col gap-3 rounded-lg bg-zinc-900 p-4">
           <h2 className="font-medium text-sm text-zinc-300">{t("auth.account.title")}</h2>
@@ -429,6 +454,15 @@ export function SettingsPage() {
           error={deleteAccountMutation.isError}
           onClose={() => setDeleteDialogOpen(false)}
           onConfirm={(password) => deleteAccountMutation.mutate(password)}
+        />
+      )}
+
+      {resetDialogOpen && (
+        <ResetLibraryDialog
+          pending={resetLibraryMutation.isPending}
+          error={resetLibraryMutation.isError}
+          onClose={() => setResetDialogOpen(false)}
+          onConfirm={() => resetLibraryMutation.mutate()}
         />
       )}
     </div>

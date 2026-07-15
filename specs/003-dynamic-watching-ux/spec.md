@@ -118,6 +118,12 @@ confirm the pipeline works on this device (E39).
   `/img` route already serves `Cache-Control: public, max-age=31536000,
   immutable` and `img.test.ts` already asserts it (E40). No code change;
   keep the test green.
+- **FR-040** `DELETE /api/library` (E42): irreversibly deletes every row in
+  the library — items (cascades tracking/seasons/episodes/watches),
+  ratings, settings, push subscriptions, refresh log. Strict body
+  `{ confirm: "DELETE" }`. Settings gains a "Danger zone" section with a
+  type-to-confirm dialog (mirrors `DeleteAccountDialog`'s export-first
+  pattern, but no password — single mode has none).
 
 ## Edge-case decisions (normative — do not re-decide these in code)
 
@@ -135,6 +141,7 @@ confirm the pipeline works on this device (E39).
 | E39 | Test notification? | `POST /api/push/test`, strict zod body `{ endpoint: string }` — the requesting device's own subscription endpoint (web reads it from `getCurrentPushSubscription()`). Unknown endpoint → 404 NOT_FOUND. Sends one web-push to exactly that subscription: payload `{ title: "baykuş", body: "Test bildirimi", url: "/settings" }` (hardcoded TR body — mirrors `notifyNewEpisodes`' existing hardcoded-TR convention). Push-service 404/410 → remove the subscription and return 404; other send failures → 502 `UPSTREAM_ERROR` if that code exists in the error envelope, else the generic 500 mapping — reuse whatever `middleware/errors.ts` already provides, don't invent a new envelope. Success → 200 `{}`. Settings UI: a "Test bildirimi gönder" button, visible only while subscribed; success/failure toasts. |
 | E40 | Browser caching of series images? | Already implemented and asserted: `createImageRoute` sets `Cache-Control: public, max-age=31536000, immutable` on every `/img` response (cache keys are content-addressed by provider path, so immutable is correct), and `img.test.ts` asserts the exact header. Recorded here so the product note isn't silently dropped — **no task, no code change.** |
 | E41 | Filter RESET? | RESET sets the draft to the page-load defaults: sort `lastWatched` ("Son izlenen"), category `all` ("Tümü"). Draft-only — APPLY still applies, panel stays open. Supersedes 002 ui.md's "RESET = Tümü + Son eklenen" (which contradicted the page default and is the reported bug). |
+| E42 | Danger zone (delete all data)? | Added post-checklist (2026-07-15), surfaced while debugging a real-library E32 edge case (see below) — not in the original `fikir.txt` set. `DELETE /api/library`, strict `{ confirm: "DELETE" }` body; deletes items (cascade), ratings, settings, push subscriptions, refresh log — a superset of the zip-import "replace" wipe (which leaves push subscriptions and the refresh log alone). Web: a red-bordered "Danger zone" section in Settings, always visible (not gated by single/multi mode — multi-mode account deletion is a separate, account-level action); the confirm dialog requires typing a locale-specific phrase (`settings.dangerZone.confirmPhrase`: "SİL" / "DELETE") rather than a password, since single mode has none. No auto-navigation on success (unlike account deletion, which redirects to `/login`) — the library is simply empty on the same page. |
 
 ## Non-goals
 
