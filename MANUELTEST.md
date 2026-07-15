@@ -70,11 +70,54 @@ regresyonu; tam yeşil suite.
 
 ---
 
-## M12.4 — CHECKPOINT M12 (henüz implemente edilmedi)
+## M12.4 — CHECKPOINT M12 (bekliyor)
 
 `/watch` sayfası: geçmiş, sıradaki bölümler (quick-mark + rozetler), bir
-süredir izlenmedi bölümü. İmplementasyon tamamlanınca bu bölüm
-doldurulacak.
+süredir izlenmedi bölümü.
+
+### Nav + sayfa
+- [ ] Üst navda "Kütüphane" ile "Takvim" arasında yeni "İzleme" linki
+      olmalı, `/watch`'a gitmeli.
+- [ ] Sayfa başlığı ("İzleme"), İzleme geçmişi, Sıradaki bölümler, Bir
+      süredir izlenmedi bölümleri sırayla görünmeli.
+
+### İzleme geçmişi
+- [ ] Liste en eski **üstte**, en yeni **altta** olmalı (API newest-first
+      döndürüyor, sayfa client-side ters çeviriyor).
+- [ ] Sayfa açılışında otomatik olarak listenin **en altına** scroll
+      olmalı.
+- [ ] Bugün izlenen bir bölüm "Bugün {saat}" formatında, dün izlenen
+      "Dün {saat}" formatında, daha eskiler "{gün} {ay} {saat}"
+      formatında görünmeli.
+- [ ] Hiç izleme yoksa boş durum mesajı çıkmalı.
+
+### Sıradaki bölümler (category = watching)
+- [ ] Her satırda poster, başlık, SxEy, (varsa) +N rozeti, bölüm adı,
+      EpisodeTags rozetleri görünmeli.
+- [ ] `nextUnwatched.airDate` bugüne eşit veya geçmişse checkbox olmalı;
+      null veya gelecekse checkbox **olmamalı** (E29).
+- [ ] Bir satırı işaretle → o dizinin `nextUnwatched`'ı bir sonraki
+      bölüme ilerlemeli (yeniden fetch sonrası).
+- [ ] Bir dizinin son izlenmemiş bölümünü işaretle → kategori
+      up_to_date/finished'a döner, satır bu bölümden tamamen kaybolmalı.
+- [ ] Boşsa boş durum mesajı çıkmalı.
+
+### Bir süredir izlenmedi (category = not_watched_recently)
+- [ ] Aynı satır bileşeni, doğru kategori filtrelemesiyle çalışmalı.
+
+### Takvim/kütüphane senkronizasyonu
+- [ ] Bir bölümü işaretledikten sonra `/calendar` ve `/` (ana sayfa)
+      sayfalarına gidip verinin güncel olduğunu doğrula (aynı invalidate
+      zinciri).
+
+### İki dil + M10/M11 regresyonu
+- [ ] Ayarlar → Dil'den EN'e geç, yukarıdaki adımları tekrarla.
+- [ ] Ana sayfa (M10) ve takvim (M11) hâlâ doğru çalışıyor mu, hızlıca
+      bak.
+
+### Tam gate
+- [ ] `pnpm lint && pnpm -r typecheck && pnpm exec vitest run` — hepsi
+      yeşil (ben zaten doğruladım).
 
 ---
 

@@ -3,6 +3,7 @@
     "name": "baykuş",
     "nav": {
       "library": "Kütüphane",
+      "watch": "İzleme",
       "calendar": "Takvim",
       "stats": "İstatistikler",
       "settings": "Ayarlar"
@@ -179,6 +180,21 @@
     "empty": {
       "today": "(boş)",
       "month": "Bu ay için bölüm yok"
+    }
+  },
+  "watch": {
+    "title": "İzleme",
+    "history": "İzleme geçmişi",
+    "next": "Sıradaki bölümler",
+    "notWatchedRecently": "Bir süredir izlenmedi",
+    "relativeDay": {
+      "todayAt": "Bugün {{time}}",
+      "yesterdayAt": "Dün {{time}}"
+    },
+    "empty": {
+      "history": "Henüz izleme kaydı yok",
+      "next": "Sırada bölüm yok",
+      "notWatchedRecently": "Bu kategoride dizi yok"
     }
   },
   "auth": {

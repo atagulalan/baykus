@@ -3,6 +3,7 @@
     "name": "baykuş",
     "nav": {
       "library": "Library",
+      "watch": "Watch",
       "calendar": "Calendar",
       "stats": "Stats",
       "settings": "Settings"
@@ -179,6 +180,21 @@
     "empty": {
       "today": "(empty)",
       "month": "No episodes this month"
+    }
+  },
+  "watch": {
+    "title": "Watch",
+    "history": "Watch history",
+    "next": "Up next",
+    "notWatchedRecently": "Haven't watched for a while",
+    "relativeDay": {
+      "todayAt": "Today {{time}}",
+      "yesterdayAt": "Yesterday {{time}}"
+    },
+    "empty": {
+      "history": "No watch history yet",
+      "next": "Nothing queued up",
+      "notWatchedRecently": "No series in this category"
     }
   },
   "auth": {

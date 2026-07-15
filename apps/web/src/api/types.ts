@@ -284,6 +284,24 @@ export interface CalendarResponse {
   days: CalendarDay[];
 }
 
+export interface WatchHistoryEntry {
+  watchId: number;
+  watchedAt: string;
+  source: string;
+  itemId: number;
+  title: string;
+  posterRef: string | null;
+  episodeId: number;
+  s: number;
+  e: number;
+  episodeTitle: string | null;
+}
+
+export interface WatchHistoryResponse {
+  items: WatchHistoryEntry[];
+  total: number;
+}
+
 export type ImportMode = "replace" | "merge";
 
 export interface ImportZipResult {

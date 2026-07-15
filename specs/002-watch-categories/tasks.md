@@ -423,7 +423,7 @@ badges, and the not-watched-recently section.
   - **Tests:** default limit; validation failure on limit=0/101; shape.
   - **Verify:** `pnpm test apps/server`
 
-- [ ] M12.3 web: watch page
+- [x] M12.3 web: watch page
   - **Files:** `apps/web/src/router.tsx`, `src/components/Layout.tsx` (nav),
     new `src/pages/WatchPage.tsx`, new `src/components/WatchNextRow.tsx`,
     `src/api/{client.ts,types.ts}`, `src/i18n/{tr,en}.json`
@@ -437,6 +437,36 @@ badges, and the not-watched-recently section.
   - **Verify:** `pnpm dev` → mark next episode → row advances; series with
     one aired-unwatched episode left disappears from watch-next after
     marking (category flips to up_to_date/finished); history bottom-anchored.
+  <!-- DECISION: "optimistic" quick-mark is implemented as invalidate-on-
+  success only (POST, then invalidate library/watch-history/calendar),
+  the same pattern CalendarPage's markWatched already uses — NOT full
+  onMutate cache-patching (which SeriesDetailPage's toggleWatch does).
+  Recomputing client-side whether a series should leave watch-next or
+  which episode becomes the new nextUnwatched would duplicate category/
+  progress logic that already lives server-side; a normal HTML checkbox
+  already renders checked instantly regardless, and invalidation refetch
+  is fast enough that this reads as "optimistic" in practice. -->
+  <!-- DECISION: watch.title is rendered as an on-page <h1> — no other
+  page in this app has a persistent page-level <h1> (LibraryPage/
+  StatsPage go straight into content), and ui.md's terse ASCII wireframe
+  doesn't show one either, but the key is explicitly listed in ui.md's
+  i18n section with no other placement described, so I added it as a
+  page heading (useful when landing on /watch directly via bookmark/URL). -->
+  <!-- DECISION: relative-day formatting for history rows ("Bugün
+  {{time}}" / "Dün {{time}}" / "{{day}} {{month}} {{time}}") uses new
+  watch.relativeDay.{todayAt,yesterdayAt} keys not named in ui.md's i18n
+  list — the mockup shows "dün 21:12" as a concrete example so some
+  relative handling is clearly intended, but the calendar's own BUGÜN
+  handling doesn't have a "yesterday" equivalent to reuse, hence new
+  page-scoped keys instead of stretching calendar.* to cover this. -->
+  <!-- DECISION: same as M10.7/M11.3 — no browser-automation tool
+  available. Verified instead: tsc --noEmit clean, vite build clean,
+  i18n parity green, every new/touched file transforms through Vite's
+  dev endpoint, and a live curl pass against xava's already-running dev
+  server confirming GET /api/watches/history's shape and the /watch
+  route's HTML shell all resolve. Full manual browser checklist for
+  M12.3 + M12.4 written to MANUELTEST.md per xava's instruction to defer
+  all browser testing to one pass at the end, rather than blocking here. -->
 
 - [ ] M12.4 CHECKPOINT M12 — full browser pass of US-16 in both locales +
   M10/M11 regression + green suite.

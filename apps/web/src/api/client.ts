@@ -26,6 +26,7 @@ import type {
   TvTimeConfirmResult,
   TvTimeReport,
   WatchCategory,
+  WatchHistoryResponse,
 } from "./types.ts";
 
 export class ApiError extends Error {
@@ -217,6 +218,10 @@ export function getCalendar(
   if (params.to) query.set("to", params.to);
   const qs = query.toString();
   return request<CalendarResponse>(`/calendar${qs ? `?${qs}` : ""}`);
+}
+
+export function getWatchHistory(limit?: number): Promise<WatchHistoryResponse> {
+  return request<WatchHistoryResponse>(`/watches/history${limit ? `?limit=${limit}` : ""}`);
 }
 
 export function exportZipUrl(includeSecrets = false): string {

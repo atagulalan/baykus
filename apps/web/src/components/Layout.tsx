@@ -6,6 +6,7 @@ import { SearchBar } from "./SearchBar.tsx";
 
 const navItems = [
   { to: "/", key: "app.nav.library" },
+  { to: "/watch", key: "app.nav.watch" },
   { to: "/calendar", key: "app.nav.calendar" },
   { to: "/stats", key: "app.nav.stats" },
   { to: "/settings", key: "app.nav.settings" },

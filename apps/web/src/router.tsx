@@ -8,6 +8,7 @@ import { LoginPage } from "./pages/LoginPage.tsx";
 import { SeriesDetailPage } from "./pages/SeriesDetailPage.tsx";
 import { SettingsPage } from "./pages/SettingsPage.tsx";
 import { StatsPage } from "./pages/StatsPage.tsx";
+import { WatchPage } from "./pages/WatchPage.tsx";
 
 // Layout renders the nav chrome + auth guard for every route except
 // /login and /claim, which it detects by pathname and renders bare
@@ -26,6 +27,12 @@ const seriesDetailRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/series/$id",
   component: SeriesDetailPage,
+});
+
+const watchRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/watch",
+  component: WatchPage,
 });
 
 const calendarRoute = createRoute({
@@ -67,6 +74,7 @@ const importRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   libraryRoute,
   seriesDetailRoute,
+  watchRoute,
   calendarRoute,
   statsRoute,
   settingsRoute,
