@@ -29,6 +29,7 @@ function buildPopulatedDb() {
       contentRatings: [{ region: "US", rating: "TV-MA" }],
       episodeRunTimes: [60],
       addedAt: "2026-01-01T00:00:00Z",
+      addedVia: "manual",
       lastRefreshedAt: "2026-01-05T00:00:00Z",
     })
     .returning({ id: schema.items.id })
@@ -131,6 +132,7 @@ function buildPopulatedDb() {
       title: "Breaking Bad",
       tvmazeId: 169,
       addedAt: "2026-01-03T00:00:00Z",
+      addedVia: "import:tvtime",
       lastRefreshedAt: "2026-01-03T00:00:00Z",
     })
     .returning({ id: schema.items.id })
@@ -155,6 +157,7 @@ function buildPopulatedDb() {
       title: "The Wire",
       tvdbId: 79126,
       addedAt: "2026-01-04T00:00:00Z",
+      addedVia: "import:zip",
       lastRefreshedAt: "2026-01-04T00:00:00Z",
     })
     .returning({ id: schema.items.id })

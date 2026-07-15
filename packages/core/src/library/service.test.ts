@@ -92,18 +92,12 @@ describe("createLibrary.addSeries", () => {
     expect(detail?.tags).toEqual([]);
   });
 
-  it("persists tags (5th param) and round-trips them via getSeries — M8.4", () => {
+  it("persists tags (opts.tags) and round-trips them via getSeries — M8.4", () => {
     const { db } = openLibraryDb(":memory:");
     const library = createLibrary(db);
     const tags = [{ source: "serializd", id: 12, name: "🏛️ Politics" }];
 
-    const summary = library.addSeries(
-      houseOfTheDragonDetails(),
-      undefined,
-      undefined,
-      undefined,
-      tags,
-    );
+    const summary = library.addSeries(houseOfTheDragonDetails(), { tags });
 
     expect(library.getSeries(summary.id)?.tags).toEqual(tags);
   });
@@ -115,7 +109,7 @@ describe("createLibrary.addSeries", () => {
 
     let caught: unknown;
     try {
-      library.addSeries(houseOfTheDragonDetails(), "watch_later");
+      library.addSeries(houseOfTheDragonDetails(), { manualList: "watch_later" });
     } catch (e) {
       caught = e;
     }
@@ -135,7 +129,7 @@ describe("createLibrary.addSeries", () => {
   it("honors an explicit manualList at add time", () => {
     const { db } = openLibraryDb(":memory:");
     const library = createLibrary(db);
-    const summary = library.addSeries(houseOfTheDragonDetails(), "watch_later");
+    const summary = library.addSeries(houseOfTheDragonDetails(), { manualList: "watch_later" });
     expect(summary.manualList).toBe("watch_later");
     expect(summary.category).toBe("watch_later");
   });

@@ -109,7 +109,7 @@ window; imports don't; the window length is a setting.
   list but required for the mandatory full-green-suite-before-commit gate,
   same precedent as 002's M10.1/M10.3 mechanical-fixture-fix notes. -->
 
-- [ ] M14.4 core: `addSeries` options object + zip schemaVersion 3 (E32,
+- [x] M14.4 core: `addSeries` options object + zip schemaVersion 3 (E32,
       FR-031)
   - **Files:** `packages/core/src/library/{service.ts,service.test.ts}`,
     `packages/core/src/zip/{types.ts,export.ts,import.ts}`,
@@ -133,6 +133,20 @@ window; imports don't; the window length is a setting.
     merge rule covered.
   - **Verify:** `pnpm test packages/core -- zip && pnpm test packages/core
     -- service`
+  <!-- DECISION: deleting the positional addSeries overload forced every
+  call site to move in this commit, including apps/server/src/routes/tvtime.ts
+  — leaving it on the old positional form wouldn't compile. Since the only
+  correct value for an import path is addedVia: "import:tvtime" (a "manual"
+  default there is exactly the İzleniyor-flood bug the constitution/spec
+  forbid), that line was written here rather than left wrong until M14.5.
+  M14.5 still owns the settings-route validation piece and adds the
+  route-level test asserting the tvtime add computes not_started. Separately,
+  building the addSeries/tvtime.ts options object as `{ manualList: x, ... }`
+  where x can be `undefined` fails under this repo's `exactOptionalPropertyTypes:
+  true` (an object literal may not assign `undefined` to an optional
+  property); fixed with a conditional spread (`...(x !== undefined ? {
+  manualList: x } : {})`), matching the existing pattern in
+  routes/library.ts's toTrackingPatch. -->
 
 - [ ] M14.5 server: settings validation + tvtime addedVia
   - **Files:** `apps/server/src/routes/{settings.ts,settings.test.ts,

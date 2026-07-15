@@ -10,7 +10,7 @@ import type { Archiver } from "archiver";
 import { and, eq, inArray, or, sql } from "drizzle-orm";
 import { type CalendarResponse, getCalendar } from "../calendar/query.ts";
 import type { LibraryDatabase } from "../db/open.ts";
-import type { ManualList, RatingTargetType, WatchSource } from "../db/schema.ts";
+import type { AddedVia, ManualList, RatingTargetType, WatchSource } from "../db/schema.ts";
 import * as schema from "../db/schema.ts";
 import { type RefreshResult, refreshAll, refreshItem } from "../refresh/engine.ts";
 import { type ExportOptions, exportLibraryZip } from "../zip/export.ts";
@@ -81,6 +81,7 @@ function findConflictingItemId(db: LibraryDatabase, ids: ExternalIds): number | 
 function toItemInsertValues(
   details: SeriesDetails,
   addedAt: string,
+  addedVia: AddedVia,
   externalRatings: ExternalRating[] | null,
   watchProviders: WatchProviderInfo[] | null,
   tags: TagInfo[] | null,
@@ -115,6 +116,7 @@ function toItemInsertValues(
     externalRatings: externalRatings && externalRatings.length > 0 ? externalRatings : null,
     lastRefreshedAt: addedAt,
     addedAt,
+    addedVia,
   };
 }
 
@@ -202,14 +204,17 @@ function sortEnriched(
   }
 }
 
+export interface AddSeriesOptions {
+  manualList?: ManualList;
+  externalRatings?: ExternalRating[];
+  watchProviders?: WatchProviderInfo[];
+  tags?: TagInfo[];
+  /** How the item entered the library (E32). Defaults to "manual". */
+  addedVia?: AddedVia;
+}
+
 export interface Library {
-  addSeries(
-    details: SeriesDetails,
-    manualList?: ManualList,
-    externalRatings?: ExternalRating[],
-    watchProviders?: WatchProviderInfo[],
-    tags?: TagInfo[],
-  ): SeriesSummary;
+  addSeries(details: SeriesDetails, opts?: AddSeriesOptions): SeriesSummary;
   listSeries(opts?: ListSeriesOptions): { items: SeriesSummary[]; total: number };
   getSeries(id: number): SeriesDetail | null;
   removeSeries(id: number): boolean;
@@ -246,13 +251,7 @@ export interface Library {
 
 export function createLibrary(db: LibraryDatabase): Library {
   return {
-    addSeries(
-      details: SeriesDetails,
-      manualList?: ManualList,
-      externalRatings?: ExternalRating[],
-      watchProviders?: WatchProviderInfo[],
-      tags?: TagInfo[],
-    ): SeriesSummary {
+    addSeries(details: SeriesDetails, opts: AddSeriesOptions = {}): SeriesSummary {
       const existingId = findConflictingItemId(db, details.externalIds);
       if (existingId != null) throw new AlreadyInLibraryError(existingId);
 
@@ -265,9 +264,10 @@ export function createLibrary(db: LibraryDatabase): Library {
             toItemInsertValues(
               details,
               now,
-              externalRatings ?? null,
-              watchProviders ?? null,
-              tags ?? null,
+              opts.addedVia ?? "manual",
+              opts.externalRatings ?? null,
+              opts.watchProviders ?? null,
+              opts.tags ?? null,
             ),
           )
           .returning({ id: schema.items.id })
@@ -276,7 +276,7 @@ export function createLibrary(db: LibraryDatabase): Library {
         tx.insert(schema.tracking)
           .values({
             itemId: inserted.id,
-            manualList: manualList ?? null,
+            manualList: opts.manualList ?? null,
             pushMuted: false,
             note: null,
             listChangedAt: now,

@@ -14,7 +14,7 @@ import type {
 } from "./types.ts";
 
 const APP_VERSION = "0.1.0";
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 
 type ItemRow = typeof schema.items.$inferSelect;
 type TrackingRow = typeof schema.tracking.$inferSelect;
@@ -105,6 +105,7 @@ function buildItemEntry(
       seasons,
     },
     addedAt: item.addedAt,
+    addedVia: item.addedVia,
     lastRefreshedAt: item.lastRefreshedAt,
   };
 }

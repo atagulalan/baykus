@@ -115,7 +115,7 @@ describe("exportLibraryZip", () => {
 
     expect(manifest).toMatchObject({
       app: "baykus",
-      schemaVersion: 2,
+      schemaVersion: 3,
       exportedAt: "2026-01-03T00:00:00Z",
       mediaTypes: ["series"],
       counts: { items: 1, watches: 1, ratings: 2 },
@@ -133,6 +133,7 @@ describe("exportLibraryZip", () => {
       title: "Test Show",
       externalIds: { tmdbId: 42 },
       tracking: { manualList: null },
+      addedVia: "manual",
     });
     expect(items[0]?.metadata.seasons).toEqual([
       {

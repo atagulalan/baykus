@@ -97,13 +97,12 @@ export function createLibraryRoutes(library: Library, providers: MetadataProvide
       enrichWatchProviders(providers, externalIds, region),
       enrichTags(providers, externalIds),
     ]);
-    const summary = library.addSeries(
-      details,
-      body.manualList,
+    const summary = library.addSeries(details, {
+      ...(body.manualList !== undefined ? { manualList: body.manualList } : {}),
       externalRatings,
       watchProviders,
       tags,
-    );
+    });
     return c.json(summary, 201);
   });
 

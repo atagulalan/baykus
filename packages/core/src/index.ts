@@ -1,6 +1,6 @@
 export type { CalendarDay, CalendarEntry, CalendarResponse } from "./calendar/query.ts";
 export { type LibraryDatabase, type LibraryDb, openLibraryDb } from "./db/open.ts";
-export type { ManualList, RatingTargetType, WatchSource } from "./db/schema.ts";
+export type { AddedVia, ManualList, RatingTargetType, WatchSource } from "./db/schema.ts";
 export * as schema from "./db/schema.ts";
 export { type CachedImage, getCachedImage } from "./images/cache.ts";
 export {
@@ -24,7 +24,7 @@ export type { WatchHistoryEntry } from "./library/history.ts";
 export { todayUtc } from "./library/progress.ts";
 export type { PushSubscriptionRecord } from "./library/push.ts";
 export type { Rating } from "./library/ratings.ts";
-export { createLibrary, type Library } from "./library/service.ts";
+export { type AddSeriesOptions, createLibrary, type Library } from "./library/service.ts";
 export type { Locale, Settings, SettingsPatch, Theme } from "./library/settings.ts";
 export type { Stats } from "./library/stats.ts";
 export type {

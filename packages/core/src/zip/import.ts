@@ -16,7 +16,7 @@ import type {
 /** v1 zip tracking block (see specs/001) — mapped to v2 shape per E26 before the shared import path. */
 type LegacyTrackingStatus = "watching" | "completed" | "plan_to_watch" | "dropped" | "paused";
 
-interface ZipItemEntryV1 extends Omit<ZipItemEntry, "tracking"> {
+interface ZipItemEntryV1 extends Omit<ZipItemEntry, "tracking" | "addedVia"> {
   tracking: {
     status: LegacyTrackingStatus;
     pushMuted: boolean;
@@ -24,6 +24,9 @@ interface ZipItemEntryV1 extends Omit<ZipItemEntry, "tracking"> {
     statusChangedAt: string;
   };
 }
+
+/** v2 shape — everything of v3 except `addedVia`, which didn't exist yet. */
+type ZipItemEntryV2 = Omit<ZipItemEntry, "addedVia">;
 
 const LEGACY_STATUS_TO_MANUAL_LIST: Record<LegacyTrackingStatus, ManualList | null> = {
   plan_to_watch: "watch_later",
@@ -33,6 +36,7 @@ const LEGACY_STATUS_TO_MANUAL_LIST: Record<LegacyTrackingStatus, ManualList | nu
   paused: null,
 };
 
+/** v1/v2 zips never carry addedVia — default to import:zip so a library migration never floods İzleniyor (E32). */
 function mapV1ItemEntry(raw: ZipItemEntryV1): ZipItemEntry {
   return {
     ...raw,
@@ -42,7 +46,12 @@ function mapV1ItemEntry(raw: ZipItemEntryV1): ZipItemEntry {
       note: raw.tracking.note,
       listChangedAt: raw.tracking.statusChangedAt,
     },
+    addedVia: "import:zip",
   };
+}
+
+function mapV2ItemEntry(raw: ZipItemEntryV2): ZipItemEntry {
+  return { ...raw, addedVia: "import:zip" };
 }
 
 export type ImportMode = "replace" | "merge";
@@ -67,7 +76,7 @@ export interface ImportResult {
   warnings: string[];
 }
 
-const SUPPORTED_SCHEMA_VERSIONS = [1, 2];
+const SUPPORTED_SCHEMA_VERSIONS = [1, 2, 3];
 
 interface ParsedZip {
   manifest: ZipManifest;
@@ -138,7 +147,7 @@ async function parseZip(buffer: Buffer): Promise<ParsedZip> {
   }
   const manifest = manifestRawParsed as unknown as ZipManifest;
 
-  const rawItems = parseJsonEntry<ZipItemEntry[] | ZipItemEntryV1[]>(
+  const rawItems = parseJsonEntry<ZipItemEntry[] | ZipItemEntryV2[] | ZipItemEntryV1[]>(
     entries,
     "library/items.json",
     [],
@@ -153,7 +162,9 @@ async function parseZip(buffer: Buffer): Promise<ParsedZip> {
   const items =
     schemaVersion === 1
       ? (rawItems as ZipItemEntryV1[]).map(mapV1ItemEntry)
-      : (rawItems as ZipItemEntry[]);
+      : schemaVersion === 2
+        ? (rawItems as ZipItemEntryV2[]).map(mapV2ItemEntry)
+        : (rawItems as ZipItemEntry[]);
 
   return { manifest, items, watches, ratings, settings };
 }
@@ -277,6 +288,7 @@ function insertItemWholesale(db: LibraryDatabase, entry: ZipItemEntry): number {
     .values({
       ...toItemValues(entry, entry.externalIds),
       addedAt: entry.addedAt,
+      addedVia: entry.addedVia,
       lastRefreshedAt: entry.lastRefreshedAt,
     })
     .returning({ id: schema.items.id })

@@ -16,11 +16,11 @@ import type {
   TagInfo,
   WatchProviderInfo,
 } from "@baykus/provider-sdk";
-import type { ManualList, RatingTargetType, WatchSource } from "../db/schema.ts";
+import type { AddedVia, ManualList, RatingTargetType, WatchSource } from "../db/schema.ts";
 
 export interface ZipManifest {
   app: "baykus";
-  schemaVersion: 2;
+  schemaVersion: 3;
   exportedAt: string;
   appVersion: string;
   mediaTypes: MediaType[];
@@ -80,6 +80,8 @@ export interface ZipItemEntry {
     seasons: ZipSeasonEntry[];
   };
   addedAt: string;
+  /** How the item entered the library (E32). */
+  addedVia: AddedVia;
   lastRefreshedAt: string | null;
 }
 

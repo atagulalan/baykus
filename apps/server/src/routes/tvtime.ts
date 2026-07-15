@@ -92,7 +92,11 @@ async function importOneShow(
   let itemId: number;
   let itemCreated = true;
   try {
-    itemId = library.addSeries(details, TVTIME_STATUS_TO_MANUAL_LIST[status] ?? undefined).id;
+    const manualList = TVTIME_STATUS_TO_MANUAL_LIST[status];
+    itemId = library.addSeries(details, {
+      ...(manualList !== null ? { manualList } : {}),
+      addedVia: "import:tvtime",
+    }).id;
   } catch (cause) {
     if (!isAlreadyInLibraryError(cause)) throw cause;
     itemId = cause.itemId;

@@ -67,9 +67,9 @@ function setupOneItem(title: string, tmdbId: number) {
 }
 
 describe("importLibraryZip — schema validation", () => {
-  it("rejects an unsupported schemaVersion (3)", async () => {
+  it("rejects an unsupported schemaVersion (4)", async () => {
     const { db } = openLibraryDb(":memory:");
-    const badZip = await manifestOnlyZip({ schemaVersion: 3 });
+    const badZip = await manifestOnlyZip({ schemaVersion: 4 });
 
     await expect(importLibraryZip(db, badZip, "replace")).rejects.toMatchObject({
       code: "UNSUPPORTED_SCHEMA",
@@ -292,6 +292,68 @@ function manualListByTmdbId(db: LibraryDatabase) {
   return new Map(rows.map((r) => [r.tmdbId, r.manualList]));
 }
 
+function addedViaByTmdbId(db: LibraryDatabase) {
+  const rows = db
+    .select({ tmdbId: schema.items.tmdbId, addedVia: schema.items.addedVia })
+    .from(schema.items);
+  return new Map(rows.all().map((r) => [r.tmdbId, r.addedVia]));
+}
+
+/** Hand-builds a v2 zip (no addedVia field on items) to exercise the E32 import default. */
+async function buildV2Zip(items: Array<{ tmdbId: number; title: string }>): Promise<Buffer> {
+  const manifest = {
+    app: "baykus",
+    schemaVersion: 2,
+    exportedAt: "2026-01-01T00:00:00Z",
+    appVersion: "0.1.0",
+    mediaTypes: ["series"],
+    counts: { items: items.length, watches: 0, ratings: 0 },
+  };
+  const itemEntries = items.map((it) => ({
+    mediaType: "series",
+    title: it.title,
+    externalIds: { tmdbId: it.tmdbId },
+    tracking: {
+      manualList: null,
+      pushMuted: false,
+      note: null,
+      listChangedAt: "2026-01-01T00:00:00Z",
+    },
+    metadata: {
+      originalTitle: null,
+      overview: null,
+      tagline: null,
+      releaseStatus: null,
+      firstAirDate: null,
+      lastAirDate: null,
+      originCountry: null,
+      originalLanguage: null,
+      episodeRunTimes: null,
+      networks: null,
+      genres: null,
+      tags: null,
+      contentRatings: null,
+      posterRef: null,
+      backdropRef: null,
+      logoRef: null,
+      watchProviders: null,
+      externalRatings: null,
+      seasons: [],
+    },
+    addedAt: "2026-01-01T00:00:00Z",
+    lastRefreshedAt: null,
+  }));
+
+  const archive = new ZipArchive({ zlib: { level: 9 } });
+  archive.append(JSON.stringify(manifest), { name: "manifest.json" });
+  archive.append(JSON.stringify(itemEntries), { name: "library/items.json" });
+  archive.append(JSON.stringify([]), { name: "library/watches.json" });
+  archive.append(JSON.stringify([]), { name: "library/ratings.json" });
+  archive.append(JSON.stringify({}), { name: "library/settings.json" });
+  void archive.finalize();
+  return streamToBuffer(archive);
+}
+
 describe("importLibraryZip — v1 import (E26)", () => {
   it("maps all five legacy statuses to their v2 manualList", async () => {
     const { db } = openLibraryDb(":memory:");
@@ -311,6 +373,12 @@ describe("importLibraryZip — v1 import (E26)", () => {
     expect(byTmdbId.get(3)).toBeNull();
     expect(byTmdbId.get(4)).toBeNull();
     expect(byTmdbId.get(5)).toBeNull();
+
+    // v1 zips never carry addedVia — defaults to import:zip so a library
+    // migration never floods İzleniyor (E32).
+    const byAddedVia = addedViaByTmdbId(db);
+    expect(byAddedVia.get(1)).toBe("import:zip");
+    expect(byAddedVia.get(5)).toBe("import:zip");
   });
 
   it("dropped + all aired episodes watched → manual_list cleared by the E26 cleanup", async () => {
@@ -360,6 +428,17 @@ describe("importLibraryZip — v1 import (E26)", () => {
     await importLibraryZip(db, zip, "replace");
 
     expect(manualListByTmdbId(db).get(7)).toBe("stopped");
+  });
+});
+
+describe("importLibraryZip — v2 import (E32)", () => {
+  it("v2 zips never carry addedVia — defaults to import:zip", async () => {
+    const { db } = openLibraryDb(":memory:");
+    const zip = await buildV2Zip([{ tmdbId: 8, title: "Old Export" }]);
+
+    await importLibraryZip(db, zip, "replace");
+
+    expect(addedViaByTmdbId(db).get(8)).toBe("import:zip");
   });
 });
 
