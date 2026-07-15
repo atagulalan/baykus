@@ -52,13 +52,13 @@ regresyonu; tam yeşil suite.
       grid, dolu günlerin dikey listesine dönüşmeli.
 
 ### Etiketler (EpisodeTags)
-- [x] Bölüm satırlarında/hücrelerinde YENİ, PREMIER, FİNAL, OVA/SPECIAL
-      rozetlerinin doğru göründüğünü kontrol et.
-- [ ] ⚠️ **Karar bekliyor** (sohbette soruldu): YENİ rozetinin üst sınırı
-      yok, bu yüzden gelecekteki hemen her bölüm YENİ görünüyor. Senin
-      önerin: henüz airlenmemişlere "YENİ" değil "yaklaşan" gibi ayrı bir
-      etiket mi olsun? Bu spec.md'de olmayan yeni bir karar, spec.md +
-      koda yansıtmadan önce netleştirmemiz lazım.
+- [ ] Bölüm satırlarında/hücrelerinde YENİ, YAKLAŞAN, PREMIER, FİNAL,
+      OVA/SPECIAL rozetlerinin doğru göründüğünü kontrol et. **Karar
+      uygulandı (2026-07-15):** senin seçimine göre ayrı bir "YAKLAŞAN"
+      rozeti eklendi — YENİ artık sadece bugün dahil son 3 gün içinde
+      airlenmiş bölümlerde, henüz airlenmemiş (gelecek) bölümlerde
+      YAKLAŞAN çıkıyor. spec.md E25 + ui.md güncellendi, testler
+      (EpisodeTags.test.ts) yeni davranışı kapsıyor. Tekrar test et.
 
 ### İki dil
 - [x] Ayarlar → Dil'den EN'e geç, yukarıdaki adımların tamamını tekrarla.

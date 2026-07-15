@@ -30,12 +30,45 @@ describe("computeEpisodeTagKinds", () => {
     );
   });
 
-  it("E25: NEW has no upper bound — a far-future scheduled episode still counts", () => {
-    expect(computeEpisodeTagKinds(baseProps({ airDate: "2027-01-01" }), TODAY)).toContain("new");
+  it("E25: NEW includes today itself (upper boundary)", () => {
+    expect(computeEpisodeTagKinds(baseProps({ airDate: TODAY }), TODAY)).toContain("new");
+  });
+
+  it("E25: NEW is capped at today — a future episode gets UPCOMING instead, not NEW", () => {
+    const kinds = computeEpisodeTagKinds(baseProps({ airDate: "2027-01-01" }), TODAY);
+    expect(kinds).not.toContain("new");
+    expect(kinds).toContain("upcoming");
   });
 
   it("E25: NEW is absent when airDate is null", () => {
     expect(computeEpisodeTagKinds(baseProps({ airDate: null }), TODAY)).not.toContain("new");
+  });
+
+  it("E25: UPCOMING fires for any future airDate, with no upper bound", () => {
+    expect(computeEpisodeTagKinds(baseProps({ airDate: "2026-07-16" }), TODAY)).toContain(
+      "upcoming",
+    );
+    expect(computeEpisodeTagKinds(baseProps({ airDate: "2030-01-01" }), TODAY)).toContain(
+      "upcoming",
+    );
+  });
+
+  it("E25: UPCOMING is absent for today or the past", () => {
+    expect(computeEpisodeTagKinds(baseProps({ airDate: TODAY }), TODAY)).not.toContain("upcoming");
+    expect(computeEpisodeTagKinds(baseProps({ airDate: "2020-01-01" }), TODAY)).not.toContain(
+      "upcoming",
+    );
+  });
+
+  it("E25: UPCOMING is absent when airDate is null", () => {
+    expect(computeEpisodeTagKinds(baseProps({ airDate: null }), TODAY)).not.toContain("upcoming");
+  });
+
+  it("E25: NEW and UPCOMING are mutually exclusive", () => {
+    for (const airDate of ["2026-07-12", "2026-07-15", "2026-07-16", "2027-01-01"]) {
+      const kinds = computeEpisodeTagKinds(baseProps({ airDate }), TODAY);
+      expect(kinds.includes("new") && kinds.includes("upcoming")).toBe(false);
+    }
   });
 
   it("E25: PREMIER fires on episodeNumber 1 of any season", () => {
@@ -77,5 +110,13 @@ describe("computeEpisodeTagKinds", () => {
       TODAY,
     );
     expect(kinds).toEqual(["new", "premiere", "finale", "special"]);
+  });
+
+  it("E25: upcoming + premiere + special render together, in priority order", () => {
+    const kinds = computeEpisodeTagKinds(
+      baseProps({ s: 0, e: 1, airDate: "2026-07-20", episodeType: null }),
+      TODAY,
+    );
+    expect(kinds).toEqual(["upcoming", "premiere", "special"]);
   });
 });

@@ -95,6 +95,7 @@
     "save": "Save",
     "tag": {
       "new": "NEW",
+      "upcoming": "UPCOMING",
       "premiere": "PREMIER",
       "special": "SPECIAL",
       "ova": "OVA"

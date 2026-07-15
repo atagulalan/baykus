@@ -11,9 +11,9 @@ export interface EpisodeTagsProps {
   seasonName?: string | null;
 }
 
-export type EpisodeTagKind = "new" | "premiere" | "finale" | "special" | "ova";
+export type EpisodeTagKind = "new" | "upcoming" | "premiere" | "finale" | "special" | "ova";
 
-/** E25: airDate >= today - 3d, no upper bound — a future-scheduled episode is "new" too. */
+/** E25: NEW covers the last 3 days (today inclusive); anything later than today is UPCOMING instead. */
 const NEW_WINDOW_DAYS = 3;
 
 function addDaysToDate(date: string, days: number): string {
@@ -28,10 +28,12 @@ function containsOva(text: string | null | undefined): boolean {
 
 /**
  * E25/E23: which chips apply, in priority render order (multiple allowed).
- * OVA replaces SPECIAL when the episode title or season name matches the
- * OVA name heuristic (E23). Pure function — `today` is an injectable
- * YYYY-MM-DD string (not a Date) so the NEW-window boundary is
- * unit-testable without any UTC/local ambiguity around the reference point.
+ * NEW and UPCOMING are mutually exclusive (airDate is either <= today or
+ * > today, never both). OVA replaces SPECIAL when the episode title or
+ * season name matches the OVA name heuristic (E23). Pure function —
+ * `today` is an injectable YYYY-MM-DD string (not a Date) so the NEW-window
+ * boundary is unit-testable without any UTC/local ambiguity around the
+ * reference point.
  */
 export function computeEpisodeTagKinds(
   props: EpisodeTagsProps,
@@ -40,12 +42,15 @@ export function computeEpisodeTagKinds(
   const { s, e, airDate, episodeType, episodeTitle, seasonName } = props;
   const isSpecial = s === 0;
   const isOva = isSpecial && (containsOva(episodeTitle) || containsOva(seasonName));
-  const isNew = airDate !== null && airDate >= addDaysToDate(today, -NEW_WINDOW_DAYS);
+  const isNew =
+    airDate !== null && airDate <= today && airDate >= addDaysToDate(today, -NEW_WINDOW_DAYS);
+  const isUpcoming = airDate !== null && airDate > today;
   const isPremiere = e === 1;
   const isFinale = episodeType === "finale";
 
   const kinds: EpisodeTagKind[] = [];
   if (isNew) kinds.push("new");
+  if (isUpcoming) kinds.push("upcoming");
   if (isPremiere) kinds.push("premiere");
   if (isFinale) kinds.push("finale");
   if (isSpecial) kinds.push(isOva ? "ova" : "special");
@@ -54,6 +59,7 @@ export function computeEpisodeTagKinds(
 
 const TAG_STYLES: Record<EpisodeTagKind, string> = {
   new: "bg-emerald-900 text-emerald-100",
+  upcoming: "bg-emerald-900 text-emerald-100",
   premiere: "bg-sky-900 text-sky-100",
   finale: "bg-red-900 text-red-100",
   special: "bg-violet-900 text-violet-100",
@@ -62,6 +68,7 @@ const TAG_STYLES: Record<EpisodeTagKind, string> = {
 
 const TAG_LABEL_KEYS: Record<EpisodeTagKind, string> = {
   new: "episode.tag.new",
+  upcoming: "episode.tag.upcoming",
   premiere: "episode.tag.premiere",
   finale: "episode.finale",
   special: "episode.tag.special",

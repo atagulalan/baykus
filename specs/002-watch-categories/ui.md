@@ -156,10 +156,12 @@ Bir süredir izlenmedi                   ← category = not_watched_recently
 ## `EpisodeTags` (NEW shared component)
 
 Input: `{ s, e, airDate, episodeType, episodeTitle?, seasonName? }`. Renders
-chips per E25, in priority order: `YENİ` (emerald) · `PREMIER` (sky) ·
-`FİNAL` (red, exists in 001) · `OVA`/`SPECIAL` (violet; OVA replaces SPECIAL
-when the name heuristic matches). Used by calendar rows/cells and watch-page
-rows. Labels via `episode.tag.*` (FİNAL reuses `episode.finale`).
+chips per E25, in priority order: `YENİ`/`YAKLAŞAN` (emerald; mutually
+exclusive — YENİ when already aired within the last 3 days, YAKLAŞAN when
+scheduled but not yet aired) · `PREMIER` (sky) · `FİNAL` (red, exists in
+001) · `OVA`/`SPECIAL` (violet; OVA replaces SPECIAL when the name heuristic
+matches). Used by calendar rows/cells and watch-page rows. Labels via
+`episode.tag.*` (FİNAL reuses `episode.finale`).
 
 ## i18n keys (new/changed areas)
 
@@ -177,8 +179,8 @@ rows. Labels via `episode.tag.*` (FİNAL reuses `episode.finale`).
   ("+{{count}}").
 - `watch.title`, `watch.history`, `watch.next`, `watch.notWatchedRecently`,
   `watch.empty.*`.
-- `episode.tag.new`, `episode.tag.premiere`, `episode.tag.special`,
-  `episode.tag.ova`.
+- `episode.tag.new`, `episode.tag.upcoming`, `episode.tag.premiere`,
+  `episode.tag.special`, `episode.tag.ova`.
 - `series.stoppedBlocked`.
 - **Deleted:** all `status.*` keys, `library.filter.all` (replaced within the
   new filter panel keys), `series.suggestCompleted` + its action keys.

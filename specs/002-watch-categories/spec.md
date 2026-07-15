@@ -75,7 +75,8 @@ mode.
 - Month: a month grid opening on the current month, navigable back and forward
   without limit. Past cells show only unwatched episodes.
 - Both modes scope to the active trio and include specials (E22, E23).
-- Episode rows/chips carry tags per E25 (NEW / PREMIER / FİNAL / SPECIAL / OVA).
+- Episode rows/chips carry tags per E25 (NEW / UPCOMING / PREMIER / FİNAL /
+  SPECIAL / OVA).
 
 ### US-16: Watch page
 As a user, a dedicated page shows what I just watched and what to watch next.
@@ -132,7 +133,7 @@ As a user, I get new-episode push notifications for series in the active trio
 | E22 | Exact calendar/push/watch-page scope? | Active trio = category ∈ {watching, not_watched_recently, up_to_date}. Applies to: both calendar modes, push notifications, and the watch page's two "next" sections (which further split watching vs not_watched_recently). History (US-16) is unscoped — it shows all watch events. |
 | E23 | Specials in lists? | Calendar (both modes): S0 episodes included, tagged SPECIAL, or OVA when the episode title or its season name contains "OVA" (case-insensitive). Watch next: **never** shows specials — it derives from `nextUnwatched`, which stays non-special (E1/E2). Progress numbers and categories: unchanged, specials excluded. |
 | E24 | Calendar range rules? | Single `days` list. An entry is included if `airDate > today` (anything scheduled) OR (`airDate ≤ today` AND episode has zero watch events). Defaults: `from = today − 14d`, `to = today + 90d` (timeline). Month mode requests exact month bounds — any month, no travel limit. Validation: `from ≤ to` and range ≤ 124 days, else 400. |
-| E25 | Row tags? | NEW: `airDate ≥ today − 3d` (and ≤ today+∞ — future episodes can also be "new" on release day). PREMIER: `episodeNumber == 1` (any season — season premieres included). FİNAL: `episodeType == "finale"` (exists since 001). SPECIAL: `seasonNumber == 0`. OVA: SPECIAL + name heuristic (E23); OVA replaces SPECIAL when both match. Tags render in that priority order, multiple allowed. |
+| E25 | Row tags? | **NEW** (`2026-07-15 revision`): `today − 3d ≤ airDate ≤ today` — already aired, within the last 3 days (today inclusive). **UPCOMING**: `airDate > today` — scheduled but not yet aired, no upper bound (replaces the original unbounded-NEW rule; NEW and UPCOMING are mutually exclusive by construction, since airDate is either ≤ today or > today, never both). PREMIER: `episodeNumber == 1` (any season — season premieres included). FİNAL: `episodeType == "finale"` (exists since 001). SPECIAL: `seasonNumber == 0`. OVA: SPECIAL + name heuristic (E23); OVA replaces SPECIAL when both match. Tags render in priority order NEW/UPCOMING → PREMIER → FİNAL → OVA/SPECIAL, multiple allowed. |
 | E26 | Legacy status mapping (DB migration 0001, zip v1 import, TV Time import)? | `plan_to_watch` → `watch_later`; `dropped` → `stopped`; `watching` / `completed` / `paused` → NULL. `statusChangedAt` carries over as `listChangedAt`. **Cleanup rule:** after any import finishes writing watches, clear `stopped` on items whose dynamic category is `finished` (keeps E20's invariant without rejecting imports). |
 | E27 | History window? | Last 30 watch events by `watched_at` (all sources, all categories, specials included — it's a log). Server returns newest-first; the UI renders oldest at top, newest at bottom (per product note) and can auto-scroll to the bottom. |
 | E28 | The `+N` badge? | N = `max(0, progress.aired − progress.watched − 1)` — how many more aired episodes queue behind the shown next one. Hidden when 0. No new API field; derived from existing progress numbers. |
