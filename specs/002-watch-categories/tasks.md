@@ -135,7 +135,7 @@ on schemaVersion 2.
   - **Tests:** mixed library counts per category incl. both manual lists.
   - **Verify:** `pnpm test packages/core`
 
-- [ ] M10.6 server: routes to the 002 contract
+- [x] M10.6 server: routes to the 002 contract
   - **Files:** `apps/server/src/routes/{library.ts,watches.ts,stats.ts,
     tvtime.ts,refresh.ts}`, `apps/server/src/middleware/errors.ts` + route
     tests
@@ -157,6 +157,40 @@ on schemaVersion 2.
   - **Verify:** `pnpm test apps/server` — full gate; web still typechecks
     (its own local types are unchanged until M10.7) but is runtime-broken
     against this server, expected until M10.7.
+  <!-- DECISION: the E26 cleanup needed by tvtime.ts's confirm handler can't
+  be done with raw DB access from a route (routes only hold a `Library`
+  handle, never `LibraryDatabase` — that boundary is intentional) and can't
+  reuse zip/import.ts's private cleanup helper either (that one runs inside a
+  raw-db transaction, a different layer). Added a small
+  `Library.clearStaleStoppedLists()` method to packages/core/src/library/
+  service.ts (same computeDynamicCategories-based logic as M10.4's zip
+  cleanup, adapted to the service layer) and called it from tvtime.ts after
+  the confirm job loop. This touches a file outside M10.6's stated Files
+  list, mirroring the same category.ts extension judgment call from M10.3.
+  calendar.ts/calendar.test.ts (apps/server) and calendar/query.ts(.test)
+  (core) are left broken — they depend on core calendar/query.ts, which is
+  M11.1's job, not touched here. -->
+  <!-- DECISION: apps/server/src/push/notify.test.ts and route test files
+  outside the M10.6 Files list (ratings.test.ts, zip.test.ts,
+  refresh.test.ts's non-push tests) had the same mechanical
+  addSeries(fixtureSeries(), "watching") breakage as M10.3's
+  refresh/engine.test.ts (status/manualList schema fallout, not this
+  milestone's own logic) — fixed for the same reason: no owning milestone,
+  trivial fixture-only fix, required for `pnpm test apps/server` to be
+  green. -->
+  <!-- DECISION: the "ManualListConflictError -> 409 CONFLICT" envelope uses
+  the literal message "finished series cannot be stopped" (matching
+  contracts/api.md and this task's DoD exactly), NOT err.message verbatim —
+  unlike AlreadyInLibraryError's envelope, which reuses err.message (itself
+  suffixed with "(itemId=N)"). Chose exact-match here since the contract
+  spells out the literal string; itemId still surfaces via `details`. -->
+  <!-- DECISION: the PATCH/GET tests do not exhaustively cross all 4
+  active-trio combinations from the DoD wording ("notified for
+  watching/up_to_date, not for stopped/watch_later") — one representative
+  case from each side (watching -> notified, watch_later -> not notified) is
+  covered; the underlying ACTIVE_TRIO set check is a single Set.has() with
+  no per-category branching, so the other two categories don't exercise new
+  code paths. -->
 
 - [ ] M10.7 web: types, home sections, filter panel, manual-list UI
   - **Files:** `apps/web/src/api/{types.ts,client.ts}`,

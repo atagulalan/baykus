@@ -1,4 +1,4 @@
-import type { Library } from "@baykus/core";
+import type { Library, WatchCategory } from "@baykus/core";
 import type { MetadataProvider } from "@baykus/provider-sdk";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
@@ -6,10 +6,23 @@ import { ApiError } from "../middleware/errors.ts";
 import { notifyNewEpisodes } from "../push/notify.ts";
 import type { VapidKeys } from "../push/vapid.ts";
 
+/** E22: push notifications are scoped to the active trio. */
+const ACTIVE_TRIO: ReadonlySet<WatchCategory> = new Set([
+  "watching",
+  "not_watched_recently",
+  "up_to_date",
+]);
+
 function parseId(raw: string): number {
   const id = Number.parseInt(raw, 10);
   if (!Number.isFinite(id)) throw new ApiError("NOT_FOUND", `invalid id "${raw}"`);
   return id;
+}
+
+/** Category must be read AFTER the refresh — a finished→up_to_date revival should still notify. */
+function inActiveTrio(library: Library, itemId: number): boolean {
+  const after = library.getSeries(itemId);
+  return after != null && ACTIVE_TRIO.has(after.category);
 }
 
 /** Never lets a push failure break the refresh response — notify.ts already isolates per-subscription errors. */
@@ -43,7 +56,7 @@ export function createRefreshRoutes(
     if (!provider) throw new ApiError("INTERNAL", "no metadata providers registered");
 
     const result = await library.refreshItem(provider, id);
-    if (result.ok && result.newEpisodes > 0) {
+    if (result.ok && result.newEpisodes > 0 && inActiveTrio(library, id)) {
       await notifySafely(library, vapid, id, before.title, result.newEpisodes);
     }
     return c.json({
@@ -74,7 +87,7 @@ export function createRefreshRoutes(
         if (result.ok) {
           ok++;
           newEpisodes += result.newEpisodes;
-          if (result.newEpisodes > 0) {
+          if (result.newEpisodes > 0 && inActiveTrio(library, result.itemId)) {
             const title = titleById.get(result.itemId) ?? "";
             await notifySafely(library, vapid, result.itemId, title, result.newEpisodes);
           }

@@ -36,7 +36,15 @@ describe("GET /api/stats", () => {
     expect(await res.json()).toEqual({
       episodesWatched: 0,
       watchTimeMin: 0,
-      itemCount: { watching: 0, plan_to_watch: 0, completed: 0, dropped: 0, paused: 0 },
+      itemCount: {
+        watching: 0,
+        not_watched_recently: 0,
+        not_started: 0,
+        watch_later: 0,
+        up_to_date: 0,
+        finished: 0,
+        stopped: 0,
+      },
       episodesPerMonth: [],
       ratingDistribution: { "1": 0, "2": 0, "3": 0 },
     });
@@ -44,7 +52,7 @@ describe("GET /api/stats", () => {
 
   it("reflects watches and item counts after activity", async () => {
     const library = createLibrary(openLibraryDb(":memory:").db);
-    const summary = library.addSeries(fixtureSeries(), "watching");
+    const summary = library.addSeries(fixtureSeries());
     const detail = library.getSeries(summary.id);
     const ep1 = detail?.seasons[0]?.episodes[0]?.id;
     if (ep1 === undefined) throw new Error("setup: fixture episode missing");
@@ -59,9 +67,10 @@ describe("GET /api/stats", () => {
 
     const res = await app.request("/api/stats", { headers: { "X-Baykus": "1" } });
     const body = await res.json();
+    // Fixture's only episode is aired and now fully watched, releaseStatus unset -> "finished" (E18).
     expect(body).toMatchObject({
       episodesWatched: 1,
-      itemCount: { watching: 1, plan_to_watch: 0, completed: 0, dropped: 0, paused: 0 },
+      itemCount: { finished: 1 },
       episodesPerMonth: [{ month: "2026-01", count: 1 }],
     });
   });

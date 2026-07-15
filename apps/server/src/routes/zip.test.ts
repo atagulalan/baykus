@@ -37,7 +37,7 @@ async function zipFormData(buffer: ArrayBuffer, mode?: string): Promise<FormData
 describe("GET /api/export.zip", () => {
   it("streams a zip with the expected headers", async () => {
     const { app, library } = setup();
-    library.addSeries(fixtureSeries(), "watching");
+    library.addSeries(fixtureSeries());
 
     const res = await app.request("/api/export.zip");
     expect(res.status).toBe(200);
@@ -53,7 +53,7 @@ describe("GET /api/export.zip", () => {
 describe("POST /api/import", () => {
   it("imports a previously exported zip on an empty library without a mode", async () => {
     const { app: sourceApp, library: sourceLibrary } = setup();
-    sourceLibrary.addSeries(fixtureSeries(), "watching");
+    sourceLibrary.addSeries(fixtureSeries());
     const exportRes = await sourceApp.request("/api/export.zip");
     const zipBuffer = await exportRes.arrayBuffer();
 
@@ -72,11 +72,11 @@ describe("POST /api/import", () => {
 
   it("409 when mode is missing and the library is not empty", async () => {
     const { app: sourceApp, library: sourceLibrary } = setup();
-    sourceLibrary.addSeries(fixtureSeries(), "watching");
+    sourceLibrary.addSeries(fixtureSeries());
     const zipBuffer = await (await sourceApp.request("/api/export.zip")).arrayBuffer();
 
     const { app, library } = setup();
-    library.addSeries(fixtureSeries(), "watching"); // library is non-empty
+    library.addSeries(fixtureSeries()); // library is non-empty
 
     const res = await app.request("/api/import", {
       method: "POST",
@@ -88,7 +88,7 @@ describe("POST /api/import", () => {
 
   it("merge mode works on a non-empty library when explicitly requested", async () => {
     const { app: sourceApp, library: sourceLibrary } = setup();
-    sourceLibrary.addSeries(fixtureSeries(), "watching");
+    sourceLibrary.addSeries(fixtureSeries());
     const zipBuffer = await (await sourceApp.request("/api/export.zip")).arrayBuffer();
 
     const { app } = setup();

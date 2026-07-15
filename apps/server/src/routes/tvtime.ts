@@ -1,4 +1,4 @@
-import { isAlreadyInLibraryError, type Library } from "@baykus/core";
+import { isAlreadyInLibraryError, type Library, type ManualList } from "@baykus/core";
 import {
   matchShows,
   parseTvTimeFiles,
@@ -61,6 +61,15 @@ function episodePositionKey(seasonNumber: number, episodeNumber: number): string
   return `${seasonNumber}-${episodeNumber}`;
 }
 
+/** E26: TvTimeStatus (the importer package's legacy 5-value status) maps to v2 manualList. */
+const TVTIME_STATUS_TO_MANUAL_LIST: Record<TvTimeStatus, ManualList | null> = {
+  plan_to_watch: "watch_later",
+  dropped: "stopped",
+  watching: null,
+  completed: null,
+  paused: null,
+};
+
 /**
  * Imports one show (already-resolved SeriesDetails) plus its TV Time watch
  * events. Idempotent: addSeries()'s AlreadyInLibraryError is caught and the
@@ -83,7 +92,7 @@ async function importOneShow(
   let itemId: number;
   let itemCreated = true;
   try {
-    itemId = library.addSeries(details, status).id;
+    itemId = library.addSeries(details, TVTIME_STATUS_TO_MANUAL_LIST[status] ?? undefined).id;
   } catch (cause) {
     if (!isAlreadyInLibraryError(cause)) throw cause;
     itemId = cause.itemId;
@@ -285,6 +294,7 @@ export function createTvTimeRoutes(library: Library, providers: MetadataProvider
         skipped += unmatchedShow.episodeCount;
       }
 
+      library.clearStaleStoppedLists();
       reportStore.delete(body.reportId);
 
       await stream.writeSSE({

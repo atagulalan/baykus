@@ -7,7 +7,7 @@ import type {
   WatchProviderInfo,
 } from "@baykus/provider-sdk";
 import type { Archiver } from "archiver";
-import { and, eq, or, sql } from "drizzle-orm";
+import { and, eq, inArray, or, sql } from "drizzle-orm";
 import { type CalendarResponse, getCalendar } from "../calendar/query.ts";
 import type { LibraryDatabase } from "../db/open.ts";
 import type { ManualList, RatingTargetType, WatchSource } from "../db/schema.ts";
@@ -15,7 +15,12 @@ import * as schema from "../db/schema.ts";
 import { type RefreshResult, refreshAll, refreshItem } from "../refresh/engine.ts";
 import { type ExportOptions, exportLibraryZip } from "../zip/export.ts";
 import { type ImportMode, type ImportResult, importLibraryZip } from "../zip/import.ts";
-import { type CategoryInfo, computeCategoryInfo, computeDynamicCategory } from "./category.ts";
+import {
+  type CategoryInfo,
+  computeCategoryInfo,
+  computeDynamicCategories,
+  computeDynamicCategory,
+} from "./category.ts";
 import { AlreadyInLibraryError, ManualListConflictError } from "./errors.ts";
 import { getNextAirDate, getNextUnwatchedEpisode, getSeriesProgress } from "./progress.ts";
 import {
@@ -209,6 +214,9 @@ export interface Library {
   removeSeries(id: number): boolean;
   /** E20 guard: throws ManualListConflictError when manualList="stopped" on a dynamically-finished series. */
   updateTracking(itemId: number, patch: TrackingPatch): SeriesSummary | null;
+  /** E26 cleanup: clears manual_list='stopped' on items whose dynamic category is finished — for import
+   * paths (zip, TV Time) that write tracking directly and so bypass the E20 live guard. */
+  clearStaleStoppedLists(): void;
   addWatch(episodeId: number, watchedAt?: string, source?: WatchSource): AddWatchResult | null;
   bulkWatch(itemId: number, target: BulkWatchTarget): BulkWatchResult | null;
   removeLatestWatch(episodeId: number): boolean;
@@ -466,6 +474,25 @@ export function createLibrary(db: LibraryDatabase): Library {
       if (!row) return null;
       const info = requireCategoryInfo(computeCategoryInfo(db, [itemId]), itemId);
       return buildSummary(db, row.item, row.tracking, info);
+    },
+
+    clearStaleStoppedLists(): void {
+      const stopped = db
+        .select({ itemId: schema.tracking.itemId })
+        .from(schema.tracking)
+        .where(eq(schema.tracking.manualList, "stopped"))
+        .all();
+      if (stopped.length === 0) return;
+
+      const itemIds = stopped.map((row) => row.itemId);
+      const categories = computeDynamicCategories(db, itemIds);
+      const toClear = itemIds.filter((id) => categories.get(id) === "finished");
+      if (toClear.length === 0) return;
+
+      db.update(schema.tracking)
+        .set({ manualList: null, listChangedAt: new Date().toISOString() })
+        .where(inArray(schema.tracking.itemId, toClear))
+        .run();
     },
 
     addWatch(episodeId: number, watchedAt?: string, source?: WatchSource): AddWatchResult | null {

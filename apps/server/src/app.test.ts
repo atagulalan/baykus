@@ -154,7 +154,7 @@ describe("server app", () => {
 
     it("adds a series (201) then rejects a duplicate add (409 with existing itemId)", async () => {
       const app = createTestApp();
-      const body = JSON.stringify({ externalIds: { tvmazeId: 1 }, status: "watching" });
+      const body = JSON.stringify({ externalIds: { tvmazeId: 1 } });
 
       const first = await app.request("/api/library/series", {
         method: "POST",
@@ -179,25 +179,65 @@ describe("server app", () => {
         },
       });
     });
-  });
 
-  describe("GET /api/library/series", () => {
-    it("filters by status", async () => {
+    it("accepts an explicit manualList at add time", async () => {
       const app = createTestApp();
-      await app.request("/api/library/series", {
+      const res = await app.request("/api/library/series", {
+        method: "POST",
+        headers: MUTATION_HEADERS,
+        body: JSON.stringify({ externalIds: { tvmazeId: 1 }, manualList: "watch_later" }),
+      });
+      expect(res.status).toBe(201);
+      expect(await res.json()).toMatchObject({
+        manualList: "watch_later",
+        category: "watch_later",
+      });
+    });
+
+    it("omitting manualList lands a freshly added series in category not_started", async () => {
+      const app = createTestApp();
+      const res = await app.request("/api/library/series", {
+        method: "POST",
+        headers: MUTATION_HEADERS,
+        body: JSON.stringify({ externalIds: { tvmazeId: 1 } }),
+      });
+      expect(res.status).toBe(201);
+      expect(await res.json()).toMatchObject({ manualList: null, category: "not_started" });
+    });
+
+    it("rejects the old status field (400 — unknown field under strict zod)", async () => {
+      const app = createTestApp();
+      const res = await app.request("/api/library/series", {
         method: "POST",
         headers: MUTATION_HEADERS,
         body: JSON.stringify({ externalIds: { tvmazeId: 1 }, status: "watching" }),
       });
+      expect(res.status).toBe(400);
+      const body = (await res.json()) as { error: { code: string } };
+      expect(body.error.code).toBe("VALIDATION_FAILED");
+    });
+  });
+
+  describe("GET /api/library/series", () => {
+    it("filters by category", async () => {
+      const app = createTestApp();
       await app.request("/api/library/series", {
         method: "POST",
         headers: MUTATION_HEADERS,
-        body: JSON.stringify({ externalIds: { tvmazeId: 2 }, status: "completed" }),
+        body: JSON.stringify({ externalIds: { tvmazeId: 1 } }),
+      });
+      await app.request("/api/library/series", {
+        method: "POST",
+        headers: MUTATION_HEADERS,
+        body: JSON.stringify({ externalIds: { tvmazeId: 2 }, manualList: "watch_later" }),
       });
 
-      const watching = await app.request("/api/library/series?status=watching");
-      expect(watching.status).toBe(200);
-      expect(await watching.json()).toMatchObject({ total: 1 });
+      const notStarted = await app.request("/api/library/series?category=not_started");
+      expect(notStarted.status).toBe(200);
+      expect(await notStarted.json()).toMatchObject({ total: 1 });
+
+      const watchLater = await app.request("/api/library/series?category=watch_later");
+      expect(await watchLater.json()).toMatchObject({ total: 1 });
 
       const all = await app.request("/api/library/series");
       expect(await all.json()).toMatchObject({ total: 2 });
@@ -205,12 +245,43 @@ describe("server app", () => {
   });
 
   describe("PATCH /api/library/series/:id", () => {
-    it("updates status and returns the updated summary", async () => {
+    it("updates manualList and returns the updated summary", async () => {
       const app = createTestApp();
       const created = await app.request("/api/library/series", {
         method: "POST",
         headers: MUTATION_HEADERS,
-        body: JSON.stringify({ externalIds: { tvmazeId: 1 }, status: "watching" }),
+        body: JSON.stringify({ externalIds: { tvmazeId: 1 } }),
+      });
+      const { id } = (await created.json()) as { id: number };
+
+      const res = await app.request(`/api/library/series/${id}`, {
+        method: "PATCH",
+        headers: MUTATION_HEADERS,
+        body: JSON.stringify({ manualList: "watch_later" }),
+      });
+      expect(res.status).toBe(200);
+      expect(await res.json()).toMatchObject({
+        manualList: "watch_later",
+        category: "watch_later",
+      });
+    });
+
+    it("404s for an unknown id", async () => {
+      const app = createTestApp();
+      const res = await app.request("/api/library/series/999", {
+        method: "PATCH",
+        headers: MUTATION_HEADERS,
+        body: JSON.stringify({ manualList: "watch_later" }),
+      });
+      expect(res.status).toBe(404);
+    });
+
+    it("rejects the old status field (400 — unknown field under strict zod)", async () => {
+      const app = createTestApp();
+      const created = await app.request("/api/library/series", {
+        method: "POST",
+        headers: MUTATION_HEADERS,
+        body: JSON.stringify({ externalIds: { tvmazeId: 1 } }),
       });
       const { id } = (await created.json()) as { id: number };
 
@@ -219,18 +290,37 @@ describe("server app", () => {
         headers: MUTATION_HEADERS,
         body: JSON.stringify({ status: "completed" }),
       });
-      expect(res.status).toBe(200);
-      expect((await res.json()) as { status: string }).toMatchObject({ status: "completed" });
+      expect(res.status).toBe(400);
     });
 
-    it("404s for an unknown id", async () => {
-      const app = createTestApp();
-      const res = await app.request("/api/library/series/999", {
+    it("stopped on a dynamically-finished series -> 409 CONFLICT with the exact envelope (E20)", async () => {
+      const library = createLibrary(openLibraryDb(":memory:").db);
+      const app = createTestApp({ library });
+
+      const created = await app.request("/api/library/series", {
+        method: "POST",
+        headers: MUTATION_HEADERS,
+        body: JSON.stringify({ externalIds: { tvmazeId: 1 } }),
+      });
+      const { id } = (await created.json()) as { id: number };
+      const epId = library.getSeries(id)?.seasons[0]?.episodes[0]?.id;
+      if (epId === undefined) throw new Error("setup: fixture episode missing");
+      library.addWatch(epId, "2026-01-01T00:00:00Z");
+      expect(library.getSeries(id)?.category).toBe("finished");
+
+      const res = await app.request(`/api/library/series/${id}`, {
         method: "PATCH",
         headers: MUTATION_HEADERS,
-        body: JSON.stringify({ status: "completed" }),
+        body: JSON.stringify({ manualList: "stopped" }),
       });
-      expect(res.status).toBe(404);
+      expect(res.status).toBe(409);
+      expect(await res.json()).toEqual({
+        error: {
+          code: "CONFLICT",
+          message: "finished series cannot be stopped",
+          details: { itemId: id },
+        },
+      });
     });
   });
 
@@ -243,7 +333,7 @@ describe("server app", () => {
       const created = await app.request("/api/library/series", {
         method: "POST",
         headers: MUTATION_HEADERS,
-        body: JSON.stringify({ externalIds: { tvmazeId: 1 }, status: "watching" }),
+        body: JSON.stringify({ externalIds: { tvmazeId: 1 } }),
       });
       const { id } = (await created.json()) as { id: number };
 
@@ -305,14 +395,14 @@ describe("multi mode — library isolation (M7.3)", () => {
     const addA = await app.request("/api/library/series", {
       method: "POST",
       headers: { ...MUTATION_HEADERS, cookie: cookieA },
-      body: JSON.stringify({ externalIds: { tvmazeId: 1 }, status: "watching" }),
+      body: JSON.stringify({ externalIds: { tvmazeId: 1 } }),
     });
     expect(addA.status).toBe(201);
 
     const addB = await app.request("/api/library/series", {
       method: "POST",
       headers: { ...MUTATION_HEADERS, cookie: cookieB },
-      body: JSON.stringify({ externalIds: { tvmazeId: 2 }, status: "watching" }),
+      body: JSON.stringify({ externalIds: { tvmazeId: 2 } }),
     });
     expect(addB.status).toBe(201);
 
@@ -339,7 +429,7 @@ describe("multi mode — library isolation (M7.3)", () => {
     await app.request("/api/library/series", {
       method: "POST",
       headers: { ...MUTATION_HEADERS, cookie },
-      body: JSON.stringify({ externalIds: { tvmazeId: 1 }, status: "watching" }),
+      body: JSON.stringify({ externalIds: { tvmazeId: 1 } }),
     });
 
     const res = await app.request("/api/library/series", { headers: { cookie } });

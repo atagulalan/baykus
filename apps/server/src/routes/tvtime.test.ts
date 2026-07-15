@@ -374,6 +374,27 @@ describe("POST /api/import/tvtime/confirm", () => {
     expect(series?.progress.watched).toBe(2);
   });
 
+  it("maps a dropped-status show to manualList 'stopped' (E26)", async () => {
+    const { app, library } = setup();
+    const zip = await zipBuffer({
+      "followed_tv_show.csv":
+        "tv_show_id,tv_show_name,active,created_at\n305288,Dark,0,2020-06-27 14:00:00\n",
+    });
+
+    const importRes = await postImport(app, zip, "export.zip");
+    const { reportId } = (await importRes.json()) as { reportId: string };
+
+    const confirmRes = await app.request("/api/import/tvtime/confirm", {
+      method: "POST",
+      headers: HEADERS,
+      body: JSON.stringify({ reportId, resolutions: [] }),
+    });
+    expect(confirmRes.status).toBe(200);
+
+    const dark = library.listSeries().items.find((i) => i.title === "Dark");
+    expect(dark?.manualList).toBe("stopped");
+  });
+
   it("404s for an unknown reportId", async () => {
     const { app } = setup();
     const res = await app.request("/api/import/tvtime/confirm", {

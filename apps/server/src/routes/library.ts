@@ -14,19 +14,29 @@ const externalIdsSchema = z
   })
   .strict();
 
-const statusSchema = z.enum(["watching", "plan_to_watch", "completed", "dropped", "paused"]);
+const manualListSchema = z.enum(["watch_later", "stopped"]);
+
+const categorySchema = z.enum([
+  "watching",
+  "not_watched_recently",
+  "not_started",
+  "watch_later",
+  "up_to_date",
+  "finished",
+  "stopped",
+]);
 
 const addSeriesSchema = z
   .object({
     externalIds: externalIdsSchema,
-    status: statusSchema.optional(),
+    manualList: manualListSchema.optional(),
   })
   .strict();
 
 const listQuerySchema = z
   .object({
-    status: statusSchema.optional(),
-    sort: z.enum(["title", "added", "rating", "nextAir"]).optional(),
+    category: categorySchema.optional(),
+    sort: z.enum(["title", "added", "rating", "nextAir", "lastWatched"]).optional(),
   })
   .strict();
 
@@ -50,14 +60,14 @@ function toExternalIds(parsed: z.infer<typeof externalIdsSchema>): ExternalIds {
 
 function toListOptions(parsed: z.infer<typeof listQuerySchema>): ListSeriesOptions {
   const opts: ListSeriesOptions = {};
-  if (parsed.status !== undefined) opts.status = parsed.status;
+  if (parsed.category !== undefined) opts.category = parsed.category;
   if (parsed.sort !== undefined) opts.sort = parsed.sort;
   return opts;
 }
 
 const updateSeriesSchema = z
   .object({
-    status: statusSchema.optional(),
+    manualList: manualListSchema.nullable().optional(),
     pushMuted: z.boolean().optional(),
     note: z.string().nullable().optional(),
   })
@@ -65,7 +75,7 @@ const updateSeriesSchema = z
 
 function toTrackingPatch(parsed: z.infer<typeof updateSeriesSchema>): TrackingPatch {
   const patch: TrackingPatch = {};
-  if (parsed.status !== undefined) patch.status = parsed.status;
+  if (parsed.manualList !== undefined) patch.manualList = parsed.manualList;
   if (parsed.pushMuted !== undefined) patch.pushMuted = parsed.pushMuted;
   if (parsed.note !== undefined) patch.note = parsed.note;
   return patch;
@@ -89,7 +99,7 @@ export function createLibraryRoutes(library: Library, providers: MetadataProvide
     ]);
     const summary = library.addSeries(
       details,
-      body.status ?? "watching",
+      body.manualList,
       externalRatings,
       watchProviders,
       tags,

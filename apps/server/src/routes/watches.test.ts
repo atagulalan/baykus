@@ -35,7 +35,7 @@ function fixtureSeries(): SeriesDetails {
 
 function setup() {
   const library = createLibrary(openLibraryDb(":memory:").db);
-  const summary = library.addSeries(fixtureSeries(), "watching");
+  const summary = library.addSeries(fixtureSeries());
   const detail = library.getSeries(summary.id);
   if (!detail) throw new Error("setup: series vanished");
   const app = createApp(loadConfig({}), {
@@ -61,7 +61,7 @@ const HEADERS = { "content-type": "application/json", "X-Baykus": "1" };
 const DELETE_HEADERS = { "X-Baykus": "1" };
 
 describe("POST /api/episodes/:id/watches", () => {
-  it("happy path creates a watch (201) and reports suggestCompleted", async () => {
+  it("happy path creates a watch (201) with no suggestCompleted key", async () => {
     const { app, ep1 } = setup();
     const res = await app.request(`/api/episodes/${ep1}/watches`, {
       method: "POST",
@@ -69,11 +69,9 @@ describe("POST /api/episodes/:id/watches", () => {
       body: JSON.stringify({}),
     });
     expect(res.status).toBe(201);
-    expect(await res.json()).toMatchObject({
-      episodeId: ep1,
-      source: "manual",
-      suggestCompleted: false,
-    });
+    const body = await res.json();
+    expect(body).toMatchObject({ episodeId: ep1, source: "manual" });
+    expect(body).not.toHaveProperty("suggestCompleted");
   });
 
   it("duplicate (episodeId, watchedAt) is idempotent -> 200 with the existing watch", async () => {
@@ -156,7 +154,7 @@ describe("DELETE /api/episodes/:id/watches/latest", () => {
 });
 
 describe("POST /api/library/series/:id/watches/bulk", () => {
-  it("happy path (seasonNumber) reports created/skipped/suggestCompleted", async () => {
+  it("happy path (seasonNumber) reports created/skippedAlreadyWatched, no suggestCompleted", async () => {
     const { app, itemId, ep1 } = setup();
     await app.request(`/api/episodes/${ep1}/watches`, {
       method: "POST",
@@ -170,11 +168,7 @@ describe("POST /api/library/series/:id/watches/bulk", () => {
       body: JSON.stringify({ seasonNumber: 1 }),
     });
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({
-      created: 1,
-      skippedAlreadyWatched: 1,
-      suggestCompleted: true,
-    });
+    expect(await res.json()).toEqual({ created: 1, skippedAlreadyWatched: 1 });
   });
 
   it("400 when both upToEpisodeId and seasonNumber are given (XOR)", async () => {

@@ -35,7 +35,7 @@ afterEach(() => {
 describe("notifyNewEpisodes", () => {
   it("sends a notification to every subscription", async () => {
     const library = createLibrary(openLibraryDb(":memory:").db);
-    const summary = library.addSeries(fixtureSeries(), "watching");
+    const summary = library.addSeries(fixtureSeries());
     library.addPushSubscription({ endpoint: "https://push.test/a", p256dh: "p1", auth: "a1" });
     library.addPushSubscription({ endpoint: "https://push.test/b", p256dh: "p2", auth: "a2" });
 
@@ -50,7 +50,7 @@ describe("notifyNewEpisodes", () => {
 
   it("a muted series is skipped entirely — no send attempted", async () => {
     const library = createLibrary(openLibraryDb(":memory:").db);
-    const summary = library.addSeries(fixtureSeries(), "watching");
+    const summary = library.addSeries(fixtureSeries());
     library.updateTracking(summary.id, { pushMuted: true });
     library.addPushSubscription({ endpoint: "https://push.test/a", p256dh: "p1", auth: "a1" });
 
@@ -65,7 +65,7 @@ describe("notifyNewEpisodes", () => {
 
   it("does nothing when newEpisodes is 0", async () => {
     const library = createLibrary(openLibraryDb(":memory:").db);
-    const summary = library.addSeries(fixtureSeries(), "watching");
+    const summary = library.addSeries(fixtureSeries());
     library.addPushSubscription({ endpoint: "https://push.test/a", p256dh: "p1", auth: "a1" });
 
     await notifyNewEpisodes(library, VAPID, {
@@ -79,7 +79,7 @@ describe("notifyNewEpisodes", () => {
 
   it("removes a subscription the push service reports as gone (410)", async () => {
     const library = createLibrary(openLibraryDb(":memory:").db);
-    const summary = library.addSeries(fixtureSeries(), "watching");
+    const summary = library.addSeries(fixtureSeries());
     library.addPushSubscription({ endpoint: "https://push.test/gone", p256dh: "p1", auth: "a1" });
     vi.mocked(webpush.sendNotification).mockRejectedValueOnce(
       Object.assign(new Error("gone"), { statusCode: 410 }),

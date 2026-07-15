@@ -1,4 +1,4 @@
-import { isAlreadyInLibraryError } from "@baykus/core";
+import { isAlreadyInLibraryError, isManualListConflictError } from "@baykus/core";
 import { isProviderError } from "@baykus/provider-sdk";
 import type { Context } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
@@ -59,6 +59,12 @@ export function errorHandler(err: unknown, c: Context): Response {
   if (isAlreadyInLibraryError(err)) {
     return c.json(
       envelope("CONFLICT", err.message, { itemId: err.itemId }),
+      STATUS_BY_CODE.CONFLICT,
+    );
+  }
+  if (isManualListConflictError(err)) {
+    return c.json(
+      envelope("CONFLICT", "finished series cannot be stopped", { itemId: err.itemId }),
       STATUS_BY_CODE.CONFLICT,
     );
   }

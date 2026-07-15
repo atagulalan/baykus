@@ -22,7 +22,7 @@ function fixtureSeries(): SeriesDetails {
 
 function setup() {
   const library = createLibrary(openLibraryDb(":memory:").db);
-  const summary = library.addSeries(fixtureSeries(), "watching");
+  const summary = library.addSeries(fixtureSeries());
   const detail = library.getSeries(summary.id);
   const ep1 = detail?.seasons[0]?.episodes[0]?.id;
   if (ep1 === undefined) throw new Error("setup: fixture episode missing");

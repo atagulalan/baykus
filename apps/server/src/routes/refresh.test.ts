@@ -1,10 +1,24 @@
-import { createLibrary, openLibraryDb } from "@baykus/core";
+import { createLibrary, type LibraryDatabase, openLibraryDb, schema } from "@baykus/core";
 import { type MetadataProvider, ProviderError, type SeriesDetails } from "@baykus/provider-sdk";
-import { describe, expect, it } from "vitest";
+import { eq } from "drizzle-orm";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import webpush from "web-push";
 import { createApp } from "../app.ts";
 import { createSingleSessionStore } from "../auth/single-session.ts";
 import { loadConfig } from "../config.ts";
 import { readSseEvents } from "./sse-test-util.ts";
+
+vi.mock("web-push", () => ({
+  default: {
+    setVapidDetails: vi.fn(),
+    sendNotification: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
+beforeEach(() => {
+  vi.mocked(webpush.sendNotification).mockClear();
+  vi.mocked(webpush.sendNotification).mockResolvedValue(undefined as never);
+});
 
 function addDays(days: number): string {
   const d = new Date();
@@ -57,7 +71,7 @@ function fakeProvider(opts: { detailsError?: Error } = {}): MetadataProvider {
 
 function setup(providers: MetadataProvider[] = [fakeProvider()]) {
   const library = createLibrary(openLibraryDb(":memory:").db);
-  const summary = library.addSeries(fixtureSeries(1), "watching");
+  const summary = library.addSeries(fixtureSeries(1));
   const app = createApp(loadConfig({}), {
     library,
     providers,
@@ -120,5 +134,120 @@ describe("POST /api/library/refresh (SSE)", () => {
     expect(progress[0]?.data).toMatchObject({ done: 1, total: 1, ok: true });
     expect(complete).toHaveLength(1);
     expect(complete[0]?.data).toMatchObject({ ok: 1, failed: 0 });
+  });
+});
+
+describe("POST /api/library/series/:id/refresh — push scoped to the active trio (E22)", () => {
+  /** Two episodes: one already watched (recently), one newly aired and unwatched — category "watching". */
+  function twoEpisodeFixture(tvmazeId: number): SeriesDetails {
+    return {
+      providerId: "fake",
+      mediaType: "series",
+      externalIds: { tvmazeId },
+      title: "Test Show",
+      seasons: [
+        {
+          number: 1,
+          episodes: [
+            { seasonNumber: 1, episodeNumber: 1, title: "Pilot", airDate: addDays(-30) },
+            { seasonNumber: 1, episodeNumber: 2, title: "Ep2", airDate: addDays(-1) },
+          ],
+        },
+      ],
+    };
+  }
+
+  function twoEpisodeProvider(): MetadataProvider {
+    return {
+      id: "fake",
+      mediaTypes: ["series"],
+      capabilities: {
+        search: true,
+        details: true,
+        upcoming: true,
+        watchProviders: false,
+        externalRatings: false,
+        tags: false,
+        images: true,
+      },
+      requiresApiKey: false,
+      async search() {
+        return [];
+      },
+      async getSeriesDetails(ref) {
+        const ids = ref as { tvmazeId?: number };
+        return twoEpisodeFixture(ids.tvmazeId ?? 1);
+      },
+      resolveImageUrl() {
+        return "";
+      },
+    };
+  }
+
+  /** Backdates lastRefreshedAt so Ep2's airDate (yesterday) counts as "new" on the next refresh. */
+  function backdateLastRefreshed(db: LibraryDatabase, itemId: number) {
+    db.update(schema.items)
+      .set({ lastRefreshedAt: `${addDays(-5)}T00:00:00Z` })
+      .where(eq(schema.items.id, itemId))
+      .run();
+  }
+
+  it("notifies when the post-refresh category is in the active trio (watching)", async () => {
+    const { db } = openLibraryDb(":memory:");
+    const library = createLibrary(db);
+    const summary = library.addSeries(twoEpisodeFixture(1));
+    const ep1 = library.getSeries(summary.id)?.seasons[0]?.episodes[0]?.id;
+    if (ep1 === undefined) throw new Error("setup: fixture episode missing");
+    library.addWatch(ep1, new Date().toISOString());
+    backdateLastRefreshed(db, summary.id);
+    expect(library.getSeries(summary.id)?.category).toBe("watching");
+
+    library.addPushSubscription({ endpoint: "https://push.test/a", p256dh: "p1", auth: "a1" });
+    const app = createApp(loadConfig({}), {
+      library,
+      providers: [twoEpisodeProvider()],
+      dataDir: "/tmp/baykus-test",
+      vapid: { publicKey: "test-public", privateKey: "test-private" },
+      auth: { mode: "single", password: undefined, singleSessions: createSingleSessionStore() },
+    });
+
+    const res = await app.request(`/api/library/series/${summary.id}/refresh`, {
+      method: "POST",
+      headers: HEADERS,
+    });
+    expect(res.status).toBe(200);
+    expect((await res.json()) as { newEpisodes: number }).toMatchObject({ newEpisodes: 1 });
+    expect(webpush.sendNotification).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not notify when manualList keeps the item out of the active trio (watch_later)", async () => {
+    const { db } = openLibraryDb(":memory:");
+    const library = createLibrary(db);
+    const summary = library.addSeries(twoEpisodeFixture(1));
+    const ep1 = library.getSeries(summary.id)?.seasons[0]?.episodes[0]?.id;
+    if (ep1 === undefined) throw new Error("setup: fixture episode missing");
+    // addWatch's default "manual" source would auto-clear a manual_list set beforehand (E19) —
+    // set watch_later AFTER watching so it sticks.
+    library.addWatch(ep1, new Date().toISOString());
+    library.updateTracking(summary.id, { manualList: "watch_later" });
+    backdateLastRefreshed(db, summary.id);
+    expect(library.getSeries(summary.id)?.category).toBe("watch_later");
+
+    library.addPushSubscription({ endpoint: "https://push.test/a", p256dh: "p1", auth: "a1" });
+    const app = createApp(loadConfig({}), {
+      library,
+      providers: [twoEpisodeProvider()],
+      dataDir: "/tmp/baykus-test",
+      vapid: { publicKey: "test-public", privateKey: "test-private" },
+      auth: { mode: "single", password: undefined, singleSessions: createSingleSessionStore() },
+    });
+
+    const res = await app.request(`/api/library/series/${summary.id}/refresh`, {
+      method: "POST",
+      headers: HEADERS,
+    });
+    expect(res.status).toBe(200);
+    expect((await res.json()) as { newEpisodes: number }).toMatchObject({ newEpisodes: 1 });
+    expect(webpush.sendNotification).not.toHaveBeenCalled();
   });
 });
