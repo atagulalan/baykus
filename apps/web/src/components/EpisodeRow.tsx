@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { EpisodeSummary } from "../api/types.ts";
+import { todayIso } from "../lib/date.ts";
 import { RatingControl } from "./RatingControl.tsx";
 
 interface EpisodeRowProps {
@@ -13,10 +14,6 @@ interface EpisodeRowProps {
   showRatingPrompt?: boolean;
   onRate?: (value: 1 | 2 | 3) => void;
   onDismissPrompt?: () => void;
-}
-
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
 }
 
 function formatAirDate(airDate: string | null): string {

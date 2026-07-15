@@ -4,11 +4,8 @@ import { useTranslation } from "react-i18next";
 import { addEpisodeWatch, getWatchHistory, listSeries } from "../api/client.ts";
 import type { WatchHistoryEntry } from "../api/types.ts";
 import { WatchNextRow } from "../components/WatchNextRow.tsx";
+import { todayIso } from "../lib/date.ts";
 import { useToast } from "../lib/toast.tsx";
-
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 function yesterdayIso(): string {
   const d = new Date(`${todayIso()}T00:00:00Z`);

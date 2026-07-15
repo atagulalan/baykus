@@ -6,13 +6,10 @@ import { addEpisodeWatch, getCalendar } from "../api/client.ts";
 import type { CalendarDay, CalendarEntry } from "../api/types.ts";
 import { EpisodeTags } from "../components/EpisodeTags.tsx";
 import { MonthGrid } from "../components/MonthGrid.tsx";
+import { todayIso } from "../lib/date.ts";
 import { useToast } from "../lib/toast.tsx";
 
 type Mode = "timeline" | "month";
-
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 function formatDayHeader(dateStr: string): string {
   return new Intl.DateTimeFormat("tr-TR", {

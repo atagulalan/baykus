@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { buildImageUrl } from "../api/images.ts";
 import type { SeriesSummary } from "../api/types.ts";
+import { todayIso } from "../lib/date.ts";
 import { EpisodeTags } from "./EpisodeTags.tsx";
 
 interface WatchNextRowProps {
@@ -27,8 +28,7 @@ export function WatchNextRow({ series, onQuickMark }: WatchNextRowProps) {
 
   const imageUrl = buildImageUrl(series.posterRef);
   const overflow = computeOverflowBadge(series.progress);
-  const today = new Date().toISOString().slice(0, 10);
-  const showCheckbox = shouldShowQuickMarkCheckbox(next.airDate, today);
+  const showCheckbox = shouldShowQuickMarkCheckbox(next.airDate, todayIso());
 
   return (
     <div className="flex items-center gap-3 rounded px-2 py-2 hover:bg-zinc-900">

@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import type { CalendarDay, CalendarEntry } from "../api/types.ts";
+import { todayIso } from "../lib/date.ts";
 import { EpisodeTags } from "./EpisodeTags.tsx";
 
 const MAX_CELL_ENTRIES = 3;
@@ -71,7 +72,7 @@ interface MonthGridProps {
 /** Month mode: Monday-first grid (desktop) or a vertical list of non-empty days (mobile, <640px). */
 export function MonthGrid({ year, month, days }: MonthGridProps) {
   const { t } = useTranslation();
-  const today = toIsoDate(new Date());
+  const today = todayIso();
   const entriesByDate = new Map(days.map((d) => [d.date, d.entries]));
   const cells = buildMonthCells(year, month);
   const weekdayLabels = weekdayShortLabels();

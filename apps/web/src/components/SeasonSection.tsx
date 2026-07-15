@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { SeasonSummary } from "../api/types.ts";
+import { todayIso } from "../lib/date.ts";
 import { EpisodeRow } from "./EpisodeRow.tsx";
 
 interface SeasonSectionProps {
@@ -13,10 +14,6 @@ interface SeasonSectionProps {
   promptEpisodeId: number | null;
   onRateEpisode: (episodeId: number, value: 1 | 2 | 3) => void;
   onDismissPrompt: () => void;
-}
-
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
 }
 
 export function SeasonSection({
