@@ -128,7 +128,7 @@ on schemaVersion 2.
     schemaVersion 3 still rejected 422.
   - **Verify:** `pnpm test packages/core -- zip`
 
-- [ ] M10.5 core: stats by category (FR-026)
+- [x] M10.5 core: stats by category (FR-026)
   - **Files:** `packages/core/src/library/{stats.ts,stats.test.ts}`
   - **DoD:** `Stats.itemCount: Record<WatchCategory, number>` via
     `computeCategories` (all 7 keys always present, zeros included).

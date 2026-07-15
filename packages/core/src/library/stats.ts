@@ -1,23 +1,15 @@
 import { eq, sql } from "drizzle-orm";
 import type { LibraryDatabase } from "../db/open.ts";
-import type { TrackingStatus } from "../db/schema.ts";
 import * as schema from "../db/schema.ts";
+import { CATEGORY_ORDER, computeCategories, type WatchCategory } from "./category.ts";
 
 export interface Stats {
   episodesWatched: number;
   watchTimeMin: number;
-  itemCount: Record<TrackingStatus, number>;
+  itemCount: Record<WatchCategory, number>;
   episodesPerMonth: { month: string; count: number }[];
   ratingDistribution: Record<"1" | "2" | "3", number>;
 }
-
-const ALL_STATUSES: TrackingStatus[] = [
-  "watching",
-  "plan_to_watch",
-  "completed",
-  "dropped",
-  "paused",
-];
 
 /** contracts/api.md §stats. watchTimeMin: E13 — unknown per-episode runtime falls back to the item's avg episodeRunTimes, else 0. */
 export function getStats(db: LibraryDatabase): Stats {
@@ -49,16 +41,16 @@ export function getStats(db: LibraryDatabase): Stats {
     }
   }
 
-  const itemCount = Object.fromEntries(ALL_STATUSES.map((s) => [s, 0])) as Record<
-    TrackingStatus,
+  const itemCount = Object.fromEntries(CATEGORY_ORDER.map((c) => [c, 0])) as Record<
+    WatchCategory,
     number
   >;
-  const trackingRows = db
-    .select({ status: schema.tracking.status, count: sql<number>`count(*)` })
-    .from(schema.tracking)
-    .groupBy(schema.tracking.status)
-    .all();
-  for (const row of trackingRows) itemCount[row.status] = row.count;
+  const itemIds = db
+    .select({ id: schema.items.id })
+    .from(schema.items)
+    .all()
+    .map((row) => row.id);
+  for (const category of computeCategories(db, itemIds).values()) itemCount[category]++;
 
   const monthExpr = sql<string>`substr(${schema.watches.watchedAt}, 1, 7)`;
   const monthRows = db
