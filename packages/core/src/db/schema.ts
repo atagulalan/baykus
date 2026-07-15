@@ -36,6 +36,7 @@ import {
 export type ManualList = "watch_later" | "stopped";
 export type WatchSource = "manual" | "bulk" | "import:tvtime" | "import:zip";
 export type RatingTargetType = "item" | "episode";
+export type AddedVia = "manual" | "import:tvtime" | "import:zip";
 
 export const items = sqliteTable(
   "items",
@@ -68,6 +69,7 @@ export const items = sqliteTable(
     externalRatings: text("external_ratings", { mode: "json" }).$type<ExternalRating[]>(),
     lastRefreshedAt: text("last_refreshed_at"),
     addedAt: text("added_at").notNull(),
+    addedVia: text("added_via").$type<AddedVia>().notNull().default("manual"),
   },
   (t) => [index("items_media_type_idx").on(t.mediaType)],
 );
@@ -169,7 +171,8 @@ export const pushSubscriptions = sqliteTable("push_subscriptions", {
 /**
  * Known keys: locale ("tr"|"en"), region ("TR"), tmdb_api_key (single mode
  * only), scrapers_enabled ("0"|"1"), theme ("dark"|"light"|"system"),
- * schema_version (zip schema version this library was created at).
+ * schema_version (zip schema version this library was created at),
+ * watching_window_days (integer days as string, default "30").
  */
 export const settings = sqliteTable("settings", {
   key: text("key").primaryKey(),

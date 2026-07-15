@@ -20,6 +20,19 @@ function makeV1MigrationsFolder(): string {
   return dir;
 }
 
+/** A migrations folder containing 0000 + 0001, as if 0002 hadn't landed yet. */
+function makeV2MigrationsFolder(): string {
+  const dir = mkdtempSync(join(tmpdir(), "baykus-core-v2-migrations-"));
+  cpSync(REAL_MIGRATIONS_FOLDER, dir, { recursive: true });
+  rmSync(join(dir, "0002_items_added_via.sql"));
+  rmSync(join(dir, "meta", "0002_snapshot.json"));
+  const journalPath = join(dir, "meta", "_journal.json");
+  const journal = JSON.parse(readFileSync(journalPath, "utf8"));
+  journal.entries = journal.entries.filter((e: { idx: number }) => e.idx <= 1);
+  writeFileSync(journalPath, JSON.stringify(journal, null, 2));
+  return dir;
+}
+
 const ALL_TABLES = [
   "episodes",
   "items",
@@ -179,6 +192,59 @@ describe("openLibraryDb", () => {
           note: "on hold",
           list_changed_at: "2026-02-05T00:00:00Z",
         },
+      ]);
+      upgraded.sqlite.close();
+    });
+  });
+
+  describe("migration 0002: items.added_via backfill (E32)", () => {
+    let dir: string;
+    let v2Folder: string;
+
+    afterEach(() => {
+      if (dir) rmSync(dir, { recursive: true, force: true });
+      if (v2Folder) rmSync(v2Folder, { recursive: true, force: true });
+    });
+
+    it("backfills added_via from watch sources, tvtime winning over zip", () => {
+      dir = mkdtempSync(join(tmpdir(), "baykus-core-test-"));
+      v2Folder = makeV2MigrationsFolder();
+      const file = join(dir, "library.db");
+
+      const v2 = openLibraryDb(file, v2Folder);
+      v2.sqlite.exec(`
+        INSERT INTO items (id, media_type, title, added_at) VALUES
+          (1, 'series', 'A', '2026-01-01T00:00:00Z'),
+          (2, 'series', 'B', '2026-01-01T00:00:00Z'),
+          (3, 'series', 'C', '2026-01-01T00:00:00Z'),
+          (4, 'series', 'D', '2026-01-01T00:00:00Z'),
+          (5, 'series', 'E', '2026-01-01T00:00:00Z');
+        INSERT INTO episodes (id, item_id, season_number, episode_number) VALUES
+          (1, 1, 1, 1),
+          (2, 2, 1, 1),
+          (3, 3, 1, 1),
+          (4, 3, 1, 2),
+          (5, 4, 1, 1);
+      `);
+      const insertWatch = v2.sqlite.prepare(
+        "INSERT INTO watches (episode_id, item_id, watched_at, source) VALUES (?, ?, ?, ?)",
+      );
+      insertWatch.run(1, 1, "2026-02-01T00:00:00Z", "import:zip");
+      insertWatch.run(2, 2, "2026-02-02T00:00:00Z", "import:tvtime");
+      insertWatch.run(3, 3, "2026-02-03T00:00:00Z", "import:zip");
+      insertWatch.run(4, 3, "2026-02-04T00:00:00Z", "import:tvtime");
+      insertWatch.run(5, 4, "2026-02-05T00:00:00Z", "manual");
+      // item E (id 5) has zero watches.
+      v2.sqlite.close();
+
+      const upgraded = openLibraryDb(file, REAL_MIGRATIONS_FOLDER);
+      const rows = upgraded.sqlite.prepare("SELECT id, added_via FROM items ORDER BY id").all();
+      expect(rows).toEqual([
+        { id: 1, added_via: "import:zip" },
+        { id: 2, added_via: "import:tvtime" },
+        { id: 3, added_via: "import:tvtime" },
+        { id: 4, added_via: "manual" },
+        { id: 5, added_via: "manual" },
       ]);
       upgraded.sqlite.close();
     });

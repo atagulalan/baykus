@@ -26,7 +26,7 @@ Checkpoint goal: HotD scenario works end to end — new episode on a dormant
 show lifts it to İzleniyor; a search-bar add sits in İzleniyor for the
 window; imports don't; the window length is a setting.
 
-- [ ] M14.1 core: migration 0002 — `items.added_via` (E32)
+- [x] M14.1 core: migration 0002 — `items.added_via` (E32)
   - **Files:** `packages/core/src/db/schema.ts`,
     `packages/core/migrations/0002_*.sql` (+ `meta/` journal via drizzle-kit),
     `packages/core/src/db/open.test.ts`
@@ -46,6 +46,16 @@ window; imports don't; the window length is a setting.
     added_via = import:zip / import:tvtime / import:tvtime (tvtime wins) /
     manual / manual. Existing 0001 test untouched.
   - **Verify:** `pnpm test packages/core -- open`
+  <!-- DECISION: 0001's committed journal entry has "when": 1784297400000
+  (2026-07-17), ahead of real wall-clock time when 0002 was generated
+  (~1784120000000, 2026-07-15). drizzle's sqlite migrator only applies a
+  migration if its journal "when" is greater than the last-applied
+  migration's stored created_at (sqlite-core/dialect.js
+  SQLiteSyncDialect.migrate), so 0002 was silently skipped until its "when"
+  was hand-set to 1784297400001 (1ms after 0001) in
+  packages/core/migrations/meta/_journal.json. Smallest fix that preserves
+  ordering; future migrations must keep "when" monotonically increasing
+  past this value rather than trusting drizzle-kit's real-clock default. -->
 
 - [ ] M14.2 core: `watchingWindowDays` setting (E31)
   - **Files:** `packages/core/src/library/{settings.ts,settings.test.ts}`
