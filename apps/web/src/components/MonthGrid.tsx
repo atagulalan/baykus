@@ -1,7 +1,10 @@
 import { Link } from "@tanstack/react-router";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { buildImageUrl } from "../api/images.ts";
 import type { CalendarDay, CalendarEntry } from "../api/types.ts";
 import { todayIso } from "../lib/date.ts";
+import { CalendarEntryRow } from "./CalendarEntryRow.tsx";
 import { EpisodeTags } from "./EpisodeTags.tsx";
 
 const MAX_CELL_ENTRIES = 3;
@@ -42,23 +45,35 @@ function weekdayShortLabels(): string[] {
 }
 
 function CompactEntry({ entry }: { entry: CalendarEntry }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const imageUrl = buildImageUrl(entry.posterRef);
   return (
     <Link
       to="/series/$id"
       params={{ id: String(entry.itemId) }}
-      className="flex flex-col gap-0.5 rounded px-1 py-0.5 text-[11px] leading-tight hover:bg-zinc-800"
+      className="flex items-start gap-1 rounded px-1 py-0.5 text-[11px] leading-tight hover:bg-zinc-800"
     >
-      <span className="truncate">
-        {entry.title} S{entry.s}E{entry.e}
-      </span>
-      <EpisodeTags
-        s={entry.s}
-        e={entry.e}
-        airDate={entry.airDate}
-        episodeType={entry.episodeType}
-        episodeTitle={entry.episodeTitle}
-        seasonName={entry.seasonName}
-      />
+      {imageUrl && !imageFailed && (
+        <img
+          src={imageUrl}
+          alt=""
+          className="aspect-[2/3] w-6 shrink-0 rounded object-cover"
+          onError={() => setImageFailed(true)}
+        />
+      )}
+      <div className="flex min-w-0 flex-col gap-0.5">
+        <span className="truncate">
+          {entry.title} S{entry.s}E{entry.e}
+        </span>
+        <EpisodeTags
+          s={entry.s}
+          e={entry.e}
+          airDate={entry.airDate}
+          episodeType={entry.episodeType}
+          episodeTitle={entry.episodeTitle}
+          seasonName={entry.seasonName}
+        />
+      </div>
     </Link>
   );
 }
@@ -130,7 +145,7 @@ export function MonthGrid({ year, month, days }: MonthGridProps) {
                     }).format(new Date(`${day.date}T00:00:00Z`))}
               </h3>
               {day.entries.map((entry) => (
-                <CompactEntry key={entry.episodeId} entry={entry} />
+                <CalendarEntryRow key={entry.episodeId} entry={entry} />
               ))}
             </div>
           ))

@@ -1,10 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { addEpisodeWatch, getCalendar } from "../api/client.ts";
-import type { CalendarDay, CalendarEntry } from "../api/types.ts";
-import { EpisodeTags } from "../components/EpisodeTags.tsx";
+import type { CalendarDay } from "../api/types.ts";
+import { CalendarEntryRow } from "../components/CalendarEntryRow.tsx";
 import { MonthGrid } from "../components/MonthGrid.tsx";
 import { todayIso } from "../lib/date.ts";
 import { useToast } from "../lib/toast.tsx";
@@ -24,47 +23,6 @@ function ensureTodayPresent(days: CalendarDay[], today: string): CalendarDay[] {
   if (days.some((d) => d.date === today)) return days;
   return [...days, { date: today, entries: [] }].sort((a, b) =>
     a.date < b.date ? -1 : a.date > b.date ? 1 : 0,
-  );
-}
-
-function CalendarEntryRow({
-  entry,
-  onToggleWatched,
-}: {
-  entry: CalendarEntry;
-  onToggleWatched?: () => void;
-}) {
-  const { t } = useTranslation();
-  const provider = entry.watchProviders[0];
-  return (
-    <div className="flex items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-zinc-900">
-      {onToggleWatched && (
-        <input
-          type="checkbox"
-          onChange={onToggleWatched}
-          aria-label={t("episode.toggleWatched")}
-          className="h-4 w-4 shrink-0 accent-emerald-500"
-        />
-      )}
-      <Link to="/series/$id" params={{ id: String(entry.itemId) }} className="flex flex-1 gap-2">
-        <span className="flex-1 truncate">
-          {entry.title} S{entry.s}E{entry.e}
-        </span>
-        <EpisodeTags
-          s={entry.s}
-          e={entry.e}
-          airDate={entry.airDate}
-          episodeType={entry.episodeType}
-          episodeTitle={entry.episodeTitle}
-          seasonName={entry.seasonName}
-        />
-        {(provider || entry.network) && (
-          <span className="shrink-0 text-xs text-zinc-500">
-            {provider ? `${provider.provider} (${provider.region})` : entry.network}
-          </span>
-        )}
-      </Link>
-    </div>
   );
 }
 

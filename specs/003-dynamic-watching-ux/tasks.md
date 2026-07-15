@@ -279,7 +279,7 @@ calendar, filter reset fixed.
   - **Verify:** `pnpm dev` → scroll: header stays; <640px: bottom tabs
     navigate all five pages, active tab highlighted.
 
-- [ ] M16.2 web: posters in calendar + timeline (E35, FR-033)
+- [x] M16.2 web: posters in calendar + timeline (E35, FR-033)
   - **Files:** `apps/web/src/pages/CalendarPage.tsx`,
     `apps/web/src/components/MonthGrid.tsx`
   - **DoD:** ui.md 003 §Calendar: timeline `CalendarEntryRow` gains the
@@ -290,6 +290,16 @@ calendar, filter reset fixed.
   - **Tests:** none beyond typecheck.
   - **Verify:** `pnpm dev` → both modes + mobile width show posters; a
     null-poster entry renders cleanly.
+  <!-- DECISION: extracted the timeline row (previously an inline
+  CalendarEntryRow function inside CalendarPage.tsx) into its own file,
+  apps/web/src/components/CalendarEntryRow.tsx, so MonthGrid.tsx's
+  mobile list could import and reuse the exact same row instead of
+  duplicating the poster/onError/EpisodeTags markup — matching the
+  DoD's own wording ("mobile month list switches to the timeline row
+  rendering"). Not in the task's Files list but the smallest change
+  that avoids a forked component; both call sites' checkbox/tags/+n
+  behavior is untouched. Browser verify deferred to M16.4's
+  MANUELTEST.md per the M14.7/M15.4 precedent (no browser tool here). -->
 
 - [ ] M16.3 web: filter RESET fix (E41, FR-038)
   - **Files:** `apps/web/src/components/FilterPanel.tsx`
