@@ -1,5 +1,5 @@
 import type { ExternalIds, MetadataProvider } from "@baykus/provider-sdk";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, ne, sql } from "drizzle-orm";
 import type { LibraryDatabase } from "../db/open.ts";
 import * as schema from "../db/schema.ts";
 
@@ -20,6 +20,63 @@ function toExternalIds(item: ItemRow): ExternalIds {
   if (item.imdbId != null) ids.imdbId = item.imdbId;
   if (item.tvdbId != null) ids.tvdbId = item.tvdbId;
   return ids;
+}
+
+interface ExternalIdFill {
+  tmdbId?: number;
+  tvmazeId?: number;
+  imdbId?: string;
+  tvdbId?: number;
+}
+
+/**
+ * E53: fill-only merge of the refreshed provider's externalIds into the
+ * item's NULL id columns — never overwrites a non-null column, and silently
+ * drops a candidate already held by a *different* item (columns are UNIQUE;
+ * a constraint abort must not fail the whole refresh over a metadata nicety).
+ */
+function fillExternalIds(
+  tx: LibraryDatabase,
+  itemId: number,
+  item: ItemRow,
+  externalIds: ExternalIds,
+): ExternalIdFill {
+  const fill: ExternalIdFill = {};
+
+  if (item.tmdbId == null && externalIds.tmdbId != null) {
+    const conflict = tx
+      .select({ id: schema.items.id })
+      .from(schema.items)
+      .where(and(eq(schema.items.tmdbId, externalIds.tmdbId), ne(schema.items.id, itemId)))
+      .get();
+    if (!conflict) fill.tmdbId = externalIds.tmdbId;
+  }
+  if (item.tvmazeId == null && externalIds.tvmazeId != null) {
+    const conflict = tx
+      .select({ id: schema.items.id })
+      .from(schema.items)
+      .where(and(eq(schema.items.tvmazeId, externalIds.tvmazeId), ne(schema.items.id, itemId)))
+      .get();
+    if (!conflict) fill.tvmazeId = externalIds.tvmazeId;
+  }
+  if (item.imdbId == null && externalIds.imdbId != null) {
+    const conflict = tx
+      .select({ id: schema.items.id })
+      .from(schema.items)
+      .where(and(eq(schema.items.imdbId, externalIds.imdbId), ne(schema.items.id, itemId)))
+      .get();
+    if (!conflict) fill.imdbId = externalIds.imdbId;
+  }
+  if (item.tvdbId == null && externalIds.tvdbId != null) {
+    const conflict = tx
+      .select({ id: schema.items.id })
+      .from(schema.items)
+      .where(and(eq(schema.items.tvdbId, externalIds.tvdbId), ne(schema.items.id, itemId)))
+      .get();
+    if (!conflict) fill.tvdbId = externalIds.tvdbId;
+  }
+
+  return fill;
 }
 
 /**
@@ -64,6 +121,8 @@ export async function refreshItem(
   let newEpisodes = 0;
 
   db.transaction((tx) => {
+    const externalIdFill = fillExternalIds(tx, itemId, item, details.externalIds);
+
     tx.update(schema.items)
       .set({
         title: details.title,
@@ -86,6 +145,7 @@ export async function refreshItem(
         genres: details.genres ?? null,
         contentRatings: details.contentRatings ?? null,
         lastRefreshedAt: now,
+        ...externalIdFill,
       })
       .where(eq(schema.items.id, itemId))
       .run();

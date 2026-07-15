@@ -114,7 +114,7 @@ Checkpoint goal: `/series/94997` opens the same show Serializd shows at
 `/show/94997`; items without a tmdbId use `/series/i<id>` and flip to the
 TMDB form after a keyed refresh.
 
-- [ ] M20.1 core: `SeriesSummary.tmdbId` + refresh external-id fill
+- [x] M20.1 core: `SeriesSummary.tmdbId` + refresh external-id fill
   - **Files:** `packages/core/src/library/{service.ts,types.ts,
     service.test.ts}`, `packages/core/src/refresh/{engine.ts,engine.test.ts}`
   - **DoD:** `SeriesSummary.tmdbId: number | null` read off the existing

@@ -258,6 +258,57 @@ describe("refreshItem", () => {
   });
 });
 
+describe("refreshItem — external id fill (E53)", () => {
+  it("fills a NULL tmdbId column from the refreshed provider's externalIds", async () => {
+    const { db } = openLibraryDb(":memory:");
+    const itemId = setupItem(db, "2026-01-01T00:00:00Z");
+
+    await refreshItem(
+      db,
+      fakeProvider(() => details([], { externalIds: { tvmazeId: 1, tmdbId: 94997 } })),
+      itemId,
+      "2026-01-02T00:00:00Z",
+    );
+
+    const item = db.select().from(schema.items).where(eq(schema.items.id, itemId)).get();
+    expect(item?.tmdbId).toBe(94997);
+  });
+
+  it("never overwrites a non-null tvdbId, even when the provider disagrees", async () => {
+    const { db } = openLibraryDb(":memory:");
+    const itemId = setupItem(db, "2026-01-01T00:00:00Z");
+    db.update(schema.items).set({ tvdbId: 111 }).where(eq(schema.items.id, itemId)).run();
+
+    await refreshItem(
+      db,
+      fakeProvider(() => details([], { externalIds: { tvmazeId: 1, tvdbId: 222 } })),
+      itemId,
+      "2026-01-02T00:00:00Z",
+    );
+
+    const item = db.select().from(schema.items).where(eq(schema.items.id, itemId)).get();
+    expect(item?.tvdbId).toBe(111);
+  });
+
+  it("drops a candidate id already held by a different item — refresh still succeeds, column stays NULL", async () => {
+    const { db } = openLibraryDb(":memory:");
+    const first = setupItem(db, "2026-01-01T00:00:00Z");
+    const second = setupItem(db, "2026-01-01T00:00:00Z");
+    db.update(schema.items).set({ tmdbId: 500 }).where(eq(schema.items.id, first)).run();
+
+    const result = await refreshItem(
+      db,
+      fakeProvider(() => details([], { externalIds: { tvmazeId: 2, tmdbId: 500 } })),
+      second,
+      "2026-01-02T00:00:00Z",
+    );
+
+    expect(result.ok).toBe(true);
+    const item = db.select().from(schema.items).where(eq(schema.items.id, second)).get();
+    expect(item?.tmdbId).toBeNull();
+  });
+});
+
 describe("refreshAll", () => {
   it("yields a result per item; one failure never aborts the run", async () => {
     const { db } = openLibraryDb(":memory:");

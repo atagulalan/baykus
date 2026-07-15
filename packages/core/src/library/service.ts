@@ -140,6 +140,7 @@ function buildSummary(
   return {
     id: item.id,
     title: item.title,
+    tmdbId: item.tmdbId,
     posterRef: item.posterRef,
     year: yearOf(item.firstAirDate),
     category: categoryInfo.category,

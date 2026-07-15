@@ -92,6 +92,21 @@ describe("createLibrary.addSeries", () => {
     expect(detail?.tags).toEqual([]);
   });
 
+  it("summary carries tmdbId straight off the item row — null when the resolving provider didn't supply one, set when it did (E52)", () => {
+    const { db } = openLibraryDb(":memory:");
+    const library = createLibrary(db);
+
+    const withoutTmdb = library.addSeries(houseOfTheDragonDetails());
+    expect(withoutTmdb.tmdbId).toBeNull();
+
+    const anotherDetails = anotherShowDetails();
+    const withTmdb = library.addSeries({
+      ...anotherDetails,
+      externalIds: { ...anotherDetails.externalIds, tmdbId: 94997 },
+    });
+    expect(withTmdb.tmdbId).toBe(94997);
+  });
+
   it("persists tags (opts.tags) and round-trips them via getSeries — M8.4", () => {
     const { db } = openLibraryDb(":memory:");
     const library = createLibrary(db);
