@@ -175,3 +175,49 @@ tarayıcı gerektiriyor (spec.md 003 §Acceptance checklist).
 ### Tam gate
 - [x] `pnpm lint && pnpm typecheck && pnpm test && pnpm build` — hepsi
       yeşil (ben zaten doğruladım).
+
+---
+
+## M15.4 — CHECKPOINT M15 (bekliyor)
+
+Spec 003, M15: sezon-segmentli ilerleme çubuğu + dizi detay sayfası
+düzenlemeleri. Mekanik kısım (tam gate + API'nin `seasonProgress`
+döndürdüğünü curl ile doğrulama) benim tarafımdan yapıldı.
+
+### Segmentli ilerleme çubuğu (kart + detay)
+- [ ] Ana sayfada, birden fazla sezonu olan ve düzenli (atlama yapmadan)
+      izlenmiş bir dizinin kartında sezon kareleri + "sınır" (frontier)
+      çubuğu görünmeli (◼◼◼[▰▰▰▱▱]◻◻ gibi). **API tarafı mekanik
+      doğrulandı:** gerçek kütüphanede (280 dizi, 197'si çok sezonlu)
+      `seasonProgress` alanı doğru şekilde dolduruluyor (ör. "Gen V" →
+      2 sezon, ikisi de watched==total).
+- [ ] Aynı görünüm dizi detay sayfasının üst kısmında (poster yanındaki
+      ilerleme alanı) da olmalı.
+- [ ] Tamamı izlenmiş bir dizide tüm kareler dolu (◼◼◼◼) görünmeli.
+
+### Fallback (atlama yapılmış / >12 sezon)
+- [ ] Bölümleri sırayla değil atlayarak izlemiş bir dizide (ör. S2'yi
+      bitirmeden S1'de boşluk bırakmış) segmentli görünüm yerine eski
+      düz yüzde çubuğu çıkmalı. **API tarafı mekanik doğrulandı:**
+      gerçek kütüphanede 5 dizi `sequential: false` dönüyor (ör. "The
+      Last of Us" — S1 tam, S2'de 1/7); bu dizilerden birini açıp düz
+      çubuğu gör.
+- [ ] (Varsa) 12'den fazla sezonu olan bir dizide de düz çubuk
+      görünmeli.
+
+### Dizi detay sayfası (E37)
+- [ ] Specials (Sezon 0) bölümü olan bir diziyi aç — Specials sezon
+      listesinin **en altında** görünmeli (diğer sezonlar 1, 2, ... artan
+      sırada üstte).
+- [ ] 2:3 oranında olmayan bir poster (ör. TVmaze kaynaklı bir dizi)
+      **kırpılmadan tam** görünmeli (üstte/altta beyaz boşluk kalması
+      normal — artık `object-cover` yok).
+- [ ] Posteri olmayan bir dizide placeholder kutusu hâlâ 2:3 oranında
+      düzgün görünmeli (kırık görsel ikonu çıkmamalı).
+
+### İki dil
+- [ ] Ayarlar → Dil'den EN'e geç, yukarıdaki adımların tamamını tekrarla.
+
+### Tam gate
+- [x] `pnpm lint && pnpm typecheck && pnpm test && pnpm build` — hepsi
+      yeşil (ben zaten doğruladım).

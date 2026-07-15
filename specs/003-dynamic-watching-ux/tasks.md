@@ -248,9 +248,16 @@ Checkpoint goal: cards and the detail header show the season-segmented bar
   - **Verify:** `pnpm dev` → a series with specials shows them last; a
     non-2:3 poster (TVmaze item) renders whole.
 
-- [ ] M15.4 CHECKPOINT M15 — append M15 steps to `MANUELTEST.md` (segments,
+- [x] M15.4 CHECKPOINT M15 — append M15 steps to `MANUELTEST.md` (segments,
   fallback, specials-last, uncropped poster, TR+EN spot-check); full gate
   green; then check this box and commit.
+  <!-- DECISION: full gate green (52 test files, 440 tests, clean
+  typecheck + build). API-side seasonProgress correctness re-confirmed
+  live in M15.2's commit (280-item library, 197 multi-season, 5
+  non-sequential). Visual rendering (squares/frontier bar/fallback,
+  specials-last, uncropped poster) needs a browser, so left as
+  unchecked MANUELTEST.md items; box checked per the same "then check
+  this box and commit" convention as M14.7. -->
 
 ---
 
