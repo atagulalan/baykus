@@ -103,6 +103,11 @@ export function getSeries(id: number): Promise<SeriesDetail> {
   return request<SeriesDetail>(`/library/series/${id}`);
 }
 
+/** E52: TMDB-parity URL — 404s when no item carries this tmdbId (yet). */
+export function getSeriesByTmdb(tmdbId: number): Promise<SeriesDetail> {
+  return request<SeriesDetail>(`/library/series/by-tmdb/${tmdbId}`);
+}
+
 export function updateSeries(
   id: number,
   patch: { manualList?: ManualList | null; pushMuted?: boolean; note?: string | null },

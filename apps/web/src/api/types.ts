@@ -81,6 +81,8 @@ export interface NextUnwatchedEpisode {
 export interface SeriesSummary {
   id: number;
   title: string;
+  /** E52: TMDB-parity URL identity — null until a resolving/refreshing provider supplies one. */
+  tmdbId: number | null;
   posterRef: string | null;
   year: number | null;
   category: WatchCategory;

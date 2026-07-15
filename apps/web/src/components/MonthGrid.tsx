@@ -50,7 +50,7 @@ function CompactEntry({ entry }: { entry: CalendarEntry }) {
   return (
     <Link
       to="/series/$id"
-      params={{ id: String(entry.itemId) }}
+      params={{ id: `i${entry.itemId}` }}
       className="flex items-start gap-2 rounded px-1.5 py-1 text-[11px] leading-tight hover:bg-white/5 transition-colors"
     >
       {imageUrl && !imageFailed && (

@@ -51,7 +51,7 @@ export function EpisodeRow({
     <div className="flex items-center gap-4 px-6 py-4 transition-colors border-b border-white/5 hover:bg-white/5">
       <Link
         to="/series/$id"
-        params={{ id: String(itemId) }}
+        params={{ id: `i${itemId}` }}
         className="flex flex-1 items-center gap-4 overflow-hidden"
       >
         {imageUrl && (

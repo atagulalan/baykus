@@ -4,6 +4,7 @@ import { useState } from "react";
 import { buildImageUrl } from "../api/images.ts";
 import type { SeriesSummary } from "../api/types.ts";
 import { CATEGORY_TEXT_COLORS } from "../lib/categoryColors.ts";
+import { seriesParam } from "../lib/seriesPath.ts";
 import { SegmentedProgress } from "./SegmentedProgress.tsx";
 
 interface SeriesCardProps {
@@ -24,7 +25,7 @@ export function SeriesCard({ series }: SeriesCardProps) {
 
   return (
     <div className="group relative flex flex-col overflow-hidden bg-void border border-white/5 transition-colors hover:border-white/10">
-      <Link to="/series/$id" params={{ id: String(series.id) }} className="contents">
+      <Link to="/series/$id" params={{ id: seriesParam(series) }} className="contents">
         <div className="relative aspect-[2/3] w-full bg-[#101010]">
           {imageUrl && !imageFailed ? (
             <img

@@ -142,7 +142,7 @@ TMDB form after a keyed refresh.
     sibling (mirror whatever the existing detail-route tests assert).
   - **Verify:** `pnpm test apps/server`
 
-- [ ] M20.3 web: param grammar, links, detail resolution, canonicalize
+- [x] M20.3 web: param grammar, links, detail resolution, canonicalize
   - **Files:** `apps/web/src/lib/{seriesPath.ts,seriesPath.test.ts}` (new),
     `apps/web/src/api/{types.ts,client.ts}`,
     `apps/web/src/components/{SeriesCard,CalendarEntryRow,MonthGrid,

@@ -22,7 +22,7 @@ export function CalendarEntryRow({ entry, onToggleWatched }: CalendarEntryRowPro
     <div className="flex items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-zinc-900">
       <Link
         to="/series/$id"
-        params={{ id: String(entry.itemId) }}
+        params={{ id: `i${entry.itemId}` }}
         className="flex flex-1 items-center gap-2"
       >
         <div className="h-14 w-10 shrink-0 overflow-hidden rounded bg-zinc-800">

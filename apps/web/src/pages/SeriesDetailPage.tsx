@@ -8,6 +8,7 @@ import {
   bulkWatch,
   clearRating,
   getSeries,
+  getSeriesByTmdb,
   getSettings,
   refreshSeries,
   removeLatestEpisodeWatch,
@@ -29,6 +30,7 @@ import { SegmentedProgress } from "../components/SegmentedProgress.tsx";
 import { WatchDateDialog } from "../components/WatchDateDialog.tsx";
 import { CATEGORY_TEXT_COLORS } from "../lib/categoryColors.ts";
 import { sortSeasonsSpecialsLast } from "../lib/seasons.ts";
+import { parseSeriesParam, seriesParam } from "../lib/seriesPath.ts";
 import { useToast } from "../lib/toast.tsx";
 
 const RATING_PROMPT_TIMEOUT_MS = 5000;
@@ -71,13 +73,32 @@ function updateEpisodeInDetail(
   };
 }
 
+/**
+ * E52: `i`-prefix resolves via the internal endpoint; a bare number resolves
+ * TMDB-first, falling back to the internal endpoint on 404 (pre-004
+ * bookmarks were bare internal numbers). Junk params resolve as not-found,
+ * same as an unknown id, so the page's existing NOT_FOUND branch handles it.
+ */
+async function fetchSeriesByParam(param: string): Promise<SeriesDetail> {
+  const parsed = parseSeriesParam(param);
+  if (parsed.kind === "internal") return getSeries(parsed.id);
+  if (parsed.kind === "tmdb") {
+    try {
+      return await getSeriesByTmdb(parsed.id);
+    } catch (err) {
+      if (err instanceof ApiError && err.code === "NOT_FOUND") return getSeries(parsed.id);
+      throw err;
+    }
+  }
+  throw new ApiError("NOT_FOUND", `invalid series param "${param}"`, 404, null);
+}
+
 export function SeriesDetailPage() {
-  const { id: idParam } = useParams({ from: "/series/$id" });
-  const id = Number(idParam);
+  const { id: param } = useParams({ from: "/series/$id" });
   const { t } = useTranslation();
   const toast = useToast();
   const queryClient = useQueryClient();
-  const queryKey = ["series", id] as const;
+  const queryKey = ["series", param] as const;
 
   const [dateDialogEpisode, setDateDialogEpisode] = useState<EpisodeSummary | null>(null);
   const [promptEpisodeId, setPromptEpisodeId] = useState<number | null>(null);
@@ -86,15 +107,32 @@ export function SeriesDetailPage() {
 
   const navigate = useNavigate();
 
-  const query = useQuery({ queryKey, queryFn: () => getSeries(id) });
+  const query = useQuery({ queryKey, queryFn: () => fetchSeriesByParam(param) });
   const settingsQuery = useQuery({ queryKey: ["settings"], queryFn: getSettings });
   const activeRegion = settingsQuery.data?.region ?? "TR";
+
+  /** Mutations always act on the internal id, never the URL param (which may be a tmdbId). */
+  function requireInternalId(): number {
+    const value = query.data?.id;
+    if (value === undefined) throw new Error("mutation fired before series detail loaded");
+    return value;
+  }
 
   useEffect(() => {
     if (promptEpisodeId === null) return;
     const timer = setTimeout(() => setPromptEpisodeId(null), RATING_PROMPT_TIMEOUT_MS);
     return () => clearTimeout(timer);
   }, [promptEpisodeId]);
+
+  // E52: canonicalize the URL (replace, no history entry) once the item's real
+  // identity is known — guarded by param inequality so it never loops.
+  useEffect(() => {
+    if (!query.data) return;
+    const canonical = seriesParam(query.data);
+    if (canonical !== param) {
+      navigate({ to: "/series/$id", params: { id: canonical }, replace: true });
+    }
+  }, [query.data, param, navigate]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -170,13 +208,13 @@ export function SeriesDetailPage() {
   });
 
   const bulkUpToHere = useMutation({
-    mutationFn: (episodeId: number) => bulkWatch(id, { upToEpisodeId: episodeId }),
+    mutationFn: (episodeId: number) => bulkWatch(requireInternalId(), { upToEpisodeId: episodeId }),
     onError: reportError,
     onSettled: invalidate,
   });
 
   const markSeasonWatched = useMutation({
-    mutationFn: (seasonNumber: number) => bulkWatch(id, { seasonNumber }),
+    mutationFn: (seasonNumber: number) => bulkWatch(requireInternalId(), { seasonNumber }),
     onError: reportError,
     onSettled: invalidate,
   });
@@ -187,7 +225,8 @@ export function SeriesDetailPage() {
     ManualList | null,
     { previous: SeriesDetail | undefined }
   >({
-    mutationFn: (manualList: ManualList | null) => updateSeries(id, { manualList }),
+    mutationFn: (manualList: ManualList | null) =>
+      updateSeries(requireInternalId(), { manualList }),
     onMutate: async (manualList) => {
       await queryClient.cancelQueries({ queryKey });
       const previous = queryClient.getQueryData<SeriesDetail>(queryKey);
@@ -203,7 +242,7 @@ export function SeriesDetailPage() {
   });
 
   const refreshSeriesMutation = useMutation({
-    mutationFn: () => refreshSeries(id),
+    mutationFn: () => refreshSeries(requireInternalId()),
     onSuccess: (result) => {
       toast.show(
         result.newEpisodes > 0
@@ -221,7 +260,7 @@ export function SeriesDetailPage() {
     boolean,
     { previous: SeriesDetail | undefined }
   >({
-    mutationFn: (pushMuted: boolean) => updateSeries(id, { pushMuted }),
+    mutationFn: (pushMuted: boolean) => updateSeries(requireInternalId(), { pushMuted }),
     onMutate: async (pushMuted) => {
       await queryClient.cancelQueries({ queryKey });
       const previous = queryClient.getQueryData<SeriesDetail>(queryKey);
@@ -236,7 +275,7 @@ export function SeriesDetailPage() {
   });
 
   const removeMutation = useMutation({
-    mutationFn: () => removeSeries(id),
+    mutationFn: () => removeSeries(requireInternalId()),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["library"] });
       navigate({ to: "/" });
@@ -257,7 +296,9 @@ export function SeriesDetailPage() {
     { previous: SeriesDetail | undefined }
   >({
     mutationFn: (value) =>
-      value === null ? clearRating("item", id) : setRating("item", id, value),
+      value === null
+        ? clearRating("item", requireInternalId())
+        : setRating("item", requireInternalId(), value),
     onMutate: async (value) => {
       await queryClient.cancelQueries({ queryKey });
       const previous = queryClient.getQueryData<SeriesDetail>(queryKey);
