@@ -206,7 +206,47 @@
     "monthsChart": "Episodes watched by month",
     "ratingDistribution": "Rating distribution",
     "empty": "No watch history yet",
-    "mostRewatched": "Most Rewatched"
+    "mostRewatched": "Most Rewatched",
+    "duration": {
+      "daysHours": "{{days}}d {{hours}}h",
+      "hoursMinutes": "{{hours}}h {{minutes}}m"
+    },
+    "hero": {
+      "subline": "{{episodes}} episodes · {{series}} series"
+    },
+    "tiles": {
+      "tracked": "Tracked",
+      "episodes": "Episodes Watched",
+      "favorites": "Favorites",
+      "watching": "Watching",
+      "finished": "Finished",
+      "watchLater": "Watch Later"
+    },
+    "recent": {
+      "title": "Recent Activity",
+      "last7Days": "Last 7 Days",
+      "last30Days": "Last 30 Days",
+      "thisMonth": "This Month",
+      "episodesSub": "{{count}} episodes"
+    },
+    "mostWatchedByTime": {
+      "title": "Most Watched"
+    },
+    "categoryStatus": {
+      "title": "Watch Status"
+    },
+    "favorites": {
+      "title": "Favorites",
+      "progress": "{{count}} episodes · {{percent}}%"
+    },
+    "production": {
+      "title": "Production Status",
+      "ongoing": "Still Ongoing",
+      "ended": "Ended",
+      "episodeProgress": "{{watched}}/{{aired}} episodes",
+      "showMore": "show more",
+      "showLess": "show less"
+    }
   },
   "profile": {
     "title": "My profile",

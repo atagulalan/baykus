@@ -269,6 +269,19 @@ export interface RewatchedEpisode {
   watchCount: number;
 }
 
+export interface NamedCount {
+  name: string;
+  episodes: number;
+}
+
+export interface SeriesEpisodeProgress {
+  itemId: number;
+  title: string;
+  watchedEpisodes: number;
+  airedEpisodes: number;
+}
+
+/** 008 contracts/api.md §stats delta — additive over 001/007 (E111). */
 export interface Stats {
   episodesWatched: number;
   watchTimeMin: number;
@@ -276,6 +289,52 @@ export interface Stats {
   episodesPerMonth: { month: string; count: number }[];
   ratingDistribution: Record<"1" | "2" | "3", number>;
   mostRewatched: RewatchedEpisode[];
+
+  seriesCount: number;
+  favoritesCount: number;
+  datedWatches: { dated: number; total: number };
+  recent: {
+    last7Days: { episodes: number; watchTimeMin: number };
+    last30Days: { episodes: number; watchTimeMin: number };
+    thisMonth: { episodes: number; watchTimeMin: number };
+  };
+  mostWatchedByTime: { itemId: number; title: string; watchTimeMin: number }[];
+  favoriteProgress: SeriesEpisodeProgress[];
+  production: {
+    ongoing: number;
+    ended: number;
+    ongoingItems: SeriesEpisodeProgress[];
+  };
+  genreDistribution: { top: NamedCount[]; other: number };
+  networkDistribution: { networkCount: number; top: NamedCount[]; other: number };
+  backlog: {
+    episodes: number;
+    seriesCount: number;
+    watchTimeMin: number;
+    topSeries: { itemId: number; title: string; episodes: number }[];
+  };
+  pace: { episodesPerWeek: number; projectedWeeks: number } | null;
+  upcoming: { months: { month: string; episodes: number; watchTimeMin: number }[] };
+  binges: { itemId: number; title: string; date: string; episodes: number }[];
+  rewatchSummary: {
+    totalRewatches: number;
+    rewatchedEpisodes: number;
+    bySeries: { itemId: number; title: string; rewatches: number }[];
+  };
+  streaks: {
+    longestWeeks: number;
+    currentWeeks: number;
+    bySeries: { itemId: number; title: string; weeks: number }[];
+  };
+  timeByYear: {
+    year: number;
+    totalMin: number;
+    monthlyMin: number[];
+    weeklyMin: { week: number; min: number }[];
+  }[];
+  activityByDay: { date: string; count: number }[];
+  byWeekday: number[];
+  byHour: number[];
 }
 
 export interface RefreshResult {

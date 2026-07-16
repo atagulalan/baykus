@@ -56,14 +56,14 @@ Entry point: M44.2, then M45.1.
   - [x] M48.2 contract tests: new payload shape, invalid tz, empty DB,
         auth unchanged
 
-- [ ] **M49 web: client + sections group 1**
-  - [ ] M49.1 api client/types: extended `Stats`, send browser tz, query key
-  - [ ] M49.2 primitives: `HBarList`, `StackedBar`, `MiniBars`, `StatTile`
+- [x] **M49 web: client + sections group 1**
+  - [x] M49.1 api client/types: extended `Stats`, send browser tz, query key
+  - [x] M49.2 primitives: `HBarList`, `StackedBar`, `MiniBars`, `StatTile`
         reuse (ui.md)
-  - [ ] M49.3 hero + tiles + Son Dönem + En Çok İzlediklerim
-  - [ ] M49.4 İzleme Durumu stacked bar + Favoriler grid + Prodüksiyon
+  - [x] M49.3 hero + tiles + Son Dönem + En Çok İzlediklerim
+  - [x] M49.4 İzleme Durumu stacked bar + Favoriler grid + Prodüksiyon
         Durumu (15 + expand)
-  - [ ] M49.5 i18n tr+en for group 1
+  - [x] M49.5 i18n tr+en for group 1
 
 - [ ] **M50 web: sections group 2**
   - [ ] M50.1 Tür + Network dağılımı

@@ -206,7 +206,47 @@
     "monthsChart": "Aylara göre izlenen bölümler",
     "ratingDistribution": "Puan dağılımı",
     "empty": "Henüz izleme kaydı yok",
-    "mostRewatched": "En Çok Tekrar İzlenenler"
+    "mostRewatched": "En Çok Tekrar İzlenenler",
+    "duration": {
+      "daysHours": "{{days}}g {{hours}}s",
+      "hoursMinutes": "{{hours}}s {{minutes}}dk"
+    },
+    "hero": {
+      "subline": "{{episodes}} bölüm · {{series}} dizi"
+    },
+    "tiles": {
+      "tracked": "Takip Edilen",
+      "episodes": "İzlenen Bölüm",
+      "favorites": "Favori",
+      "watching": "İzleniyor",
+      "finished": "Bitirilen",
+      "watchLater": "Sonraya Bırakılan"
+    },
+    "recent": {
+      "title": "Son Dönem",
+      "last7Days": "Son 7 Gün",
+      "last30Days": "Son 30 Gün",
+      "thisMonth": "Bu Ay",
+      "episodesSub": "{{count}} bölüm"
+    },
+    "mostWatchedByTime": {
+      "title": "En Çok İzlediklerim"
+    },
+    "categoryStatus": {
+      "title": "İzleme Durumu"
+    },
+    "favorites": {
+      "title": "Favoriler",
+      "progress": "{{count}} bölüm · %{{percent}}"
+    },
+    "production": {
+      "title": "Prodüksiyon Durumu",
+      "ongoing": "Hâlâ Devam Ediyor",
+      "ended": "Bitti",
+      "episodeProgress": "{{watched}}/{{aired}} bölüm",
+      "showMore": "daha fazla",
+      "showLess": "daha az"
+    }
   },
   "profile": {
     "title": "Profilim",

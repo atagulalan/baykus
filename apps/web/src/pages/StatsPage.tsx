@@ -3,6 +3,12 @@ import { Link } from "@tanstack/react-router";
 import { ArrowDown, ArrowUp, Minus, RotateCw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { getStats } from "../api/client.ts";
+import { CategoryStatusSection } from "../components/stats/CategoryStatusSection.tsx";
+import { FavoritesSection } from "../components/stats/FavoritesSection.tsx";
+import { HeroSection } from "../components/stats/HeroSection.tsx";
+import { MostWatchedSection } from "../components/stats/MostWatchedSection.tsx";
+import { ProductionSection } from "../components/stats/ProductionSection.tsx";
+import { RecentSection } from "../components/stats/RecentSection.tsx";
 
 function last12Months(): string[] {
   const months: string[] = [];
@@ -33,18 +39,10 @@ const RATING_BARS: {
   { value: "1", Icon: ArrowDown, key: "bad", color: "bg-red-500/80", iconColor: "text-red-500" },
 ];
 
-function StatTile({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex flex-col items-center gap-3 border border-white/5 bg-[#101010] p-6 text-center">
-      <p className="font-mono text-xs uppercase tracking-widest text-muted">{label}</p>
-      <p className="font-display italic text-snow text-4xl leading-none tracking-tight">{value}</p>
-    </div>
-  );
-}
-
 export function StatsPage() {
   const { t } = useTranslation();
-  const query = useQuery({ queryKey: ["stats"], queryFn: getStats });
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const query = useQuery({ queryKey: ["stats", tz], queryFn: () => getStats(tz) });
 
   if (query.isLoading) {
     return (
@@ -84,25 +82,13 @@ export function StatsPage() {
   const maxRatingCount = Math.max(1, ...RATING_BARS.map((r) => stats.ratingDistribution[r.value]));
 
   return (
-    <div className="flex flex-col gap-8">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatTile
-          label={t("stats.episodesWatched")}
-          value={stats.episodesWatched.toLocaleString("tr-TR")}
-        />
-        <StatTile
-          label={t("stats.watchTimeHours")}
-          value={Math.round(stats.watchTimeMin / 60).toLocaleString("tr-TR")}
-        />
-        <StatTile
-          label={t("stats.activeSeries")}
-          value={stats.itemCount.watching.toLocaleString("tr-TR")}
-        />
-      </div>
-
-      {stats.episodesWatched === 0 && (
-        <p className="text-sm font-mono text-muted text-center">{t("stats.empty")}</p>
-      )}
+    <div className="flex flex-col gap-10">
+      <HeroSection stats={stats} />
+      <RecentSection stats={stats} />
+      <MostWatchedSection stats={stats} />
+      <CategoryStatusSection stats={stats} />
+      <FavoritesSection stats={stats} />
+      <ProductionSection stats={stats} />
 
       <section className="flex flex-col gap-4 mt-4">
         <h2 className="font-display italic text-snow text-2xl tracking-tight">

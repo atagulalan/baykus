@@ -38,6 +38,19 @@ export function getWeekStartIso(absoluteWeek: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+export type DurationParts =
+  | { mode: "daysHours"; days: number; hours: number }
+  | { mode: "hoursMinutes"; hours: number; minutes: number };
+
+/** ui.md Hero: days+hours once the total reaches a full day, else hours+minutes. */
+export function formatDurationParts(totalMin: number): DurationParts {
+  const totalHours = Math.floor(totalMin / 60);
+  if (totalHours >= 24) {
+    return { mode: "daysHours", days: Math.floor(totalHours / 24), hours: totalHours % 24 };
+  }
+  return { mode: "hoursMinutes", hours: totalHours, minutes: totalMin % 60 };
+}
+
 export function getWeekRange(
   baseDateIso: string,
   weekOffset: number,

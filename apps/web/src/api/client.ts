@@ -186,8 +186,8 @@ export function clearRating(targetType: RatingTargetType, targetId: number): Pro
   return request<void>(`/ratings/${targetType}/${targetId}`, { method: "DELETE" });
 }
 
-export function getStats(): Promise<Stats> {
-  return request<Stats>("/stats");
+export function getStats(tz?: string): Promise<Stats> {
+  return request<Stats>(`/stats${tz ? `?tz=${encodeURIComponent(tz)}` : ""}`);
 }
 
 export function getSettings(): Promise<Settings> {

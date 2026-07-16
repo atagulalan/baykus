@@ -78,7 +78,8 @@ function ProfilePageContent({ handle, session }: { handle: string; session: Auth
   const isManualRefreshRunning = useManualRefreshRunning();
   const refreshProgress = useManualRefreshProgress();
 
-  const statsQuery = useQuery({ queryKey: ["stats"], queryFn: getStats });
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const statsQuery = useQuery({ queryKey: ["stats", tz], queryFn: () => getStats(tz) });
   const libraryQuery = useQuery({
     queryKey: ["library", "lastWatched"],
     queryFn: () => listSeries({ sort: "lastWatched" }),
