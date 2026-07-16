@@ -1,13 +1,17 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 import { ChevronRight, Settings } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { getStats, listSeries, refreshAllSeries } from "../api/client.ts";
+import { getStats, listSeries } from "../api/client.ts";
 import type { AuthSession } from "../api/types.ts";
 import { ProfileGuard } from "../components/ProfileGuard.tsx";
 import { SeriesCard } from "../components/SeriesCard.tsx";
-import { setManualRefreshRunning } from "../lib/staleSweep.ts";
+import {
+  startManualSweep,
+  useManualRefreshProgress,
+  useManualRefreshRunning,
+} from "../lib/staleSweep.ts";
 import { useToast } from "../lib/toast.tsx";
 
 /** E79: the rail shows at most this many favorites; beyond it the heading links to the full page. */
@@ -72,33 +76,13 @@ function ProfilePageContent({ handle, session }: { handle: string; session: Auth
   const toast = useToast();
   const queryClient = useQueryClient();
 
-  const [refreshProgress, setRefreshProgress] = useState<{ done: number; total: number } | null>(
-    null,
-  );
+  const isManualRefreshRunning = useManualRefreshRunning();
+  const refreshProgress = useManualRefreshProgress();
 
   const statsQuery = useQuery({ queryKey: ["stats"], queryFn: getStats });
   const libraryQuery = useQuery({
     queryKey: ["library", "lastWatched"],
     queryFn: () => listSeries({ sort: "lastWatched" }),
-  });
-
-  const refreshAllMutation = useMutation({
-    mutationFn: () => {
-      setManualRefreshRunning(true);
-      return refreshAllSeries((event) =>
-        setRefreshProgress({ done: event.done, total: event.total }),
-      );
-    },
-    onSuccess: (result) => {
-      setRefreshProgress(null);
-      queryClient.invalidateQueries({ queryKey: ["library"] });
-      toast.show(t("library.refreshAllDone", { newEpisodes: result.newEpisodes }));
-    },
-    onError: () => {
-      setRefreshProgress(null);
-      toast.show(t("errors.generic"), "error");
-    },
-    onSettled: () => setManualRefreshRunning(false),
   });
 
   const favorites = (libraryQuery.data?.items ?? [])
@@ -190,8 +174,8 @@ function ProfilePageContent({ handle, session }: { handle: string; session: Auth
 
       <button
         type="button"
-        onClick={() => refreshAllMutation.mutate()}
-        disabled={refreshAllMutation.isPending}
+        onClick={() => startManualSweep(queryClient, toast, t)}
+        disabled={isManualRefreshRunning}
         className="w-full font-mono text-[10px] tracking-widest uppercase border border-white/10 text-muted px-4 py-3 hover:text-snow hover:border-white/20 transition-colors disabled:opacity-50"
       >
         {refreshProgress

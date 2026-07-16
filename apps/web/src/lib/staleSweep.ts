@@ -25,6 +25,7 @@ interface SweepState {
   lastAttemptAt: number | null;
   manualRefreshRunning: boolean;
   progress: { done: number; total: number } | null;
+  manualProgress: { done: number; total: number } | null;
 }
 
 /** Module-scoped singleton — survives navigation, never runs concurrently with itself or the manual button. */
@@ -33,6 +34,7 @@ const state: SweepState = {
   lastAttemptAt: null,
   manualRefreshRunning: false,
   progress: null,
+  manualProgress: null,
 };
 
 const listeners = new Set<() => void>();
@@ -55,9 +57,50 @@ export function useSweepProgress(): { done: number; total: number } | null {
   return useSyncExternalStore(subscribe, getProgressSnapshot);
 }
 
+export function useManualRefreshRunning(): boolean {
+  return useSyncExternalStore(subscribe, () => state.manualRefreshRunning);
+}
+
+export function useManualRefreshProgress(): { done: number; total: number } | null {
+  return useSyncExternalStore(subscribe, () => state.manualProgress);
+}
+
 /** The manual "Tümünü yenile" mutation calls this so the sweep never overlaps it (E64). */
 export function setManualRefreshRunning(running: boolean): void {
   state.manualRefreshRunning = running;
+  if (!running) state.manualProgress = null;
+  notify();
+}
+
+import type { QueryClient } from "@tanstack/react-query";
+
+export function startManualSweep(
+  queryClient: QueryClient,
+  toast: { show: (msg: string, type?: "error" | "success") => void },
+  t: (key: string, opts?: any) => string,
+): void {
+  if (state.running || state.manualRefreshRunning) return;
+
+  state.manualRefreshRunning = true;
+  state.manualProgress = null;
+  notify();
+
+  refreshAllSeries((event) => {
+    state.manualProgress = { done: event.done, total: event.total };
+    notify();
+  })
+    .then((result) => {
+      queryClient.invalidateQueries({ queryKey: ["library"] });
+      toast.show(t("library.refreshAllDone", { newEpisodes: result.newEpisodes }));
+    })
+    .catch(() => {
+      toast.show(t("errors.generic"), "error");
+    })
+    .finally(() => {
+      state.manualRefreshRunning = false;
+      state.manualProgress = null;
+      notify();
+    });
 }
 
 export interface MaybeStartSweepDeps {

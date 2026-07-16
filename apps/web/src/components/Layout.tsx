@@ -3,6 +3,7 @@ import {
   Link,
   Navigate,
   Outlet,
+  ScrollRestoration,
   useCanGoBack,
   useNavigate,
   useRouterState,
@@ -52,7 +53,14 @@ export function Layout() {
 
   // /login and /claim render without nav chrome and manage their own
   // auth-redirect logic (they ARE the unauthenticated entry points).
-  if (BARE_PATHS.has(pathname)) return <Outlet />;
+  if (BARE_PATHS.has(pathname)) {
+    return (
+      <>
+        <ScrollRestoration />
+        <Outlet />
+      </>
+    );
+  }
 
   if (sessionQuery.isLoading) return null;
   if (sessionQuery.data && !sessionQuery.data.authenticated) return <Navigate to="/login" />;
@@ -62,6 +70,7 @@ export function Layout() {
 
   return (
     <div className="min-h-screen bg-void text-snow font-sans">
+      <ScrollRestoration />
       <header
         ref={headerRef}
         className="sticky top-0 z-40 bg-void/90 backdrop-blur-md border-b border-white/5"

@@ -157,9 +157,9 @@ export function FilterPanel({ sort, category, onApply }: FilterPanelProps) {
         onClick={openPanel}
         aria-label={t("library.filter.title")}
         style={{ viewTransitionName: "filter-fab" }}
-        className="fixed right-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 flex h-14 w-14 items-center justify-center rounded-full bg-yellow text-[#080808] shadow-2xl sm:hidden"
+        className="absolute left-1/2 -translate-x-1/2 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 flex h-14 w-14 items-center justify-center rounded-full bg-yellow text-[#080808] shadow-2xl sm:hidden"
       >
-        <ListFilter size={22} strokeWidth={1.75} />
+        <ListFilter size={32} strokeWidth={1.75} />
         {activeDot && (
           <span
             aria-hidden="true"
