@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { addEpisodeWatch, getCalendar } from "../api/client.ts";
+import { addEpisodeWatch, getCalendar, removeLatestEpisodeWatch } from "../api/client.ts";
 import type { CalendarDay } from "../api/types.ts";
 import { CalendarEntryRow } from "../components/CalendarEntryRow.tsx";
 import { MonthGrid } from "../components/MonthGrid.tsx";
@@ -30,14 +31,15 @@ function ModeTabs({ mode, onChange }: { mode: Mode; onChange: (mode: Mode) => vo
   const { t } = useTranslation();
   const tabs: Mode[] = ["timeline", "month"];
   return (
-    <div className="flex gap-2">
+    <div className="inline-flex border border-white/10">
       {tabs.map((tab) => (
         <button
           key={tab}
           type="button"
           onClick={() => onChange(tab)}
-          className={`rounded-full px-3 py-1 text-sm ${
-            mode === tab ? "bg-zinc-100 text-zinc-900" : "bg-zinc-800 text-zinc-300"
+          aria-pressed={mode === tab}
+          className={`px-3 py-2 font-mono text-[10px] uppercase tracking-widest transition-colors ${
+            mode === tab ? "bg-yellow text-[#080808]" : "text-muted hover:text-snow"
           }`}
         >
           {t(`calendar.mode.${tab}`)}
@@ -47,7 +49,13 @@ function ModeTabs({ mode, onChange }: { mode: Mode; onChange: (mode: Mode) => vo
   );
 }
 
-function TimelineView({ onToggleWatched }: { onToggleWatched: (episodeId: number) => void }) {
+function TimelineView({
+  justWatched,
+  onToggleWatched,
+}: {
+  justWatched: Set<number>;
+  onToggleWatched: (episodeId: number) => void;
+}) {
   const { t } = useTranslation();
   const query = useQuery({ queryKey: ["calendar", "timeline"], queryFn: () => getCalendar() });
   const todayRef = useRef<HTMLDivElement>(null);
@@ -72,17 +80,17 @@ function TimelineView({ onToggleWatched }: { onToggleWatched: (episodeId: number
   }, [query.isLoading]);
 
   if (query.isLoading) {
-    return <div className="h-64 animate-pulse rounded-lg bg-zinc-900" />;
+    return <div className="h-64 animate-pulse bg-white/5" />;
   }
 
   if (query.isError) {
     return (
       <div className="flex flex-col items-center gap-2 py-24 text-center">
-        <p className="text-zinc-400">{t("errors.generic")}</p>
+        <p className="text-muted">{t("errors.generic")}</p>
         <button
           type="button"
           onClick={() => query.refetch()}
-          className="rounded bg-zinc-800 px-3 py-1.5 text-sm"
+          className="border border-white/10 px-3 py-1.5 font-mono uppercase text-muted hover:text-snow"
         >
           {t("errors.retry")}
         </button>
@@ -102,19 +110,20 @@ function TimelineView({ onToggleWatched }: { onToggleWatched: (episodeId: number
           className="flex flex-col gap-1"
           style={{ scrollMarginTop: "var(--app-header-height, 4rem)" }}
         >
-          <h3 className="text-xs text-zinc-500 uppercase">
+          <h3 className="text-xs text-muted uppercase">
             {day.date === today
               ? t("calendar.today", { date: day.date })
               : formatDayHeader(day.date)}
           </h3>
           {day.entries.length === 0 ? (
-            <p className="px-2 text-sm text-zinc-600">{t("calendar.empty.today")}</p>
+            <p className="px-2 text-sm text-muted">{t("calendar.empty.today")}</p>
           ) : (
             day.entries.map((entry) =>
               entry.airDate <= today ? (
                 <CalendarEntryRow
                   key={entry.episodeId}
                   entry={entry}
+                  watched={justWatched.has(entry.episodeId)}
                   onToggleWatched={() => onToggleWatched(entry.episodeId)}
                 />
               ) : (
@@ -172,30 +181,30 @@ function MonthView() {
           type="button"
           onClick={goPrev}
           aria-label={t("calendar.prevMonth")}
-          className="rounded px-2 py-1 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"
+          className="flex h-11 w-11 items-center justify-center text-muted transition-colors hover:text-snow"
         >
-          ‹
+          <ChevronLeft size={20} strokeWidth={1.5} />
         </button>
-        <span className="font-medium text-sm capitalize">{monthLabel}</span>
+        <span className="font-mono text-xs uppercase tracking-widest text-snow">{monthLabel}</span>
         <button
           type="button"
           onClick={goNext}
           aria-label={t("calendar.nextMonth")}
-          className="rounded px-2 py-1 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100"
+          className="flex h-11 w-11 items-center justify-center text-muted transition-colors hover:text-snow"
         >
-          ›
+          <ChevronRight size={20} strokeWidth={1.5} />
         </button>
       </div>
 
       {query.isLoading ? (
-        <div className="h-64 animate-pulse rounded-lg bg-zinc-900" />
+        <div className="h-64 animate-pulse bg-white/5" />
       ) : query.isError ? (
         <div className="flex flex-col items-center gap-2 py-24 text-center">
-          <p className="text-zinc-400">{t("errors.generic")}</p>
+          <p className="text-muted">{t("errors.generic")}</p>
           <button
             type="button"
             onClick={() => query.refetch()}
-            className="rounded bg-zinc-800 px-3 py-1.5 text-sm"
+            className="border border-white/10 px-3 py-1.5 font-mono uppercase text-muted hover:text-snow"
           >
             {t("errors.retry")}
           </button>
@@ -212,21 +221,68 @@ export function CalendarPage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [mode, setMode] = useState<Mode>("timeline");
+  // E81: episode ids checked off during this session. Session-scoped by design —
+  // the set resets on unmount, so any natural calendar refetch drops the rows
+  // (the timeline stays a gap-tracker, not a history view).
+  const [justWatched, setJustWatched] = useState<Set<number>>(new Set());
 
   const markWatched = useMutation({
     mutationFn: (episodeId: number) => addEpisodeWatch(episodeId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["calendar"] });
+      // E81: deliberately NOT invalidating ["calendar"] here — the refetched core
+      // query excludes past-aired episodes once watched, which would yank the row.
       queryClient.invalidateQueries({ queryKey: ["library"] });
     },
-    onError: () => toast.show(t("errors.generic"), "error"),
+    onError: (_error, episodeId) => {
+      setJustWatched((prev) => {
+        const next = new Set(prev);
+        next.delete(episodeId);
+        return next;
+      });
+      toast.show(t("errors.generic"), "error");
+    },
   });
+
+  const unmarkWatched = useMutation({
+    // E81: deleting the LATEST watch is safe here — the row was unwatched when the
+    // calendar loaded (the query excludes watched episodes), so the only watch this
+    // episode can carry is the one this session's toggle just created.
+    mutationFn: (episodeId: number) => removeLatestEpisodeWatch(episodeId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["library"] });
+    },
+    onError: (_error, episodeId) => {
+      setJustWatched((prev) => new Set(prev).add(episodeId));
+      toast.show(t("errors.generic"), "error");
+    },
+  });
+
+  function toggleWatched(episodeId: number) {
+    if (justWatched.has(episodeId)) {
+      // Toggle off: optimistic un-pin, then remove the just-created watch.
+      setJustWatched((prev) => {
+        const next = new Set(prev);
+        next.delete(episodeId);
+        return next;
+      });
+      unmarkWatched.mutate(episodeId);
+    } else {
+      // Toggle on: optimistic pin, then record the watch.
+      setJustWatched((prev) => new Set(prev).add(episodeId));
+      markWatched.mutate(episodeId);
+    }
+  }
 
   return (
     <div className="flex flex-col gap-4">
-      <ModeTabs mode={mode} onChange={setMode} />
+      <div className="flex items-center justify-between">
+        <h1 className="font-display italic text-snow text-2xl tracking-tight">
+          {t("app.nav.calendar")}
+        </h1>
+        <ModeTabs mode={mode} onChange={setMode} />
+      </div>
       {mode === "timeline" ? (
-        <TimelineView onToggleWatched={(episodeId) => markWatched.mutate(episodeId)} />
+        <TimelineView justWatched={justWatched} onToggleWatched={toggleWatched} />
       ) : (
         <MonthView />
       )}
