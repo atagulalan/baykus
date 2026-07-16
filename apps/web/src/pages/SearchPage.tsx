@@ -1,12 +1,15 @@
+import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { ManualListPicker } from "../components/ManualListPicker.tsx";
+import { ApiError } from "../api/client.ts";
 import { SearchResultThumb } from "../components/SearchResultThumb.tsx";
 import { resultKey, useSeriesSearch } from "../lib/useSeriesSearch.ts";
+import type { SearchResult } from "../api/types.ts";
 
-/** E68/E77: full-page search — mobile's "Ara" tab and the desktop header icon's destination. Adding stays on the page (multi-add). */
+/** E68/E77: full-page search — mobile's "Ara" tab and the desktop header icon's destination. Navigates to series page immediately on click. */
 export function SearchPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const search = useSeriesSearch();
   const { pending, results } = search;
@@ -14,6 +17,23 @@ export function SearchPage() {
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  const handleSelectResult = (result: SearchResult) => {
+    search.setPending(result);
+    search.addMutation.mutate(result, {
+      onSuccess: (summary) => {
+        navigate({ to: "/series/$id", params: { id: summary.id.toString() } });
+      },
+      onError: (error) => {
+        if (error instanceof ApiError && error.code === "CONFLICT" && error.details && typeof error.details === 'object' && 'itemId' in error.details) {
+          const itemId = (error.details as { itemId: number }).itemId;
+          navigate({ to: "/series/$id", params: { id: itemId.toString() } });
+        } else {
+          search.setPending(null);
+        }
+      }
+    });
+  };
 
   return (
     <div className="mx-auto flex w-full max-w-xl flex-col gap-4">
@@ -29,26 +49,6 @@ export function SearchPage() {
 
       {!search.enabled ? (
         <p className="py-12 text-center font-mono text-xs text-muted/70">{t("search.page.hint")}</p>
-      ) : pending ? (
-        <div className="flex items-center gap-3 border border-white/5 bg-[#101010] p-4">
-          <span className="flex-1 truncate font-display italic text-base">{pending.title}</span>
-          <ManualListPicker value={search.manualList} onChange={search.setManualList} />
-          <button
-            type="button"
-            disabled={search.addMutation.isPending}
-            onClick={() => search.addMutation.mutate(pending)}
-            className="font-mono text-[10px] tracking-widest uppercase bg-yellow text-[#080808] px-3 py-1.5 transition-opacity disabled:opacity-50 hover:opacity-90"
-          >
-            {t("search.add")}
-          </button>
-          <button
-            type="button"
-            onClick={() => search.setPending(null)}
-            className="font-mono text-[10px] tracking-widest uppercase text-muted hover:text-snow transition-colors px-2 py-1.5"
-          >
-            {t("search.cancel")}
-          </button>
-        </div>
       ) : search.isLoading ? (
         <p className="p-4 text-center font-mono text-sm text-muted">{t("search.loading")}</p>
       ) : search.isError ? (
@@ -62,23 +62,34 @@ export function SearchPage() {
         <p className="p-4 text-center font-mono text-sm text-muted">{t("search.noResults")}</p>
       ) : (
         <ul className="flex flex-col divide-y divide-white/5 border border-white/5">
-          {results.map((result) => (
-            <li key={resultKey(result)}>
-              <button
-                type="button"
-                onClick={() => search.selectResult(result)}
-                className="flex w-full items-center gap-4 px-4 py-3 text-left transition-colors hover:bg-white/5"
-              >
-                <SearchResultThumb result={result} />
-                <span className="flex-1 truncate font-display italic text-snow text-lg">
-                  {result.title}
-                </span>
-                <span className="font-mono text-[10px] tracking-wide text-muted">
-                  {[result.year, result.network].filter(Boolean).join(" · ")}
-                </span>
-              </button>
-            </li>
-          ))}
+          {results.map((result) => {
+            const isPending = pending && resultKey(pending) === resultKey(result);
+            return (
+              <li key={resultKey(result)}>
+                <button
+                  type="button"
+                  disabled={!!isPending}
+                  onClick={() => handleSelectResult(result)}
+                  className="flex w-full items-center gap-4 px-4 py-3 text-left transition-colors hover:bg-white/5 disabled:opacity-50"
+                >
+                  <SearchResultThumb result={result} />
+                  <div className="flex flex-1 flex-col justify-center overflow-hidden">
+                    <span className="truncate font-display italic text-snow text-lg">
+                      {result.title}
+                    </span>
+                    <span className="font-mono text-[10px] tracking-wide text-muted truncate">
+                      {[result.year, result.network].filter(Boolean).join(" · ")}
+                    </span>
+                  </div>
+                  {isPending && (
+                    <span className="font-mono text-[10px] tracking-widest uppercase text-yellow animate-pulse">
+                      {t("search.loading")}
+                    </span>
+                  )}
+                </button>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>
