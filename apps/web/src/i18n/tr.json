@@ -95,7 +95,10 @@
     "unmute": "Bildirimleri aç",
     "menu": "Dizi menüsü",
     "favorite": "Favorilere ekle",
-    "unfavorite": "Favorilerden çıkar"
+    "unfavorite": "Favorilerden çıkar",
+    "unwatchSeasonTitle": "Emin misiniz?",
+    "unwatchSeasonWarning": "Bu işlem seçili sezondaki tüm izleme geçmişinizi silecektir. Devam etmek istiyor musunuz?",
+    "unwatchSeasonConfirm": "Evet, sil"
   },
   "episode": {
     "toggleWatched": "İzlendi olarak işaretle",
@@ -197,7 +200,8 @@
     "activeSeries": "Aktif dizi sayısı",
     "monthsChart": "Aylara göre izlenen bölümler",
     "ratingDistribution": "Puan dağılımı",
-    "empty": "Henüz izleme kaydı yok"
+    "empty": "Henüz izleme kaydı yok",
+    "mostRewatched": "En Çok Tekrar İzlenenler"
   },
   "profile": {
     "title": "Profilim",
@@ -214,7 +218,8 @@
   "calendar": {
     "mode": {
       "timeline": "Zaman çizelgesi",
-      "month": "Takvim"
+      "month": "Takvim",
+      "schedule": "Yayın Akışı"
     },
     "today": "BUGÜN {{date}}",
     "overflow": "+{{count}}",
@@ -223,7 +228,8 @@
     "empty": {
       "today": "(boş)",
       "month": "Bu ay için bölüm yok"
-    }
+    },
+    "weekHeader": "{{year}} - {{week}}. Hafta"
   },
   "watch": {
     "title": "İzleme",
@@ -295,6 +301,7 @@
     "itemsCreated": "Eklenen dizi",
     "watchesCreated": "Eklenen izleme",
     "skipped": "Atlanan",
-    "goToLibrary": "Kütüphaneye git"
+    "goToLibrary": "Kütüphaneye git",
+    "episodeDiscrepancy": "Bölüm sayısı uyuşmuyor (TV Time: {{tvTime}}, Bizde: {{provider}}). Yanlış eşleşme olabilir."
   }
 }

@@ -1,5 +1,5 @@
 import type { EpisodeType, ImageRef, WatchProviderInfo } from "@baykus/provider-sdk";
-import { and, eq, gte, inArray, isNotNull, lte } from "drizzle-orm";
+import { and, eq, gt, gte, inArray, isNotNull, lt, lte } from "drizzle-orm";
 import type { LibraryDatabase } from "../db/open.ts";
 import * as schema from "../db/schema.ts";
 import { computeCategories, type WatchCategory } from "../library/category.ts";
@@ -19,6 +19,8 @@ export interface CalendarEntry {
   airDate: string;
   network: string | null;
   watchProviders: WatchProviderInfo[];
+  /** True when the episode has at least one watch event (needed by Schedule mode strips). */
+  isWatched: boolean;
 }
 
 export interface CalendarDay {
@@ -28,6 +30,10 @@ export interface CalendarDay {
 
 export interface CalendarResponse {
   days: CalendarDay[];
+  /** True when any active-trio episode exists with airDate > `to`. */
+  hasMoreFuture?: boolean;
+  /** True when any active-trio episode exists with airDate < `from`. */
+  hasMorePast?: boolean;
 }
 
 /** E22: calendar (both modes) is scoped to the active trio. */
@@ -61,7 +67,7 @@ interface EntryRow {
   airDate: string;
 }
 
-function toEntry(row: EntryRow): CalendarEntry {
+function toEntry(row: EntryRow, isWatched: boolean): CalendarEntry {
   return {
     itemId: row.itemId,
     title: row.title,
@@ -75,24 +81,24 @@ function toEntry(row: EntryRow): CalendarEntry {
     airDate: row.airDate,
     network: row.networks?.[0]?.name ?? null,
     watchProviders: row.watchProviders ?? [],
+    isWatched,
   };
 }
 
 /**
- * contracts/api.md 002 §Calendar. Single ascending `days` list (the 001
- * upcoming/recentlyAired split is gone). Scope: item category ∈ active trio
- * (E22, computed via computeCategories — never a raw tracking column).
- * Specials (season 0) are included (E23). Entry filter (E24): airDate > today
- * always included; airDate <= today only when the episode has zero watch
- * events. Range validation is the route's job (M11.2), not this function's.
+ * contracts/api.md 002 §Calendar (as amended for Schedule mode). Single
+ * ascending `days` list. Scope: item category ∈ active trio (E22). Specials
+ * included (E23). Past aired episodes are included with `isWatched` so the
+ * Schedule (Yayın Akışı) strips stay continuous; Timeline/Month hide already-
+ * watched past rows client-side (E24 gap-tracker semantics preserved there).
+ * Range validation is the route's job (M11.2), not this function's.
  */
 export function getCalendar(
   db: LibraryDatabase,
   opts: { from?: string; to?: string } = {},
 ): CalendarResponse {
-  const today = todayUtc();
-  const from = opts.from ?? addDaysToDate(today, DEFAULT_FROM_DAYS);
-  const to = opts.to ?? addDaysToDate(today, DEFAULT_TO_DAYS);
+  const from = opts.from ?? addDaysToDate(todayUtc(), DEFAULT_FROM_DAYS);
+  const to = opts.to ?? addDaysToDate(todayUtc(), DEFAULT_TO_DAYS);
 
   const rows: EntryRow[] = db
     .select({
@@ -128,7 +134,52 @@ export function getCalendar(
     .orderBy(schema.episodes.airDate)
     .all() as EntryRow[];
 
-  if (rows.length === 0) return { days: [] };
+  // Active-trio membership for hasMore* needs item ids beyond the page range.
+  const allItemIds = db
+    .select({ id: schema.items.id })
+    .from(schema.items)
+    .all()
+    .map((r) => r.id);
+  const allCategories = computeCategories(db, allItemIds);
+  const trioItemIds = allItemIds.filter((id) => {
+    const category = allCategories.get(id);
+    return category !== undefined && ACTIVE_TRIO.has(category);
+  });
+
+  let hasMorePast = false;
+  let hasMoreFuture = false;
+  if (trioItemIds.length > 0) {
+    const past = db
+      .select({ id: schema.episodes.id })
+      .from(schema.episodes)
+      .where(
+        and(
+          inArray(schema.episodes.itemId, trioItemIds),
+          isNotNull(schema.episodes.airDate),
+          lt(schema.episodes.airDate, from),
+        ),
+      )
+      .limit(1)
+      .get();
+    hasMorePast = past !== undefined;
+    const future = db
+      .select({ id: schema.episodes.id })
+      .from(schema.episodes)
+      .where(
+        and(
+          inArray(schema.episodes.itemId, trioItemIds),
+          isNotNull(schema.episodes.airDate),
+          gt(schema.episodes.airDate, to),
+        ),
+      )
+      .limit(1)
+      .get();
+    hasMoreFuture = future !== undefined;
+  }
+
+  if (rows.length === 0) {
+    return { days: [], hasMorePast, hasMoreFuture };
+  }
 
   const itemIds = [...new Set(rows.map((r) => r.itemId))];
   const categories = computeCategories(db, itemIds);
@@ -136,7 +187,9 @@ export function getCalendar(
     const category = categories.get(r.itemId);
     return category !== undefined && ACTIVE_TRIO.has(category);
   });
-  if (inTrio.length === 0) return { days: [] };
+  if (inTrio.length === 0) {
+    return { days: [], hasMorePast, hasMoreFuture };
+  }
 
   const episodeIds = inTrio.map((r) => r.episodeId);
   const watchedEpisodeIds = new Set(
@@ -148,12 +201,10 @@ export function getCalendar(
       .map((w) => w.episodeId),
   );
 
-  const included = inTrio.filter((r) => r.airDate > today || !watchedEpisodeIds.has(r.episodeId));
-
   const byDate = new Map<string, CalendarEntry[]>();
-  for (const row of included) {
+  for (const row of inTrio) {
     const list = byDate.get(row.airDate) ?? [];
-    list.push(toEntry(row));
+    list.push(toEntry(row, watchedEpisodeIds.has(row.episodeId)));
     byDate.set(row.airDate, list);
   }
 
@@ -161,5 +212,5 @@ export function getCalendar(
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
     .map(([date, entries]) => ({ date, entries }));
 
-  return { days };
+  return { days, hasMorePast, hasMoreFuture };
 }

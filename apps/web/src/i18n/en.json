@@ -84,7 +84,7 @@
     "notFound": "This series isn't in your library",
     "specials": "Specials",
     "seasonNumber": "Season {{number}}",
-    "markSeasonWatched": "mark all watched",
+    "markSeasonWatched": "mark all as watched",
     "nextUp": "Next up: S{{s}}E{{e}}",
     "stoppedBlocked": "A finished series can't be marked as stopped",
     "justwatchAttribution": "Data from JustWatch",
@@ -95,7 +95,10 @@
     "unmute": "Unmute notifications",
     "menu": "Series menu",
     "favorite": "Add to favorites",
-    "unfavorite": "Remove from favorites"
+    "unfavorite": "Remove from favorites",
+    "unwatchSeasonTitle": "Are you sure?",
+    "unwatchSeasonWarning": "This will delete all your watch history for this season. Do you want to continue?",
+    "unwatchSeasonConfirm": "Yes, delete"
   },
   "episode": {
     "toggleWatched": "Mark as watched",
@@ -197,7 +200,8 @@
     "activeSeries": "Active series",
     "monthsChart": "Episodes watched by month",
     "ratingDistribution": "Rating distribution",
-    "empty": "No watch history yet"
+    "empty": "No watch history yet",
+    "mostRewatched": "Most Rewatched"
   },
   "profile": {
     "title": "My profile",
@@ -214,7 +218,8 @@
   "calendar": {
     "mode": {
       "timeline": "Timeline",
-      "month": "Calendar"
+      "month": "Calendar",
+      "schedule": "Schedule"
     },
     "today": "TODAY {{date}}",
     "overflow": "+{{count}}",
@@ -223,7 +228,8 @@
     "empty": {
       "today": "(empty)",
       "month": "No episodes this month"
-    }
+    },
+    "weekHeader": "{{year}} - Week {{week}}"
   },
   "watch": {
     "title": "Watch",
@@ -295,6 +301,7 @@
     "itemsCreated": "Series added",
     "watchesCreated": "Watches added",
     "skipped": "Skipped",
-    "goToLibrary": "Go to library"
+    "goToLibrary": "Go to library",
+    "episodeDiscrepancy": "Episode count mismatch (TV Time: {{tvTime}}, Ours: {{provider}}). Might be a wrong match."
   }
 }

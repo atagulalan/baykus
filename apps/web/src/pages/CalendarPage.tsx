@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -6,10 +6,11 @@ import { addEpisodeWatch, getCalendar, removeLatestEpisodeWatch } from "../api/c
 import type { CalendarDay } from "../api/types.ts";
 import { CalendarEntryRow } from "../components/CalendarEntryRow.tsx";
 import { MonthGrid } from "../components/MonthGrid.tsx";
-import { todayIso } from "../lib/date.ts";
+import { ScheduleGrid } from "../components/ScheduleGrid.tsx";
+import { todayIso, getWeekRange, getIsoWeek, getAbsoluteWeek } from "../lib/date.ts";
 import { useToast } from "../lib/toast.tsx";
 
-type Mode = "timeline" | "month";
+type Mode = "timeline" | "month" | "schedule";
 
 function formatDayHeader(dateStr: string): string {
   return new Intl.DateTimeFormat("tr-TR", {
@@ -29,7 +30,7 @@ function ensureTodayPresent(days: CalendarDay[], today: string): CalendarDay[] {
 
 function ModeTabs({ mode, onChange }: { mode: Mode; onChange: (mode: Mode) => void }) {
   const { t } = useTranslation();
-  const tabs: Mode[] = ["timeline", "month"];
+  const tabs: Mode[] = ["timeline", "month", "schedule"];
   return (
     <div className="inline-flex border border-white/10">
       {tabs.map((tab) => (
@@ -118,18 +119,26 @@ function TimelineView({
           {day.entries.length === 0 ? (
             <p className="px-2 text-sm text-muted">{t("calendar.empty.today")}</p>
           ) : (
-            day.entries.map((entry) =>
-              entry.airDate <= today ? (
-                <CalendarEntryRow
-                  key={entry.episodeId}
-                  entry={entry}
-                  watched={justWatched.has(entry.episodeId)}
-                  onToggleWatched={() => onToggleWatched(entry.episodeId)}
-                />
-              ) : (
-                <CalendarEntryRow key={entry.episodeId} entry={entry} />
-              ),
-            )
+            day.entries
+              // E24 gap-tracker: hide past watched rows unless pinned this session (E81).
+              .filter(
+                (entry) =>
+                  entry.airDate > today ||
+                  !entry.isWatched ||
+                  justWatched.has(entry.episodeId),
+              )
+              .map((entry) =>
+                entry.airDate <= today ? (
+                  <CalendarEntryRow
+                    key={entry.episodeId}
+                    entry={entry}
+                    watched={justWatched.has(entry.episodeId) || entry.isWatched}
+                    onToggleWatched={() => onToggleWatched(entry.episodeId)}
+                  />
+                ) : (
+                  <CalendarEntryRow key={entry.episodeId} entry={entry} />
+                ),
+              )
           )}
         </div>
       ))}
@@ -210,7 +219,95 @@ function MonthView() {
           </button>
         </div>
       ) : (
-        <MonthGrid year={viewYear} month={viewMonth} days={query.data?.days ?? []} />
+        <MonthGrid
+          year={viewYear}
+          month={viewMonth}
+          days={(query.data?.days ?? []).map((day) => ({
+            ...day,
+            // E24: month grid stays a gap-tracker — drop past watched rows.
+            entries: day.entries.filter((e) => e.airDate > todayIso() || !e.isWatched),
+          }))}
+        />
+      )}
+    </div>
+  );
+}
+
+function ScheduleView() {
+  const { t } = useTranslation();
+  const today = todayIso();
+  const [visibleWeekLabel, setVisibleWeekLabel] = useState<string>("");
+
+  const query = useInfiniteQuery({
+    queryKey: ["calendar", "schedule-infinite"],
+    initialPageParam: -8, // start 8 weeks in the past
+    queryFn: async ({ pageParam }) => {
+      const range = getWeekRange(today, pageParam, 16); // fetch 16 weeks
+      const data = await getCalendar({ from: range.from, to: range.to });
+      return { data, pageParam };
+    },
+    getNextPageParam: (lastPage) => {
+      if (lastPage.data.hasMoreFuture === false) return undefined;
+      return lastPage.pageParam + 16;
+    },
+    getPreviousPageParam: (firstPage) => {
+      if (firstPage.data.hasMorePast === false) return undefined;
+      return firstPage.pageParam - 16;
+    },
+  });
+
+  const days = query.data?.pages.flatMap((p) => p.data.days) ?? [];
+
+  const currentAbsWeek = getAbsoluteWeek(today);
+  let minFetchedAbsWeek: number | undefined;
+  let maxFetchedAbsWeek: number | undefined;
+  
+  if (query.data?.pages && query.data.pages.length > 0) {
+    const minPageParam = Math.min(...query.data.pages.map((p) => p.pageParam));
+    const maxPageParam = Math.max(...query.data.pages.map((p) => p.pageParam));
+    
+    minFetchedAbsWeek = currentAbsWeek + minPageParam;
+    maxFetchedAbsWeek = currentAbsWeek + maxPageParam + 15; // 16 weeks span
+  }
+
+  useEffect(() => {
+    if (!visibleWeekLabel) {
+      const iso = getIsoWeek(today);
+      setVisibleWeekLabel(t("calendar.weekHeader", { year: iso.year, week: iso.week, defaultValue: `${iso.year} - ${iso.week}. Hafta` }));
+    }
+  }, [today, t, visibleWeekLabel]);
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-center gap-4 h-11">
+        <span className="font-mono text-xs uppercase tracking-widest text-snow">{visibleWeekLabel}</span>
+      </div>
+
+      {query.isLoading ? (
+        <div className="h-64 animate-pulse bg-white/5" />
+      ) : query.isError ? (
+        <div className="flex flex-col items-center gap-2 py-24 text-center">
+          <p className="text-muted">{t("errors.generic")}</p>
+          <button
+            type="button"
+            onClick={() => query.refetch()}
+            className="border border-white/10 px-3 py-1.5 font-mono uppercase text-muted hover:text-snow"
+          >
+            {t("errors.retry")}
+          </button>
+        </div>
+      ) : (
+        <ScheduleGrid 
+          days={days}
+          minFetchedAbsWeek={minFetchedAbsWeek}
+          maxFetchedAbsWeek={maxFetchedAbsWeek}
+          hasNextPageRight={query.hasNextPage}
+          hasNextPageLeft={query.hasPreviousPage}
+          onVisibleWeekChange={setVisibleWeekLabel} 
+          autoScrollToCurrentWeek={true}
+          onLoadMoreRight={query.fetchNextPage}
+          onLoadMoreLeft={query.fetchPreviousPage}
+        />
       )}
     </div>
   );
@@ -283,8 +380,10 @@ export function CalendarPage() {
       </div>
       {mode === "timeline" ? (
         <TimelineView justWatched={justWatched} onToggleWatched={toggleWatched} />
-      ) : (
+      ) : mode === "month" ? (
         <MonthView />
+      ) : (
+        <ScheduleView />
       )}
     </div>
   );

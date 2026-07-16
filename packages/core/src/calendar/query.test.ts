@@ -159,7 +159,7 @@ describe("getCalendar", () => {
     expect(result.days.flatMap((d) => d.entries.map((e) => e.episodeId))).toContain(futureEp);
   });
 
-  it("E24: past/today episodes are included only when unwatched", () => {
+  it("past/today episodes are included with isWatched (Schedule needs continuous strips; Timeline/Month filter client-side)", () => {
     const { db } = openLibraryDb(":memory:");
     const itemId = insertItem(db);
     markWatching(db, itemId);
@@ -171,10 +171,11 @@ describe("getCalendar", () => {
     const todayEp = insertEpisode(db, itemId, 1, 3, addDays(0));
 
     const result = getCalendar(db);
-    const episodeIds = result.days.flatMap((d) => d.entries.map((e) => e.episodeId));
-    expect(episodeIds).toContain(pastUnwatched);
-    expect(episodeIds).not.toContain(pastWatched);
-    expect(episodeIds).toContain(todayEp);
+    const entries = result.days.flatMap((d) => d.entries);
+    const byId = new Map(entries.map((e) => [e.episodeId, e]));
+    expect(byId.get(pastUnwatched)?.isWatched).toBe(false);
+    expect(byId.get(pastWatched)?.isWatched).toBe(true);
+    expect(byId.has(todayEp)).toBe(true);
   });
 
   it("groups sorted ascending by date", () => {

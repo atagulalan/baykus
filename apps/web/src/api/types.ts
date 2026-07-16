@@ -255,12 +255,23 @@ export interface SettingsPatch {
   watchingWindowDays?: number;
 }
 
+export interface RewatchedEpisode {
+  itemId: number;
+  itemTitle: string;
+  episodeId: number;
+  s: number;
+  e: number;
+  episodeTitle: string | null;
+  watchCount: number;
+}
+
 export interface Stats {
   episodesWatched: number;
   watchTimeMin: number;
   itemCount: Record<WatchCategory, number>;
   episodesPerMonth: { month: string; count: number }[];
   ratingDistribution: Record<"1" | "2" | "3", number>;
+  mostRewatched: RewatchedEpisode[];
 }
 
 export interface RefreshResult {
@@ -299,6 +310,7 @@ export interface CalendarEntry {
   airDate: string;
   network: string | null;
   watchProviders: WatchProviderInfo[];
+  isWatched: boolean;
 }
 
 export interface CalendarDay {
@@ -308,6 +320,8 @@ export interface CalendarDay {
 
 export interface CalendarResponse {
   days: CalendarDay[];
+  hasMoreFuture?: boolean;
+  hasMorePast?: boolean;
 }
 
 export interface WatchHistoryEntry {
@@ -358,6 +372,7 @@ export interface TvTimeMatchedShow {
   tvdbId: number;
   resolved: ExternalIds;
   episodes: number;
+  providerEpisodeCount: number;
 }
 
 export interface TvTimeFuzzyCandidate {
