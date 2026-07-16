@@ -13,6 +13,7 @@ import { selfHandleParam } from "./lib/profilePath.ts";
 import { AllSeriesPage } from "./pages/AllSeriesPage.tsx";
 import { CalendarPage } from "./pages/CalendarPage.tsx";
 import { ClaimPage } from "./pages/ClaimPage.tsx";
+import { FavoritesPage } from "./pages/FavoritesPage.tsx";
 import { ImportPage } from "./pages/ImportPage.tsx";
 import { LibraryPage } from "./pages/LibraryPage.tsx";
 import { LoginPage } from "./pages/LoginPage.tsx";
@@ -100,6 +101,12 @@ const profileStatsRoute = createRoute({
   component: ProfileStatsRoute,
 });
 
+const favoritesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/user/$handle/favorites",
+  component: FavoritesPage,
+});
+
 const settingsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/settings",
@@ -139,6 +146,7 @@ const routeTree = rootRoute.addChildren([
   profileRoute,
   allSeriesRoute,
   profileStatsRoute,
+  favoritesRoute,
   searchRoute,
   settingsRoute,
   loginRoute,

@@ -6,7 +6,11 @@ import { getAuthSession } from "../api/client.ts";
 import type { AuthSession } from "../api/types.ts";
 import { resolveProfileParam } from "../lib/profilePath.ts";
 
-type ProfileRoutePath = "/user/$handle" | "/user/$handle/all-series" | "/user/$handle/stats";
+type ProfileRoutePath =
+  | "/user/$handle"
+  | "/user/$handle/all-series"
+  | "/user/$handle/stats"
+  | "/user/$handle/favorites";
 
 /**
  * E57: wraps every `/user/:handle*` route. Self-only in 005 — renders children when the
@@ -33,7 +37,7 @@ export function ProfileGuard({
   if (resolution.kind === "not-found") {
     return (
       <div className="flex flex-col items-center gap-2 py-24 text-center">
-        <p className="text-zinc-400">{t("notFound.profile")}</p>
+        <p className="text-muted">{t("notFound.profile")}</p>
       </div>
     );
   }

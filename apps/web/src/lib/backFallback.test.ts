@@ -22,7 +22,7 @@ describe("backAffordance (E72)", () => {
     });
   });
 
-  it("profile subpages (all-series, stats) fall back to the self profile", () => {
+  it("profile subpages (all-series, stats, favorites) fall back to the self profile", () => {
     expect(backAffordance("/user/xava/all-series", "xava")).toEqual({
       to: "/user/$handle",
       params: { handle: "xava" },
@@ -30,6 +30,14 @@ describe("backAffordance (E72)", () => {
     expect(backAffordance("/user/xava/stats", "xava")).toEqual({
       to: "/user/$handle",
       params: { handle: "xava" },
+    });
+    expect(backAffordance("/user/xava/favorites", "xava")).toEqual({
+      to: "/user/$handle",
+      params: { handle: "xava" },
+    });
+    expect(backAffordance("/user/me/favorites", "me")).toEqual({
+      to: "/user/$handle",
+      params: { handle: "me" },
     });
   });
 

@@ -21,7 +21,7 @@ const RULES: {
     fallback: (h) => ({ to: "/user/$handle", params: { handle: h } }),
   },
   {
-    test: (p) => /^\/user\/[^/]+\/(all-series|stats)$/.test(p),
+    test: (p) => /^\/user\/[^/]+\/(all-series|stats|favorites)$/.test(p),
     fallback: (h) => ({ to: "/user/$handle", params: { handle: h } }),
   },
 ];

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
-import { Settings } from "lucide-react";
+import { ChevronRight, Settings } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getStats, listSeries, refreshAllSeries } from "../api/client.ts";
@@ -10,8 +10,11 @@ import { SeriesCard } from "../components/SeriesCard.tsx";
 import { setManualRefreshRunning } from "../lib/staleSweep.ts";
 import { useToast } from "../lib/toast.tsx";
 
-/** E58: favorites rail order — most recently watched first, nulls last. */
-function byLastWatchedDesc(
+/** E79: the rail shows at most this many favorites; beyond it the heading links to the full page. */
+const PROFILE_FAVORITES_LIMIT = 6;
+
+/** E58: favorites rail order — most recently watched first, nulls last. Shared with FavoritesPage (E79). */
+export function byLastWatchedDesc(
   a: { lastWatchedAt: string | null },
   b: { lastWatchedAt: string | null },
 ) {
@@ -108,14 +111,35 @@ function ProfilePageContent({ handle, session }: { handle: string; session: Auth
       <IdentityRow session={session} handle={handle} />
 
       <section className="flex flex-col gap-3">
-        <h2 className="font-mono text-xs uppercase tracking-widest text-yellow">
-          {t("profile.favorites.title")}
-        </h2>
+        {favorites.length > PROFILE_FAVORITES_LIMIT ? (
+          // E79: overflow — the whole heading row links to the full favorites page.
+          <h2 className="font-mono text-xs uppercase tracking-widest text-yellow">
+            <Link
+              to="/user/$handle/favorites"
+              params={{ handle }}
+              className="group flex min-h-11 items-center gap-2"
+            >
+              <span>{t("profile.favorites.title")}</span>
+              <span className="font-mono text-xs text-muted transition-colors group-hover:text-snow">
+                {favorites.length}
+              </span>
+              <ChevronRight
+                size={14}
+                className="text-muted transition-colors group-hover:text-snow"
+                aria-hidden="true"
+              />
+            </Link>
+          </h2>
+        ) : (
+          <h2 className="font-mono text-xs uppercase tracking-widest text-yellow">
+            {t("profile.favorites.title")}
+          </h2>
+        )}
         {favorites.length === 0 ? (
           <p className="font-mono text-xs text-muted/70">{t("profile.favorites.empty")}</p>
         ) : (
           <div className="flex gap-3 overflow-x-auto pb-2">
-            {favorites.map((series) => (
+            {favorites.slice(0, PROFILE_FAVORITES_LIMIT).map((series) => (
               <div key={series.id} className="w-24 shrink-0 sm:w-28">
                 <SeriesCard series={series} />
               </div>
