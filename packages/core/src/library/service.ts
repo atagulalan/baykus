@@ -254,7 +254,7 @@ export interface Library {
   removeLatestWatch(episodeId: number): boolean;
   setRating(targetType: RatingTargetType, targetId: number, value: 1 | 2 | 3): Rating;
   clearRating(targetType: RatingTargetType, targetId: number): boolean;
-  getStats(): Stats;
+  getStats(tz?: string): Stats;
   getSettings(): Settings;
   updateSettings(patch: SettingsPatch): Settings;
   /** Internal use only (provider registry wiring) — never serialize this over the API. */
@@ -569,8 +569,8 @@ export function createLibrary(db: LibraryDatabase): Library {
       return clearRating(db, targetType, targetId);
     },
 
-    getStats(): Stats {
-      return getStats(db);
+    getStats(tz?: string): Stats {
+      return getStats(db, tz);
     },
 
     getSettings(): Settings {

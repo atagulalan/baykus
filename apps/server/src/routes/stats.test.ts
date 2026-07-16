@@ -5,6 +5,15 @@ import { createApp } from "../app.ts";
 import { createSingleSessionStore } from "../auth/single-session.ts";
 import { loadConfig } from "../config.ts";
 
+/** Server calls getStats() with no tz yet (M48 wires ?tz=) — bucketing defaults to UTC. */
+function currentAndNextUtcMonth(): [string, string] {
+  const now = new Date();
+  const toYyyyMm = (d: Date) =>
+    `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+  const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+  return [toYyyyMm(now), toYyyyMm(next)];
+}
+
 function fixtureSeries(): SeriesDetails {
   return {
     providerId: "fake",
@@ -33,6 +42,7 @@ describe("GET /api/stats", () => {
 
     const res = await app.request("/api/stats", { headers: { "X-Baykus": "1" } });
     expect(res.status).toBe(200);
+    const [currentMonth, nextMonth] = currentAndNextUtcMonth();
     expect(await res.json()).toEqual({
       episodesWatched: 0,
       watchTimeMin: 0,
@@ -59,6 +69,24 @@ describe("GET /api/stats", () => {
       networkDistribution: { networkCount: 0, top: [], other: 0 },
       backlog: { episodes: 0, seriesCount: 0, watchTimeMin: 0, topSeries: [] },
       rewatchSummary: { totalRewatches: 0, rewatchedEpisodes: 0, bySeries: [] },
+      recent: {
+        last7Days: { episodes: 0, watchTimeMin: 0 },
+        last30Days: { episodes: 0, watchTimeMin: 0 },
+        thisMonth: { episodes: 0, watchTimeMin: 0 },
+      },
+      pace: null,
+      upcoming: {
+        months: [
+          { month: currentMonth, episodes: 0, watchTimeMin: 0 },
+          { month: nextMonth, episodes: 0, watchTimeMin: 0 },
+        ],
+      },
+      binges: [],
+      streaks: { longestWeeks: 0, currentWeeks: 0, bySeries: [] },
+      timeByYear: [],
+      activityByDay: [],
+      byWeekday: [0, 0, 0, 0, 0, 0, 0],
+      byHour: new Array(24).fill(0),
     });
   });
 

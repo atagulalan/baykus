@@ -3,7 +3,12 @@ import { and, eq, inArray, isNotNull, isNull, lte, ne, sql } from "drizzle-orm";
 import type { LibraryDatabase } from "../../db/open.ts";
 import * as schema from "../../db/schema.ts";
 import type { WatchCategory } from "../category.ts";
-import { CATEGORY_ORDER, computeCategories, ONGOING_RELEASE_STATUSES } from "../category.ts";
+import {
+  ACTIVE_TRIO,
+  CATEGORY_ORDER,
+  computeCategories,
+  ONGOING_RELEASE_STATUSES,
+} from "../category.ts";
 import { todayUtc } from "../progress.ts";
 
 export interface RewatchedEpisode {
@@ -372,13 +377,6 @@ function computeNetworkDistribution(
   return { networkCount: allPrimaryNetworks.size, top: sorted, other };
 }
 
-/** E22 active trio — up_to_date items contribute 0 backlog episodes by definition. */
-const ACTIVE_TRIO: ReadonlySet<WatchCategory> = new Set([
-  "watching",
-  "not_watched_recently",
-  "up_to_date",
-]);
-
 function computeBacklog(
   db: LibraryDatabase,
   itemIds: number[],
@@ -479,7 +477,7 @@ function computeRewatchSummary(db: LibraryDatabase): Totals["rewatchSummary"] {
   return { totalRewatches, rewatchedEpisodes: rows.length, bySeries };
 }
 
-export function computeTotals(db: LibraryDatabase): Totals {
+export function computeTotals(db: LibraryDatabase, now: Date = new Date()): Totals {
   const allItems = db
     .select({
       id: schema.items.id,
@@ -491,7 +489,7 @@ export function computeTotals(db: LibraryDatabase): Totals {
     .from(schema.items)
     .all();
   const itemIds = allItems.map((i) => i.id);
-  const categories = computeCategories(db, itemIds);
+  const categories = computeCategories(db, itemIds, now);
 
   const legacy = computeHeroAndLegacy(db);
   const watchedByItem = watchedEpisodeCountByItem(db);

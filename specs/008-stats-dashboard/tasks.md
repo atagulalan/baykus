@@ -41,14 +41,14 @@ Entry point: M44.2, then M45.1.
   - [x] M46.7 unit tests per aggregate incl. empty-DB and no-genre/network
         items
 
-- [ ] **M47 core: timezone + time-bucketed aggregates (stats/ part 2)**
-  - [ ] M47.1 `buckets.ts`: Intl-based local day/hour/ISO-week helpers (E96,
+- [x] **M47 core: timezone + time-bucketed aggregates (stats/ part 2)**
+  - [x] M47.1 `buckets.ts`: Intl-based local day/hour/ISO-week helpers (E96,
         E104); unit tests on year boundaries (Dec 29–Jan 4) and DST zones
-  - [ ] M47.2 `recent` (E96) + `pace` (E100) + `upcoming` (E101)
-  - [ ] M47.3 `binges` (E102) + `streaks` incl. current-streak grace (E104)
-  - [ ] M47.4 `timeByYear` (E105) + `activityByDay` (E106) +
+  - [x] M47.2 `recent` (E96) + `pace` (E100) + `upcoming` (E101)
+  - [x] M47.3 `binges` (E102) + `streaks` incl. current-streak grace (E104)
+  - [x] M47.4 `timeByYear` (E105) + `activityByDay` (E106) +
         `byWeekday`/`byHour` (E107)
-  - [ ] M47.5 tests: dateUnknown exclusion everywhere, tz-sensitivity
+  - [x] M47.5 tests: dateUnknown exclusion everywhere, tz-sensitivity
         (UTC vs Europe/Istanbul day flip), bucket thresholds
 
 - [ ] **M48 server: GET /api/stats?tz= (contract 008)**
