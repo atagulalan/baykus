@@ -17,6 +17,7 @@ import { ImportPage } from "./pages/ImportPage.tsx";
 import { LibraryPage } from "./pages/LibraryPage.tsx";
 import { LoginPage } from "./pages/LoginPage.tsx";
 import { ProfilePage } from "./pages/ProfilePage.tsx";
+import { SearchPage } from "./pages/SearchPage.tsx";
 import { SeriesDetailPage } from "./pages/SeriesDetailPage.tsx";
 import { SettingsPage } from "./pages/SettingsPage.tsx";
 import { StatsPage } from "./pages/StatsPage.tsx";
@@ -105,6 +106,12 @@ const settingsRoute = createRoute({
   component: SettingsPage,
 });
 
+const searchRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/search",
+  component: SearchPage,
+});
+
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/login",
@@ -132,6 +139,7 @@ const routeTree = rootRoute.addChildren([
   profileRoute,
   allSeriesRoute,
   profileStatsRoute,
+  searchRoute,
   settingsRoute,
   loginRoute,
   claimRoute,

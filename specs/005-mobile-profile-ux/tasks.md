@@ -186,7 +186,7 @@ step, per tasks.md's own "runtime-working after every task" rule. -->
     Bırakıldı sections; all-series has both; filter category = Bitirildi
     on home still shows that grid.
 
-- [ ] M25.3 web: `/search` page + header/tab-bar restructure
+- [x] M25.3 web: `/search` page + header/tab-bar restructure
   - **Files:** `apps/web/src/pages/SearchPage.tsx` (new),
     `apps/web/src/components/SearchBar.tsx` (extract `useSeriesSearch`
     hook — same file or `lib/`), `apps/web/src/components/Layout.tsx`,

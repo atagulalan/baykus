@@ -6,7 +6,9 @@
       "watch": "Watch",
       "calendar": "Calendar",
       "stats": "Stats",
-      "settings": "Settings"
+      "settings": "Settings",
+      "search": "Search",
+      "profile": "Profile"
     }
   },
   "search": {
@@ -19,7 +21,10 @@
     "cancel": "Cancel",
     "added": "{{title}} was added to your library",
     "alreadyInLibrary": "This series is already in your library",
-    "addError": "Something went wrong while adding"
+    "addError": "Something went wrong while adding",
+    "page": {
+      "hint": "Type a series name to start searching."
+    }
   },
   "category": {
     "watching": "Watching",

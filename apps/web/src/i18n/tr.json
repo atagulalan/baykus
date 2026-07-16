@@ -6,7 +6,9 @@
       "watch": "İzleme",
       "calendar": "Takvim",
       "stats": "İstatistikler",
-      "settings": "Ayarlar"
+      "settings": "Ayarlar",
+      "search": "Ara",
+      "profile": "Profil"
     }
   },
   "search": {
@@ -19,7 +21,10 @@
     "cancel": "İptal",
     "added": "{{title}} kütüphanene eklendi",
     "alreadyInLibrary": "Bu dizi zaten kütüphanende",
-    "addError": "Eklenirken bir hata oluştu"
+    "addError": "Eklenirken bir hata oluştu",
+    "page": {
+      "hint": "Dizi adı yazarak aramaya başla."
+    }
   },
   "category": {
     "watching": "İzleniyor",
