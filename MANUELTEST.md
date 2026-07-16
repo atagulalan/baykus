@@ -765,3 +765,74 @@ bkz. `tasks.md` M28.2'deki `<!-- DECISION -->` notu.
 ### Tam gate
 - [x] `pnpm lint && pnpm typecheck && pnpm test && pnpm build` — hepsi
       yeşil (workspace: 536 test, 61 test dosyası).
+
+---
+
+## M52 — Spec 008 CHECKPOINT: istatistik panosu, zip v6 yeniden içe aktarma (bekliyor)
+
+Spec 008, M44–M51 (E95–E111) tamamen kod-complete: `watches.date_unknown`
+bayrağı + migration (elden düzeltilmiş journal timestamp'iyle), zip v6,
+tüm yeni istatistik agregatları (`packages/core/src/library/stats/` —
+`totals.ts` + `buckets.ts` + `timeline.ts`), `GET /api/stats?tz=`, ve
+baştan yapılandırılmış `/stats` sayfası (20 bölüm + korunan puan dağılımı/
+en çok tekrar izlenenler). Otomatik doğrulanabilenler yeşil: `pnpm lint &&
+pnpm typecheck && pnpm test && pnpm build` — 576 test, 64 test dosyası,
+sıfır hata.
+
+Ayrıca bu round'da (chromium/playwright hâlâ standart ortamda yok, ama bir
+kereliğine elle kuruldu) gerçek kütüphane verisiyle — 246 dizi, 7.151
+bölüm — headless bir tarayıcı taraması yapıldı: sayfa hatasız render etti,
+konsol hatası sıfır. Bu tarama gerçek bir hata da yakaladı ve düzeltti:
+haftalık izleme süresi paneli, payload'ın seyrek (sadece sıfır-olmayan)
+hafta listesini dizi indeksine göre değil gerçek ISO hafta numarasına göre
+yeniden yoğunlaştırıyordu (M51 commit mesajında detay) — artık boş
+haftalar da 0 yükseklikte bar olarak görünüyor, zaman çizelgesi sıkışmıyor.
+
+`dashboard.html` (kök dizin, TV Time GDPR zip'inden 2026-07-02'de üretilen
+tek kullanımlık prototip) **hâlâ silinmedi** — M44.2'nin kendi maddesi
+buna izin veriyordu ("M52'nin değer kontrolüne kadar tutulabilir, eğer
+uygunsa"). Aşağıdaki karşılaştırmaları bitirince sil (`rm dashboard.html`)
+ve `tasks.md`'de hem M44.2 hem M52.1 kutucuklarını aynı commit'te işaretle.
+
+### Zip v6 yeniden içe aktarma (E95)
+- [ ] Ayarlar → Veri → "Zip indir" ile mevcut kütüphaneni yedekle (v6
+      şemasıyla `date_unknown` alanını da içerir; 008 öncesi izlemeler
+      hâlâ `dateUnknown: false` okur — henüz gerçek zamansız veri yok).
+- [ ] Gerçek TV Time GDPR zip'in elindeyse `/import`den ("TV Time'dan içe
+      aktar") tekrar yükle — zamansız (timestamp'siz) satırlar artık
+      `date_unknown=1` ile işaretlenmeli. İçe aktarma sonrası `/stats`
+      sayfasının en altındaki "Zaman bazlı analizler tarih bilgisi olan
+      {dated} / {total} izlemeye dayanıyor" dipnotu görünmeli (dated <
+      total olduğu sürece).
+- [ ] Kütüphanen zaten tamamen tarihliyse (dateUnknown hiç yoksa) dipnot
+      hiç görünmemeli (dated === total) — bu da doğru davranış, atlanabilir.
+
+### `dashboard.html` karşılaştırması
+`dashboard.html`'i tarayıcıda aç, aşağıdaki değerleri `/stats`teki karşı
+bölümle kıyasla. Birebir eşleşme **beklenmiyor** — model kasıtlı olarak
+farklılaşıyor (bkz. spec.md §Edge-case decisions, özellikle E95/E98/E108);
+sadece aynı büyüklük mertebesinde ve mantıklı olmalı:
+- [ ] Hero toplam süre + bölüm/dizi sayısı aynı mertebede mi?
+- [ ] Favoriler sayısı prototipteki "Favori" tile'ıyla aynı mertebede mi?
+- [ ] En Hızlı Binge'ler ilk satırı, dashboard.html'in "En Hızlı
+      Binge'ler" ilk satırıyla aynı diziyi/günü mü gösteriyor?
+
+### Zaman dilimi mantık kontrolü (E96)
+- [ ] DevTools konsolundan `Intl.DateTimeFormat().resolvedOptions().
+      timeZone` ile tarayıcının bildirdiği zaman dilimini doğrula
+      (Europe/Istanbul bekleniyor, TR ortamında).
+- [ ] Gece yarısına yakın (00:00–03:00 yerel) izlenmiş bir bölüm varsa,
+      o günün "Yıllık Aktivite" ısı haritasında ve "Haftanın Günü"
+      grafiğinde UTC'ye göre değil **yerel** güne göre sayıldığını
+      doğrula (bir gün önceki/sonraki UTC gününe kaymamalı — E96/UTC vs
+      Europe/Istanbul gün farkı, `buckets.test.ts`'te birim testi var,
+      burada sadece uçtan uca görsel teyit).
+
+### İki dil
+- [ ] Ayarlar → Dil'den EN'e geç, `/stats`i tekrar aç — 20 bölümün
+      tamamı İngilizce, hiçbir ham i18n anahtarı (`stats.xxx` gibi çıplak
+      metin) görünmemeli.
+
+### Tam gate
+- [x] `pnpm lint && pnpm typecheck && pnpm test && pnpm build` — hepsi
+      yeşil (workspace: 576 test, 64 test dosyası).
