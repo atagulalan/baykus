@@ -130,6 +130,26 @@ Pzt  Sal  Çar  Per  Cum  Cmt  Paz
 - Mobile (<640px): the grid becomes a vertical list of non-empty days for the
   month (same data, no 7-col grid).
 
+
+### Schedule mode (Yayın Akışı)
+
+```
+[Zaman çizelgesi] [Takvim] [Yayın Akışı]  ‹  Temmuz 2026  ›
+         1. HAFTA    2. HAFTA    3. HAFTA    4. HAFTA    5. HAFTA
+Pazartesi
+  [House of the Dragon                                       ]
+           [S3E1]      [S3E2]      [S3E3]
+  [Dark                                          ]
+           [S1E1]      [S1E2]      [S1E3]
+Salı
+…
+```
+- Transposed calendar mode showing weeks horizontally and days vertically.
+- Series are plotted as continuous Gantt-style strips that span across the weeks they air in the current month.
+- Overlapping series on the same day are stacked vertically.
+- Today's episodes are highlighted on the strip.
+- Mobile (<640px): Rows stack vertically without the grid background, keeping the same grouped-by-day continuous strip format.
+
 ## Watch page `/watch` (NEW)
 
 ```

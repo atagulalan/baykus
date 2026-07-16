@@ -70,16 +70,22 @@ instead of a chip-filtered flat grid.
   alphabetical / rating / next air date) + Progress (all + the 7 categories)
   + RESET + APPLY. Choosing a single category shows a flat grid.
 
-### US-15: Calendar with two modes
-As a user, the calendar page has a **Timeline** mode (default) and a **Month**
-mode.
+### US-15: Calendar with three modes
+As a user, the calendar page has a **Timeline** mode (default), a **Month**
+mode, and a **Schedule** (Yayın Akışı) mode.
 
 - Timeline: one chronological, day-grouped list from 14 days back to 3 months
   forward, opening scrolled to today. Past days show only unwatched episodes
   (with a quick "izledim" checkbox); future days show everything scheduled.
 - Month: a month grid opening on the current month, navigable back and forward
   without limit. Past cells show only unwatched episodes.
-- Both modes scope to the active trio and include specials (E22, E23).
+  <!-- DECISION: AMENDED (2026-07-16) - Core calendar now returns past watched
+  episodes with `isWatched` for Schedule strips; Timeline/Month filter them
+  client-side to keep E24 gap-tracker UX. -->
+- Schedule: a transposed monthly view where days of the week are rows and weeks
+  are columns. Series are plotted as continuous horizontal strips spanning the
+  weeks they air, providing a Gantt-chart style overview of the month's schedule.
+- All modes scope to the active trio and include specials (E22, E23).
 - Episode rows/chips carry tags per E25 (NEW / UPCOMING / PREMIER / FİNAL /
   SPECIAL / OVA).
 
@@ -109,7 +115,7 @@ As a user, I get new-episode push notifications for series in the active trio
   `lastWatched | added | title | rating | nextAir`; home screen groups
   client-side in E16 display order.
 - **FR-022** Calendar endpoint returns a single day-grouped range (`days`)
-  honoring E22–E24; serves both timeline and month modes.
+  honoring E22–E24; serves timeline, month, and schedule modes.
 - **FR-023** Watch history endpoint: last N (default 30, max 100) watch
   events joined with episode + series info.
 - **FR-024** `nextUnwatched` on series summaries gains `airDate` and
