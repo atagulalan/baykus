@@ -115,7 +115,7 @@ describe("exportLibraryZip", () => {
 
     expect(manifest).toMatchObject({
       app: "baykus",
-      schemaVersion: 3,
+      schemaVersion: 4,
       exportedAt: "2026-01-03T00:00:00Z",
       mediaTypes: ["series"],
       counts: { items: 1, watches: 1, ratings: 2 },

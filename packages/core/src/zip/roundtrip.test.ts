@@ -144,6 +144,7 @@ function buildPopulatedDb() {
       pushMuted: false,
       note: null,
       listChangedAt: "2026-01-03T00:00:00Z",
+      favorite: true,
     })
     .run();
 

@@ -33,6 +33,19 @@ function makeV2MigrationsFolder(): string {
   return dir;
 }
 
+/** A migrations folder containing 0000-0002, as if 0003 (favorite, E61) hadn't landed yet. */
+function makeV3MigrationsFolder(): string {
+  const dir = mkdtempSync(join(tmpdir(), "baykus-core-v3-migrations-"));
+  cpSync(REAL_MIGRATIONS_FOLDER, dir, { recursive: true });
+  rmSync(join(dir, "0003_tracking_favorite.sql"));
+  rmSync(join(dir, "meta", "0003_snapshot.json"));
+  const journalPath = join(dir, "meta", "_journal.json");
+  const journal = JSON.parse(readFileSync(journalPath, "utf8"));
+  journal.entries = journal.entries.filter((e: { idx: number }) => e.idx <= 2);
+  writeFileSync(journalPath, JSON.stringify(journal, null, 2));
+  return dir;
+}
+
 const ALL_TABLES = [
   "episodes",
   "items",
@@ -245,6 +258,45 @@ describe("openLibraryDb", () => {
         { id: 3, added_via: "import:tvtime" },
         { id: 4, added_via: "manual" },
         { id: 5, added_via: "manual" },
+      ]);
+      upgraded.sqlite.close();
+    });
+  });
+
+  describe("migration 0003: tracking.favorite (E61)", () => {
+    let dir: string;
+    let v3Folder: string;
+
+    afterEach(() => {
+      if (dir) rmSync(dir, { recursive: true, force: true });
+      if (v3Folder) rmSync(v3Folder, { recursive: true, force: true });
+    });
+
+    it("adds the favorite column, false for every pre-existing row", () => {
+      dir = mkdtempSync(join(tmpdir(), "baykus-core-test-"));
+      v3Folder = makeV3MigrationsFolder();
+      const file = join(dir, "library.db");
+
+      const v3 = openLibraryDb(file, v3Folder);
+      v3.sqlite.exec(`
+        INSERT INTO items (id, media_type, title, added_at) VALUES
+          (1, 'series', 'A', '2026-01-01T00:00:00Z'),
+          (2, 'series', 'B', '2026-01-01T00:00:00Z');
+      `);
+      const insertTracking = v3.sqlite.prepare(
+        "INSERT INTO tracking (item_id, manual_list, push_muted, note, list_changed_at) VALUES (?, ?, ?, ?, ?)",
+      );
+      insertTracking.run(1, null, 0, null, "2026-02-01T00:00:00Z");
+      insertTracking.run(2, "watch_later", 0, null, "2026-02-02T00:00:00Z");
+      v3.sqlite.close();
+
+      const upgraded = openLibraryDb(file, REAL_MIGRATIONS_FOLDER);
+      const rows = upgraded.sqlite
+        .prepare("SELECT item_id, favorite FROM tracking ORDER BY item_id")
+        .all();
+      expect(rows).toEqual([
+        { item_id: 1, favorite: 0 },
+        { item_id: 2, favorite: 0 },
       ]);
       upgraded.sqlite.close();
     });

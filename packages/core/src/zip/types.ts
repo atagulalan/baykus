@@ -20,7 +20,7 @@ import type { AddedVia, ManualList, RatingTargetType, WatchSource } from "../db/
 
 export interface ZipManifest {
   app: "baykus";
-  schemaVersion: 3;
+  schemaVersion: 4;
   exportedAt: string;
   appVersion: string;
   mediaTypes: MediaType[];
@@ -57,6 +57,7 @@ export interface ZipItemEntry {
     pushMuted: boolean;
     note: string | null;
     listChangedAt: string;
+    favorite: boolean;
   };
   metadata: {
     originalTitle: string | null;

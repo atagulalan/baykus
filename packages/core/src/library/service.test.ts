@@ -1,6 +1,8 @@
 import type { SeriesDetails } from "@baykus/provider-sdk";
+import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { openLibraryDb } from "../db/open.ts";
+import * as schema from "../db/schema.ts";
 import { AlreadyInLibraryError, ManualListConflictError } from "./errors.ts";
 import { createLibrary } from "./service.ts";
 
@@ -209,6 +211,39 @@ describe("createLibrary listSeries/getSeries/removeSeries", () => {
     const { db } = openLibraryDb(":memory:");
     const library = createLibrary(db);
     expect(library.updateTracking(999, { manualList: "watch_later" })).toBeNull();
+  });
+});
+
+describe("createLibrary.updateTracking — favorite (E62)", () => {
+  it("summary carries favorite: false by default, true after update", () => {
+    const { db } = openLibraryDb(":memory:");
+    const library = createLibrary(db);
+    const added = library.addSeries(houseOfTheDragonDetails());
+    expect(added.favorite).toBe(false);
+
+    const updated = library.updateTracking(added.id, { favorite: true });
+    expect(updated?.favorite).toBe(true);
+    expect(library.getSeries(added.id)?.favorite).toBe(true);
+  });
+
+  it("favorite-only update does not bump listChangedAt", () => {
+    const { db } = openLibraryDb(":memory:");
+    const library = createLibrary(db);
+    const added = library.addSeries(houseOfTheDragonDetails());
+    const before = db
+      .select({ listChangedAt: schema.tracking.listChangedAt })
+      .from(schema.tracking)
+      .where(eq(schema.tracking.itemId, added.id))
+      .get();
+
+    library.updateTracking(added.id, { favorite: true });
+
+    const after = db
+      .select({ listChangedAt: schema.tracking.listChangedAt })
+      .from(schema.tracking)
+      .where(eq(schema.tracking.itemId, added.id))
+      .get();
+    expect(after?.listChangedAt).toBe(before?.listChangedAt);
   });
 });
 

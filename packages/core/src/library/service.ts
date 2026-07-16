@@ -154,6 +154,7 @@ function buildSummary(
     nextUnwatched: getNextUnwatchedEpisode(db, item.id),
     nextAirDate: getNextAirDate(db, item.id),
     pushMuted: tracking.pushMuted,
+    favorite: tracking.favorite,
   };
 }
 
@@ -488,6 +489,7 @@ export function createLibrary(db: LibraryDatabase): Library {
       }
       if (patch.pushMuted !== undefined) updates.pushMuted = patch.pushMuted;
       if (patch.note !== undefined) updates.note = patch.note;
+      if (patch.favorite !== undefined) updates.favorite = patch.favorite;
 
       if (Object.keys(updates).length > 0) {
         db.update(schema.tracking).set(updates).where(eq(schema.tracking.itemId, itemId)).run();

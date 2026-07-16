@@ -67,9 +67,9 @@ function setupOneItem(title: string, tmdbId: number) {
 }
 
 describe("importLibraryZip — schema validation", () => {
-  it("rejects an unsupported schemaVersion (4)", async () => {
+  it("rejects an unsupported schemaVersion (5)", async () => {
     const { db } = openLibraryDb(":memory:");
-    const badZip = await manifestOnlyZip({ schemaVersion: 4 });
+    const badZip = await manifestOnlyZip({ schemaVersion: 5 });
 
     await expect(importLibraryZip(db, badZip, "replace")).rejects.toMatchObject({
       code: "UNSUPPORTED_SCHEMA",
@@ -210,6 +210,31 @@ describe("importLibraryZip — merge mode", () => {
       .get();
     expect(tracking?.manualList).toBeNull();
     expect(tracking?.note).toBeNull();
+  });
+
+  it("favorite: incoming true sets it, incoming false clears it (E61)", async () => {
+    const { db, itemId } = setupOneItem("Show A", 1);
+    const zipNotFavorited = await streamToBuffer(exportLibraryZip(db)); // favorite false
+
+    db.update(schema.tracking)
+      .set({ favorite: true })
+      .where(eq(schema.tracking.itemId, itemId))
+      .run();
+    const zipFavorited = await streamToBuffer(exportLibraryZip(db)); // favorite true
+
+    db.update(schema.tracking)
+      .set({ favorite: false })
+      .where(eq(schema.tracking.itemId, itemId))
+      .run();
+    await importLibraryZip(db, zipFavorited, "merge");
+    expect(
+      db.select().from(schema.tracking).where(eq(schema.tracking.itemId, itemId)).get()?.favorite,
+    ).toBe(true);
+
+    await importLibraryZip(db, zipNotFavorited, "merge");
+    expect(
+      db.select().from(schema.tracking).where(eq(schema.tracking.itemId, itemId)).get()?.favorite,
+    ).toBe(false);
   });
 });
 
@@ -439,6 +464,82 @@ describe("importLibraryZip — v2 import (E32)", () => {
     await importLibraryZip(db, zip, "replace");
 
     expect(addedViaByTmdbId(db).get(8)).toBe("import:zip");
+  });
+});
+
+/** Hand-builds a v3 zip (no tracking.favorite field on items) to exercise the E61 import default. */
+async function buildV3Zip(items: Array<{ tmdbId: number; title: string }>): Promise<Buffer> {
+  const manifest = {
+    app: "baykus",
+    schemaVersion: 3,
+    exportedAt: "2026-01-01T00:00:00Z",
+    appVersion: "0.1.0",
+    mediaTypes: ["series"],
+    counts: { items: items.length, watches: 0, ratings: 0 },
+  };
+  const itemEntries = items.map((it) => ({
+    mediaType: "series",
+    title: it.title,
+    externalIds: { tmdbId: it.tmdbId },
+    tracking: {
+      manualList: null,
+      pushMuted: false,
+      note: null,
+      listChangedAt: "2026-01-01T00:00:00Z",
+    },
+    metadata: {
+      originalTitle: null,
+      overview: null,
+      tagline: null,
+      releaseStatus: null,
+      firstAirDate: null,
+      lastAirDate: null,
+      originCountry: null,
+      originalLanguage: null,
+      episodeRunTimes: null,
+      networks: null,
+      genres: null,
+      tags: null,
+      contentRatings: null,
+      posterRef: null,
+      backdropRef: null,
+      logoRef: null,
+      watchProviders: null,
+      externalRatings: null,
+      seasons: [],
+    },
+    addedAt: "2026-01-01T00:00:00Z",
+    addedVia: "import:zip",
+    lastRefreshedAt: null,
+  }));
+
+  const archive = new ZipArchive({ zlib: { level: 9 } });
+  archive.append(JSON.stringify(manifest), { name: "manifest.json" });
+  archive.append(JSON.stringify(itemEntries), { name: "library/items.json" });
+  archive.append(JSON.stringify([]), { name: "library/watches.json" });
+  archive.append(JSON.stringify([]), { name: "library/ratings.json" });
+  archive.append(JSON.stringify({}), { name: "library/settings.json" });
+  void archive.finalize();
+  return streamToBuffer(archive);
+}
+
+function favoriteByTmdbId(db: LibraryDatabase) {
+  const rows = db
+    .select({ tmdbId: schema.items.tmdbId, favorite: schema.tracking.favorite })
+    .from(schema.items)
+    .innerJoin(schema.tracking, eq(schema.tracking.itemId, schema.items.id))
+    .all();
+  return new Map(rows.map((r) => [r.tmdbId, r.favorite]));
+}
+
+describe("importLibraryZip — v3 import (E61)", () => {
+  it("v3 zips never carry tracking.favorite — defaults to false", async () => {
+    const { db } = openLibraryDb(":memory:");
+    const zip = await buildV3Zip([{ tmdbId: 9, title: "Pre-Favorites Export" }]);
+
+    await importLibraryZip(db, zip, "replace");
+
+    expect(favoriteByTmdbId(db).get(9)).toBe(false);
   });
 });
 

@@ -26,7 +26,14 @@ interface ZipItemEntryV1 extends Omit<ZipItemEntry, "tracking" | "addedVia"> {
 }
 
 /** v2 shape — everything of v3 except `addedVia`, which didn't exist yet. */
-type ZipItemEntryV2 = Omit<ZipItemEntry, "addedVia">;
+type ZipItemEntryV2 = Omit<ZipItemEntry, "addedVia" | "tracking"> & {
+  tracking: Omit<ZipItemEntry["tracking"], "favorite">;
+};
+
+/** v3 shape — everything of v4 except `tracking.favorite`, which didn't exist yet (E61). */
+type ZipItemEntryV3 = Omit<ZipItemEntry, "tracking"> & {
+  tracking: Omit<ZipItemEntry["tracking"], "favorite">;
+};
 
 const LEGACY_STATUS_TO_MANUAL_LIST: Record<LegacyTrackingStatus, ManualList | null> = {
   plan_to_watch: "watch_later",
@@ -45,13 +52,25 @@ function mapV1ItemEntry(raw: ZipItemEntryV1): ZipItemEntry {
       pushMuted: raw.tracking.pushMuted,
       note: raw.tracking.note,
       listChangedAt: raw.tracking.statusChangedAt,
+      // v1 zips never carry favorite (E61) — default false.
+      favorite: false,
     },
     addedVia: "import:zip",
   };
 }
 
 function mapV2ItemEntry(raw: ZipItemEntryV2): ZipItemEntry {
-  return { ...raw, addedVia: "import:zip" };
+  return {
+    ...raw,
+    // v2 zips never carry favorite (E61) — default false.
+    tracking: { ...raw.tracking, favorite: false },
+    addedVia: "import:zip",
+  };
+}
+
+/** v3 zips never carry tracking.favorite (E61) — default false. */
+function mapV3ItemEntry(raw: ZipItemEntryV3): ZipItemEntry {
+  return { ...raw, tracking: { ...raw.tracking, favorite: false } };
 }
 
 export type ImportMode = "replace" | "merge";
@@ -76,7 +95,7 @@ export interface ImportResult {
   warnings: string[];
 }
 
-const SUPPORTED_SCHEMA_VERSIONS = [1, 2, 3];
+const SUPPORTED_SCHEMA_VERSIONS = [1, 2, 3, 4];
 
 interface ParsedZip {
   manifest: ZipManifest;
@@ -147,11 +166,9 @@ async function parseZip(buffer: Buffer): Promise<ParsedZip> {
   }
   const manifest = manifestRawParsed as unknown as ZipManifest;
 
-  const rawItems = parseJsonEntry<ZipItemEntry[] | ZipItemEntryV2[] | ZipItemEntryV1[]>(
-    entries,
-    "library/items.json",
-    [],
-  );
+  const rawItems = parseJsonEntry<
+    ZipItemEntry[] | ZipItemEntryV3[] | ZipItemEntryV2[] | ZipItemEntryV1[]
+  >(entries, "library/items.json", []);
   const watches = parseJsonEntry<ZipWatchEntry[]>(entries, "library/watches.json", []);
   const ratings = parseJsonEntry<ZipRatingEntry[]>(entries, "library/ratings.json", []);
   const settings = parseJsonEntry<ZipSettings>(entries, "library/settings.json", {});
@@ -164,7 +181,9 @@ async function parseZip(buffer: Buffer): Promise<ParsedZip> {
       ? (rawItems as ZipItemEntryV1[]).map(mapV1ItemEntry)
       : schemaVersion === 2
         ? (rawItems as ZipItemEntryV2[]).map(mapV2ItemEntry)
-        : (rawItems as ZipItemEntry[]);
+        : schemaVersion === 3
+          ? (rawItems as ZipItemEntryV3[]).map(mapV3ItemEntry)
+          : (rawItems as ZipItemEntry[]);
 
   return { manifest, items, watches, ratings, settings };
 }
@@ -301,6 +320,7 @@ function insertItemWholesale(db: LibraryDatabase, entry: ZipItemEntry): number {
       pushMuted: entry.tracking.pushMuted,
       note: entry.tracking.note,
       listChangedAt: entry.tracking.listChangedAt,
+      favorite: entry.tracking.favorite,
     })
     .run();
 
@@ -362,13 +382,14 @@ function mergeItem(db: LibraryDatabase, existingId: number, entry: ZipItemEntry)
       .run();
   }
 
-  // tracking: incoming always wins (manualList/note/pushMuted).
+  // tracking: incoming always wins (manualList/note/pushMuted/favorite — E61).
   db.update(schema.tracking)
     .set({
       manualList: entry.tracking.manualList,
       pushMuted: entry.tracking.pushMuted,
       note: entry.tracking.note,
       listChangedAt: entry.tracking.listChangedAt,
+      favorite: entry.tracking.favorite,
     })
     .where(eq(schema.tracking.itemId, existingId))
     .run();

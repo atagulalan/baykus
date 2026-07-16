@@ -1,0 +1,1 @@
+ALTER TABLE `tracking` ADD `favorite` integer DEFAULT false NOT NULL;

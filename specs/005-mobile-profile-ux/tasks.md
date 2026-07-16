@@ -28,7 +28,7 @@ convention) and mechanically verifies everything else.
 Checkpoint goal: heart a series on its detail page, see it flagged in the
 API, export → wipe → import brings it back favorited.
 
-- [ ] M23.1 core: `tracking.favorite` migration + zip v4 + summary field
+- [x] M23.1 core: `tracking.favorite` migration + zip v4 + summary field
   - **Files:** `packages/core/src/db/schema.ts`,
     `packages/core/migrations/*` (new migration + journal — follow the
     existing generated pattern), `packages/core/src/db/open.test.ts`,

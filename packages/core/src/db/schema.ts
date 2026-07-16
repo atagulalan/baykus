@@ -82,6 +82,7 @@ export const tracking = sqliteTable("tracking", {
   pushMuted: integer("push_muted", { mode: "boolean" }).notNull().default(false),
   note: text("note"),
   listChangedAt: text("list_changed_at").notNull(),
+  favorite: integer("favorite", { mode: "boolean" }).notNull().default(false),
 });
 
 export const seasons = sqliteTable(
