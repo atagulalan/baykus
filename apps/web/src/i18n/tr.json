@@ -53,7 +53,8 @@
       "progressTitle": "İlerleme",
       "allCategories": "Tümü",
       "reset": "SIFIRLA",
-      "apply": "UYGULA"
+      "apply": "UYGULA",
+      "close": "Kapat"
     },
     "sort": {
       "label": "Sırala",

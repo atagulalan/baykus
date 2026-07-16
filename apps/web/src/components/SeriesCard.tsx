@@ -66,7 +66,7 @@ export function SeriesCard({ series }: SeriesCardProps) {
           )}
         </div>
         <div className="flex flex-col gap-2 p-3 border-t border-white/5">
-          <p className="truncate font-display italic text-snow text-lg leading-tight">
+          <p className="truncate font-display italic text-snow text-xs leading-tight sm:text-lg">
             {series.title}
           </p>
           <div className="flex items-center justify-between font-mono text-[10px] text-muted tracking-wide">

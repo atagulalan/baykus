@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import type { SeriesSummary, WatchCategory } from "../api/types.ts";
+import { SERIES_GRID_CLASSNAME } from "../lib/grid.ts";
 import { SeriesCard } from "./SeriesCard.tsx";
 
 interface CategorySectionProps {
@@ -17,7 +18,7 @@ export function CategorySection({ category, items }: CategorySectionProps) {
       <h2 className="font-semibold text-lg">
         {t(`category.${category}`)} ({items.length})
       </h2>
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-6">
+      <div className={SERIES_GRID_CLASSNAME}>
         {items.map((series) => (
           <SeriesCard key={series.id} series={series} />
         ))}

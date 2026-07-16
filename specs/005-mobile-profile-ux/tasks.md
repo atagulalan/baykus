@@ -214,7 +214,7 @@ step, per tasks.md's own "runtime-working after every task" rule. -->
 Checkpoint goal: at 390px — 3-column grid, FAB filter with bottom sheet,
 edge-to-edge rows, back arrows on subpages, Takvim opens at BUGÜN.
 
-- [ ] M26.1 web: 3-column grid + filter FAB/bottom sheet
+- [x] M26.1 web: 3-column grid + filter FAB/bottom sheet
   - **Files:** `apps/web/src/pages/{LibraryPage.tsx,AllSeriesPage.tsx}`,
     `apps/web/src/components/{CategorySection.tsx,FilterPanel.tsx,
     SeriesCard.tsx}`, `apps/web/src/index.css` (only if the sheet needs it)

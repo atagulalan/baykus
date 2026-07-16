@@ -14,6 +14,7 @@ import {
 } from "../components/FilterPanel.tsx";
 import { ProfileGuard } from "../components/ProfileGuard.tsx";
 import { SeriesCard } from "../components/SeriesCard.tsx";
+import { SERIES_GRID_CLASSNAME } from "../lib/grid.ts";
 import { groupByCategory } from "../lib/groupByCategory.ts";
 
 /** E60: the full seven-category library, relocated off the home page — no refresh-all, no sweep. */
@@ -62,7 +63,7 @@ function AllSeriesPageContent() {
       </div>
 
       {query.isLoading ? (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-6">
+        <div className={SERIES_GRID_CLASSNAME}>
           {["a", "b", "c", "d", "e", "f"].map((key) => (
             <div
               key={key}
@@ -97,7 +98,7 @@ function AllSeriesPageContent() {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-6">
+        <div className={SERIES_GRID_CLASSNAME}>
           {(byCategory.get(category) ?? []).map((series) => (
             <SeriesCard key={series.id} series={series} />
           ))}

@@ -12,6 +12,7 @@ import {
   type LibrarySort,
 } from "../components/FilterPanel.tsx";
 import { SeriesCard } from "../components/SeriesCard.tsx";
+import { SERIES_GRID_CLASSNAME } from "../lib/grid.ts";
 import { groupByCategory } from "../lib/groupByCategory.ts";
 import { maybeStartSweep, useSweepProgress } from "../lib/staleSweep.ts";
 
@@ -58,7 +59,7 @@ export function LibraryPage() {
       </div>
 
       {query.isLoading ? (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-6">
+        <div className={SERIES_GRID_CLASSNAME}>
           {["a", "b", "c", "d", "e", "f"].map((key) => (
             <div
               key={key}
@@ -93,7 +94,7 @@ export function LibraryPage() {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-6">
+        <div className={SERIES_GRID_CLASSNAME}>
           {(byCategory.get(category) ?? []).map((series) => (
             <SeriesCard key={series.id} series={series} />
           ))}

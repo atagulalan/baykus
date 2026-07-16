@@ -53,7 +53,8 @@
       "progressTitle": "Progress",
       "allCategories": "All",
       "reset": "RESET",
-      "apply": "APPLY"
+      "apply": "APPLY",
+      "close": "Close"
     },
     "sort": {
       "label": "Sort",
