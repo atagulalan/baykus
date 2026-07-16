@@ -53,11 +53,22 @@ function TimelineView({ onToggleWatched }: { onToggleWatched: (episodeId: number
   const todayRef = useRef<HTMLDivElement>(null);
   const hasScrolledRef = useRef(false);
 
+  // E73: wait two animation frames (past the initial paint/reflow) before the one-shot,
+  // instant anchor scroll — scroll-margin-top on the row uses the Layout-measured header
+  // height (--app-header-height), never a guessed scroll-mt constant.
   useEffect(() => {
-    if (!query.isLoading && !hasScrolledRef.current) {
-      todayRef.current?.scrollIntoView({ block: "start" });
-      hasScrolledRef.current = true;
-    }
+    if (query.isLoading || hasScrolledRef.current) return;
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => {
+        todayRef.current?.scrollIntoView({ block: "start", behavior: "instant" });
+        hasScrolledRef.current = true;
+      });
+    });
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+    };
   }, [query.isLoading]);
 
   if (query.isLoading) {
@@ -88,7 +99,8 @@ function TimelineView({ onToggleWatched }: { onToggleWatched: (episodeId: number
         <div
           key={day.date}
           ref={day.date === today ? todayRef : undefined}
-          className="flex scroll-mt-16 flex-col gap-1"
+          className="flex flex-col gap-1"
+          style={{ scrollMarginTop: "var(--app-header-height, 4rem)" }}
         >
           <h3 className="text-xs text-zinc-500 uppercase">
             {day.date === today

@@ -8,6 +8,7 @@ import {
   useRouterState,
 } from "@tanstack/react-router";
 import { ArrowLeft, CalendarDays, CircleUser, LayoutGrid, Play, Search } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { getAuthSession } from "../api/client.ts";
 import { backAffordance } from "../lib/backFallback.ts";
@@ -29,6 +30,26 @@ export function Layout() {
   const sessionQuery = useQuery({ queryKey: ["auth-session"], queryFn: getAuthSession });
   const canGoBack = useCanGoBack();
   const navigate = useNavigate();
+  const headerRef = useRef<HTMLElement>(null);
+
+  // E73: publishes the sticky header's real height as a CSS var so pages (the calendar's
+  // BUGÜN anchor) can scroll-margin-top against a measured value, never a guessed constant.
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    function updateHeight() {
+      if (el) {
+        document.documentElement.style.setProperty(
+          "--app-header-height",
+          `${el.getBoundingClientRect().height}px`,
+        );
+      }
+    }
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   // /login and /claim render without nav chrome and manage their own
   // auth-redirect logic (they ARE the unauthenticated entry points).
@@ -43,6 +64,7 @@ export function Layout() {
   return (
     <div className="min-h-screen bg-void text-snow font-sans">
       <header
+        ref={headerRef}
         className="sticky top-0 z-40 bg-void/90 backdrop-blur-md border-b border-white/5"
         style={{ viewTransitionName: "app-header" }}
       >

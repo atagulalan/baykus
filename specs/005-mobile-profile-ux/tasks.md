@@ -252,7 +252,7 @@ edge-to-edge rows, back arrows on subpages, Takvim opens at BUGÜN.
     row edges ≤20px; back arrow present/absent per route; deep-link to a
     detail → back lands on `/`.
 
-- [ ] M26.3 web: calendar opening anchor
+- [x] M26.3 web: calendar opening anchor
   - **Files:** `apps/web/src/pages/CalendarPage.tsx`
   - **DoD:** E73 contract: after data + paint (double-rAF or equivalent),
     BUGÜN row top sits directly under the sticky header — measured header
