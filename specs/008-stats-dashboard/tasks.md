@@ -51,9 +51,9 @@ Entry point: M44.2, then M45.1.
   - [x] M47.5 tests: dateUnknown exclusion everywhere, tz-sensitivity
         (UTC vs Europe/Istanbul day flip), bucket thresholds
 
-- [ ] **M48 server: GET /api/stats?tz= (contract 008)**
-  - [ ] M48.1 zod `tz` param, Intl probe → UTC fallback (E96)
-  - [ ] M48.2 contract tests: new payload shape, invalid tz, empty DB,
+- [x] **M48 server: GET /api/stats?tz= (contract 008)**
+  - [x] M48.1 zod `tz` param, Intl probe → UTC fallback (E96)
+  - [x] M48.2 contract tests: new payload shape, invalid tz, empty DB,
         auth unchanged
 
 - [ ] **M49 web: client + sections group 1**

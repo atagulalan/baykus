@@ -114,4 +114,54 @@ describe("GET /api/stats", () => {
       episodesPerMonth: [{ month: "2026-01", count: 1 }],
     });
   });
+
+  it("buckets by the ?tz= zone (E96)", async () => {
+    const library = createLibrary(openLibraryDb(":memory:").db);
+    const summary = library.addSeries(fixtureSeries());
+    const detail = library.getSeries(summary.id);
+    const ep1 = detail?.seasons[0]?.episodes[0]?.id;
+    if (ep1 === undefined) throw new Error("setup: fixture episode missing");
+    // 21:30 UTC = 00:30 the next day in Europe/Istanbul (fixed UTC+3, no DST).
+    library.addWatch(ep1, "2026-01-15T21:30:00Z");
+    const app = createApp(loadConfig({}), {
+      library,
+      providers: [],
+      dataDir: "/tmp/baykus-test",
+      vapid: { publicKey: "test-public", privateKey: "test-private" },
+      auth: { mode: "single", password: undefined, singleSessions: createSingleSessionStore() },
+    });
+
+    const utcRes = await app.request("/api/stats", { headers: { "X-Baykus": "1" } });
+    const utcBody = (await utcRes.json()) as { activityByDay: { date: string }[] };
+    expect(utcBody.activityByDay).toEqual([{ date: "2026-01-15", count: 1 }]);
+
+    const istRes = await app.request("/api/stats?tz=Europe/Istanbul", {
+      headers: { "X-Baykus": "1" },
+    });
+    const istBody = (await istRes.json()) as { activityByDay: { date: string }[] };
+    expect(istBody.activityByDay).toEqual([{ date: "2026-01-16", count: 1 }]);
+  });
+
+  it("an invalid tz is never an error — falls back to UTC (E96)", async () => {
+    const library = createLibrary(openLibraryDb(":memory:").db);
+    const summary = library.addSeries(fixtureSeries());
+    const detail = library.getSeries(summary.id);
+    const ep1 = detail?.seasons[0]?.episodes[0]?.id;
+    if (ep1 === undefined) throw new Error("setup: fixture episode missing");
+    library.addWatch(ep1, "2026-01-15T21:30:00Z");
+    const app = createApp(loadConfig({}), {
+      library,
+      providers: [],
+      dataDir: "/tmp/baykus-test",
+      vapid: { publicKey: "test-public", privateKey: "test-private" },
+      auth: { mode: "single", password: undefined, singleSessions: createSingleSessionStore() },
+    });
+
+    const res = await app.request("/api/stats?tz=Not/A/Real/Zone", {
+      headers: { "X-Baykus": "1" },
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { activityByDay: { date: string }[] };
+    expect(body.activityByDay).toEqual([{ date: "2026-01-15", count: 1 }]); // UTC fallback
+  });
 });
