@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
+import { TriangleAlert } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { claim, exportZipUrl, importZip } from "../api/client.ts";
@@ -41,25 +42,30 @@ export function ClaimPage() {
 
   if (claimedHandle) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-950 px-4 text-zinc-100">
-        <div className="flex w-full max-w-sm flex-col gap-4 rounded-lg bg-zinc-900 p-6 text-center">
-          <p className="text-3xl">⚠️</p>
-          <h1 className="font-bold text-lg">{t("auth.claim.successTitle")}</h1>
-          <p className="text-sm text-zinc-300">{t("auth.claim.successBody")}</p>
-          {seedWarning && (
-            <p className="text-sm text-amber-400">{t("auth.claim.seedImportFailed")}</p>
-          )}
+      <div className="flex min-h-screen items-center justify-center bg-void px-4 text-snow">
+        <div className="flex w-full max-w-sm flex-col gap-4 border border-white/10 bg-[#101010] p-6 text-center">
+          <p>
+            <TriangleAlert
+              size={32}
+              strokeWidth={1.5}
+              className="mx-auto text-yellow"
+              aria-hidden
+            />
+          </p>
+          <h1 className="font-display italic text-snow text-lg">{t("auth.claim.successTitle")}</h1>
+          <p className="text-sm text-snow">{t("auth.claim.successBody")}</p>
+          {seedWarning && <p className="text-sm text-yellow">{t("auth.claim.seedImportFailed")}</p>}
           <a
             href={exportZipUrl()}
             download
-            className="rounded bg-emerald-600 px-3 py-2 text-sm font-medium text-white"
+            className="bg-yellow px-4 py-2.5 font-mono text-[10px] text-[#080808] uppercase tracking-widest"
           >
             {t("settings.data.export")}
           </a>
           <button
             type="button"
             onClick={() => navigate({ to: "/" })}
-            className="rounded bg-zinc-800 px-3 py-2 text-sm text-zinc-300"
+            className="border border-white/10 px-3 py-2 font-mono text-[10px] text-muted uppercase tracking-widest transition-colors hover:border-white/20 hover:text-snow"
           >
             {t("auth.claim.continue")}
           </button>
@@ -69,15 +75,17 @@ export function ClaimPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-950 px-4 text-zinc-100">
+    <div className="flex min-h-screen items-center justify-center bg-void px-4 text-snow">
       <form
         onSubmit={(e) => {
           e.preventDefault();
           claimMutation.mutate();
         }}
-        className="flex w-full max-w-sm flex-col gap-4 rounded-lg bg-zinc-900 p-6"
+        className="flex w-full max-w-sm flex-col gap-4 border border-white/10 bg-[#101010] p-6"
       >
-        <h1 className="text-center font-bold text-xl">🦉 {t("auth.claim.title")}</h1>
+        <h1 className="text-center font-display italic text-snow text-xl">
+          🦉 {t("auth.claim.title")}
+        </h1>
 
         <label className="flex flex-col gap-1 text-sm">
           {t("auth.handle")}
@@ -85,7 +93,7 @@ export function ClaimPage() {
             value={handle}
             onChange={(e) => setHandle(e.target.value)}
             autoComplete="username"
-            className="rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5"
+            className="border border-white/10 bg-white/5 px-3 py-2 text-sm text-snow focus:border-yellow focus:outline-none"
           />
           {handle.length > 0 && !handleValid && (
             <span className="text-xs text-red-400">{t("auth.claim.handleHint")}</span>
@@ -99,7 +107,7 @@ export function ClaimPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="new-password"
-            className="rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5"
+            className="border border-white/10 bg-white/5 px-3 py-2 text-sm text-snow focus:border-yellow focus:outline-none"
           />
         </label>
 
@@ -110,7 +118,7 @@ export function ClaimPage() {
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
             autoComplete="new-password"
-            className="rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5"
+            className="border border-white/10 bg-white/5 px-3 py-2 text-sm text-snow focus:border-yellow focus:outline-none"
           />
           {confirm.length > 0 && !passwordsMatch && (
             <span className="text-xs text-red-400">{t("auth.claim.passwordMismatch")}</span>
@@ -123,7 +131,7 @@ export function ClaimPage() {
             type="file"
             accept=".zip,application/zip"
             onChange={(e) => setSeedFile(e.target.files?.[0] ?? null)}
-            className="text-sm text-zinc-400"
+            className="text-sm text-muted"
           />
         </label>
 
@@ -134,7 +142,7 @@ export function ClaimPage() {
           disabled={
             claimMutation.isPending || !handleValid || !passwordsMatch || password.length < 8
           }
-          className="rounded bg-emerald-600 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+          className="bg-yellow px-4 py-2.5 font-mono text-[10px] text-[#080808] uppercase tracking-widest disabled:opacity-50"
         >
           {t("auth.claim.submit")}
         </button>

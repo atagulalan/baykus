@@ -1,5 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
+import { Check, CircleHelp, type LucideIcon, TriangleAlert, X } from "lucide-react";
 import { type DragEvent, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { confirmTvTimeImport, importTvTime } from "../api/client.ts";
@@ -15,16 +16,16 @@ type Step = "upload" | "report" | "confirming" | "summary";
 
 const UPLOAD_LOG_LIMIT = 8;
 
-const MATCH_STATUS_MARK: Record<TvTimeImportProgressEvent["status"], string> = {
-  matched: "✓",
-  fuzzy: "?",
-  unmatched: "✗",
+const MATCH_STATUS_ICON: Record<TvTimeImportProgressEvent["status"], LucideIcon> = {
+  matched: Check,
+  fuzzy: CircleHelp,
+  unmatched: X,
 };
 
 const MATCH_STATUS_CLASS: Record<TvTimeImportProgressEvent["status"], string> = {
-  matched: "text-emerald-400",
-  fuzzy: "text-amber-400",
-  unmatched: "text-zinc-600",
+  matched: "text-green-400",
+  fuzzy: "text-yellow",
+  unmatched: "text-muted",
 };
 
 function candidateKey(candidate: { externalIds: ExternalIds }): string {
@@ -98,7 +99,7 @@ export function ImportPage() {
   if (step === "upload") {
     return (
       <div className="mx-auto flex max-w-lg flex-col gap-4">
-        <h1 className="font-semibold text-2xl">{t("importWizard.title")}</h1>
+        <h1 className="font-display italic text-snow text-2xl">{t("importWizard.title")}</h1>
         <label
           onDragOver={(e) => {
             e.preventDefault();
@@ -106,12 +107,12 @@ export function ImportPage() {
           }}
           onDragLeave={() => setDragOver(false)}
           onDrop={onDrop}
-          className={`flex cursor-pointer flex-col items-center gap-3 rounded-lg border-2 border-dashed p-10 text-center ${
-            dragOver ? "border-emerald-500 bg-zinc-900" : "border-zinc-700"
+          className={`flex cursor-pointer flex-col items-center gap-3 border-2 border-dashed p-10 text-center ${
+            dragOver ? "border-yellow bg-yellow/5" : "border-white/10"
           }`}
         >
-          <p className="text-sm text-zinc-400">{t("importWizard.dropzone")}</p>
-          <span className="rounded bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white">
+          <p className="text-sm text-muted">{t("importWizard.dropzone")}</p>
+          <span className="bg-yellow px-4 py-2.5 font-mono text-[10px] text-[#080808] uppercase tracking-widest">
             {t("importWizard.chooseFile")}
           </span>
           <input
@@ -131,7 +132,7 @@ export function ImportPage() {
                   latest && latest.total > 0 ? Math.round((latest.done / latest.total) * 100) : 0;
                 return (
                   <>
-                    <p className="text-sm text-zinc-400">
+                    <p className="text-sm text-muted">
                       {latest
                         ? t("importWizard.uploadProgress", {
                             done: latest.done,
@@ -140,9 +141,9 @@ export function ImportPage() {
                         : t("importWizard.uploading")}
                     </p>
                     {latest && (
-                      <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-800">
+                      <div className="h-2 w-full overflow-hidden bg-white/10">
                         <div
-                          className="h-full rounded-full bg-emerald-500 transition-[width] duration-300 ease-out"
+                          className="h-full bg-yellow transition-[width] duration-300 ease-out"
                           style={{ width: `${percent}%` }}
                         />
                       </div>
@@ -151,18 +152,26 @@ export function ImportPage() {
                 );
               })()}
               <ul className="flex flex-col gap-0.5 text-left text-xs">
-                {uploadLog.map((event, i) => (
-                  <li
-                    // biome-ignore lint/suspicious/noArrayIndexKey: log entries are append-only and never reordered
-                    key={i}
-                    className="truncate text-zinc-500"
-                  >
-                    <span className={MATCH_STATUS_CLASS[event.status]}>
-                      {MATCH_STATUS_MARK[event.status]}
-                    </span>{" "}
-                    {event.name}
-                  </li>
-                ))}
+                {uploadLog.map((event, i) => {
+                  const StatusIcon = MATCH_STATUS_ICON[event.status];
+                  return (
+                    <li
+                      // biome-ignore lint/suspicious/noArrayIndexKey: log entries are append-only and never reordered
+                      key={i}
+                      className="truncate text-muted"
+                    >
+                      <span className={MATCH_STATUS_CLASS[event.status]}>
+                        <StatusIcon
+                          size={14}
+                          strokeWidth={1.5}
+                          className="inline shrink-0"
+                          aria-hidden
+                        />
+                      </span>{" "}
+                      {event.name}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           )}
@@ -180,20 +189,20 @@ export function ImportPage() {
     const percent = total > 0 ? Math.round((done / total) * 100) : 0;
 
     return (
-      <div className="mx-auto flex max-w-md flex-col gap-4 rounded-lg bg-zinc-900 p-6">
-        <h1 className="font-semibold text-xl">{t("importWizard.confirming")}</h1>
+      <div className="mx-auto flex max-w-md flex-col gap-4 border border-white/5 p-6">
+        <h1 className="font-display italic text-snow text-xl">{t("importWizard.confirming")}</h1>
 
         <div className="flex flex-col gap-2">
-          <div className="h-3 w-full overflow-hidden rounded-full bg-zinc-800">
+          <div className="h-3 w-full overflow-hidden bg-white/10">
             <div
-              className="h-full rounded-full bg-emerald-500"
+              className="h-full bg-yellow"
               style={{
                 width: `${percent}%`,
                 transition: "width 300ms ease-out",
               }}
             />
           </div>
-          <div className="flex items-center justify-between text-sm text-zinc-400">
+          <div className="flex items-center justify-between font-mono text-xs text-muted">
             <span>
               {t("importWizard.confirmProgress", {
                 done,
@@ -202,7 +211,7 @@ export function ImportPage() {
               })}
             </span>
           </div>
-          {progress?.name && <p className="truncate text-sm text-zinc-300">{progress.name}</p>}
+          {progress?.name && <p className="truncate text-sm text-snow">{progress.name}</p>}
         </div>
       </div>
     );
@@ -211,93 +220,129 @@ export function ImportPage() {
   if (step === "report" && report) {
     return (
       <div className="mx-auto flex max-w-3xl flex-col gap-4">
-        <h1 className="font-semibold text-2xl">{t("importWizard.reportTitle")}</h1>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <section className="flex flex-col gap-2 rounded-lg bg-zinc-900 p-4">
-            <h2 className="font-medium text-sm text-zinc-300">
-              {t("importWizard.matched", { count: report.matched.length })}
-            </h2>
-            {report.matched.map((show) => (
-              <div key={show.name} className="flex items-center justify-between text-sm">
-                <span className="truncate">{show.name}</span>
-                <span className="shrink-0 text-emerald-400">
-                  ✓ {t("importWizard.episodeCount", { count: show.episodes })}
-                </span>
-              </div>
-            ))}
-            {report.matched.length === 0 && (
-              <p className="text-xs text-zinc-500">{t("importWizard.none")}</p>
-            )}
-          </section>
-
-          <section className="flex flex-col gap-2 rounded-lg bg-zinc-900 p-4">
-            <h2 className="font-medium text-sm text-zinc-300">
+        <h1 className="font-display italic text-snow text-2xl">{t("importWizard.reportTitle")}</h1>
+        <div className="flex flex-col gap-4">
+          <details
+            className="border border-white/5 p-4 bg-[#101010]"
+            open={report.fuzzy.length > 0}
+          >
+            <summary className="cursor-pointer select-none font-mono text-[10px] text-yellow uppercase tracking-widest flex items-center gap-2">
+              <CircleHelp size={14} />
               {t("importWizard.fuzzy", { count: report.fuzzy.length })}
-            </h2>
-            {report.fuzzy.map((show) => (
-              <div key={show.name} className="flex flex-col gap-1 text-sm">
-                <span className="truncate">{show.name}</span>
-                <select
-                  value={resolutions[show.name] ? JSON.stringify(resolutions[show.name]) : ""}
-                  onChange={(e) => {
-                    setResolutions((prev) => {
-                      const next = { ...prev };
-                      if (!e.target.value) {
-                        delete next[show.name];
-                      } else {
-                        next[show.name] = JSON.parse(e.target.value) as ExternalIds;
-                      }
-                      return next;
-                    });
-                  }}
-                  className="rounded border border-zinc-700 bg-zinc-800 px-2 py-1 text-xs"
+            </summary>
+            <div className="mt-4 flex flex-col gap-2">
+              {report.fuzzy.map((show) => (
+                <div
+                  key={show.name}
+                  className="flex flex-col sm:flex-row sm:items-center gap-2 sm:justify-between text-sm p-3 bg-white/5 border border-white/5"
                 >
-                  <option value="">{t("importWizard.pickCandidate")}</option>
-                  {show.candidates.map((candidate) => (
-                    <option
-                      key={candidateKey(candidate)}
-                      value={JSON.stringify(candidate.externalIds)}
-                    >
-                      {candidate.title}
-                      {candidate.year ? ` (${candidate.year})` : ""}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ))}
-            {report.fuzzy.length === 0 && (
-              <p className="text-xs text-zinc-500">{t("importWizard.none")}</p>
-            )}
-          </section>
+                  <span className="truncate flex-1 font-display italic text-snow">{show.name}</span>
+                  <select
+                    value={resolutions[show.name] ? JSON.stringify(resolutions[show.name]) : ""}
+                    onChange={(e) => {
+                      setResolutions((prev) => {
+                        const next = { ...prev };
+                        if (!e.target.value) {
+                          delete next[show.name];
+                        } else {
+                          next[show.name] = JSON.parse(e.target.value) as ExternalIds;
+                        }
+                        return next;
+                      });
+                    }}
+                    className="border border-white/10 bg-void px-3 py-2 text-sm text-snow focus:border-yellow focus:outline-none w-full sm:w-64 shrink-0"
+                  >
+                    <option value="">{t("importWizard.pickCandidate")}</option>
+                    {show.candidates.map((candidate) => (
+                      <option
+                        key={candidateKey(candidate)}
+                        value={JSON.stringify(candidate.externalIds)}
+                      >
+                        {candidate.title}
+                        {candidate.year ? ` (${candidate.year})` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+              {report.fuzzy.length === 0 && (
+                <p className="text-xs text-muted">{t("importWizard.none")}</p>
+              )}
+            </div>
+          </details>
 
-          <section className="flex flex-col gap-2 rounded-lg bg-zinc-900 p-4">
-            <h2 className="font-medium text-sm text-zinc-300">
+          <details
+            className="border border-white/5 p-4 bg-[#101010]"
+            open={report.fuzzy.length === 0}
+          >
+            <summary className="cursor-pointer select-none font-mono text-[10px] text-green-400 uppercase tracking-widest flex items-center gap-2">
+              <Check size={14} />
+              {t("importWizard.matched", { count: report.matched.length })}
+            </summary>
+            <div className="mt-4 flex flex-col gap-1">
+              {report.matched.map((show) => {
+                const hasDiscrepancy = show.episodes > show.providerEpisodeCount;
+                return (
+                  <div
+                    key={show.name}
+                    className="flex items-center justify-between text-sm py-1.5 border-b border-white/5 last:border-0 px-1"
+                  >
+                    <span className="truncate text-snow flex items-center gap-2">
+                      {show.name}
+                      {hasDiscrepancy && (
+                        <span
+                          title={t("importWizard.episodeDiscrepancy", {
+                            tvTime: show.episodes,
+                            provider: show.providerEpisodeCount,
+                          })}
+                        >
+                          <TriangleAlert size={14} className="text-yellow" />
+                        </span>
+                      )}
+                    </span>
+                    <span className="shrink-0 text-muted font-mono text-xs">
+                      {t("importWizard.episodeCount", { count: show.episodes })}
+                    </span>
+                  </div>
+                );
+              })}
+              {report.matched.length === 0 && (
+                <p className="text-xs text-muted">{t("importWizard.none")}</p>
+              )}
+            </div>
+          </details>
+
+          <details className="border border-white/5 p-4 bg-[#101010]">
+            <summary className="cursor-pointer select-none font-mono text-[10px] text-muted uppercase tracking-widest flex items-center gap-2">
+              <X size={14} />
               {t("importWizard.unmatched", { count: report.unmatched.length })}
-            </h2>
-            {report.unmatched.map((show) => (
-              <div
-                key={show.name}
-                className="flex items-center justify-between text-sm text-zinc-500"
-              >
-                <span className="truncate">{show.name}</span>
-                <span className="shrink-0">
-                  {t("importWizard.episodeCount", { count: show.episodes })}
-                </span>
-              </div>
-            ))}
-            {report.unmatched.length === 0 && (
-              <p className="text-xs text-zinc-500">{t("importWizard.none")}</p>
-            )}
-          </section>
+            </summary>
+            <div className="mt-4 flex flex-col gap-1">
+              {report.unmatched.map((show) => (
+                <div
+                  key={show.name}
+                  className="flex items-center justify-between text-sm py-1.5 border-b border-white/5 last:border-0 px-1 text-muted"
+                >
+                  <span className="truncate">{show.name}</span>
+                  <span className="shrink-0 font-mono text-xs">
+                    {t("importWizard.episodeCount", { count: show.episodes })}
+                  </span>
+                </div>
+              ))}
+              {report.unmatched.length === 0 && (
+                <p className="text-xs text-muted">{t("importWizard.none")}</p>
+              )}
+            </div>
+          </details>
         </div>
 
         {report.skippedRelics.length > 0 && (
-          <details className="rounded-lg bg-zinc-900 p-4 text-sm text-zinc-400">
+          <details className="border border-white/5 p-4 text-sm text-muted">
             <summary className="cursor-pointer select-none">
               {t("importWizard.skippedRelics", { count: report.skippedRelics.length })}
             </summary>
-            <p className="mt-2 text-xs text-zinc-500">{t("importWizard.skippedRelicsHint")}</p>
-            <p className="mt-2 text-xs text-zinc-300">
+            <p className="mt-2 text-xs text-muted">{t("importWizard.skippedRelicsHint")}</p>
+            <p className="mt-2 text-xs text-snow">
               {report.skippedRelics.map((relic) => relic.name).join(" · ")}
             </p>
           </details>
@@ -307,7 +352,7 @@ export function ImportPage() {
         <button
           type="button"
           onClick={handleConfirm}
-          className="self-start rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+          className="self-start bg-yellow px-4 py-2.5 font-mono text-[10px] text-[#080808] uppercase tracking-widest disabled:opacity-50"
         >
           {t("importWizard.confirm")}
         </button>
@@ -317,23 +362,26 @@ export function ImportPage() {
 
   if (step === "summary" && summary) {
     return (
-      <div className="mx-auto flex max-w-sm flex-col gap-4 rounded-lg bg-zinc-900 p-6 text-center">
-        <h1 className="font-semibold text-xl">{t("importWizard.summaryTitle")}</h1>
+      <div className="mx-auto flex max-w-sm flex-col gap-4 border border-white/5 p-6 text-center">
+        <h1 className="font-display italic text-snow text-xl">{t("importWizard.summaryTitle")}</h1>
         <dl className="flex flex-col gap-2 text-sm">
           <div className="flex justify-between">
-            <dt className="text-zinc-400">{t("importWizard.itemsCreated")}</dt>
+            <dt className="text-muted">{t("importWizard.itemsCreated")}</dt>
             <dd>{summary.itemsCreated}</dd>
           </div>
           <div className="flex justify-between">
-            <dt className="text-zinc-400">{t("importWizard.watchesCreated")}</dt>
+            <dt className="text-muted">{t("importWizard.watchesCreated")}</dt>
             <dd>{summary.watchesCreated}</dd>
           </div>
           <div className="flex justify-between">
-            <dt className="text-zinc-400">{t("importWizard.skipped")}</dt>
+            <dt className="text-muted">{t("importWizard.skipped")}</dt>
             <dd>{summary.skipped}</dd>
           </div>
         </dl>
-        <Link to="/" className="rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white">
+        <Link
+          to="/"
+          className="bg-yellow px-4 py-2.5 font-mono text-[10px] text-[#080808] uppercase tracking-widest"
+        >
           {t("importWizard.goToLibrary")}
         </Link>
       </div>
