@@ -21,7 +21,18 @@ export interface MatchedShow {
   /** Full season/episode inventory — confirm reuses this (no second provider fetch). */
   details: SeriesDetails;
   episodeCount: number;
+  /** Non-special episode count in the resolved provider inventory (discrepancy UI). */
+  providerEpisodeCount: number;
   status: TvTimeStatus;
+}
+
+function providerEpisodeCountFor(details: SeriesDetails): number {
+  let count = 0;
+  for (const season of details.seasons) {
+    if (season.number === 0) continue;
+    count += season.episodes.length;
+  }
+  return count;
 }
 
 export interface FuzzyCandidate {
@@ -164,6 +175,7 @@ async function matchOneShow(
         externalIds: tvdbDetails.externalIds,
         details: tvdbDetails,
         episodeCount,
+        providerEpisodeCount: providerEpisodeCountFor(tvdbDetails),
         status,
       },
     };
@@ -179,6 +191,7 @@ async function matchOneShow(
         externalIds: byName.details.externalIds,
         details: byName.details,
         episodeCount,
+        providerEpisodeCount: providerEpisodeCountFor(byName.details),
         status,
       },
     };

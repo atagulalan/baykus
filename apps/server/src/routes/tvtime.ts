@@ -1,8 +1,9 @@
 import { isAlreadyInLibraryError, type Library, type ManualList } from "@baykus/core";
 import {
+  createWatchResolveContext,
   matchShows,
   parseTvTimeFiles,
-  resolveEpisodePosition,
+  resolveWatchPosition,
   type TvTimeStatus,
 } from "@baykus/importer-tvtime";
 import type { ExternalIds, MetadataProvider, SeriesDetails } from "@baykus/provider-sdk";
@@ -110,32 +111,44 @@ async function importOneShow(
     }
   }
 
+  const resolveCtx = createWatchResolveContext(
+    details,
+    watchEvents,
+    episodeIdByPosition,
+    providers,
+  );
+
   let watchesCreated = 0;
   let watchesSkipped = 0;
   for (const watchEvent of watchEvents) {
-    let episodeId: number | undefined;
-
-    // Prefer the CSV's own season/episode numbers (name-keyed/trackingV1/V2
-    // rows) — they need no network round-trip and can't be thrown off by
-    // provider/TVDB season-numbering discrepancies (e.g. TMDB merging
-    // seasons TV Time counts separately). Only fall back to resolving the
-    // TVDB episode id via the providers when the CSV didn't carry them
-    // (seenEpisode rows) or the resolved position isn't in this show's
-    // inventory.
-    if (watchEvent.seasonNumber !== undefined && watchEvent.episodeNumber !== undefined) {
-      episodeId = episodeIdByPosition.get(
-        episodePositionKey(watchEvent.seasonNumber, watchEvent.episodeNumber),
-      );
-    }
-
-    if (episodeId === undefined) {
-      const position = await resolveEpisodePosition(providers, watchEvent.tvdbEpisodeId);
-      if (position) {
-        episodeId = episodeIdByPosition.get(
-          episodePositionKey(position.seasonNumber, position.episodeNumber),
-        );
+    // Season-level bulk mark (episode_number=0): stamp every aired episode in
+    // that season with this watchedAt.
+    if (
+      watchEvent.seasonNumber !== undefined &&
+      watchEvent.episodeNumber === 0 &&
+      seriesDetail
+    ) {
+      const season = seriesDetail.seasons.find((s) => s.number === watchEvent.seasonNumber);
+      if (!season || season.episodes.length === 0) {
+        watchesSkipped++;
+        continue;
       }
+      let anyCreated = false;
+      for (const episode of season.episodes) {
+        const result = library.addWatch(episode.id, watchEvent.watchedAt, "import:tvtime");
+        if (result?.created) {
+          watchesCreated++;
+          anyCreated = true;
+        }
+      }
+      if (!anyCreated) watchesSkipped++;
+      continue;
     }
+
+    const position = await resolveWatchPosition(watchEvent, resolveCtx);
+    const episodeId = position
+      ? episodeIdByPosition.get(episodePositionKey(position.seasonNumber, position.episodeNumber))
+      : undefined;
 
     if (episodeId === undefined) {
       watchesSkipped++;
@@ -199,6 +212,7 @@ export function createTvTimeRoutes(library: Library, providers: MetadataProvider
             tvdbId: m.tvdbId,
             resolved: m.externalIds,
             episodes: m.episodeCount,
+            providerEpisodeCount: m.providerEpisodeCount,
           })),
           fuzzy: fuzzy.map((f) => ({
             name: f.name,

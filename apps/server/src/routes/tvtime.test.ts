@@ -523,4 +523,75 @@ describe("POST /api/import/tvtime/confirm", () => {
     });
     expect(res.status).toBe(404);
   });
+
+  it("resolves NieR-style season drift via TVDB airing-order map without findEpisodeByTvdbId", async () => {
+    const season1 = Array.from({ length: 12 }, (_, i) => ({
+      seasonNumber: 1,
+      episodeNumber: i + 1,
+      airDate: `2023-01-${String(i + 1).padStart(2, "0")}`,
+    }));
+    const season2 = Array.from({ length: 12 }, (_, i) => ({
+      seasonNumber: 2,
+      episodeNumber: i + 1,
+      airDate: `2024-07-${String(i + 1).padStart(2, "0")}`,
+    }));
+    const nierDetails: SeriesDetails = {
+      providerId: "fake",
+      mediaType: "series",
+      externalIds: { tvdbId: 416998 },
+      title: "NieR:Automata Ver1.1a",
+      seasons: [
+        { number: 1, episodes: season1 },
+        { number: 2, episodes: season2 },
+      ],
+    };
+
+    const library = createLibrary(openLibraryDb(":memory:").db);
+    const provider: MetadataProvider = {
+      ...fakeProvider(),
+      async getSeriesDetails(ref) {
+        if (ref.tvdbId === 416998) return nierDetails;
+        return fakeProvider().getSeriesDetails(ref);
+      },
+      async findEpisodeByTvdbId() {
+        return null;
+      },
+    };
+    const app = createApp(loadConfig({}), {
+      library,
+      providers: [provider],
+      dataDir: "/tmp/baykus-test",
+      vapid: { publicKey: "test-public", privateKey: "test-private" },
+      auth: { mode: "single", password: undefined, singleSessions: createSingleSessionStore() },
+    });
+
+    // TV Time labels every episode as S1E13+ (drift); airing-order map recovers S1–S2.
+    const trackingRows = Array.from({ length: 24 }, (_, i) => {
+      const tvdbEp = 9000000 + i;
+      const epNo = 13 + i;
+      return `2024-01-01 12:00:00,416998,${tvdbEp},watch-episode-${i + 1},1,${epNo},NieR`;
+    }).join("\n");
+
+    const zip = await zipBuffer({
+      "followed_tv_show.csv":
+        "tv_show_id,tv_show_name,active,diffusion,folder_id,archived,notification_type,user_id,created_at,updated_at\n" +
+        "416998,NieR:Automata Ver1.1a,1,original,,0,2,1,2023-01-01 00:00:00,2023-01-01 00:00:00\n",
+      "tracking-prod-records-v2.csv":
+        "created_at,s_id,ep_id,key,s_no,ep_no,series_name\n" + trackingRows + "\n",
+    });
+
+    const importRes = await postImport(app, zip, "export.zip");
+    const { report } = await readImportReport(importRes);
+    const confirmRes = await app.request("/api/import/tvtime/confirm", {
+      method: "POST",
+      headers: HEADERS,
+      body: JSON.stringify({ reportId: report.reportId, resolutions: [] }),
+    });
+    expect(confirmRes.status).toBe(200);
+    const { complete } = await parseSSE(confirmRes);
+    expect((complete as { watchesCreated: number }).watchesCreated).toBe(24);
+
+    const series = library.listSeries().items.find((i) => i.title === "NieR:Automata Ver1.1a");
+    expect(series?.progress.watched).toBe(24);
+  });
 });

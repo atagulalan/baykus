@@ -17,4 +17,12 @@ export {
   type TvTimeStatus,
   type TvTimeWatchEvent,
 } from "./parse.ts";
+export {
+  buildAiredEpisodeOrder,
+  buildTvdbAiringOrderMap,
+  createWatchResolveContext,
+  resolveWatchPosition,
+  type WatchResolveContext,
+  type WatchResolveInput,
+} from "./resolve-watch.ts";
 export { titleSimilarity } from "./similarity.ts";
