@@ -30,15 +30,15 @@ Entry point: M44.2, then M45.1.
   - [x] M45.4 tests: parse flag cases, addWatch persistence, zip round-trip
         extended (not weakened), import route wiring
 
-- [ ] **M46 core: date-independent aggregates (stats/ part 1)**
-  - [ ] M46.1 split `stats.ts` → `stats/` (index/totals) keeping `getStats`
+- [x] **M46 core: date-independent aggregates (stats/ part 1)**
+  - [x] M46.1 split `stats.ts` → `stats/` (index/totals) keeping `getStats`
         signature + existing fields byte-compatible
-  - [ ] M46.2 `seriesCount`, `favoritesCount`, `datedWatches`
-  - [ ] M46.3 `mostWatchedByTime` top 12 (E110)
-  - [ ] M46.4 `favoriteProgress` (E108) + `production` (E109)
-  - [ ] M46.5 `genreDistribution` + `networkDistribution` (E98)
-  - [ ] M46.6 `backlog` (E99) + `rewatchSummary` (E103)
-  - [ ] M46.7 unit tests per aggregate incl. empty-DB and no-genre/network
+  - [x] M46.2 `seriesCount`, `favoritesCount`, `datedWatches`
+  - [x] M46.3 `mostWatchedByTime` top 12 (E110)
+  - [x] M46.4 `favoriteProgress` (E108) + `production` (E109)
+  - [x] M46.5 `genreDistribution` + `networkDistribution` (E98)
+  - [x] M46.6 `backlog` (E99) + `rewatchSummary` (E103)
+  - [x] M46.7 unit tests per aggregate incl. empty-DB and no-genre/network
         items
 
 - [ ] **M47 core: timezone + time-bucketed aggregates (stats/ part 2)**

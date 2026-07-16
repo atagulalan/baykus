@@ -49,7 +49,7 @@ import {
   type SettingsPatch,
   updateSettings,
 } from "./settings.ts";
-import { getStats, type Stats } from "./stats.ts";
+import { getStats, type Stats } from "./stats/index.ts";
 import type {
   EpisodeSummary,
   ListSeriesOptions,

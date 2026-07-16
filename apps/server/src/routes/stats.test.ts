@@ -49,6 +49,16 @@ describe("GET /api/stats", () => {
       episodesPerMonth: [],
       ratingDistribution: { "1": 0, "2": 0, "3": 0 },
       mostRewatched: [],
+      seriesCount: 0,
+      favoritesCount: 0,
+      datedWatches: { dated: 0, total: 0 },
+      mostWatchedByTime: [],
+      favoriteProgress: [],
+      production: { ongoing: 0, ended: 0, ongoingItems: [] },
+      genreDistribution: { top: [], other: 0 },
+      networkDistribution: { networkCount: 0, top: [], other: 0 },
+      backlog: { episodes: 0, seriesCount: 0, watchTimeMin: 0, topSeries: [] },
+      rewatchSummary: { totalRewatches: 0, rewatchedEpisodes: 0, bySeries: [] },
     });
   });
 

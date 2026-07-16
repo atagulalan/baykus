@@ -30,8 +30,8 @@ export const CATEGORY_ORDER: WatchCategory[] = [
 /** Default when the settings table has no `watching_window_days` row yet — see settings.ts. */
 export const DEFAULT_WATCHING_WINDOW_DAYS = 30;
 
-/** E18: only these count as "more episodes coming"; everything else (incl. NULL) is the finished branch. */
-const ONGOING_RELEASE_STATUSES: ReadonlySet<ReleaseStatus> = new Set([
+/** E18/E109: only these count as "more episodes coming"; everything else (incl. NULL) is the finished/ended branch. */
+export const ONGOING_RELEASE_STATUSES: ReadonlySet<ReleaseStatus> = new Set([
   "returning",
   "in_production",
 ]);
