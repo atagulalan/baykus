@@ -657,3 +657,111 @@ doğrulandı) ayrıca not edildi, bkz. root `HANDOVER.md`.
 ### Tam gate
 - [x] `pnpm lint && pnpm typecheck && pnpm test && pnpm build` — hepsi
       yeşil (workspace: 528 test, 60 test dosyası).
+
+---
+
+## M33 — Spec 006 CHECKPOINT: tasarım uyumu, masaüstü arama ikonu,
+## takvim switcher, favoriler sayfası (bekliyor)
+
+Spec 006, M28–M33 (E74–E81). Bu round da tarayıcı erişimi olmadan
+geliştirildi (chromium/playwright hâlâ yok); altı görev (M28–M32 + M33.1
+sweep) paralel arka plan ajanlarıyla, her biri kendi dosya kümesine
+kilitlenmiş şekilde yürütüldü, sonra tek bir merkezi gate ile birleştirildi.
+Otomatik doğrulanabilenler yeşil: `pnpm lint && pnpm typecheck && pnpm test
+&& pnpm build` — 536 test, 61 test dosyası, sıfır hata (bir `biome format
+--write` geçişi 6 dosyada whitespace-only düzeltme yaptı, mantık
+değişmedi). `grep -rn "zinc-\|emerald-\|rounded" apps/web/src --include=
+"*.tsx" --include="*.ts" --include="*.css"` tam olarak M33.1'in kayıtlı
+istisna listesiyle eşleşiyor (FilterPanel FAB + aktif nokta, ProfilePage
+avatar dairesi) — sıfır açıklanamamış hit, sıfır `emerald-` kaldı.
+`lib/backFallback.test.ts` favoriler satırlarını da kapsayacak şekilde
+genişletildi (5/5 yeşil); i18n parity testi yeşil (yeni anahtar yok).
+
+Bilinen bir açık karar (kod değil, ürün kararı gerektiriyor):
+**ResetLibraryDialog'un onay ifadesi bloğu** (`bg-white/5 font-mono`)
+E74'ün DoD'sinde isteniyor ama onay kelimesi ("SİL") ayrı bir markup
+bloğu değil, `settings.dangerZone.confirmLabel` i18n string'inin içine
+enterpolasyonla giriyor; bloklamak i18n key'i bölmeyi veya `<Trans>`
+kullanmayı gerektirir — M28'in "sadece className" kapsamının dışında,
+bkz. `tasks.md` M28.2'deki `<!-- DECISION -->` notu.
+
+### Modaller E45 idiomu (E74)
+- [ ] Bir bölümü izleme tarihiyle işaretle → WatchDateDialog `bg-[#101010]
+      border-white/10 shadow-2xl backdrop-blur-md` konteyner, `font-display
+      italic` başlık, sarı "Kaydet" (eski yeşil değil), köşeler keskin
+      (rounded yok).
+- [ ] `/search`ten bir dizi ekle → ManualListPicker aynı idiomda input/
+      select kabuğu; native `<select>` davranışı değişmemiş.
+- [ ] Ayarlar → "Hesabı sil" ve "Kütüphaneyi sıfırla" dialoglarını aç
+      (İPTAL ile çık, **gerçekten silme/sıfırlama**) → aynı konteyner
+      idiomu, onay butonu kırmızı kalmalı (`bg-red-600`), iptal borderless
+      mono.
+
+### TVTime içe aktarma sihirbazı + lucide ikonlar (E75/E76)
+- [ ] `/import`e git → dropzone kesikli border, sürükle-bırak üzerine
+      gelince sarı vurgu; "Dosya seç" sarı primary buton.
+- [ ] Bir fixture CSV ile yükle → rapor adımında üç panel hairline border
+      (dolgu yok, köşeler keskin); eşleşen satırlarda yeşil `Check` ikonu,
+      belirsiz (fuzzy) satırlarda sarı `CircleHelp`, eşleşmeyende gri `X`
+      — **unicode `✓`/`?`/`✗` karakteri hiçbir yerde görünmemeli**.
+      Fuzzy aday `<select>`i E74 input idiomunda.
+- [ ] Onayla → confirming adımı sarı ilerleme çubuğu; özet adımı
+      `font-display italic` başlık + "Kütüphaneye git" sarı buton.
+- [ ] `/claim` sayfasını aç → `⚠️` yerine sarı `TriangleAlert` ikonu
+      görünmeli.
+
+### Masaüstü arama ikonu + `/search` düzeni (E77)
+- [ ] Masaüstünde (≥640px) üst header: baykuş solda, nav kümesi sağda
+      (Kütüphane/İzle/Takvim/Profil + en sağda arama ikonu) — ortada
+      **hiçbir şey yok**, eski inline arama kutusu tamamen kaldırılmış.
+- [ ] Arama ikonuna tıkla → `/search`e gider, ikon sarı vurgulanır
+      (aktif rota); sayfa `max-w-xl` ortalanmış bir sütunda, autofocus
+      çalışıyor, ekleme akışı (çoklu ekleme, sayfada kal) eskisi gibi
+      çalışıyor.
+- [ ] Mobil tab bar'da "Ara" sekmesi ve davranışı **değişmemiş**.
+
+### Takvim başlık satırı + segmented switcher + BUGÜN anchor (E78, E73
+### regresyon)
+- [ ] Takvim'i aç → tek satır: solda "Takvim" başlığı (`font-display
+      italic`), sağda `[ ZAMAN ÇİZELGESİ | TAKVİM ]` segmented control
+      (aktif segment sarı dolgulu, `aria-pressed` doğru).
+- [ ] İki mod arasında geçiş yap → veri/davranış eskisiyle aynı.
+- [ ] BUGÜN satırı **hâlâ sticky app header'ın hemen altında** açılıyor
+      (E73 regresyon kontrolü — başlık satırı BUGÜN'ün üstünde kayıp
+      gitmeli, bu beklenen).
+- [ ] Ay modu ok butonları artık lucide `ChevronLeft`/`ChevronRight`
+      ikonu (eski `‹`/`›` metin karakteri değil); iskelet ve hata/tekrar-
+      dene butonları E45 idiomunda.
+
+### Zaman çizelgesinde işaretleme kalıcılığı (E81)
+- [ ] Zaman çizelgesinde henüz izlenmemiş bir bölümü işaretle → satır
+      **kaybolmamalı**, checkbox dolu, satır içeriği (poster/başlık/
+      etiketler) soluklaşmalı (`opacity-60`) — checkbox'ın kendisi
+      soluklaşmamalı.
+- [ ] Aynı satırın işaretini kaldır → satır tam opaklığa döner, checkbox
+      boşalır (undo çalışıyor).
+- [ ] Sayfadan çık, tekrar Takvim'e gir (veya moda geçip geri dön) →
+      işaretlenen satır artık **görünmemeli** (doğal yeniden-fetch —
+      beklenen davranış, kalıcı geçmiş görünümü değil).
+- [ ] Mutlu yolda **hiç hata toast'ı çıkmamalı**; test net-zero iz
+      bırakacak şekilde yapılmalı (gerçek bir bölümü işaretlediysen test
+      sonunda kaldır, ya da tek kullanımlık bir dizide dene).
+
+### Favoriler 6 sınırı + `/user/me/favorites` (E79)
+- [ ] Profilde ≤6 favori varken başlık düz metin (link/ok yok).
+- [ ] 7+ favoriye çıkar (geçici olarak — test bitince geri **un-heart**
+      et, net-zero iz) → başlık artık `/user/me/favorites`e link olan bir
+      satır: başlık metni + toplam sayı + `ChevronRight` oku.
+- [ ] O sayfaya git → tüm favoriler standart poster grid'inde (3/4/6
+      sütun) görünmeli, aynı poster morph isimleriyle.
+- [ ] Geri oku profile dönmeli (mobil).
+- [ ] `/user/bogus/favorites` gibi yabancı bir handle dene → "Profil
+      bulunamadı." (404), yönlendirme yok.
+
+### İki dil
+- [ ] Ayarlar → Dil'den EN'e geç, yukarıdaki M33 adımlarının tamamını
+      tekrarla.
+
+### Tam gate
+- [x] `pnpm lint && pnpm typecheck && pnpm test && pnpm build` — hepsi
+      yeşil (workspace: 536 test, 61 test dosyası).
