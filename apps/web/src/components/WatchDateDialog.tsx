@@ -33,27 +33,27 @@ export function WatchDateDialog({ initialValue, onConfirm, onClose }: WatchDateD
       <div
         role="dialog"
         aria-modal="true"
-        className="relative w-full max-w-xs rounded-lg bg-zinc-900 p-4 shadow-xl"
+        className="relative w-full max-w-xs border border-white/10 bg-[#101010] p-4 shadow-2xl backdrop-blur-md"
       >
-        <h2 className="mb-3 font-medium text-sm">{t("episode.editDate")}</h2>
+        <h2 className="mb-3 font-display italic text-snow text-lg">{t("episode.editDate")}</h2>
         <input
           type="datetime-local"
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          className="w-full rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm"
+          className="w-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-snow focus:border-yellow focus:outline-none"
         />
         <div className="mt-4 flex justify-end gap-2">
           <button
             type="button"
             onClick={onClose}
-            className="rounded px-3 py-1.5 text-sm text-zinc-400 hover:text-zinc-100"
+            className="font-mono text-[10px] uppercase tracking-widest text-muted hover:text-snow"
           >
             {t("search.cancel")}
           </button>
           <button
             type="button"
             onClick={handleConfirm}
-            className="rounded bg-emerald-600 px-3 py-1.5 font-medium text-sm text-white"
+            className="bg-yellow text-[#080808] font-mono text-[10px] uppercase tracking-widest px-4 py-2.5"
           >
             {t("episode.save")}
           </button>

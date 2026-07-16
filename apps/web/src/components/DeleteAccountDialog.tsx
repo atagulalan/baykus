@@ -30,25 +30,25 @@ export function DeleteAccountDialog({
       <div
         role="dialog"
         aria-modal="true"
-        className="relative flex w-full max-w-sm flex-col gap-3 rounded-lg bg-zinc-900 p-4 shadow-xl"
+        className="relative flex w-full max-w-sm flex-col gap-3 border border-white/10 bg-[#101010] p-4 shadow-2xl backdrop-blur-md"
       >
-        <h2 className="font-medium text-red-400 text-sm">{t("auth.deleteAccount.warning")}</h2>
+        <h2 className="font-display italic text-snow text-lg">{t("auth.deleteAccount.warning")}</h2>
         <a
           href={exportZipUrl()}
           download
-          className="rounded bg-zinc-800 px-3 py-1.5 text-center text-sm text-zinc-100"
+          className="border border-white/10 px-4 py-2 text-center font-mono text-[10px] uppercase tracking-widest text-muted hover:text-snow hover:border-white/20 transition-colors"
         >
           {t("settings.data.export")}
         </a>
 
-        <label className="flex flex-col gap-1 text-sm">
+        <label className="flex flex-col gap-1 text-sm text-snow">
           {t("auth.password")}
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="current-password"
-            className="rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5"
+            className="border border-white/10 bg-white/5 px-3 py-2 text-sm text-snow focus:border-yellow focus:outline-none"
           />
         </label>
 
@@ -58,7 +58,7 @@ export function DeleteAccountDialog({
           <button
             type="button"
             onClick={onClose}
-            className="rounded px-3 py-1.5 text-sm text-zinc-400 hover:text-zinc-100"
+            className="font-mono text-[10px] uppercase tracking-widest text-muted hover:text-snow"
           >
             {t("search.cancel")}
           </button>
@@ -66,7 +66,7 @@ export function DeleteAccountDialog({
             type="button"
             disabled={pending || !password}
             onClick={() => onConfirm(password)}
-            className="rounded bg-red-600 px-3 py-1.5 font-medium text-sm text-white disabled:opacity-50"
+            className="bg-red-600 text-white font-mono text-[10px] uppercase tracking-widest px-4 py-2.5 disabled:opacity-50"
           >
             {t("auth.deleteAccount.confirm")}
           </button>
