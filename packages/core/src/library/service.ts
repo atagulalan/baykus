@@ -61,8 +61,10 @@ import type {
 import {
   type AddWatchResult,
   addWatch,
+  type BulkUnwatchResult,
   type BulkWatchResult,
   type BulkWatchTarget,
+  bulkUnwatch,
   bulkWatch,
   removeLatestWatch,
 } from "./watches.ts";
@@ -241,6 +243,7 @@ export interface Library {
   clearStaleStoppedLists(): void;
   addWatch(episodeId: number, watchedAt?: string, source?: WatchSource): AddWatchResult | null;
   bulkWatch(itemId: number, target: BulkWatchTarget): BulkWatchResult | null;
+  bulkUnwatch(itemId: number, target: BulkWatchTarget): BulkUnwatchResult | null;
   removeLatestWatch(episodeId: number): boolean;
   setRating(targetType: RatingTargetType, targetId: number, value: 1 | 2 | 3): Rating;
   clearRating(targetType: RatingTargetType, targetId: number): boolean;
@@ -535,6 +538,9 @@ export function createLibrary(db: LibraryDatabase): Library {
 
     bulkWatch(itemId: number, target: BulkWatchTarget): BulkWatchResult | null {
       return bulkWatch(db, itemId, target);
+    },
+    bulkUnwatch(itemId: number, target: BulkWatchTarget): BulkUnwatchResult | null {
+      return bulkUnwatch(db, itemId, target);
     },
 
     removeLatestWatch(episodeId: number): boolean {

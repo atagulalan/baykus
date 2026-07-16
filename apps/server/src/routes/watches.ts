@@ -73,6 +73,21 @@ export function createWatchRoutes(library: Library): Hono {
     return c.json(result);
   });
 
+  app.delete("/api/library/series/:id/watches/bulk", async (c) => {
+    const itemId = parseId(c.req.param("id"));
+    const body = bulkWatchBodySchema.parse(await readJsonBody(c));
+    const target =
+      body.upToEpisodeId !== undefined
+        ? { upToEpisodeId: body.upToEpisodeId }
+        : { seasonNumber: body.seasonNumber as number };
+
+    const result = library.bulkUnwatch(itemId, target);
+    if (!result) {
+      throw new ApiError("NOT_FOUND", `series ${itemId} (or target episode) not in library`);
+    }
+    return c.json(result);
+  });
+
   app.get("/api/watches/history", (c) => {
     const query = historyQuerySchema.parse(Object.fromEntries(new URL(c.req.url).searchParams));
     const items = library.getWatchHistory(query.limit ?? 30);

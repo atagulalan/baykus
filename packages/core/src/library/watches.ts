@@ -1,4 +1,4 @@
-import { and, eq, isNotNull, lte, ne } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, lte, ne } from "drizzle-orm";
 import type { LibraryDatabase } from "../db/open.ts";
 import type { WatchSource } from "../db/schema.ts";
 import * as schema from "../db/schema.ts";
@@ -175,4 +175,72 @@ export function bulkWatch(
   });
 
   return { created, skippedAlreadyWatched };
+}
+
+export interface BulkUnwatchResult {
+  deleted: number;
+}
+
+/**
+ * Deletes every watch event on the same candidate set bulkWatch would mark.
+ * Season uncheck wipes rewatch history for those episodes (not just latest).
+ */
+export function bulkUnwatch(
+  db: LibraryDatabase,
+  itemId: number,
+  target: BulkWatchTarget,
+): BulkUnwatchResult | null {
+  const item = db
+    .select({ id: schema.items.id })
+    .from(schema.items)
+    .where(eq(schema.items.id, itemId))
+    .get();
+  if (!item) return null;
+
+  const today = todayUtc();
+  const aired = and(isNotNull(schema.episodes.airDate), lte(schema.episodes.airDate, today));
+
+  let candidates: { id: number }[];
+
+  if ("upToEpisodeId" in target) {
+    const boundary = db
+      .select({ s: schema.episodes.seasonNumber, e: schema.episodes.episodeNumber })
+      .from(schema.episodes)
+      .where(and(eq(schema.episodes.id, target.upToEpisodeId), eq(schema.episodes.itemId, itemId)))
+      .get();
+    if (!boundary) return null;
+
+    candidates = db
+      .select({
+        id: schema.episodes.id,
+        s: schema.episodes.seasonNumber,
+        e: schema.episodes.episodeNumber,
+      })
+      .from(schema.episodes)
+      .where(and(eq(schema.episodes.itemId, itemId), ne(schema.episodes.seasonNumber, 0), aired))
+      .all()
+      .filter((ep) => ep.s < boundary.s || (ep.s === boundary.s && ep.e <= boundary.e));
+  } else {
+    candidates = db
+      .select({ id: schema.episodes.id })
+      .from(schema.episodes)
+      .where(
+        and(
+          eq(schema.episodes.itemId, itemId),
+          eq(schema.episodes.seasonNumber, target.seasonNumber),
+          aired,
+        ),
+      )
+      .all();
+  }
+
+  if (candidates.length === 0) return { deleted: 0 };
+
+  const episodeIds = candidates.map((c) => c.id);
+  const deleted = db
+    .delete(schema.watches)
+    .where(and(eq(schema.watches.itemId, itemId), inArray(schema.watches.episodeId, episodeIds)))
+    .run().changes;
+
+  return { deleted };
 }

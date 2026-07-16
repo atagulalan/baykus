@@ -5,6 +5,7 @@ import type { SeasonSummary } from "../api/types.ts";
 import { todayIso } from "../lib/date.ts";
 import { Checkbox } from "./Checkbox.tsx";
 import { EpisodeRow } from "./EpisodeRow.tsx";
+import { UnwatchSeasonDialog } from "./UnwatchSeasonDialog.tsx";
 
 interface SeasonSectionProps {
   season: SeasonSummary;
@@ -14,6 +15,7 @@ interface SeasonSectionProps {
   onEditDate: (episodeId: number) => void;
   onBulkUpToHere: (episodeId: number) => void;
   onMarkSeasonWatched: () => void;
+  onUnwatchSeason: () => void;
   promptEpisodeId: number | null;
   onRateEpisode: (episodeId: number, value: 1 | 2 | 3) => void;
   onDismissPrompt: () => void;
@@ -27,6 +29,7 @@ export function SeasonSection({
   onEditDate,
   onBulkUpToHere,
   onMarkSeasonWatched,
+  onUnwatchSeason,
   promptEpisodeId,
   onRateEpisode,
   onDismissPrompt,
@@ -39,6 +42,7 @@ export function SeasonSection({
   const complete = airedCount > 0 && watchedCount >= airedCount;
 
   const [expanded, setExpanded] = useState(season.number !== 0 && !complete);
+  const [showUnwatchDialog, setShowUnwatchDialog] = useState(false);
 
   const label =
     season.name ??
@@ -47,7 +51,7 @@ export function SeasonSection({
       : t("series.seasonNumber", { number: season.number }));
 
   return (
-    <div className="border-white/10 border-b py-2">
+    <div className="border-white/5 border-b py-2">
       <div className="flex items-center gap-2 px-1 py-1">
         <button
           type="button"
@@ -65,14 +69,28 @@ export function SeasonSection({
         <div className="flex items-center gap-2 pr-2">
           <Checkbox
             checked={complete}
-            disabled={complete || airedCount === 0}
+            disabled={airedCount === 0}
             onChange={(checked) => {
-              if (checked && !complete) onMarkSeasonWatched();
+              if (checked && !complete) {
+                onMarkSeasonWatched();
+              } else if (!checked && complete) {
+                if (watchedCount > 1) {
+                  setShowUnwatchDialog(true);
+                } else {
+                  onUnwatchSeason();
+                }
+              }
             }}
             aria-label={t("series.markSeasonWatched")}
           />
         </div>
       </div>
+      {showUnwatchDialog && (
+        <UnwatchSeasonDialog
+          onClose={() => setShowUnwatchDialog(false)}
+          onConfirm={() => onUnwatchSeason()}
+        />
+      )}
       {expanded && (
         <div className="flex flex-col gap-0.5">
           {season.episodes.map((episode) => {

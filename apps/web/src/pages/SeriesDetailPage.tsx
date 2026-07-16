@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import {
   ApiError,
   addEpisodeWatch,
+  bulkUnwatch,
   bulkWatch,
   clearRating,
   getSeriesByParam,
@@ -214,6 +215,12 @@ export function SeriesDetailPage() {
 
   const markSeasonWatched = useMutation({
     mutationFn: (seasonNumber: number) => bulkWatch(requireInternalId(), { seasonNumber }),
+    onError: reportError,
+    onSettled: invalidate,
+  });
+
+  const unwatchSeason = useMutation({
+    mutationFn: (seasonNumber: number) => bulkUnwatch(requireInternalId(), { seasonNumber }),
     onError: reportError,
     onSettled: invalidate,
   });
@@ -527,10 +534,7 @@ export function SeriesDetailPage() {
           {detail.genres.length > 0 && (
             <div className="flex flex-wrap gap-1">
               {detail.genres.map((g) => (
-                <span
-                  key={g.id ?? g.name}
-                  className="bg-white/5 px-2 py-0.5 text-xs text-muted"
-                >
+                <span key={g.id ?? g.name} className="bg-white/5 px-2 py-0.5 text-xs text-muted">
                   {g.name}
                 </span>
               ))}
@@ -624,6 +628,7 @@ export function SeriesDetailPage() {
             }}
             onBulkUpToHere={(episodeId) => bulkUpToHere.mutate(episodeId)}
             onMarkSeasonWatched={() => markSeasonWatched.mutate(season.number)}
+            onUnwatchSeason={() => unwatchSeason.mutate(season.number)}
             promptEpisodeId={promptEpisodeId}
             onRateEpisode={(episodeId, value) => rateEpisode.mutate({ episodeId, value })}
             onDismissPrompt={() => setPromptEpisodeId(null)}
