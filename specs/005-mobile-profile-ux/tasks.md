@@ -271,7 +271,7 @@ edge-to-edge rows, back arrows on subpages, Takvim opens at BUGÜN.
 
 ## M27 — CHECKPOINT 005 + docs
 
-- [ ] M27.1 CHECKPOINT: MANUELTEST section + acceptance walk + README +
+- [x] M27.1 CHECKPOINT: MANUELTEST section + acceptance walk + README +
       HANDOVER
   - **Files:** root `MANUELTEST.md`, `README.md`, root `HANDOVER.md`,
     `specs/005-mobile-profile-ux/spec.md` (checklist boxes)

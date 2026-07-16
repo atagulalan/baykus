@@ -218,39 +218,115 @@ scroll up, but I never *land* on them.
 
 ## Acceptance checklist (definition of done for 005)
 
-- [ ] All FRs implemented; every E57–E73 decision that is automatable has at
+- [~] All FRs implemented; every E57–E73 decision that is automatable has at
       least one test asserting it (browser-only rows explicitly listed in
       MANUELTEST §M27).
-- [ ] `pnpm lint && pnpm typecheck && pnpm test` green across the workspace.
-- [ ] Zip round-trip test green and **extended**: a favorited item survives
+      <!-- E61: packages/core/src/zip/{export,import,roundtrip}.test.ts +
+      db/open.test.ts migration 0003 test. E62: library/service.test.ts
+      favorite-only update + app.test.ts PATCH favorite (200/GET-list
+      reflect/other-fields-untouched/400). E63/E64: refresh/engine.test.ts
+      isStale + filterStaleItemIds ordering + apps/server routes/
+      refresh.test.ts staleOnly route tests. E57: lib/profilePath.test.ts
+      full resolution matrix incl. no-loop predicate. E59: lib/
+      groupByCategory.test.ts HOME_CATEGORY_ORDER exclusion. E64/E65 web
+      side: lib/staleSweep.test.ts (throttle, no-concurrent-run, manual-
+      flag interplay, silent failure). E70: components/FilterPanel.test.ts
+      active-dot predicate. E68: lib/useSeriesSearch.test.ts resultKey
+      smoke test. E72: lib/backFallback.test.ts full route→fallback table.
+      E58/E60/E66/E67/E69/E71/E73 are presentational/CSS/layout — no
+      dedicated unit test, same precedent as 004's E51 (M25/M26 DoDs say
+      "Tests: none beyond typecheck" for these). Marked partial rather
+      than done because those and E62's heart/E70's sheet/E73's scroll
+      rely on a human browser pass — see MANUELTEST.md §M27. -->
+- [x] `pnpm lint && pnpm typecheck && pnpm test` green across the workspace.
+      <!-- 60 test files, 528 tests, zero typecheck errors across all 10
+      packages, confirmed after M26.3 (commit 0d861d5). -->
+- [x] Zip round-trip test green and **extended**: a favorited item survives
       export→import byte-identically (schemaVersion 4); a v3 archive still
       imports (favorite=false); no existing round-trip assertion touched
       (Article III).
-- [ ] Migration: opening a pre-005 library DB adds `tracking.favorite`
+      <!-- roundtrip.test.ts: item2 (Breaking Bad) marked favorite: true in
+      buildPopulatedDb, all three existing byte-identical assertions
+      untouched and still pass. import.test.ts "v3 import (E61)" — v3 zip
+      (no tracking.favorite field) imports with favorite=false. Merge
+      test: incoming true sets it, incoming false clears it (M23.1). -->
+- [x] Migration: opening a pre-005 library DB adds `tracking.favorite`
       (false everywhere) without data loss — asserted by a migration test.
-- [ ] `staleOnly=1` refresh: unit/route tests cover the stale predicate
+      <!-- db/open.test.ts "migration 0003: tracking.favorite (E61)" — a
+      v3-schema DB with existing tracking rows opens with favorite=0 on
+      every row. Separately verified the actual 0003 migration applies
+      cleanly against a safe .backup copy of the real library.db (M23.1;
+      also caught and fixed a real drizzle-migration-journal timestamp
+      bug in the process — see the M23.1 commit). -->
+- [x] `staleOnly=1` refresh: unit/route tests cover the stale predicate
       (NULL, <24h fresh, >24h stale), ordering, `total` = stale count, and
       the 400 on junk param values.
+      <!-- engine.test.ts "isStale (E63)" (null/23h/25h) + "staleOnly
+      (E64)" (NULL-first-then-oldest ordering, fresh items untouched);
+      routes/refresh.test.ts "staleOnly=1" skips a fresh item (0
+      progress events, immediate complete), refreshes a backdated one,
+      "staleOnly=bogus" -> 400 VALIDATION_FAILED, paramless path has an
+      explicit regression test (M24.1). -->
 - [ ] Browser (mobile viewport, both locales): tab bar shows
       Kütüphane/İzle/Takvim/Ara/Profil; header = centered wordmark; back
       arrow on detail/import/profile-subpages/settings works with both
       in-app history and deep-link fallback.
+      <!-- Implemented (M25.3 tab bar/header, M26.2 back arrow +
+      backFallback.ts unit-tested for the fallback-parent half of this;
+      the canGoBack-true "goes back" half needs a real browser history
+      stack). Visual + interaction pass pending. See MANUELTEST.md §M27. -->
 - [ ] Browser: home shows five sections; Bitirildi/Bırakıldı reachable via
       profile → Tüm diziler and via the explicit category filter.
+      <!-- HOME_CATEGORY_ORDER unit-tested (M25.2); the explicit-filter
+      path reuses LibraryPage's pre-existing byCategory branch untouched.
+      Visual pass pending. See MANUELTEST.md §M27. -->
 - [ ] Browser: profile shows favorites rail (after hearting ≥1 series),
       stat tiles matching `/user/<self>/stats` numbers, working links, and
       a functioning Tümünü yenile with progress.
+      <!-- Implemented (M25.1); both the profile and stats pages call the
+      same getStats()/listSeries() so the numbers are the same query,
+      not just visually similar, but a live side-by-side click-through is
+      still pending. See MANUELTEST.md §M27. -->
 - [ ] Browser: `/user/me` canonicalizes in multi mode; foreign handle 404s;
       `/stats` redirects into the profile stats subpage.
+      <!-- resolveProfileParam's full matrix (single/multi × me/own/
+      foreign) is unit-tested (profilePath.test.ts); the actual redirect/
+      404 rendering (ProfileGuard, StatsRedirect) needs a browser. This
+      dev instance runs single mode, so the multi-mode canonicalize path
+      specifically has never executed against a real session. See
+      MANUELTEST.md §M27. -->
 - [ ] Browser: library at 390px renders 3 columns; filter FAB opens the
       bottom sheet; APPLY/RESET behave as before; active-filter dot shows.
+      <!-- SERIES_GRID_CLASSNAME shared across every grid surface (M26.1);
+      hasActiveFilter unit-tested. FilterForm is one shared component
+      behind both presentations, so APPLY/RESET logic isn't forked, but
+      the sheet's open/scrim/dismiss interaction needs a human pass. See
+      MANUELTEST.md §M27. -->
 - [ ] Browser: EpisodeRow content starts ≤20px from the screen edge at
       390px.
+      <!-- Arithmetic, not a screenshot: main's px-3 (12px) + row's px-2
+      (8px) = 20px, the exact ceiling (M26.2). DevTools measurement still
+      pending. See MANUELTEST.md §M27. -->
 - [ ] Browser: Takvim opens with BUGÜN directly under the header
       (timeline), month mode unaffected.
+      <!-- Root cause fixed (double-rAF instant scroll + measured
+      --app-header-height instead of scroll-mt-16, M26.3); no unit test
+      possible for scroll behavior itself. See MANUELTEST.md §M27. -->
 - [ ] Browser: with a >24h-stale library, opening home starts a quiet sweep
       (status line, cards update); opening a stale detail refreshes it
       silently; neither shows error toasts on failure.
-- [ ] UI complete in TR and EN; i18n parity test green.
-- [ ] README feature list updated (profile hub, favorites, auto-refresh,
+      <!-- staleSweep.test.ts covers the throttle/concurrency/silent-
+      failure logic end to end with a mocked refresh fn; the route-level
+      staleOnly behavior against a real stale item is covered by
+      apps/server's refresh.test.ts. The actual browser sighting (status
+      line rendering, card data updating) needs a >24h-stale copy of a
+      real library and a browser. See MANUELTEST.md §M27. -->
+- [~] UI complete in TR and EN; i18n parity test green.
+      <!-- apps/web/src/i18n/parity.test.ts green throughout (every M23–
+      M26 task added keys to both catalogs in the same commit: series.
+      favorite/unfavorite, library.sweep.progress, profile.*, notFound.
+      profile, app.nav.search/profile, app.back, search.page.hint,
+      library.filter.close). Full visual TR/EN pass pending a browser
+      session. See MANUELTEST.md §M27. -->
+- [x] README feature list updated (profile hub, favorites, auto-refresh,
       mobile UX pass).

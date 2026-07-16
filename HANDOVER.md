@@ -1,73 +1,123 @@
-# HANDOVER — spec 005 queued + outstanding browser checkpoints
+# HANDOVER — specs 001–005 code-complete, one combined browser pass left
 
-**Status (2026-07-16):** Specs 001–004 are fully implemented and green
-(484 tests). **Spec 005 (`specs/005-mobile-profile-ux/`) is approved and
-not started** — it is the active work. Additionally, the accumulated
-browser checkpoints from 003/004 are still waiting for a browser-capable
-session (they can be folded into 005's M27 checkpoint sitting).
+**Status (2026-07-16):** Specs 001–005 are all fully implemented and green
+(528 tests, `pnpm lint && pnpm typecheck && pnpm test && pnpm build` all
+pass). **Nothing is queued for autonomous implementation right now** — the
+only remaining work across every spec is a single browser-capable session
+to walk `MANUELTEST.md`'s accumulated checkpoints and check the boxes that
+require a human eye. If you're starting a fresh session with no browser
+access, there is no code to write — ask the user what's next rather than
+inventing new scope.
 
-## Next up: spec 005 — Mobile-First UX, Profile Hub, Favorites & Stale Auto-Refresh
+## What's left: one combined browser pass
 
-From the user's 2026-07-16 `fikir.txt` (mobile UX pass) + product Q&A the
-same day (decisions locked in spec.md §Decisions). Read
-`specs/005-mobile-profile-ux/spec.md` (especially §Edge-case decisions
-E57–E73), then plan.md; execute `tasks.md` **M23 → M27 in order**
-(M23.1 is the entry point). Summary of tracks:
+`MANUELTEST.md`'s **§M27** section is the entry point — it covers spec
+005's own checkpoint (mobile UX, profile hub, favorites, stale
+auto-refresh) and explicitly folds in every older pending item so it's all
+one sitting:
 
-- **M23 favorites** — `tracking.favorite` (first migration since 001!),
-  zip v3→v4 (extend the round-trip test, never weaken — Article III),
-  PATCH field, detail-page heart.
-- **M24 stale auto-refresh** — 24h staleness constant, `staleOnly=1` on
-  the refresh-all SSE endpoint, library-mount sweep + detail-open
-  auto-refresh (visit-triggered — Article V compliant, no background
-  jobs).
-- **M25 profile hub** — `/user/$handle` (self-only; `me` in single mode),
-  ProfilePage (favorites rail, stat tiles, links, relocated Tümünü yenile),
-  AllSeriesPage, home trimmed to five categories, `/search` page, tab bar
-  Kütüphane/İzle/Takvim/Ara/Profil.
-- **M26 mobile ergonomics** — 3-col grid, filter FAB + bottom sheet,
-  E71 inset rule (≤20px at 390px), back arrows, calendar BUGÜN anchor.
-- **M27 checkpoint** — MANUELTEST §M27, README, this file.
+- **005 §M27** (new): tab bar/back-arrow/centered-logo matrix, home
+  five-section trim, profile page full walk, `/user/me` canonicalization +
+  foreign-handle 404 + `/stats` redirect, favorites zip round-trip **on a
+  throwaway library**, stale sweep + stale-detail auto-refresh, 3-column
+  grid + filter FAB/bottom sheet, EpisodeRow ≤20px measurement, calendar
+  BUGÜN anchor, E51 view-transition regression re-check (the Layout
+  restructure touched the header/tab-bar chrome that poster-morph/
+  cross-fade depends on).
+- **003's M17.7** (`specs/003-dynamic-watching-ux/tasks.md`) — the
+  remaining `[ ]` rows in MANUELTEST §M14.7 and §M17.9–14 (HotD new-episode
+  lift scenario, segmented-bar visual checks, both locales).
+- **004's M22** (`specs/004-import-fidelity-ux/tasks.md`) — the remaining
+  `[ ]` rows in MANUELTEST §M22 (TMDB backfill with a real key, poster
+  morph/cross-fade/reduced-motion/Firefox matrix, E54–E56 re-verification).
+- **002 leftovers** — M11.4/M12.4 boxes in `specs/002-watch-categories/
+  tasks.md` + the matching MANUELTEST §M11.4/§M12.4 rows. Some of these
+  sit on chrome 005 relocated (search bar, stats/settings nav entries,
+  the library refresh button) — verify the *behavior* at its new home
+  and annotate the step rather than failing it on furniture that moved
+  on purpose.
+- **M9.2** (hosted deployment, baykus.xava.me) stays blocked on real
+  DNS/TLS/hosting credentials only the user can provide — do not attempt
+  it autonomously, in this session or any future one.
 
-Gotchas the specs call out: keep `app-header`/`app-tabbar`
-view-transition names through the Layout restructure (E51 regression);
-`CATEGORY_ORDER` stays untouched (home uses a new `HOME_CATEGORY_ORDER`);
-the sweep runner is module-scoped (survives navigation, never concurrent
-with the manual button); web never imports from packages (duplicate the
-3-line staleness predicate). **M23.1's migration will run against the
-user's real library.db on next server start — safe/additive, but say it
-in the session summary.**
+None of this needs new code. If a step fails during the walkthrough, that's
+a real bug — fix it, add/extend a test if the failure mode was missable by
+the existing suite, and note the fix in the relevant spec's tasks.md
+(follow the `<!-- DECISION: ... -->` convention already used throughout if
+the fix implies a judgment call the specs didn't cover).
 
-## Still outstanding: browser checkpoints (003 + 004)
+## What happened in the 005 implementation session (2026-07-16)
 
-A browser-capable session should fold these into the same sitting as M27:
+M23–M26 shipped as 10 commits (`c00c8c0` through `0d861d5`), one per task,
+full gate green after each:
 
-- **003's M17.7** (`specs/003-dynamic-watching-ux/tasks.md`) — full
-  `MANUELTEST.md` walkthrough for spec 003 sections, both locales, plus a
-  002 regression spot-check.
-- **004's M22** — `MANUELTEST.md` §M22 (import-wizard relic disclosure,
-  Suits-shape archived import, Re:Zero all-filled bar, poster morph/
-  cross-fade/reduced-motion/Firefox matrix, TMDB-parity URLs + canonical
-  replace, E54–E56 re-verification).
-- **002 leftovers** — M11.4/M12.4 boxes + five §Acceptance browser lines
-  in 002's spec.md (implemented and test-green; boxes reserved for the
-  browser pass).
-- **M9.2** (hosted deployment) stays blocked on the user's credentials —
-  do not attempt.
+- **M23 (favorites)** — `tracking.favorite` migration (0003, first schema
+  change since 001), zip v3→v4 (favorite always exported, v1–v3 import
+  default it false, merge keeps incoming-wins), `PATCH .../series/:id`
+  gains `favorite`, detail-page heart (optimistic, ≥44px, no SeriesCard
+  badge).
+- **M24 (stale auto-refresh)** — `STALE_REFRESH_HOURS`/`isStale`/
+  `filterStaleItemIds` in `packages/core`, `refreshAll`'s `staleOnly`
+  option, the route's `?staleOnly=1|true`; web's `lib/staleSweep.ts`
+  (module-scoped, 15-min throttle, shared running-flag with the manual
+  button) triggers on library mount; detail pages auto-refresh once per
+  mount when stale.
+- **M25 (profile hub + nav)** — `/user/$handle` (+ `/all-series`, `/stats`
+  subpages), `resolveProfileParam`/`ProfileGuard` (self-only, E57 matrix),
+  library home trimmed to `HOME_CATEGORY_ORDER` (5 of 7 categories), the
+  refresh-all button moved off the library page onto the profile,
+  `useSeriesSearch` extracted so `/search` and the header dropdown share
+  one implementation, mobile header/tab-bar restructured (centered
+  wordmark, Kütüphane/İzle/Takvim/Ara/Profil). **M25.1+M25.2 landed in one
+  commit** — documented as a DECISION in tasks.md — because ProfilePage's
+  "Tüm diziler" link needed the all-series route registered for TanStack
+  Router's typed `Link`, so building M25.1 in isolation wouldn't have
+  typechecked.
+- **M26 (mobile ergonomics)** — shared `SERIES_GRID_CLASSNAME` (3 columns
+  below `sm`) across every poster grid, `FilterPanel`'s mobile FAB +
+  bottom sheet (one `FilterForm`, two presentations), the E71 inset pass
+  (`px-3 sm:px-6` main, `px-2 sm:px-4`-order rows — measured 20px at
+  390px, not eyeballed), a mobile-only back arrow (`lib/backFallback.ts`,
+  history-back via `useCanGoBack` with a per-route fallback parent), and
+  the calendar's BUGÜN anchor fix (double-rAF instant scroll against a
+  *measured* `--app-header-height`, replacing the old `scroll-mt-16`
+  guess).
 
-Note: 005 moves some furniture these checklists reference (search bar
-location, stats/settings nav entries, library refresh button). Where a
-MANUELTEST step's *surface* moved, verify the behavior at its new home and
-annotate the step — don't fail it on furniture.
+**A real gotcha worth knowing before touching migrations again:** this
+repo's `_journal.json` entries carry hand-set future-looking timestamps
+(`1784297400000`-range), not real wall-clock values. `drizzle-kit
+generate`'s freshly-stamped `when` (real `Date.now()`) sorted *before*
+those, and drizzle's migrator applies a migration only if its `when`
+exceeds the max already-applied — so the new migration would have been
+silently skipped forever, including against a real production `library.db`,
+with zero error. Caught only by actually running the migration against a
+realistic pre-migration DB, not by reading the generated files. Bump the
+new entry's `when` above the previous max by hand every time.
+
+No browser-automation tool exists in this environment (checked again this
+session) — every M23–M26 task was verified via its full automated test
+suite plus, where it mattered, self-cleaning `curl` round-trips against the
+real running dev server (add → mutate → assert → delete, net zero trace
+left behind) or a migration run against a **safe `sqlite3 .backup` copy**
+of the real `library.db` (never the live file directly).
 
 ## The user's real library
 
-`apps/server/data/library.db` (~277 items, 100% TVmaze-matched, no TMDB
-key configured) still holds 3 relic items and one archived-but-
-uncategorized show predating 004's importer fix (re-check by title: Troy
-the magic show, Gotham, Y Gwyll relics; Suits should be Bırakıldı). User
-data, not a task: offer (a) hand-fix in the UI or (b) danger-zone wipe +
-re-import. Do not do either unprompted.
+`apps/server/data/library.db` — **do not trust older docs' "~277 items,
+100% TVmaze-matched" description without re-checking first.** Mid-session,
+a live read-only check (`sqlite3 apps/server/data/library.db "SELECT
+COUNT(*) FROM items;"`) found **0 rows** — the user confirmed this was an
+intentional wipe and said they'd just restored from their own backup, but
+the on-disk file hadn't visibly changed yet by the end of the session
+(possibly pending a restart, or going through the app's own zip-import flow
+rather than a file swap). Re-check row counts before relying on any
+"the library has N items" claim, including this one:
+
+```bash
+sqlite3 apps/server/data/library.db "SELECT COUNT(*) FROM items;"
+```
+
+That query is read-only and safe to run any time.
 
 ## Commands
 

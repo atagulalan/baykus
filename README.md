@@ -42,6 +42,16 @@ Dizi (ve ileride film + kitap) takip uygulaması. TV Time / Serializd benzeri, a
 - Sayfa geçişleri: kütüphane kartından dizi detayına geçişte poster yerinde akarak morph olur,
   diğer sayfa değişimlerinde hafif bir cross-fade olur; "hareketi azalt" ayarında veya View
   Transitions API'yi desteklemeyen tarayıcılarda anlık geçişe düşer
+- Favoriler: dizi detayında kalp ile favorile, profilde poster rafı olarak görünür — zip
+  export/import'ta korunur (schemaVersion 4)
+- Profil hub (`/user/handle`): favoriler rafı, özet istatistikler, tüm diziler / detaylı
+  istatistikler / ayarlar linkleri, "Tümünü yenile" — kütüphane sayfası artık sadece aktif
+  takip edilen 5 kategoriyi gösterir, Bitirildi/Bırakıldı profil üzerinden "Tüm diziler"e taşındı
+- Otomatik yenileme: kütüphane veya dizi detayı açıldığında 24 saatten eski diziler arka planda
+  sessizce yenilenir (arka plan işi değil, sadece sayfa ziyaretinde tetiklenir); manuel
+  "Tümünü yenile" birincil yol olarak kalır
+- Mobil arayüz: 3 sütunlu kütüphane grid'i, yüzen filtre butonu (bottom sheet), ortalanmış logo +
+  "Ara" sekmesiyle 5'li alt navigasyon, kenar boşlukları daraltıldı, alt sayfalarda geri oku
 - Türkçe + İngilizce arayüz
 
 Sonraki modüller: film, kitap. Mimari en baştan çoklu medya tipine göre tasarlandı; bkz. [specs/](specs/).
@@ -97,6 +107,8 @@ baykus/  (pnpm monorepo — paketler npm'e yayınlanmaz, workspace olarak yaşar
 | [specs/003-dynamic-watching-ux/tasks.md](specs/003-dynamic-watching-ux/tasks.md) | 003'ün milestone'ları (M14–M17) |
 | [specs/004-import-fidelity-ux/spec.md](specs/004-import-fidelity-ux/spec.md) | v4 delta spec — TV Time içe aktarma sadakati, aired-only sezon ilerlemesi, TMDB-parity dizi adresleri, sayfa geçişleri (003 üzerine, 003 ile çakışırsa 004 kazanır) |
 | [specs/004-import-fidelity-ux/tasks.md](specs/004-import-fidelity-ux/tasks.md) | 004'ün milestone'ları (M18–M22) |
+| [specs/005-mobile-profile-ux/spec.md](specs/005-mobile-profile-ux/spec.md) | v5 delta spec — mobil-öncelikli UX, profil hub, favoriler, otomatik yenileme (004 üzerine, 004 ile çakışırsa 005 kazanır) |
+| [specs/005-mobile-profile-ux/tasks.md](specs/005-mobile-profile-ux/tasks.md) | 005'in milestone'ları (M23–M27) |
 | [fixtures/README.md](fixtures/README.md) | Test fixture'ları — kaynak ve yeniden yakalama komutları |
 | [docs/spec-kit.md](docs/spec-kit.md) | Spec-driven development metodolojisi ve yeni feature ekleme süreci |
 | [docs/self-hosting.md](docs/self-hosting.md) | Self-host kurulum rehberi (Docker, ortam değişkenleri, yedekleme) |
@@ -139,6 +151,15 @@ test yeşil (484 test), her E48–E53 kararının en az bir testi var, zip
 round-trip hâlâ yeşil ve dokunulmadı. Kalan iş: M22 — tüm checkpoint'lerin
 tek seferlik tarayıcı doğrulaması; adımlar [MANUELTEST.md](MANUELTEST.md)'de
 toplandı.
+
+**Spec 005 (mobil-öncelikli UX, profil hub, favoriler, otomatik yenileme)
+— M23–M26 tamam** (bkz.
+[005 tasks.md](specs/005-mobile-profile-ux/tasks.md)): lint + typecheck +
+test yeşil (528 test), her otomatikleştirilebilir E57–E73 kararının en az
+bir testi var, zip round-trip **genişletildi** (schemaVersion 4, favorite
+alanı, mevcut assertion'lara dokunulmadı). Kalan iş: M27 — tüm
+checkpoint'lerin (002/003/004'ün bekleyenleri dahil) tek seferlik tarayıcı
+doğrulaması; adımlar [MANUELTEST.md](MANUELTEST.md)'de toplandı.
 
 ```bash
 pnpm install

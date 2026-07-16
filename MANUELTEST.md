@@ -466,3 +466,194 @@ belirtilen durumla tutarlı).
       yeşil (workspace: 484 test).
 - [x] Mekanik doğrulama: yukarıdaki curl komutları + gerçek `library.db`
       spot-check bu bölümün girişinde kayıtlı.
+
+---
+
+## M27 — Spec 005 CHECKPOINT: mobil UX, profil hub, favoriler, otomatik
+## yenileme (bekliyor)
+
+Spec 005, M23–M26 (E57–E73). Bu round da tamamen tarayıcı erişimi olmadan
+geliştirildi (chromium/playwright bu ortamda da yok). Sunucu/paket/web
+tarafı testleri zaten yeşil — `packages/core`: `db/open.test.ts` (migration
+0003 — favorite kolonu, pre-existing satırlarda false), `zip/{export,
+import,roundtrip}.test.ts` (v4 favorite alanı her zaman export'ta, v1-v3
+import'ta favorite=false default, merge'de incoming-wins hem set hem
+clear), `library/service.test.ts` (favorite-only update `listChangedAt`'ı
+değiştirmiyor), `refresh/engine.test.ts` (`isStale` null/23h/25h,
+`filterStaleItemIds` NULL-önce-sonra-en-eski sıralaması, fresh öğeler
+dokunulmadan kalıyor); `apps/server`: `app.test.ts` (PATCH favorite 200 +
+GET/list yansıması + favorite-only diğer alanları bozmuyor + geçersiz tip
+400), `routes/refresh.test.ts` (`staleOnly=1` fresh öğeyi atlıyor,
+`staleOnly=bogus` 400, paramsız davranış regresyon-korumalı); `apps/web`:
+`lib/profilePath.test.ts` (E57 çözümleme matrisi tam — single/multi ×
+me/own/foreign, no-loop predicate), `lib/staleSweep.test.ts` (throttle
+penceresi, eşzamanlı çalışmama, manuel-yenileme bayrağı etkileşimi,
+sessiz hata), `lib/backFallback.test.ts` (her rota için fallback +
+5 tab sayfasının hiç ok almadığı), `lib/groupByCategory.test.ts`
+(`HOME_CATEGORY_ORDER` bitirildi/bırakıldığı hariç tutuyor,
+`CATEGORY_ORDER` dokunulmamış), `components/FilterPanel.test.ts`
+(aktif-filtre noktası varsayılanlarda kapalı, sapmada açık),
+`lib/useSeriesSearch.test.ts` (dört externalId şeklinde `resultKey`
+kararlı) — burada sadece tarayıcı gerektiren kısımlar listeleniyor.
+Workspace: 528 test yeşil, `pnpm build` yeşil.
+
+Mekanik doğrulama (gerçek dev sunucusuna karşı, self-cleaning curl
+akışlarıyla — kalıcı iz bırakmadan): M23.2'de `POST /api/library/series`
+→ `PATCH {favorite:true}` → `GET` (favorite:true) → tekrar `GET`
+("reload" simülasyonu, hâlâ true) → `DELETE` ile temizlik; M23.1'de
+migration'ın gerçek `library.db`'nin **güvenli bir kopyası** üzerinde
+(canlıya hiç dokunmadan, `sqlite3 .backup`) uygulanıp `favorite` kolonunun
+doğru geldiği doğrulandı — bu sırada gerçek kütüphanenin o an 0 satır
+olduğu (beklenmedik ama xava tarafından kasıtlı bir sıfırlama olarak
+doğrulandı) ayrıca not edildi, bkz. root `HANDOVER.md`.
+
+### Tab bar / ortalanmış logo / geri oku matrisi (E67/E72)
+- [ ] 390px görünümde (DevTools mobil emülasyon) alt tab bar 5 öğe
+      göstermeli: Kütüphane (LayoutGrid), İzle (Play), Takvim
+      (CalendarDays), Ara (Search), Profil (CircleUser) — İstatistikler
+      ve Ayarlar artık tab bar'da **yok**.
+- [ ] Mobil üst header tek satır: sol tarafta (varsa) geri oku, ortada
+      **mutlak ortalanmış** "baykuş" logosu, sağda hiçbir şey; arama
+      kutusu mobilde **hiç görünmemeli**.
+- [ ] `/`, `/watch`, `/calendar`, `/search`, `/user/me` (5 tab sayfası) —
+      geri oku **olmamalı**.
+- [ ] Bir dizi detayına gir (`/series/...`) → geri oku görünmeli; tıkla →
+      site içi geçmiş varsa bir önceki sayfaya, dizi detayına **doğrudan
+      bağlantıyla** (yeni sekme/adres çubuğuna yapıştırarak) girilmişse
+      ana sayfaya (`/`) gitmeli.
+- [ ] `/import`e git → geri oku `/settings`e gitmeli (doğrudan bağlantı
+      senaryosunda); `/settings`e git → geri oku `/user/me`ye gitmeli;
+      `/user/me/all-series` ve `/user/me/stats`e git → geri oku her
+      ikisinde de `/user/me`ye gitmeli.
+- [ ] Masaüstünde (≥640px) üst nav: Kütüphane, İzle, Takvim, Profil (arama
+      kutusu ortada, eskisi gibi); geri oku **hiç görünmemeli** (masaüstü
+      tarayıcı geri tuşuna güveniyor).
+
+### Ana sayfa beş bölüm + kategori filtresi (E59)
+- [ ] Ana sayfada "Tümü" filtresiyle sadece 5 bölüm görünmeli: İzleniyor,
+      Bir süredir izlenmedi, Daha başlanmadı, Sonra izlenecek, Güncel —
+      Bitirildi/Bırakıldı **görünmemeli**.
+- [ ] Filtrele panelinden (masaüstü popover veya mobil bottom sheet)
+      açıkça "Bitirildi" veya "Bırakıldı" seç → o kategori ana sayfada
+      **görünmeli** (kapasite kaybı yok, sadece varsayılan gruplama
+      daraltıldı).
+- [ ] Profil → "Tüm diziler" → `/user/me/all-series` sayfasında 7
+      kategorinin tamamı (Bitirildi/Bırakıldı dahil) görünmeli, toplam
+      sayı başlıkta.
+
+### Profil sayfası tam yürüyüş (E58, E62, E66)
+- [ ] `/user/me`ye git — kimlik satırı (baykuş/owl avatar + "Profilim"
+      tek kullanıcı modunda), favoriler rafı, 3 istatistik kutusu, link
+      satırları ("Tüm diziler" + sayı, "Detaylı istatistikler",
+      "Ayarlar"), "Tümünü yenile" butonu sırayla görünmeli.
+- [ ] Hiç favori yoksa rafta tek satır ipucu metni ("Dizi detayındaki
+      kalple favorilerini seç.") görünmeli.
+- [ ] Bir dizi detayına git, kalbe bas (dolu sarı olmalı, `aria-pressed`
+      true) → profile dön → o dizi favoriler rafında görünmeli, en son
+      izlenen sırayla (birden fazla favori varsa).
+- [ ] Kalbi tekrar bas (favoriden çıkar) → sayfayı yenile → hâlâ
+      favorisiz (optimistic + kalıcı).
+- [ ] Profildeki 3 istatistik kutusunun sayıları (bölüm sayısı, saat,
+      aktif dizi) → "Detaylı istatistikler"e tıkla → `/user/me/stats`
+      sayfasındaki (eski `/stats` sayfasıyla aynı) sayılarla **birebir
+      eşleşmeli**.
+- [ ] "Tümünü yenile"ye bas → n/m ilerleme satır içinde görünmeli,
+      bitince tamamlanma toast'ı çıkmalı (eski davranışla aynı) — buton
+      artık kütüphane sayfasında **yok**.
+
+### `/user/me` canonicalization + yabancı handle 404 + `/stats` yönlendirmesi (E57)
+- [ ] `/stats`e git → adres çubuğu otomatik olarak (yeni geçmiş kaydı
+      eklemeden, geri tuşu eski sayfaya atlamadan) `/user/me/stats`e
+      **replace** olmalı.
+- [ ] Tek kullanıcı modunda `/user/baskaisim` gibi `me` olmayan bir handle
+      dene → "Profil bulunamadı." mesajı (404 durumu) görünmeli, ana
+      sayfaya **yönlendirilmemeli**.
+- [ ] (Çok kullanıcılı/hosted mod varsa) `/user/kendihandle`in ile
+      `/user/me` aynı sayfayı göstermeli; `/user/me` adres çubuğunda
+      kendi handle'ına replace olmalı; başka birinin handle'ı 404
+      vermeli.
+
+### Favoriler zip round-trip (E61) — TEK KULLANIMLIK kütüphanede
+- [ ] **Gerçek kütüphaneyi kullanma** — Ayarlar → Tehlikeli bölge'den
+      önce mevcut kütüphaneni dışa aktarıp yedekle, sonra sıfırla (veya
+      ayrı bir test ortamı kullan).
+      Bir dizi ekle → kalple favorile → dışa aktar (zip) →
+      "Tehlikeli bölge" ile kütüphaneyi sıfırla → aynı zip'i replace
+      modunda içe aktar → dizi kütüphanede **hâlâ favorili** olarak
+      görünmeli (kalp dolu).
+- [ ] Test bitince gerçek kütüphaneni (varsa) yedeğinden geri yükle.
+
+### Stale sweep + stale detay otomatik yenileme (E63–E65)
+- [ ] Bir kütüphane kopyasında birkaç dizinin `last_refreshed_at`ını elle
+      24 saatten eski bir tarihe çek (`sqlite3 library.db "UPDATE items
+      SET last_refreshed_at = '2020-01-01T00:00:00Z' WHERE id IN (...)"`),
+      o kopyaya karşı sunucuyu başlat → ana sayfayı aç → ince bir durum
+      satırı ("{{done}}/{{total}} yenileniyor…") görünmeli, kartlar arka
+      planda güncellenmeli — **hiçbir toast/hata çıkmamalı**.
+- [ ] Aynı şekilde bayatlatılmış bir dizinin detay sayfasını aç → sayfa
+      sessizce yenilenmeli (`lastRefreshedAt` güncellenir, network
+      sekmesinde tekil refresh çağrısı görünür) — spinner/toast yok.
+- [ ] 15 dakika içinde sayfayı tekrar aç (aynı sekme) → sweep **tekrar
+      tetiklenmemeli** (throttle).
+
+### 3 sütun grid + filtre FAB/bottom sheet + aktif nokta (E69/E70)
+- [ ] 390px görünümde ana sayfa, tüm diziler ve iskelet (loading)
+      durumları dahil **3 sütun** göstermeli (masaüstünde 4/6 sütun
+      değişmemeli).
+- [ ] Mobilde Filtrele artık üstte değil, tab bar'ın hemen üstünde
+      yüzen sarı bir daire buton (FAB) — masaüstü popover'ı
+      **etkilenmemiş** olmalı.
+- [ ] FAB'a bas → aynı sıralama/kategori formu bir bottom sheet olarak
+      açılmalı (scrim'e veya "Kapat"a basınca kapanmalı); UYGULA/SIFIRLA
+      eskisiyle aynı çalışmalı.
+- [ ] Sıralama veya kategoriyi varsayılandan farklı bir değere ayarla →
+      FAB üzerinde küçük kırmızı bir nokta belirmeli; varsayılana
+      dönünce nokta kaybolmalı.
+
+### EpisodeRow ≤20px ölçümü (E71)
+- [ ] 390px görünümde bir dizi detayına gir, bir bölüm satırının ilk
+      karakterinin ekran kenarından **20px veya daha az** başladığını
+      DevTools'ta ölçerek doğrula (hesaplanan değer: `main` `px-3`=12px +
+      satır `px-2`=8px = 20px).
+- [ ] Aynı ölçümü İzleme sayfasındaki satırlarda da tekrarla (aynı
+      `px-2 sm:px-6` düzeltmesi).
+- [ ] Masaüstünde (≥640px) padding'lerin **değişmediğini** doğrula.
+
+### Takvim BUGÜN anchor (E73)
+- [ ] Takvim → Zaman çizelgesi sekmesini aç → BUGÜN satırı **sticky
+      header'ın hemen altında**, manuel scroll gerekmeden görünmeli
+      (eski `scroll-mt-16` tahmininden farklı olarak artık ölçülen
+      header yüksekliğine göre); atlama/zıplama olmamalı.
+- [ ] Ay moduna geçip tekrar Zaman çizelgesine dön → BUGÜN'e her
+      dönüşte yeniden anchor olmalı.
+- [ ] Ay modu açılışı **değişmemiş** olmalı (mevcut ay, üstte açılır).
+
+### E51 sayfa geçişi regresyonu (Layout restructure sonrası)
+- [ ] Kütüphaneden bir kart → detay sayfasına geçişte poster morph'u
+      hâlâ çalışmalı (004'te doğrulanmıştı; Layout/header/tab-bar
+      yeniden yapılandırıldı, `app-header`/`app-tabbar`
+      view-transition adları hayatta kaldı mı doğrula).
+- [ ] Diğer sayfa geçişlerinde üst menü ve alt tab bar geçişe katılmadan
+      **sabit** kalmalı (cross-fade sadece içerikte).
+
+### İki dil
+- [ ] Ayarlar → Dil'den EN'e geç, yukarıdaki adımların tamamını
+      tekrarla — özellikle "Profilim"/"My profile", "Favoriler"/
+      "Favorites", "Ara"/"Search", "Profil"/"Profile", "Geri"/"Back"
+      metinlerini kontrol et.
+
+### 003/002'den katlanan eski bekleyenler (aynı oturumda birlikte yapılabilir)
+- [ ] 003's M17.7 — `MANUELTEST.md` §M14.7–§M17.9–14 içindeki kalan `[ ]`
+      satırları (HotD yeni bölüm lift senaryosu, segmentli çubuk görsel
+      kontrolü, iki dil geçişleri).
+- [ ] 002's M11.4/M12.4 — §M11.4 (ay modu görsel kontrolü, EpisodeTags
+      rozetleri) ve §M12.4 kutularının geri kalanı (çoğu zaten işaretli;
+      kalanlar 005'in mobil/masaüstü geçişiyle "mobilya taşındı" olabilir
+      — davranışı yeni yerinde doğrula, taşınma yüzünden düşürme).
+- [ ] 004's M22 — §M22'deki kalan `[ ]` satırları (TMDB backfill gerçek
+      anahtarla, poster morph/cross-fade/reduced-motion/Firefox matrisi,
+      E54–E56 tekrar teyidi).
+
+### Tam gate
+- [x] `pnpm lint && pnpm typecheck && pnpm test && pnpm build` — hepsi
+      yeşil (workspace: 528 test, 60 test dosyası).
