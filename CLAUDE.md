@@ -5,9 +5,9 @@ changing code. Constitution: `.specify/memory/constitution.md`. Specs
 001–007 (`specs/001-series-tracking/` through `specs/007-post-006-deltas/`,
 each a delta over the previous, newest wins where they overlap) are all
 fully implemented. Spec 008 (`specs/008-stats-dashboard/`, M44–M52: stats
-dashboard from the `dashboard.html` prototype) is **proposed and awaiting
-xava's approval — do not start it unprompted**; root `HANDOVER.md` has the
-entry point.
+dashboard from the `dashboard.html` prototype) is **approved and not
+started — it is the active work**; root `HANDOVER.md` has the entry point
+(M44.2, then M45.1).
 
 Claude-specific notes:
 

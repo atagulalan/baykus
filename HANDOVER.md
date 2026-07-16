@@ -10,16 +10,23 @@ M41–M43 (TV Time parse fidelity round 2, `needs_review` category + zip v5,
 polish — found as an uncommitted working-tree batch, audited/fixed/packaged
 2026-07-16, E89–E94). See that folder's tasks.md for the commit map.
 
-## Queued: spec 008 — Stats Dashboard (awaiting approval)
+## Active: spec 008 — Stats Dashboard (APPROVED — start here)
 
 Spec **008** (`specs/008-stats-dashboard/`, M44–M52) rebuilds the full
 statistics surface prototyped in root `dashboard.html` (a throwaway static
 export from a TV Time GDPR zip, generated 2026-07-02) as a native part of
 the app: `watches.date_unknown` fidelity flag, extended `GET /api/stats?tz=`
-payload (E95–E111), and a restructured Stats page with ~20 sections. Package
-is complete (spec/plan/contracts/ui/tasks); **do not start before xava
-approves spec.md**. Remaining housekeeping when 008 starts: delete
-`dashboard.html` (biome already ignores it) — M44.2.
+payload (E95–E111), and a restructured Stats page with ~20 sections.
+
+**Approved by xava 2026-07-16** — all four open decisions confirmed as
+specced (E95 date flag + one-time re-import, single long page, full
+20-section scope, Monday-first weekday). **Entry point: M44.2** (delete
+`dashboard.html`; biome already ignores it), then **M45.1** onward through
+tasks.md in order, one conventional commit per milestone, full gate
+(`pnpm test && pnpm typecheck && pnpm lint && pnpm build`) green on each.
+Read spec.md §Edge-case decisions + plan.md §Risks before M45 — the
+Drizzle journal `when` must be hand-bumped past the future-dated entries,
+and `getStats`'s existing fields must stay byte-compatible (E111).
 
 One open judgment call from 006 needs a human decision before it's
 code-work: **ResetLibraryDialog's E74 phrase-block styling** — see

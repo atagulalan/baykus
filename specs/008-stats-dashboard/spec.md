@@ -1,6 +1,7 @@
 # Spec 008 — Stats Dashboard (TV Time Panosu parity)
 
-**Status:** Proposed (awaiting xava approval) · **Owner:** xava · **Created:** 2026-07-16
+**Status:** Approved (xava, 2026-07-16 — E95 flag, single long page, full scope,
+Monday-first all confirmed via AskUserQuestion) · **Owner:** xava · **Created:** 2026-07-16
 **Scope:** Rebuild the full statistics surface prototyped in root
 `dashboard.html` (generated 2026-07-02 from a TV Time GDPR zip) as a native
 part of the app: core stat aggregates, one extended API endpoint, and a

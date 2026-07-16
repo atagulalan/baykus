@@ -1,7 +1,9 @@
 # Tasks 008 — Stats Dashboard
 
 Continues M44+. One conventional commit per milestone when practical.
-Blocked-on-approval: do not start before xava approves spec.md.
+Approved 2026-07-16 (all four open decisions confirmed as specced: E95
+date flag, single long page, full 20-section scope, Monday-first weekday).
+Entry point: M44.2, then M45.1.
 
 - [ ] **M44 docs: spec 008 package**
   - [x] M44.1 spec.md + contracts/api.md + plan.md + ui.md + tasks.md
