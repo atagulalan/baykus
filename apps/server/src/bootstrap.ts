@@ -6,6 +6,7 @@ import { openAccountsDb } from "./auth/accounts.ts";
 import { createSingleSessionStore } from "./auth/single-session.ts";
 import type { Config } from "./config.ts";
 import { createProviderRegistry, effectiveScrapersEnabled } from "./providers/registry.ts";
+import { openMetadataCache } from "./providers/cache.ts";
 import { loadOrCreateVapidKeys, type VapidKeys } from "./push/vapid.ts";
 
 /** Real (disk-touching) dependencies for the running server, single or multi mode. */
@@ -45,6 +46,7 @@ export function createProductionDeps(config: Config): AppDeps {
     }),
     dataDir: config.BAYKUS_DATA_DIR,
     vapid: loadOrCreateVapidKeys(config.BAYKUS_DATA_DIR, envVapidKeys),
+    metadataCache: openMetadataCache(join(config.BAYKUS_DATA_DIR, "metadata-cache.db")),
     auth:
       config.BAYKUS_MODE === "multi"
         ? {

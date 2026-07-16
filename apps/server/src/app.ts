@@ -1,6 +1,7 @@
 import type { Library } from "@baykus/core";
 import type { MetadataProvider } from "@baykus/provider-sdk";
 import { Hono } from "hono";
+import type { Database } from "better-sqlite3";
 import { createLibraryProxy } from "./auth/library-context.ts";
 import { createLibraryPool } from "./auth/library-pool.ts";
 import { createRateLimiter } from "./auth/rate-limit.ts";
@@ -9,6 +10,7 @@ import { createAuthGate } from "./middleware/auth-gate.ts";
 import { errorHandler } from "./middleware/errors.ts";
 import { xBaykusGuard } from "./middleware/guard.ts";
 import { createLibraryResolver } from "./middleware/library-resolver.ts";
+import { withMetadataCache } from "./providers/cache.ts";
 import type { VapidKeys } from "./push/vapid.ts";
 import type { AuthRouteDeps } from "./routes/auth.ts";
 import { createAuthRoutes } from "./routes/auth.ts";
@@ -31,6 +33,7 @@ export interface AppDeps {
   dataDir: string;
   vapid: VapidKeys;
   auth: AuthRouteDeps;
+  metadataCache?: Database;
 }
 
 export function createApp(config: Config, deps: AppDeps) {
@@ -84,7 +87,10 @@ export function createApp(config: Config, deps: AppDeps) {
   app.route("/", createCalendarRoute(contextLibrary));
   app.route("/", createPushRoutes(contextLibrary, deps.vapid));
   app.route("/", createZipRoutes(contextLibrary));
-  app.route("/", createTvTimeRoutes(contextLibrary, deps.providers));
+  const importProviders = deps.metadataCache
+    ? deps.providers.map((p) => withMetadataCache(p, deps.metadataCache!))
+    : deps.providers;
+  app.route("/", createTvTimeRoutes(contextLibrary, importProviders));
 
   return app;
 }
