@@ -202,8 +202,8 @@ function dedupeShows(shows: TvTimeShow[]): TvTimeShow[] {
   return [...byId.values()];
 }
 
-/** research.md: real cross-file drift observed <1 min apart; real rewatches observed >1 day apart. */
-const DUPLICATE_WATCH_WINDOW_MS = 60_000;
+/** 7 days window to collapse drifting duplicate watch dates caused by TV Time export bugs. */
+const DUPLICATE_WATCH_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
  * The same watch can appear in up to five real-export files (source,
@@ -261,6 +261,7 @@ export function parseTvTimeFiles(fileContents: string[]): TvTimeParsed {
   const preferredShowRecords: Record<string, string>[] = [];
   const fallbackShowRecords: Record<string, string>[] = [];
   const specialStatuses = new Map<number, string>();
+  const nameByTvdbId = new Map<number, string>();
   const watches: TvTimeWatchEvent[] = [];
   // Only watch-bearing kinds are needed in pass two — shows/specialStatus are
   // already consumed above, and retaining every file's records here doubled
@@ -273,6 +274,17 @@ export function parseTvTimeFiles(fileContents: string[]): TvTimeParsed {
     const headers = Object.keys(records[0] ?? {});
     const kind = classify(headers);
     if (isWatchFileKind(kind)) parsedFiles.push({ kind, records });
+
+    for (const record of records) {
+      const tvdbId = Number.parseInt(
+        record.tv_show_id ?? record.series_id ?? record.s_id ?? "",
+        10,
+      );
+      const name = record.tv_show_name ?? record.series_name;
+      if (Number.isFinite(tvdbId) && name && !nameByTvdbId.has(tvdbId)) {
+        nameByTvdbId.set(tvdbId, name);
+      }
+    }
 
     if (kind === "specialStatus") {
       for (const record of records) {
@@ -296,9 +308,15 @@ export function parseTvTimeFiles(fileContents: string[]): TvTimeParsed {
   const shows = dedupeShows(preferredShows.length > 0 ? preferredShows : fallbackShows);
 
   const tvdbIdByName = new Map<string, number>();
-  for (const show of shows) {
+  // Seed with fallback shows so name-keyed watches can resolve names for shows omitted from preferred files
+  for (const show of fallbackShows) {
     const key = nameKey(show.name);
     if (!tvdbIdByName.has(key)) tvdbIdByName.set(key, show.tvdbId);
+  }
+  // Preferred shows overwrite
+  for (const show of shows) {
+    const key = nameKey(show.name);
+    tvdbIdByName.set(key, show.tvdbId);
   }
 
   for (const { kind, records } of parsedFiles) {
@@ -386,6 +404,39 @@ export function parseTvTimeFiles(fileContents: string[]): TvTimeParsed {
 
   const survivingShows: TvTimeShow[] = [];
   const skippedRelics: SkippedRelic[] = [];
+
+  // Rescue shows that have watches but were omitted from show files
+  const existingShowIds = new Set(shows.map((s) => s.tvdbId));
+  const earliestWatchAt = new Map<number, string>();
+  for (const w of watches) {
+    const prev = earliestWatchAt.get(w.tvdbShowId);
+    if (prev === undefined || w.watchedAt < prev) earliestWatchAt.set(w.tvdbShowId, w.watchedAt);
+  }
+  const rescuedShows: TvTimeShow[] = [];
+  for (const [tvdbShowId, count] of watchCountByTvdbId.entries()) {
+    if (count > 0 && !existingShowIds.has(tvdbShowId)) {
+      let rescue = fallbackShows.find((s) => s.tvdbId === tvdbShowId);
+      if (!rescue) {
+        const name = nameByTvdbId.get(tvdbShowId);
+        if (name) {
+          rescue = {
+            tvdbId: tvdbShowId,
+            name,
+            // Never seen in a follow file — stand in with the first watch date.
+            followedAt: earliestWatchAt.get(tvdbShowId) ?? toIso(undefined),
+            status: "dropped",
+            unfollowed: true,
+          };
+        }
+      }
+      if (rescue) {
+        rescuedShows.push(rescue);
+        existingShowIds.add(tvdbShowId);
+      }
+    }
+  }
+  shows.push(...dedupeShows(rescuedShows));
+
   for (const show of shows) {
     if (show.unfollowed && (watchCountByTvdbId.get(show.tvdbId) ?? 0) === 0) {
       skippedRelics.push({ name: show.name, tvdbId: show.tvdbId });

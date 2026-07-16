@@ -250,15 +250,15 @@ describe("parseTvTimeFiles", () => {
     ]);
   });
 
-  it("keeps the same (show, episode) watch as two events when timestamps are 2 days apart (genuine rewatch)", () => {
+  it("keeps the same (show, episode) watch as two events when timestamps are 10 days apart (genuine rewatch)", () => {
     const v1 =
       "created_at,type,series_id,episode_id\n" +
       "2021-06-11 22:52:00,watch,80348,349302\n" +
-      "2021-06-13 22:52:00,watch,80348,349302\n";
+      "2021-06-21 22:52:00,watch,80348,349302\n";
     const result = parseTvTimeFiles([v1]);
     expect(result.watches).toEqual([
       { tvdbShowId: 80348, tvdbEpisodeId: 349302, watchedAt: "2021-06-11T22:52:00.000Z" },
-      { tvdbShowId: 80348, tvdbEpisodeId: 349302, watchedAt: "2021-06-13T22:52:00.000Z" },
+      { tvdbShowId: 80348, tvdbEpisodeId: 349302, watchedAt: "2021-06-21T22:52:00.000Z" },
     ]);
   });
 

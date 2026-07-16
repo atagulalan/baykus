@@ -144,6 +144,7 @@ describe("matchShows", () => {
       episodeCount: 1,
       candidates: [{ externalIds: { tmdbId: 2316 }, title: "The Office (US)", year: 2005 }],
       status: "watching",
+      underflowDetails: [],
     });
   });
 

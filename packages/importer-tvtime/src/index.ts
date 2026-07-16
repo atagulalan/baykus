@@ -7,6 +7,7 @@ export {
   type MatchReport,
   matchShows,
   resolveEpisodePosition,
+  type UnderflowSeasonDetail,
   type UnmatchedShow,
 } from "./match.ts";
 export {

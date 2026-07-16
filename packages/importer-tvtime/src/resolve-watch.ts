@@ -13,6 +13,7 @@ export interface WatchResolveContext {
   tvdbOrderMap: ReadonlyMap<number, EpisodePosition>;
   providers: MetadataProvider[];
   providerCache: Map<number, EpisodePosition | null>;
+  hasIncompatibleSeasons: boolean;
 }
 
 function positionKey(seasonNumber: number, episodeNumber: number): string {
@@ -58,7 +59,7 @@ export function buildTvdbAiringOrderMap(
   airedOrder: readonly EpisodePosition[],
 ): Map<number, EpisodePosition> {
   const episodeWatches = watches.filter(
-    (w) => w.episodeNumber !== undefined && w.episodeNumber !== 0,
+    (w) => w.seasonNumber !== 0 && w.episodeNumber !== undefined && w.episodeNumber !== 0,
   );
   const uniqueEpisodeTvdbIds = [...new Set(episodeWatches.map((w) => w.tvdbEpisodeId))].sort(
     (a, b) => a - b,
@@ -76,7 +77,7 @@ export function buildTvdbAiringOrderMap(
   const bulkOnlyIds = [
     ...new Set(
       watches
-        .filter((w) => w.episodeNumber === 0)
+        .filter((w) => w.seasonNumber !== 0 && w.episodeNumber === 0)
         .map((w) => w.tvdbEpisodeId)
         .filter((id) => !map.has(id)),
     ),
@@ -99,12 +100,48 @@ export function createWatchResolveContext(
   providers: MetadataProvider[],
 ): WatchResolveContext {
   const airedOrder = buildAiredEpisodeOrder(details);
+  const tvTimeMaxE = new Map<number, number>();
+  for (const w of watches) {
+    if (w.seasonNumber && w.episodeNumber && w.seasonNumber !== 0) {
+      tvTimeMaxE.set(
+        w.seasonNumber,
+        Math.max(tvTimeMaxE.get(w.seasonNumber) ?? 0, w.episodeNumber),
+      );
+    }
+  }
+
+  const providerMaxE = new Map<number, number>();
+  for (const key of episodeIdByPosition.keys()) {
+    const [rawSeason, rawEpisode] = key.split("-");
+    const s = Number.parseInt(rawSeason ?? "", 10);
+    const e = Number.parseInt(rawEpisode ?? "", 10);
+    if (!Number.isFinite(s) || !Number.isFinite(e) || s === 0) continue;
+    providerMaxE.set(s, Math.max(providerMaxE.get(s) ?? 0, e));
+  }
+  const latestProviderSeason = providerMaxE.size > 0 ? Math.max(...providerMaxE.keys()) : 0;
+  const hasEnded = details.releaseStatus === "ended" || details.releaseStatus === "canceled";
+
+  let hasIncompatibleSeasons = false;
+  for (const [s, maxE] of tvTimeMaxE.entries()) {
+    // Ignore the latest season while the show is still running — the provider
+    // may simply be missing future unaired episodes there.
+    if (s >= latestProviderSeason && !hasEnded) continue;
+
+    const providerMax = providerMaxE.get(s) ?? 0;
+    if (providerMax > 0 && maxE > providerMax) {
+      // Overflow: TV Time packed more episodes into this season than the provider.
+      hasIncompatibleSeasons = true;
+      break;
+    }
+  }
+
   return {
     episodeIdByPosition,
     airedOrder,
     tvdbOrderMap: buildTvdbAiringOrderMap(watches, airedOrder),
     providers,
     providerCache: new Map(),
+    hasIncompatibleSeasons,
   };
 }
 
@@ -117,12 +154,11 @@ function positionInInventory(
 
 /**
  * Resolves one TV Time watch row to a (season, episode) position in the
- * provider inventory. Precedence:
  * 1. Provider findEpisodeByTvdbId (TMDB) when available.
  * 2. TVDB-id airing-order map when TV Time's season label diverges from the
- *    provider's — even if a misleading CSV slot exists (Money Heist parts).
+ *    provider's.
  * 3. CSV season/episode when that slot exists in inventory.
- * 4. TVDB-id airing-order map as a last resort (NieR-style drift within CSV).
+ * 4. TVDB-id airing-order map as a last resort.
  */
 export async function resolveWatchPosition(
   watch: WatchResolveInput,
@@ -153,11 +189,25 @@ export async function resolveWatchPosition(
     return providerPos;
   }
 
-  if (mappedOk && watch.seasonNumber !== undefined && mapped.seasonNumber !== watch.seasonNumber) {
-    return mapped;
+  if (ctx.hasIncompatibleSeasons) {
+    if (
+      mappedOk &&
+      watch.seasonNumber !== undefined &&
+      mapped.seasonNumber !== watch.seasonNumber
+    ) {
+      return mapped;
+    }
+    if (direct) return direct;
+  } else {
+    if (direct) return direct;
+    if (
+      mappedOk &&
+      watch.seasonNumber !== undefined &&
+      mapped.seasonNumber !== watch.seasonNumber
+    ) {
+      return mapped;
+    }
   }
-
-  if (direct) return direct;
 
   if (mappedOk) return mapped;
 

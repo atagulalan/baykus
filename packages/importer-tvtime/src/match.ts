@@ -24,6 +24,14 @@ export interface MatchedShow {
   /** Non-special episode count in the resolved provider inventory (discrepancy UI). */
   providerEpisodeCount: number;
   status: TvTimeStatus;
+  underflowDetails: UnderflowSeasonDetail[];
+}
+
+export interface UnderflowSeasonDetail {
+  seasonNumber: number;
+  tvTimeCount: number;
+  providerCount: number;
+  delta: number;
 }
 
 function providerEpisodeCountFor(details: SeriesDetails): number {
@@ -33,6 +41,45 @@ function providerEpisodeCountFor(details: SeriesDetails): number {
     count += season.episodes.length;
   }
   return count;
+}
+
+function findUnderflowDetails(
+  watches: TvTimeWatchEvent[],
+  details: SeriesDetails | null,
+): UnderflowSeasonDetail[] {
+  if (!details) return [];
+
+  const tvTimeSeasonCount = new Map<number, number>();
+  const tvTimeMaxE = new Map<number, number>();
+
+  for (const w of watches) {
+    if (w.seasonNumber && w.episodeNumber && w.seasonNumber !== 0) {
+      tvTimeSeasonCount.set(w.seasonNumber, (tvTimeSeasonCount.get(w.seasonNumber) ?? 0) + 1);
+      tvTimeMaxE.set(
+        w.seasonNumber,
+        Math.max(tvTimeMaxE.get(w.seasonNumber) ?? 0, w.episodeNumber),
+      );
+    }
+  }
+
+  const underflows: UnderflowSeasonDetail[] = [];
+  for (const season of details.seasons) {
+    const s = season.number;
+    if (s === 0) continue;
+    const maxE = tvTimeMaxE.get(s);
+    const tvTimeCount = tvTimeSeasonCount.get(s) ?? 0;
+    const providerCount = season.episodes.length;
+
+    if (maxE !== undefined && maxE < providerCount && tvTimeMaxE.has(s + 1)) {
+      underflows.push({
+        seasonNumber: s,
+        tvTimeCount,
+        providerCount,
+        delta: providerCount - tvTimeCount,
+      });
+    }
+  }
+  return underflows;
 }
 
 export interface FuzzyCandidate {
@@ -47,6 +94,7 @@ export interface FuzzyShow {
   candidates: FuzzyCandidate[];
   episodeCount: number;
   status: TvTimeStatus;
+  underflowDetails: UnderflowSeasonDetail[];
 }
 
 export interface UnmatchedShow {
@@ -68,7 +116,9 @@ type ShowOutcome =
   | { kind: "unmatched"; show: UnmatchedShow };
 
 function episodeCountFor(tvdbId: number, watches: TvTimeWatchEvent[]): number {
-  return watches.filter((w) => w.tvdbShowId === tvdbId).length;
+  const showWatches = watches.filter((w) => w.tvdbShowId === tvdbId);
+  const uniqueEpisodes = new Set(showWatches.map((w) => w.tvdbEpisodeId));
+  return uniqueEpisodes.size;
 }
 
 /** Providers that can supply full series inventory (skip rating-only extras). */
@@ -164,6 +214,7 @@ async function matchOneShow(
 ): Promise<ShowOutcome> {
   const episodeCount = episodeCountFor(show.tvdbId, watches);
   const status = show.status ?? "watching";
+  const showWatches = watches.filter((w) => w.tvdbShowId === show.tvdbId);
 
   const tvdbDetails = await tryTvdbLookup(providers, show.tvdbId);
   if (tvdbDetails) {
@@ -177,6 +228,7 @@ async function matchOneShow(
         episodeCount,
         providerEpisodeCount: providerEpisodeCountFor(tvdbDetails),
         status,
+        underflowDetails: findUnderflowDetails(showWatches, tvdbDetails),
       },
     };
   }
@@ -193,6 +245,7 @@ async function matchOneShow(
         episodeCount,
         providerEpisodeCount: providerEpisodeCountFor(byName.details),
         status,
+        underflowDetails: findUnderflowDetails(showWatches, byName.details),
       },
     };
   }
@@ -205,6 +258,7 @@ async function matchOneShow(
         candidates: byName.candidates,
         episodeCount,
         status,
+        underflowDetails: [],
       },
     };
   }
