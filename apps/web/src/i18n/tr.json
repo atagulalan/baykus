@@ -83,7 +83,9 @@
     "refreshUpToDate": "Güncel — yeni bölüm yok",
     "mute": "Bildirimleri kapat",
     "unmute": "Bildirimleri aç",
-    "menu": "Dizi menüsü"
+    "menu": "Dizi menüsü",
+    "favorite": "Favorilere ekle",
+    "unfavorite": "Favorilerden çıkar"
   },
   "episode": {
     "toggleWatched": "İzlendi olarak işaretle",

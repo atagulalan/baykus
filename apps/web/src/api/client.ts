@@ -132,7 +132,12 @@ export async function getSeriesByParam(param: string): Promise<SeriesDetail> {
 
 export function updateSeries(
   id: number,
-  patch: { manualList?: ManualList | null; pushMuted?: boolean; note?: string | null },
+  patch: {
+    manualList?: ManualList | null;
+    pushMuted?: boolean;
+    note?: string | null;
+    favorite?: boolean;
+  },
 ): Promise<SeriesSummary> {
   return request<SeriesSummary>(`/library/series/${id}`, {
     method: "PATCH",

@@ -56,7 +56,7 @@ API, export → wipe → import brings it back favorited.
     **copy** of a real library.db and spot-check
     `SELECT favorite FROM tracking LIMIT 5`.
 
-- [ ] M23.2 server+web: PATCH favorite + detail heart
+- [x] M23.2 server+web: PATCH favorite + detail heart
   - **Files:** `apps/server/src/routes/{library.ts,library.test.ts}`,
     `apps/web/src/api/{types.ts,client.ts}`,
     `apps/web/src/pages/SeriesDetailPage.tsx`,

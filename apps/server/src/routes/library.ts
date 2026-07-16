@@ -73,6 +73,7 @@ const updateSeriesSchema = z
     manualList: manualListSchema.nullable().optional(),
     pushMuted: z.boolean().optional(),
     note: z.string().nullable().optional(),
+    favorite: z.boolean().optional(),
   })
   .strict();
 
@@ -81,6 +82,7 @@ function toTrackingPatch(parsed: z.infer<typeof updateSeriesSchema>): TrackingPa
   if (parsed.manualList !== undefined) patch.manualList = parsed.manualList;
   if (parsed.pushMuted !== undefined) patch.pushMuted = parsed.pushMuted;
   if (parsed.note !== undefined) patch.note = parsed.note;
+  if (parsed.favorite !== undefined) patch.favorite = parsed.favorite;
   return patch;
 }
 

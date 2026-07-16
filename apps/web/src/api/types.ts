@@ -96,6 +96,7 @@ export interface SeriesSummary {
   nextUnwatched: NextUnwatchedEpisode | null;
   nextAirDate: string | null;
   pushMuted: boolean;
+  favorite: boolean;
 }
 
 export interface SeriesListResponse {

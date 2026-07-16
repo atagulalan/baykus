@@ -83,7 +83,9 @@
     "refreshUpToDate": "Up to date — no new episodes",
     "mute": "Mute notifications",
     "unmute": "Unmute notifications",
-    "menu": "Series menu"
+    "menu": "Series menu",
+    "favorite": "Add to favorites",
+    "unfavorite": "Remove from favorites"
   },
   "episode": {
     "toggleWatched": "Mark as watched",

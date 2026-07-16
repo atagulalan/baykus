@@ -323,6 +323,75 @@ describe("server app", () => {
         },
       });
     });
+
+    it("favorite: PATCH sets it, GET reflects it, list carries it too (E62)", async () => {
+      const app = createTestApp();
+      const created = await app.request("/api/library/series", {
+        method: "POST",
+        headers: MUTATION_HEADERS,
+        body: JSON.stringify({ externalIds: { tvmazeId: 1 } }),
+      });
+      const { id } = (await created.json()) as { id: number };
+
+      const res = await app.request(`/api/library/series/${id}`, {
+        method: "PATCH",
+        headers: MUTATION_HEADERS,
+        body: JSON.stringify({ favorite: true }),
+      });
+      expect(res.status).toBe(200);
+      expect(await res.json()).toMatchObject({ favorite: true });
+
+      const detail = await app.request(`/api/library/series/${id}`);
+      expect(await detail.json()).toMatchObject({ favorite: true });
+
+      const list = await app.request("/api/library/series");
+      expect(await list.json()).toMatchObject({ items: [{ id, favorite: true }] });
+    });
+
+    it("favorite-only PATCH leaves manualList/note untouched (E61/E62)", async () => {
+      const app = createTestApp();
+      const created = await app.request("/api/library/series", {
+        method: "POST",
+        headers: MUTATION_HEADERS,
+        body: JSON.stringify({ externalIds: { tvmazeId: 1 }, manualList: "watch_later" }),
+      });
+      const { id } = (await created.json()) as { id: number };
+      await app.request(`/api/library/series/${id}`, {
+        method: "PATCH",
+        headers: MUTATION_HEADERS,
+        body: JSON.stringify({ note: "keep me" }),
+      });
+
+      const res = await app.request(`/api/library/series/${id}`, {
+        method: "PATCH",
+        headers: MUTATION_HEADERS,
+        body: JSON.stringify({ favorite: true }),
+      });
+
+      expect(await res.json()).toMatchObject({
+        favorite: true,
+        manualList: "watch_later",
+      });
+      const detail = await app.request(`/api/library/series/${id}`);
+      expect(await detail.json()).toMatchObject({ note: "keep me" });
+    });
+
+    it("favorite: a non-boolean value is rejected with 400 (E62)", async () => {
+      const app = createTestApp();
+      const created = await app.request("/api/library/series", {
+        method: "POST",
+        headers: MUTATION_HEADERS,
+        body: JSON.stringify({ externalIds: { tvmazeId: 1 } }),
+      });
+      const { id } = (await created.json()) as { id: number };
+
+      const res = await app.request(`/api/library/series/${id}`, {
+        method: "PATCH",
+        headers: MUTATION_HEADERS,
+        body: JSON.stringify({ favorite: "yes" }),
+      });
+      expect(res.status).toBe(400);
+    });
   });
 
   describe("GET/DELETE /api/library/series/:id", () => {

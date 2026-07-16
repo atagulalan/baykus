@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
+import { Heart } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -253,6 +254,26 @@ export function SeriesDetailPage() {
     onSettled: invalidate,
   });
 
+  const toggleFavorite = useMutation<
+    SeriesSummary,
+    unknown,
+    boolean,
+    { previous: SeriesDetail | undefined }
+  >({
+    mutationFn: (favorite: boolean) => updateSeries(requireInternalId(), { favorite }),
+    onMutate: async (favorite) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previous = queryClient.getQueryData<SeriesDetail>(queryKey);
+      queryClient.setQueryData<SeriesDetail>(queryKey, (old) => old && { ...old, favorite });
+      return { previous };
+    },
+    onError: (_err, _favorite, context) => {
+      if (context?.previous) queryClient.setQueryData(queryKey, context.previous);
+      reportError();
+    },
+    onSettled: invalidate,
+  });
+
   const removeMutation = useMutation({
     mutationFn: () => removeSeries(requireInternalId()),
     onSuccess: () => {
@@ -375,85 +396,98 @@ export function SeriesDetailPage() {
             <span className="font-mono text-[10px] uppercase tracking-widest bg-white/5 px-2 py-1 text-muted">
               {t(`category.${detail.category}`)}
             </span>
-            <div ref={menuRef} className="relative shrink-0 ml-auto">
+            <div className="ml-auto flex shrink-0 items-center gap-1">
               <button
                 type="button"
-                onClick={() => setMenuOpen((v) => !v)}
-                aria-label={t("series.menu")}
-                className="px-2 py-1 text-muted hover:text-snow transition-colors"
+                onClick={() => toggleFavorite.mutate(!detail.favorite)}
+                aria-pressed={detail.favorite}
+                aria-label={t(detail.favorite ? "series.unfavorite" : "series.favorite")}
+                className="flex h-11 w-11 items-center justify-center text-muted transition-colors hover:text-yellow"
               >
-                ⋮
+                <Heart
+                  className={detail.favorite ? "h-5 w-5 fill-yellow text-yellow" : "h-5 w-5"}
+                />
               </button>
-              {menuOpen && (
-                <div className="absolute right-0 z-10 mt-1 w-56 overflow-hidden border border-white/10 bg-[#101010] shadow-2xl backdrop-blur-md">
-                  {detail.manualList !== null && (
+              <div ref={menuRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setMenuOpen((v) => !v)}
+                  aria-label={t("series.menu")}
+                  className="px-2 py-1 text-muted hover:text-snow transition-colors"
+                >
+                  ⋮
+                </button>
+                {menuOpen && (
+                  <div className="absolute right-0 z-10 mt-1 w-56 overflow-hidden border border-white/10 bg-[#101010] shadow-2xl backdrop-blur-md">
+                    {detail.manualList !== null && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          changeManualList.mutate(null);
+                        }}
+                        className="block w-full px-4 py-3 text-left text-xs font-mono text-muted hover:text-snow hover:bg-white/5 transition-colors border-b border-white/5"
+                      >
+                        {t("category.watching")}
+                      </button>
+                    )}
+                    {detail.manualList !== "watch_later" && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          changeManualList.mutate("watch_later");
+                        }}
+                        className="block w-full px-4 py-3 text-left text-xs font-mono text-muted hover:text-snow hover:bg-white/5 transition-colors border-b border-white/5"
+                      >
+                        {t("manualList.watch_later")}
+                      </button>
+                    )}
+                    {detail.manualList !== "stopped" && detail.category !== "finished" && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          changeManualList.mutate("stopped");
+                        }}
+                        className="block w-full px-4 py-3 text-left text-xs font-mono text-muted hover:text-snow hover:bg-white/5 transition-colors border-b border-white/5"
+                      >
+                        {t("manualList.stopped")}
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => {
                         setMenuOpen(false);
-                        changeManualList.mutate(null);
+                        refreshSeriesMutation.mutate();
                       }}
                       className="block w-full px-4 py-3 text-left text-xs font-mono text-muted hover:text-snow hover:bg-white/5 transition-colors border-b border-white/5"
                     >
-                      {t("category.watching")}
+                      {t("series.refresh")}
                     </button>
-                  )}
-                  {detail.manualList !== "watch_later" && (
                     <button
                       type="button"
                       onClick={() => {
                         setMenuOpen(false);
-                        changeManualList.mutate("watch_later");
+                        toggleMute.mutate(!detail.pushMuted);
                       }}
                       className="block w-full px-4 py-3 text-left text-xs font-mono text-muted hover:text-snow hover:bg-white/5 transition-colors border-b border-white/5"
                     >
-                      {t("manualList.watch_later")}
+                      {detail.pushMuted ? t("series.unmute") : t("series.mute")}
                     </button>
-                  )}
-                  {detail.manualList !== "stopped" && detail.category !== "finished" && (
                     <button
                       type="button"
                       onClick={() => {
                         setMenuOpen(false);
-                        changeManualList.mutate("stopped");
+                        handleRemove();
                       }}
-                      className="block w-full px-4 py-3 text-left text-xs font-mono text-muted hover:text-snow hover:bg-white/5 transition-colors border-b border-white/5"
+                      className="block w-full px-4 py-3 text-left text-xs font-mono text-red-400 hover:text-red-300 hover:bg-white/5 transition-colors"
                     >
-                      {t("manualList.stopped")}
+                      {t("library.card.remove")}
                     </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      refreshSeriesMutation.mutate();
-                    }}
-                    className="block w-full px-4 py-3 text-left text-xs font-mono text-muted hover:text-snow hover:bg-white/5 transition-colors border-b border-white/5"
-                  >
-                    {t("series.refresh")}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      toggleMute.mutate(!detail.pushMuted);
-                    }}
-                    className="block w-full px-4 py-3 text-left text-xs font-mono text-muted hover:text-snow hover:bg-white/5 transition-colors border-b border-white/5"
-                  >
-                    {detail.pushMuted ? t("series.unmute") : t("series.mute")}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      handleRemove();
-                    }}
-                    className="block w-full px-4 py-3 text-left text-xs font-mono text-red-400 hover:text-red-300 hover:bg-white/5 transition-colors"
-                  >
-                    {t("library.card.remove")}
-                  </button>
-                </div>
-              )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
           {detail.tagline && <p className="text-sm text-zinc-400 italic">"{detail.tagline}"</p>}
