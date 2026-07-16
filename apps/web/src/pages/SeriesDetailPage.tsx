@@ -340,24 +340,24 @@ export function SeriesDetailPage() {
   });
 
   if (query.isLoading) {
-    return <div className="h-64 animate-pulse rounded-lg bg-zinc-900" />;
+    return <div className="h-64 animate-pulse bg-white/5" />;
   }
 
   if (query.isError) {
     const notFound = query.error instanceof ApiError && query.error.code === "NOT_FOUND";
     return (
       <div className="flex flex-col items-center gap-2 py-24 text-center">
-        <p className="text-zinc-400">{notFound ? t("series.notFound") : t("errors.generic")}</p>
+        <p className="text-muted">{notFound ? t("series.notFound") : t("errors.generic")}</p>
         {!notFound && (
           <button
             type="button"
             onClick={() => query.refetch()}
-            className="rounded bg-zinc-800 px-3 py-1.5 text-sm"
+            className="border border-white/10 font-mono text-[10px] uppercase tracking-widest text-muted hover:text-snow px-3 py-1.5 transition-colors"
           >
             {t("errors.retry")}
           </button>
         )}
-        <Link to="/" className="text-sm text-zinc-400 underline">
+        <Link to="/" className="text-sm text-muted underline">
           {t("app.nav.library")}
         </Link>
       </div>
@@ -384,12 +384,12 @@ export function SeriesDetailPage() {
           <img
             src={imageUrl}
             alt={detail.title}
-            className="w-40 h-auto shrink-0 rounded-lg bg-zinc-800"
+            className="w-40 h-auto shrink-0 bg-white/5"
             style={{ viewTransitionName: `poster-${detail.id}` }}
           />
         ) : (
           <div
-            className="flex aspect-[2/3] w-40 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-zinc-800 p-2 text-center text-sm text-zinc-400"
+            className="flex aspect-[2/3] w-40 shrink-0 items-center justify-center overflow-hidden bg-white/5 p-2 text-center text-sm text-muted"
             style={{ viewTransitionName: `poster-${detail.id}` }}
           >
             {detail.title}
@@ -509,15 +509,15 @@ export function SeriesDetailPage() {
               </div>
             </div>
           </div>
-          {detail.tagline && <p className="text-sm text-zinc-400 italic">"{detail.tagline}"</p>}
+          {detail.tagline && <p className="text-sm text-muted italic">"{detail.tagline}"</p>}
 
           {(detail.networks.length > 0 || contentRating) && (
-            <div className="flex flex-wrap items-center gap-2 text-sm text-zinc-400">
+            <div className="flex flex-wrap items-center gap-2 text-sm text-muted">
               {detail.networks.map((n) => (
                 <LogoOrText key={n.name} src={buildImageUrl(n.logoRef, "thumb")} alt={n.name} />
               ))}
               {contentRating && (
-                <span className="rounded border border-zinc-700 px-1.5 py-0.5 text-xs">
+                <span className="border border-white/10 px-1.5 py-0.5 text-xs">
                   {contentRating.rating}
                 </span>
               )}
@@ -529,7 +529,7 @@ export function SeriesDetailPage() {
               {detail.genres.map((g) => (
                 <span
                   key={g.id ?? g.name}
-                  className="rounded-full bg-zinc-800 px-2 py-0.5 text-xs text-zinc-300"
+                  className="bg-white/5 px-2 py-0.5 text-xs text-muted"
                 >
                   {g.name}
                 </span>
@@ -542,7 +542,7 @@ export function SeriesDetailPage() {
               {detail.tags.map((tag) => (
                 <span
                   key={`${tag.source}-${tag.id ?? tag.name}`}
-                  className="rounded-full bg-zinc-800 px-2 py-0.5 text-xs text-emerald-300"
+                  className="bg-white/5 px-2 py-0.5 text-xs text-yellow"
                 >
                   {tag.name}
                 </span>
@@ -551,7 +551,7 @@ export function SeriesDetailPage() {
           )}
 
           {detail.externalRatings.length > 0 && (
-            <p className="text-sm text-zinc-400">
+            <p className="text-sm text-muted">
               {detail.externalRatings.map((r, i) => (
                 <span key={r.source}>
                   {i > 0 && " · "}⭐ {r.source.toUpperCase()}{" "}
@@ -568,18 +568,18 @@ export function SeriesDetailPage() {
                   return (
                     <span
                       key={`${wp.provider}-${wp.type}-${wp.region}`}
-                      className="flex items-center gap-1 rounded bg-zinc-800 px-2 py-1 text-xs text-zinc-200"
+                      className="flex items-center gap-1 bg-white/5 px-2 py-1 text-xs text-snow"
                     >
                       <DecorativeLogo
                         src={buildImageUrl(wp.logoRef, "thumb")}
-                        className="h-4 w-4 rounded object-cover"
+                        className="h-4 w-4 object-cover"
                       />
                       {wp.provider} ({wp.region})
                     </span>
                   );
                 })}
               </div>
-              <p className="text-xs text-zinc-500">{t("series.justwatchAttribution")}</p>
+              <p className="text-xs text-muted">{t("series.justwatchAttribution")}</p>
             </div>
           )}
 
@@ -596,8 +596,8 @@ export function SeriesDetailPage() {
               {watched}/{aired}
               {detail.nextUnwatched && (
                 <>
-                  <span className="text-zinc-400">{" · "}</span>
-                  <span className="text-zinc-400">
+                  <span className="text-muted">{" · "}</span>
+                  <span className="text-muted">
                     {t("series.nextUp", { s: detail.nextUnwatched.s, e: detail.nextUnwatched.e })}
                   </span>
                 </>

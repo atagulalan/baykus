@@ -26,7 +26,7 @@ export function Checkbox({
       onClick={() => onChange(!checked)}
       className={`relative flex h-5 w-5 shrink-0 items-center justify-center border transition-all duration-300 ${
         checked
-          ? "border-yellow bg-yellow text-zinc-950 shadow-[0_0_10px_rgba(234,179,8,0.3)]"
+          ? "border-yellow bg-yellow text-[#080808] shadow-[0_0_10px_rgba(234,179,8,0.3)]"
           : "border-white/20 bg-void text-transparent hover:border-white/40 hover:bg-white/5"
       } ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"} ${className}`}
     >

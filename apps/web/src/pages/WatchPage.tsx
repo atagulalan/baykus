@@ -17,8 +17,12 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
   const { t } = useTranslation();
   return (
     <div className="flex flex-col items-center gap-2 py-12 text-center">
-      <p className="text-zinc-400">{t("errors.generic")}</p>
-      <button type="button" onClick={onRetry} className="rounded bg-zinc-800 px-3 py-1.5 text-sm">
+      <p className="text-muted">{t("errors.generic")}</p>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="border border-white/10 font-mono text-[10px] uppercase tracking-widest text-muted hover:text-snow px-3 py-1.5 transition-colors"
+      >
         {t("errors.retry")}
       </button>
     </div>
@@ -50,7 +54,7 @@ function HistoryRow({ entry }: { entry: WatchHistoryEntry }) {
       episodeTitle={entry.episodeTitle}
       airDate={entry.airDate}
       episodeType={entry.episodeType}
-      trailing={<span className="shrink-0 text-xs text-zinc-500">{relativeDay}</span>}
+      trailing={<span className="shrink-0 text-xs text-muted">{relativeDay}</span>}
     />
   );
 }
@@ -60,13 +64,13 @@ function HistorySection({ query }: { query: ReturnType<typeof useQuery<WatchHist
 
   return (
     <section className="flex flex-col gap-2">
-      <h2 className="font-medium text-sm text-zinc-300">{t("watch.history")}</h2>
+      <h2 className="font-medium text-sm text-snow">{t("watch.history")}</h2>
       {query.isLoading ? (
-        <div className="h-48 animate-pulse rounded-lg bg-zinc-900" />
+        <div className="h-48 animate-pulse bg-white/5" />
       ) : query.isError ? (
         <ErrorState onRetry={() => query.refetch()} />
       ) : (query.data?.items.length ?? 0) === 0 ? (
-        <p className="text-sm text-zinc-500">{t("watch.empty.history")}</p>
+        <p className="text-sm text-muted">{t("watch.empty.history")}</p>
       ) : (
         <div className="flex flex-col">
           {/* API returns newest-first; E27 renders oldest at top, newest at bottom. */}
@@ -118,18 +122,18 @@ export function WatchPage() {
 
       <HistorySection query={historyQuery} />
 
-      <hr className="border-zinc-800" />
+      <hr className="border-white/5" />
 
       <section className="flex flex-col gap-2">
-        <h2 ref={nextHeadingRef} className="scroll-mt-16 font-medium text-sm text-zinc-300">
+        <h2 ref={nextHeadingRef} className="scroll-mt-16 font-medium text-sm text-snow">
           {t("watch.next")}
         </h2>
         {libraryQuery.isLoading ? (
-          <div className="h-32 animate-pulse rounded-lg bg-zinc-900" />
+          <div className="h-32 animate-pulse bg-white/5" />
         ) : libraryQuery.isError ? (
           <ErrorState onRetry={() => libraryQuery.refetch()} />
         ) : watchNext.length === 0 ? (
-          <p className="text-sm text-zinc-500">{t("watch.empty.next")}</p>
+          <p className="text-sm text-muted">{t("watch.empty.next")}</p>
         ) : (
           <div className="flex flex-col">
             {watchNext.map((series) => (
@@ -143,16 +147,16 @@ export function WatchPage() {
         )}
       </section>
 
-      <hr className="border-zinc-800" />
+      <hr className="border-white/5" />
 
       <section className="flex flex-col gap-2">
-        <h2 className="font-medium text-sm text-zinc-300">{t("watch.notWatchedRecently")}</h2>
+        <h2 className="font-medium text-sm text-snow">{t("watch.notWatchedRecently")}</h2>
         {libraryQuery.isLoading ? (
-          <div className="h-32 animate-pulse rounded-lg bg-zinc-900" />
+          <div className="h-32 animate-pulse bg-white/5" />
         ) : libraryQuery.isError ? (
           <ErrorState onRetry={() => libraryQuery.refetch()} />
         ) : notWatchedRecently.length === 0 ? (
-          <p className="text-sm text-zinc-500">{t("watch.empty.notWatchedRecently")}</p>
+          <p className="text-sm text-muted">{t("watch.empty.notWatchedRecently")}</p>
         ) : (
           <div className="flex flex-col">
             {notWatchedRecently.map((series) => (

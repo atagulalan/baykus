@@ -47,18 +47,18 @@ export function SeasonSection({
       : t("series.seasonNumber", { number: season.number }));
 
   return (
-    <div className="border-zinc-800 border-b py-2">
+    <div className="border-white/10 border-b py-2">
       <div className="flex items-center gap-2 px-1 py-1">
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
           className="flex flex-1 items-center gap-2 text-left text-sm"
         >
-          <span className="text-zinc-500">
+          <span className="text-muted">
             {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
           </span>
           <span className="font-medium">{label}</span>
-          <span className="text-xs text-zinc-500">
+          <span className="text-xs text-muted">
             ({watchedCount}/{season.episodes.length})
           </span>
         </button>

@@ -50,10 +50,10 @@ export function StatsPage() {
       <div className="flex flex-col gap-6">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           {["a", "b", "c"].map((key) => (
-            <div key={key} className="h-20 animate-pulse rounded-lg bg-zinc-900" />
+            <div key={key} className="h-20 animate-pulse bg-white/5" />
           ))}
         </div>
-        <div className="h-48 animate-pulse rounded-lg bg-zinc-900" />
+        <div className="h-48 animate-pulse bg-white/5" />
       </div>
     );
   }
@@ -61,11 +61,11 @@ export function StatsPage() {
   if (query.isError) {
     return (
       <div className="flex flex-col items-center gap-2 py-24 text-center">
-        <p className="text-zinc-400">{t("errors.generic")}</p>
+        <p className="text-muted">{t("errors.generic")}</p>
         <button
           type="button"
           onClick={() => query.refetch()}
-          className="rounded bg-zinc-800 px-3 py-1.5 text-sm"
+          className="border border-white/10 font-mono text-[10px] uppercase tracking-widest text-muted hover:text-snow px-3 py-1.5 transition-colors"
         >
           {t("errors.retry")}
         </button>

@@ -25,7 +25,7 @@ const OPTIONS: {
     value: 2,
     Icon: Minus,
     key: "okay",
-    activeBg: "bg-yellow text-zinc-900",
+    activeBg: "bg-yellow text-[#080808]",
     iconColor: "text-yellow",
   },
   {
@@ -53,8 +53,8 @@ export function RatingControl({ value, onChange, size = "md" }: RatingControlPro
             type="button"
             aria-pressed={active}
             onClick={() => onChange(active ? null : opt.value)}
-            className={`flex items-center gap-1.5 rounded ${padding} ${
-              active ? opt.activeBg : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+            className={`flex items-center gap-1.5 ${padding} ${
+              active ? opt.activeBg : "bg-white/5 text-muted hover:bg-white/10"
             }`}
           >
             <opt.Icon size={iconSize} className={active ? "" : opt.iconColor} />{" "}

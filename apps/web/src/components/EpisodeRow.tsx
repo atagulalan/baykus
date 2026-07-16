@@ -100,11 +100,7 @@ export function EpisodeRow({
             }}
             size="sm"
           />
-          <button
-            type="button"
-            onClick={onDismissPrompt}
-            className="text-zinc-500 hover:text-zinc-300"
-          >
+          <button type="button" onClick={onDismissPrompt} className="text-muted hover:text-snow">
             {t("rating.skip")}
           </button>
         </div>

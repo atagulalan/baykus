@@ -85,7 +85,7 @@ export function SeriesCard({ series }: SeriesCardProps) {
         </div>
       </Link>
       {series.rating !== null && (
-        <span className="absolute top-1 left-1 rounded bg-zinc-950/80 p-1">
+        <span className="absolute top-1 left-1 bg-void/80 p-1">
           {(() => {
             const { Icon, colorClass } = RATING_ICONS[series.rating];
             return <Icon size={14} className={colorClass} />;

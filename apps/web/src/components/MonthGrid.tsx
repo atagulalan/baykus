@@ -51,7 +51,7 @@ function CompactEntry({ entry }: { entry: CalendarEntry }) {
     <Link
       to="/series/$id"
       params={{ id: `i${entry.itemId}` }}
-      className="flex items-start gap-2 rounded px-1.5 py-1 text-[11px] leading-tight hover:bg-white/5 transition-colors"
+      className="flex items-start gap-2 px-1.5 py-1 text-[11px] leading-tight hover:bg-white/5 transition-colors"
     >
       {imageUrl && !imageFailed && (
         <img
@@ -139,11 +139,11 @@ export function MonthGrid({ year, month, days }: MonthGridProps) {
 
       <div className="flex flex-col gap-3 sm:hidden">
         {nonEmptyDays.length === 0 ? (
-          <p className="text-sm text-zinc-500">{t("calendar.empty.month")}</p>
+          <p className="text-sm text-muted">{t("calendar.empty.month")}</p>
         ) : (
           nonEmptyDays.map((day) => (
             <div key={day.date} className="flex flex-col gap-1">
-              <h3 className="text-xs text-zinc-500 uppercase">
+              <h3 className="text-xs text-muted uppercase">
                 {day.date === today
                   ? t("calendar.today", { date: day.date })
                   : new Intl.DateTimeFormat("tr-TR", {
