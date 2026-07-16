@@ -47,6 +47,7 @@ describe("GET /api/stats", () => {
       },
       episodesPerMonth: [],
       ratingDistribution: { "1": 0, "2": 0, "3": 0 },
+      mostRewatched: [],
     });
   });
 

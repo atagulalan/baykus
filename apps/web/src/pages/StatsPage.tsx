@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, Minus } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { ArrowDown, ArrowUp, Minus, RotateCw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { getStats } from "../api/client.ts";
 
@@ -161,6 +162,36 @@ export function StatsPage() {
           })}
         </div>
       </section>
+
+      {stats.mostRewatched && stats.mostRewatched.length > 0 && (
+        <section className="flex flex-col gap-4 mt-8">
+          <h2 className="font-display italic text-snow text-2xl tracking-tight">
+            {t("stats.mostRewatched")}
+          </h2>
+          <div className="flex flex-col gap-2">
+            {stats.mostRewatched.map((ep) => (
+              <Link
+                key={ep.episodeId}
+                to="/series/$id"
+                params={{ id: String(ep.itemId) }}
+                className="flex items-center justify-between border border-white/5 bg-[#101010] p-4 transition-colors hover:border-white/20"
+              >
+                <div className="flex flex-col">
+                  <span className="font-medium text-snow">{ep.itemTitle}</span>
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-muted">
+                    S{ep.s.toString().padStart(2, "0")}E{ep.e.toString().padStart(2, "0")}
+                    {ep.episodeTitle ? ` · ${ep.episodeTitle}` : ""}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 font-mono text-xs text-yellow">
+                  <RotateCw size={14} />
+                  <span>{ep.watchCount}x</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

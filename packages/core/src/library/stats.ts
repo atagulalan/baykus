@@ -3,12 +3,23 @@ import type { LibraryDatabase } from "../db/open.ts";
 import * as schema from "../db/schema.ts";
 import { CATEGORY_ORDER, computeCategories, type WatchCategory } from "./category.ts";
 
+export interface RewatchedEpisode {
+  itemId: number;
+  itemTitle: string;
+  episodeId: number;
+  s: number;
+  e: number;
+  episodeTitle: string | null;
+  watchCount: number;
+}
+
 export interface Stats {
   episodesWatched: number;
   watchTimeMin: number;
   itemCount: Record<WatchCategory, number>;
   episodesPerMonth: { month: string; count: number }[];
   ratingDistribution: Record<"1" | "2" | "3", number>;
+  mostRewatched: RewatchedEpisode[];
 }
 
 /** contracts/api.md §stats. watchTimeMin: E13 — unknown per-episode runtime falls back to the item's avg episodeRunTimes, else 0. */
@@ -73,11 +84,48 @@ export function getStats(db: LibraryDatabase): Stats {
     if (key in ratingDistribution) ratingDistribution[key] = row.count;
   }
 
+  const rewatchRows = db
+    .select({
+      itemId: schema.items.id,
+      itemTitle: schema.items.title,
+      episodeId: schema.episodes.id,
+      s: schema.episodes.seasonNumber,
+      e: schema.episodes.episodeNumber,
+      episodeTitle: schema.episodes.title,
+      watchCount: sql<number>`count(*)`,
+    })
+    .from(schema.watches)
+    .innerJoin(schema.episodes, eq(schema.watches.episodeId, schema.episodes.id))
+    .innerJoin(schema.items, eq(schema.episodes.itemId, schema.items.id))
+    .groupBy(
+      schema.items.id,
+      schema.items.title,
+      schema.episodes.id,
+      schema.episodes.seasonNumber,
+      schema.episodes.episodeNumber,
+      schema.episodes.title,
+    )
+    .having(sql`count(*) > 1`)
+    .orderBy(sql`count(*) desc`, schema.items.title)
+    .limit(10)
+    .all();
+
+  const mostRewatched: RewatchedEpisode[] = rewatchRows.map((row) => ({
+    itemId: row.itemId,
+    itemTitle: row.itemTitle,
+    episodeId: row.episodeId,
+    s: row.s,
+    e: row.e,
+    episodeTitle: row.episodeTitle,
+    watchCount: row.watchCount,
+  }));
+
   return {
     episodesWatched,
     watchTimeMin: Math.round(watchTimeMin),
     itemCount,
     episodesPerMonth,
     ratingDistribution,
+    mostRewatched,
   };
 }
