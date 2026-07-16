@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowDown, ArrowUp, Minus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { getStats } from "../api/client.ts";
+import { ActivityHeatmapSection } from "../components/stats/ActivityHeatmapSection.tsx";
 import { BacklogSection } from "../components/stats/BacklogSection.tsx";
 import { BingesSection } from "../components/stats/BingesSection.tsx";
 import { CategoryStatusSection } from "../components/stats/CategoryStatusSection.tsx";
@@ -16,23 +17,8 @@ import { RecentSection } from "../components/stats/RecentSection.tsx";
 import { RewatchSummarySection } from "../components/stats/RewatchSummarySection.tsx";
 import { StreaksSection } from "../components/stats/StreaksSection.tsx";
 import { UpcomingSection } from "../components/stats/UpcomingSection.tsx";
-
-function last12Months(): string[] {
-  const months: string[] = [];
-  const now = new Date();
-  for (let i = 11; i >= 0; i--) {
-    const m = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1));
-    months.push(`${m.getUTCFullYear()}-${String(m.getUTCMonth() + 1).padStart(2, "0")}`);
-  }
-  return months;
-}
-
-function monthLabel(month: string): string {
-  const [year, m] = month.split("-").map(Number);
-  return new Intl.DateTimeFormat("tr-TR", { month: "short" }).format(
-    new Date(Date.UTC(year as number, (m as number) - 1, 1)),
-  );
-}
+import { WeekdayHourSection } from "../components/stats/WeekdayHourSection.tsx";
+import { YearlyTimeSection } from "../components/stats/YearlyTimeSection.tsx";
 
 const RATING_BARS: {
   value: "1" | "2" | "3";
@@ -60,6 +46,7 @@ export function StatsPage() {
           ))}
         </div>
         <div className="h-48 animate-pulse bg-white/5" />
+        <div className="h-48 animate-pulse bg-white/5" />
       </div>
     );
   }
@@ -82,11 +69,8 @@ export function StatsPage() {
   const stats = query.data;
   if (!stats) return null;
 
-  const months = last12Months();
-  const countByMonth = new Map(stats.episodesPerMonth.map((m) => [m.month, m.count]));
-  const monthCounts = months.map((month) => ({ month, count: countByMonth.get(month) ?? 0 }));
-  const maxMonthCount = Math.max(1, ...monthCounts.map((m) => m.count));
   const maxRatingCount = Math.max(1, ...RATING_BARS.map((r) => stats.ratingDistribution[r.value]));
+  const { dated, total } = stats.datedWatches;
 
   return (
     <div className="flex flex-col gap-10">
@@ -104,34 +88,9 @@ export function StatsPage() {
       <BingesSection stats={stats} />
       <RewatchSummarySection stats={stats} />
       <StreaksSection stats={stats} />
-
-      <section className="flex flex-col gap-4 mt-4">
-        <h2 className="font-display italic text-snow text-2xl tracking-tight">
-          {t("stats.monthsChart")}
-        </h2>
-        <div className="flex items-end gap-2 border-b border-white/5 pb-2">
-          {monthCounts.map(({ month, count }) => (
-            <div key={month} className="flex h-32 flex-1 flex-col items-center justify-end gap-1">
-              {count > 0 && <span className="font-mono text-[9px] text-muted/50">{count}</span>}
-              <div
-                title={`${monthLabel(month)}: ${count}`}
-                className="w-full max-w-5 bg-yellow/60 transition-all duration-500"
-                style={{ height: `${Math.max(count > 0 ? 4 : 0, (count / maxMonthCount) * 100)}%` }}
-              />
-            </div>
-          ))}
-        </div>
-        <div className="flex gap-2">
-          {monthCounts.map(({ month }) => (
-            <span
-              key={month}
-              className="flex-1 text-center font-mono text-[9px] uppercase tracking-widest text-muted/50"
-            >
-              {monthLabel(month)}
-            </span>
-          ))}
-        </div>
-      </section>
+      <YearlyTimeSection stats={stats} />
+      <ActivityHeatmapSection stats={stats} />
+      <WeekdayHourSection stats={stats} />
 
       <section className="flex flex-col gap-4 mt-8">
         <h2 className="font-display italic text-snow text-2xl tracking-tight">
@@ -163,6 +122,12 @@ export function StatsPage() {
           })}
         </div>
       </section>
+
+      {dated < total && (
+        <p className="text-center font-mono text-xs text-muted/70">
+          {t("stats.footer.caveat", { dated, total })}
+        </p>
+      )}
     </div>
   );
 }

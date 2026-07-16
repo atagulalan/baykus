@@ -203,7 +203,6 @@
     "episodesWatched": "Episodes watched",
     "watchTimeHours": "Total time (hours)",
     "activeSeries": "Active series",
-    "monthsChart": "Episodes watched by month",
     "ratingDistribution": "Rating distribution",
     "empty": "No watch history yet",
     "mostRewatched": "Most Rewatched",
@@ -291,6 +290,27 @@
       "current": "Current Streak",
       "mostConsistent": "Most Consistent Series",
       "weeks": "{{count}} weeks"
+    },
+    "yearlyTime": {
+      "title": "Weekly / Monthly Watch Time",
+      "monthly": "Monthly — Total {{total}}",
+      "weekly": "Weekly — Total {{total}}",
+      "weekTooltip": "Week {{week}}: {{minutes}}m"
+    },
+    "activityHeatmap": {
+      "title": "Yearly Activity",
+      "tooltip": "{{date}}: {{count}} episodes",
+      "legendLow": "Less",
+      "legendHigh": "More"
+    },
+    "byWeekday": {
+      "title": "Day of the Week"
+    },
+    "byHour": {
+      "title": "Hour of the Day"
+    },
+    "footer": {
+      "caveat": "Time-based analyses are based on {{dated}} / {{total}} watches with a known date."
     }
   },
   "profile": {

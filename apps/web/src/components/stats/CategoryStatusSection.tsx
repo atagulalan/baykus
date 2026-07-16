@@ -10,6 +10,7 @@ interface CategoryStatusSectionProps {
 /** spec.md §5 (E97) — the app's own 8 WatchCategory buckets, not the prototype's 6. */
 export function CategoryStatusSection({ stats }: CategoryStatusSectionProps) {
   const { t } = useTranslation();
+  if (CATEGORY_ORDER.every((c) => stats.itemCount[c] === 0)) return null;
 
   return (
     <section className="flex flex-col gap-4">

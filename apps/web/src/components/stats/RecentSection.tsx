@@ -24,6 +24,9 @@ function windowValue(
 export function RecentSection({ stats }: RecentSectionProps) {
   const { t } = useTranslation();
   const { last7Days, last30Days, thisMonth } = stats.recent;
+  if (last7Days.episodes === 0 && last30Days.episodes === 0 && thisMonth.episodes === 0) {
+    return null;
+  }
 
   return (
     <section className="flex flex-col gap-4">

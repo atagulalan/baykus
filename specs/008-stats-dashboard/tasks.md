@@ -73,14 +73,14 @@ Entry point: M44.2, then M45.1.
         Haftalık Seri
   - [x] M50.5 i18n tr+en for group 2
 
-- [ ] **M51 web: sections group 3 + polish**
-  - [ ] M51.1 `YearSelect` + Haftalık/Aylık İzleme Süresi split panel
-  - [ ] M51.2 `Heatmap` Yıllık Aktivite (Mon-first grid, 3 buckets, mobile
+- [x] **M51 web: sections group 3 + polish**
+  - [x] M51.1 `YearSelect` + Haftalık/Aylık İzleme Süresi split panel
+  - [x] M51.2 `Heatmap` Yıllık Aktivite (Mon-first grid, 3 buckets, mobile
         scroll)
-  - [ ] M51.3 Haftanın Günü + Günün Saati split
-  - [ ] M51.4 footer caveat (dated/total, E95); drop legacy 12-month chart
+  - [x] M51.3 Haftanın Günü + Günün Saati split
+  - [x] M51.4 footer caveat (dated/total, E95); drop legacy 12-month chart
         (E111); loading/empty states; a11y pass per ui.md
-  - [ ] M51.5 i18n sweep tr+en; lint/typecheck clean
+  - [x] M51.5 i18n sweep tr+en; lint/typecheck clean
 
 - [ ] **M52 browser checkpoint**
   - [ ] M52.1 extend MANUELTEST.md: re-import zip → footer counts; spot-check

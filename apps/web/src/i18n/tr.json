@@ -203,7 +203,6 @@
     "episodesWatched": "Bölüm sayısı",
     "watchTimeHours": "Toplam süre (saat)",
     "activeSeries": "Aktif dizi sayısı",
-    "monthsChart": "Aylara göre izlenen bölümler",
     "ratingDistribution": "Puan dağılımı",
     "empty": "Henüz izleme kaydı yok",
     "mostRewatched": "En Çok Tekrar İzlenenler",
@@ -291,6 +290,27 @@
       "current": "Güncel Seri",
       "mostConsistent": "En İstikrarlı Dizi",
       "weeks": "{{count}} hafta"
+    },
+    "yearlyTime": {
+      "title": "Haftalık / Aylık İzleme Süresi",
+      "monthly": "Aylık — Toplam {{total}}",
+      "weekly": "Haftalık — Toplam {{total}}",
+      "weekTooltip": "{{week}}. hafta: {{minutes}} dk"
+    },
+    "activityHeatmap": {
+      "title": "Yıllık Aktivite",
+      "tooltip": "{{date}}: {{count}} bölüm",
+      "legendLow": "Az",
+      "legendHigh": "Çok"
+    },
+    "byWeekday": {
+      "title": "Haftanın Günü"
+    },
+    "byHour": {
+      "title": "Günün Saati"
+    },
+    "footer": {
+      "caveat": "Zaman bazlı analizler tarih bilgisi olan {{dated}} / {{total}} izlemeye dayanıyor."
     }
   },
   "profile": {
