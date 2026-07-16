@@ -236,7 +236,18 @@ export function ImportPage() {
                   key={show.name}
                   className="flex flex-col sm:flex-row sm:items-center gap-2 sm:justify-between text-sm p-3 bg-white/5 border border-white/5"
                 >
-                  <span className="truncate flex-1 font-display italic text-snow">{show.name}</span>
+                  <span className="truncate flex-1 font-display italic text-snow flex items-center gap-2">
+                    {show.name}
+                    {show.underflowDetails && show.underflowDetails.length > 0 && (
+                      <span
+                        title={t("importWizard.underflowWarning", {
+                          seasons: show.underflowDetails.map((d) => d.seasonNumber).join(", "),
+                        })}
+                      >
+                        <TriangleAlert size={14} className="text-yellow" />
+                      </span>
+                    )}
+                  </span>
                   <select
                     value={resolutions[show.name] ? JSON.stringify(resolutions[show.name]) : ""}
                     onChange={(e) => {
@@ -282,6 +293,7 @@ export function ImportPage() {
             <div className="mt-4 flex flex-col gap-1">
               {report.matched.map((show) => {
                 const hasDiscrepancy = show.episodes > show.providerEpisodeCount;
+                const hasUnderflow = show.underflowDetails && show.underflowDetails.length > 0;
                 return (
                   <div
                     key={show.name}
@@ -289,7 +301,16 @@ export function ImportPage() {
                   >
                     <span className="truncate text-snow flex items-center gap-2">
                       {show.name}
-                      {hasDiscrepancy && (
+                      {hasUnderflow && (
+                        <span
+                          title={t("importWizard.underflowWarning", {
+                            seasons: show.underflowDetails.map((d) => d.seasonNumber).join(", "),
+                          })}
+                        >
+                          <TriangleAlert size={14} className="text-yellow" />
+                        </span>
+                      )}
+                      {hasDiscrepancy && !hasUnderflow && (
                         <span
                           title={t("importWizard.episodeDiscrepancy", {
                             tvTime: show.episodes,

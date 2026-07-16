@@ -17,6 +17,7 @@ const externalIdsSchema = z
 const manualListSchema = z.enum(["watch_later", "stopped"]);
 
 const categorySchema = z.enum([
+  "needs_review",
   "watching",
   "not_watched_recently",
   "not_started",
@@ -74,6 +75,7 @@ const updateSeriesSchema = z
     pushMuted: z.boolean().optional(),
     note: z.string().nullable().optional(),
     favorite: z.boolean().optional(),
+    needsReview: z.boolean().optional(),
   })
   .strict();
 
@@ -83,6 +85,7 @@ function toTrackingPatch(parsed: z.infer<typeof updateSeriesSchema>): TrackingPa
   if (parsed.pushMuted !== undefined) patch.pushMuted = parsed.pushMuted;
   if (parsed.note !== undefined) patch.note = parsed.note;
   if (parsed.favorite !== undefined) patch.favorite = parsed.favorite;
+  if (parsed.needsReview !== undefined) patch.needsReview = parsed.needsReview;
   return patch;
 }
 

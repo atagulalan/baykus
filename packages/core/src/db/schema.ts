@@ -83,6 +83,7 @@ export const tracking = sqliteTable("tracking", {
   note: text("note"),
   listChangedAt: text("list_changed_at").notNull(),
   favorite: integer("favorite", { mode: "boolean" }).notNull().default(false),
+  needsReview: integer("needs_review", { mode: "boolean" }).notNull().default(false),
 });
 
 export const seasons = sqliteTable(

@@ -34,7 +34,8 @@
     "watch_later": "Sonra izlenecek",
     "up_to_date": "Güncel",
     "finished": "Bitirildi",
-    "stopped": "Bırakıldı"
+    "stopped": "Bırakıldı",
+    "needs_review": "İnceleme bekliyor"
   },
   "manualList": {
     "label": "Liste",
@@ -82,6 +83,10 @@
   },
   "series": {
     "notFound": "Bu dizi kütüphanende değil",
+    "needsReviewTitle": "Eksik bölümler tespit edildi",
+    "needsReviewDesc": "Bu dizi içe aktarımdan geldiği için bazı sezonlarda işaretlenmemiş bölümler olabilir. Eksik bölümleri doldurmak ister misin?",
+    "needsReviewFill": "Eksikleri doldur",
+    "needsReviewDismiss": "Yoksay",
     "specials": "Özel Bölümler",
     "seasonNumber": "Sezon {{number}}",
     "markSeasonWatched": "tümünü izledim",
@@ -285,6 +290,7 @@
     "uploadProgress": "{{done}}/{{total}} gösteri eşleştirildi",
     "uploadError": "Dosya işlenemedi",
     "reportTitle": "Eşleştirme raporu",
+    "underflowWarning": "Sezon {{seasons}}: TV Time'daki bölüm sayısı sağlayıcıdan daha az. Bölünmüş bölümleri manuel olarak işaretlemen gerekebilir.",
     "matched": "Eşleşti ({{count}})",
     "episodeCount": "{{count}} blm",
     "none": "—",

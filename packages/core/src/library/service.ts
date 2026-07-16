@@ -163,6 +163,7 @@ function buildSummary(
     nextAirDate: getNextAirDate(db, item.id),
     pushMuted: tracking.pushMuted,
     favorite: tracking.favorite,
+    needsReview: tracking.needsReview,
   };
 }
 
@@ -227,6 +228,7 @@ export interface AddSeriesOptions {
   tags?: TagInfo[];
   /** How the item entered the library (E32). Defaults to "manual". */
   addedVia?: AddedVia;
+  needsReview?: boolean;
 }
 
 export interface Library {
@@ -302,6 +304,7 @@ export function createLibrary(db: LibraryDatabase): Library {
             pushMuted: false,
             note: null,
             listChangedAt: now,
+            needsReview: opts.needsReview ?? false,
           })
           .run();
 
@@ -494,17 +497,18 @@ export function createLibrary(db: LibraryDatabase): Library {
         throw new ManualListConflictError(itemId);
       }
 
-      const updates: Partial<typeof schema.tracking.$inferInsert> = {};
+      const dbPatch: Partial<typeof schema.tracking.$inferInsert> = {};
       if (patch.manualList !== undefined) {
-        updates.manualList = patch.manualList;
-        updates.listChangedAt = new Date().toISOString();
+        dbPatch.manualList = patch.manualList;
+        dbPatch.listChangedAt = new Date().toISOString();
       }
-      if (patch.pushMuted !== undefined) updates.pushMuted = patch.pushMuted;
-      if (patch.note !== undefined) updates.note = patch.note;
-      if (patch.favorite !== undefined) updates.favorite = patch.favorite;
+      if (patch.pushMuted !== undefined) dbPatch.pushMuted = patch.pushMuted;
+      if (patch.note !== undefined) dbPatch.note = patch.note;
+      if (patch.favorite !== undefined) dbPatch.favorite = patch.favorite;
+      if (patch.needsReview !== undefined) dbPatch.needsReview = patch.needsReview;
 
-      if (Object.keys(updates).length > 0) {
-        db.update(schema.tracking).set(updates).where(eq(schema.tracking.itemId, itemId)).run();
+      if (Object.keys(dbPatch).length > 0) {
+        db.update(schema.tracking).set(dbPatch).where(eq(schema.tracking.itemId, itemId)).run();
       }
 
       const row = getItemAndTracking(db, itemId);

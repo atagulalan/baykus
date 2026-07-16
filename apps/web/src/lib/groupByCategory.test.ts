@@ -21,17 +21,18 @@ function fakeSeries(id: number, category: SeriesSummary["category"]): SeriesSumm
     nextAirDate: null,
     pushMuted: false,
     favorite: false,
+    needsReview: false,
   };
 }
 
 describe("HOME_CATEGORY_ORDER (E59)", () => {
-  it("excludes finished/stopped while CATEGORY_ORDER (all seven) stays untouched", () => {
+  it("excludes finished/stopped while CATEGORY_ORDER (all eight) stays untouched", () => {
     expect(HOME_CATEGORY_ORDER).not.toContain("finished");
     expect(HOME_CATEGORY_ORDER).not.toContain("stopped");
     expect(CATEGORY_ORDER).toContain("finished");
     expect(CATEGORY_ORDER).toContain("stopped");
-    expect(CATEGORY_ORDER).toHaveLength(7);
-    expect(HOME_CATEGORY_ORDER).toHaveLength(5);
+    expect(CATEGORY_ORDER).toHaveLength(8);
+    expect(HOME_CATEGORY_ORDER).toHaveLength(6);
   });
 });
 

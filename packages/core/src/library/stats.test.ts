@@ -92,7 +92,7 @@ describe("getStats", () => {
     expect(getStats(db).watchTimeMin).toBe(80);
   });
 
-  it("itemCount pre-fills all 7 categories to 0 and counts per category (mixed library)", () => {
+  it("itemCount pre-fills all 8 categories to 0 and counts per category (mixed library)", () => {
     const { db } = openLibraryDb(":memory:");
 
     insertItem(db, { manualList: "watch_later" });
@@ -120,6 +120,7 @@ describe("getStats", () => {
     addWatch(db, notRecentWatched, "2025-01-01T00:00:00Z");
 
     expect(getStats(db).itemCount).toEqual({
+      needs_review: 0,
       watching: 1,
       not_watched_recently: 1,
       not_started: 1,

@@ -67,9 +67,9 @@ function setupOneItem(title: string, tmdbId: number) {
 }
 
 describe("importLibraryZip — schema validation", () => {
-  it("rejects an unsupported schemaVersion (5)", async () => {
+  it("rejects an unsupported schemaVersion (6)", async () => {
     const { db } = openLibraryDb(":memory:");
-    const badZip = await manifestOnlyZip({ schemaVersion: 5 });
+    const badZip = await manifestOnlyZip({ schemaVersion: 6 });
 
     await expect(importLibraryZip(db, badZip, "replace")).rejects.toMatchObject({
       code: "UNSUPPORTED_SCHEMA",

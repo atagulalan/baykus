@@ -36,6 +36,7 @@ export interface SeriesSummary {
   nextAirDate: string | null;
   pushMuted: boolean;
   favorite: boolean;
+  needsReview: boolean;
 }
 
 export interface EpisodeSummary {
@@ -95,4 +96,5 @@ export interface TrackingPatch {
   note?: string | null;
   /** E62: favorite-only updates never bump listChangedAt (that's manual-list semantics, 002). */
   favorite?: boolean;
+  needsReview?: boolean;
 }

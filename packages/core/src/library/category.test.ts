@@ -311,6 +311,7 @@ describe("computeCategories — batch matches per-item on a mixed library", () =
     }
 
     expect(CATEGORY_ORDER).toEqual([
+      "needs_review",
       "watching",
       "not_watched_recently",
       "not_started",

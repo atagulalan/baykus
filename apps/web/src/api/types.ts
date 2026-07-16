@@ -8,6 +8,7 @@ export type MediaType = "series" | "movie" | "book";
 export type ManualList = "watch_later" | "stopped";
 
 export type WatchCategory =
+  | "needs_review"
   | "watching"
   | "not_watched_recently"
   | "not_started"
@@ -18,6 +19,7 @@ export type WatchCategory =
 
 /** Display order per spec.md E16. */
 export const CATEGORY_ORDER: WatchCategory[] = [
+  "needs_review",
   "watching",
   "not_watched_recently",
   "not_started",
@@ -29,6 +31,7 @@ export const CATEGORY_ORDER: WatchCategory[] = [
 
 /** E59: the five categories the library home page groups by — finished/stopped live in all-series. */
 export const HOME_CATEGORY_ORDER: WatchCategory[] = [
+  "needs_review",
   "watching",
   "not_watched_recently",
   "not_started",
@@ -106,6 +109,7 @@ export interface SeriesSummary {
   nextAirDate: string | null;
   pushMuted: boolean;
   favorite: boolean;
+  needsReview: boolean;
 }
 
 export interface SeriesListResponse {
@@ -367,12 +371,20 @@ export interface ClaimResult {
   createdAt: string;
 }
 
+export interface UnderflowSeasonDetail {
+  seasonNumber: number;
+  tvTimeCount: number;
+  providerCount: number;
+  delta: number;
+}
+
 export interface TvTimeMatchedShow {
   name: string;
   tvdbId: number;
   resolved: ExternalIds;
   episodes: number;
   providerEpisodeCount: number;
+  underflowDetails: UnderflowSeasonDetail[];
 }
 
 export interface TvTimeFuzzyCandidate {
@@ -385,6 +397,7 @@ export interface TvTimeFuzzyShow {
   name: string;
   candidates: TvTimeFuzzyCandidate[];
   episodes: number;
+  underflowDetails: UnderflowSeasonDetail[];
 }
 
 export interface TvTimeUnmatchedShow {

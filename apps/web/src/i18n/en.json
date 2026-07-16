@@ -34,7 +34,8 @@
     "watch_later": "Watch later",
     "up_to_date": "Up to date",
     "finished": "Finished",
-    "stopped": "Stopped"
+    "stopped": "Stopped",
+    "needs_review": "Needs review"
   },
   "manualList": {
     "label": "List",
@@ -82,6 +83,10 @@
   },
   "series": {
     "notFound": "This series isn't in your library",
+    "needsReviewTitle": "Missing episodes detected",
+    "needsReviewDesc": "This series came from an import, so some seasons may have unmarked episodes. Do you want to fill in the missing ones?",
+    "needsReviewFill": "Fill missing",
+    "needsReviewDismiss": "Dismiss",
     "specials": "Specials",
     "seasonNumber": "Season {{number}}",
     "markSeasonWatched": "mark all as watched",
@@ -285,6 +290,7 @@
     "uploadProgress": "{{done}}/{{total}} shows matched",
     "uploadError": "Couldn't process the file",
     "reportTitle": "Match report",
+    "underflowWarning": "Season {{seasons}}: TV Time has fewer episodes than the provider. You may need to manually mark split episodes.",
     "matched": "Matched ({{count}})",
     "episodeCount": "{{count}} ep",
     "none": "—",

@@ -37,6 +37,7 @@ describe("GET /api/stats", () => {
       episodesWatched: 0,
       watchTimeMin: 0,
       itemCount: {
+        needs_review: 0,
         watching: 0,
         not_watched_recently: 0,
         not_started: 0,

@@ -2,6 +2,7 @@ import type { WatchCategory } from "../api/types.ts";
 
 /** E45/E46: shared per-category accent — yellow for every "still going" category, red/purple/green for the terminal ones. */
 export const CATEGORY_BG_COLORS: Record<WatchCategory | "default", string> = {
+  needs_review: "bg-orange-500",
   stopped: "bg-red-500",
   finished: "bg-purple-500",
   up_to_date: "bg-green-500",
@@ -13,6 +14,7 @@ export const CATEGORY_BG_COLORS: Record<WatchCategory | "default", string> = {
 };
 
 export const CATEGORY_TEXT_COLORS: Record<WatchCategory | "default", string> = {
+  needs_review: "text-orange-500",
   stopped: "text-red-500",
   finished: "text-purple-500",
   up_to_date: "text-green-500",

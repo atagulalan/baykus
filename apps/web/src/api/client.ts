@@ -137,6 +137,7 @@ export function updateSeries(
     pushMuted?: boolean;
     note?: string | null;
     favorite?: boolean;
+    needsReview?: boolean;
   },
 ): Promise<SeriesSummary> {
   return request<SeriesSummary>(`/library/series/${id}`, {

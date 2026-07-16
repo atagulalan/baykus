@@ -5,6 +5,7 @@ import {
   parseTvTimeFiles,
   resolveWatchPosition,
   type TvTimeStatus,
+  type UnderflowSeasonDetail,
 } from "@baykus/importer-tvtime";
 import type { ExternalIds, MetadataProvider, SeriesDetails } from "@baykus/provider-sdk";
 import { Hono } from "hono";
@@ -88,6 +89,7 @@ async function importOneShow(
     episodeNumber?: number;
   }[],
   status: TvTimeStatus = "watching",
+  needsReview: boolean = false,
 ): Promise<{ itemCreated: boolean; watchesCreated: number; watchesSkipped: number }> {
   let itemId: number;
   let itemCreated = true;
@@ -96,6 +98,7 @@ async function importOneShow(
     itemId = library.addSeries(details, {
       ...(manualList !== null ? { manualList } : {}),
       addedVia: "import:tvtime",
+      needsReview,
     }).id;
   } catch (cause) {
     if (!isAlreadyInLibraryError(cause)) throw cause;
@@ -209,11 +212,13 @@ export function createTvTimeRoutes(library: Library, providers: MetadataProvider
             resolved: m.externalIds,
             episodes: m.episodeCount,
             providerEpisodeCount: m.providerEpisodeCount,
+            underflowDetails: m.underflowDetails,
           })),
           fuzzy: fuzzy.map((f) => ({
             name: f.name,
             candidates: f.candidates,
             episodes: f.episodeCount,
+            underflowDetails: f.underflowDetails,
           })),
           unmatched: unmatched.map((u) => ({ name: u.name, episodes: u.episodeCount })),
           skippedRelics,
@@ -235,6 +240,7 @@ export function createTvTimeRoutes(library: Library, providers: MetadataProvider
       externalIds: ExternalIds;
       episodeCount: number;
       status: TvTimeStatus;
+      underflowDetails: UnderflowSeasonDetail[];
     };
     const jobs: ShowJob[] = [];
 
@@ -246,6 +252,7 @@ export function createTvTimeRoutes(library: Library, providers: MetadataProvider
         externalIds: matchedShow.externalIds,
         episodeCount: matchedShow.episodeCount,
         status: matchedShow.status,
+        underflowDetails: matchedShow.underflowDetails,
       });
     }
 
@@ -263,6 +270,7 @@ export function createTvTimeRoutes(library: Library, providers: MetadataProvider
         externalIds: toExternalIds(resolution.externalIds),
         episodeCount: fuzzyShow.episodeCount,
         status: fuzzyShow.status,
+        underflowDetails: fuzzyShow.underflowDetails,
       });
     }
 
@@ -295,7 +303,14 @@ export function createTvTimeRoutes(library: Library, providers: MetadataProvider
 
         try {
           const watchEvents = report.watchesByTvdbId.get(job.tvdbId) ?? [];
-          const result = await importOneShow(library, providers, details, watchEvents, job.status);
+          const result = await importOneShow(
+            library,
+            providers,
+            details,
+            watchEvents,
+            job.status,
+            job.underflowDetails.length > 0,
+          );
           if (result.itemCreated) itemsCreated++;
           watchesCreated += result.watchesCreated;
           skipped += result.watchesSkipped;

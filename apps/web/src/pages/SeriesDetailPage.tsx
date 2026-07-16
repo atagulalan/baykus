@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
-import { Heart } from "lucide-react";
+import { Heart, TriangleAlert } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -73,6 +73,45 @@ function updateEpisodeInDetail(
     seasons,
     progress: { ...detail.progress, watched: detail.progress.watched + watchedDelta },
   };
+}
+
+function NeedsReviewBanner({
+  onFill,
+  onDismiss,
+  isLoading,
+}: {
+  onFill: () => void;
+  onDismiss: () => void;
+  isLoading: boolean;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="flex flex-col gap-3 bg-[#1a1a00] border border-yellow/20 p-4">
+      <div className="flex items-center gap-2 text-yellow font-display italic text-lg">
+        <TriangleAlert size={18} />
+        {t("series.needsReviewTitle")}
+      </div>
+      <p className="text-sm text-snow/80">{t("series.needsReviewDesc")}</p>
+      <div className="flex items-center gap-3 mt-1">
+        <button
+          type="button"
+          onClick={onFill}
+          disabled={isLoading}
+          className="bg-yellow px-4 py-2 font-mono text-[10px] text-[#080808] uppercase tracking-widest hover:opacity-90 disabled:opacity-50"
+        >
+          {t("series.needsReviewFill")}
+        </button>
+        <button
+          type="button"
+          onClick={onDismiss}
+          disabled={isLoading}
+          className="bg-white/5 px-4 py-2 font-mono text-[10px] text-snow uppercase tracking-widest hover:bg-white/10 disabled:opacity-50"
+        >
+          {t("series.needsReviewDismiss")}
+        </button>
+      </div>
+    </div>
+  );
 }
 
 export function SeriesDetailPage() {
@@ -221,6 +260,33 @@ export function SeriesDetailPage() {
 
   const unwatchSeason = useMutation({
     mutationFn: (seasonNumber: number) => bulkUnwatch(requireInternalId(), { seasonNumber }),
+    onError: reportError,
+    onSettled: invalidate,
+  });
+
+  const changeNeedsReview = useMutation({
+    mutationFn: (needsReview: boolean) => updateSeries(requireInternalId(), { needsReview }),
+    onError: reportError,
+    onSettled: invalidate,
+  });
+
+  const fillMissingSeasons = useMutation({
+    mutationFn: async () => {
+      if (!query.data) return;
+      const detail = query.data;
+      const maxStartedSeason = detail.seasonProgress.seasons.reduce(
+        (max, s) => (s.watched > 0 ? Math.max(max, s.number) : max),
+        0,
+      );
+      const promises: Promise<unknown>[] = [];
+      for (const s of detail.seasonProgress.seasons) {
+        if (s.number !== 0 && s.number < maxStartedSeason && s.watched < s.total) {
+          promises.push(bulkWatch(detail.id, { seasonNumber: s.number }));
+        }
+      }
+      await Promise.all(promises);
+      await updateSeries(detail.id, { needsReview: false });
+    },
     onError: reportError,
     onSettled: invalidate,
   });
@@ -386,6 +452,13 @@ export function SeriesDetailPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      {detail.needsReview && (
+        <NeedsReviewBanner
+          isLoading={fillMissingSeasons.isPending || changeNeedsReview.isPending}
+          onFill={() => fillMissingSeasons.mutate()}
+          onDismiss={() => changeNeedsReview.mutate(false)}
+        />
+      )}
       <div className="flex flex-col gap-4 sm:flex-row">
         {imageUrl ? (
           <img

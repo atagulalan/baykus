@@ -6,6 +6,7 @@ import * as schema from "../db/schema.ts";
 import { getSettings } from "./settings.ts";
 
 export type WatchCategory =
+  | "needs_review"
   | "watching"
   | "not_watched_recently"
   | "not_started"
@@ -16,6 +17,7 @@ export type WatchCategory =
 
 /** Display order per spec.md E16. */
 export const CATEGORY_ORDER: WatchCategory[] = [
+  "needs_review",
   "watching",
   "not_watched_recently",
   "not_started",
@@ -45,6 +47,7 @@ interface ItemCategoryInputs {
   newestAiredAt: string | null;
   addedAt: string;
   addedVia: AddedVia;
+  needsReview: boolean;
 }
 
 /** ISO datetime string, no milliseconds, matching how watched_at/list_changed_at are stored. */
@@ -63,6 +66,8 @@ function categorize(
   opts: { ignoreManualList: boolean },
   windowDays: number,
 ): WatchCategory {
+  if (inputs.needsReview) return "needs_review";
+
   if (!opts.ignoreManualList) {
     if (inputs.manualList === "watch_later") return "watch_later";
     if (inputs.manualList === "stopped") return "stopped";
@@ -117,6 +122,7 @@ function computeCategoriesInternal(
       id: schema.items.id,
       releaseStatus: schema.items.releaseStatus,
       manualList: schema.tracking.manualList,
+      needsReview: schema.tracking.needsReview,
       addedAt: schema.items.addedAt,
       addedVia: schema.items.addedVia,
     })
@@ -183,6 +189,7 @@ function computeCategoriesInternal(
           newestAiredAt: airedRow?.newestAiredAt ?? null,
           addedAt: row.addedAt,
           addedVia: row.addedVia,
+          needsReview: row.needsReview,
         },
         now,
         opts,
