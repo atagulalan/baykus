@@ -5,8 +5,8 @@ import type { AppDeps } from "./app.ts";
 import { openAccountsDb } from "./auth/accounts.ts";
 import { createSingleSessionStore } from "./auth/single-session.ts";
 import type { Config } from "./config.ts";
-import { createProviderRegistry, effectiveScrapersEnabled } from "./providers/registry.ts";
 import { openMetadataCache } from "./providers/cache.ts";
+import { createProviderRegistry, effectiveScrapersEnabled } from "./providers/registry.ts";
 import { loadOrCreateVapidKeys, type VapidKeys } from "./push/vapid.ts";
 
 /** Real (disk-touching) dependencies for the running server, single or multi mode. */

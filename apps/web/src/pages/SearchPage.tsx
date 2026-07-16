@@ -2,9 +2,9 @@ import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { ApiError } from "../api/client.ts";
+import type { SearchResult } from "../api/types.ts";
 import { SearchResultThumb } from "../components/SearchResultThumb.tsx";
 import { resultKey, useSeriesSearch } from "../lib/useSeriesSearch.ts";
-import type { SearchResult } from "../api/types.ts";
 
 /** E68/E77: full-page search — mobile's "Ara" tab and the desktop header icon's destination. Navigates to series page immediately on click. */
 export function SearchPage() {
@@ -25,13 +25,19 @@ export function SearchPage() {
         navigate({ to: "/series/$id", params: { id: summary.id.toString() } });
       },
       onError: (error) => {
-        if (error instanceof ApiError && error.code === "CONFLICT" && error.details && typeof error.details === 'object' && 'itemId' in error.details) {
+        if (
+          error instanceof ApiError &&
+          error.code === "CONFLICT" &&
+          error.details &&
+          typeof error.details === "object" &&
+          "itemId" in error.details
+        ) {
           const itemId = (error.details as { itemId: number }).itemId;
           navigate({ to: "/series/$id", params: { id: itemId.toString() } });
         } else {
           search.setPending(null);
         }
-      }
+      },
     });
   };
 

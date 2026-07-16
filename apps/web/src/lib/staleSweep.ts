@@ -1,3 +1,4 @@
+import type { QueryClient } from "@tanstack/react-query";
 import { useSyncExternalStore } from "react";
 import { refreshAllSeries } from "../api/client.ts";
 import type { RefreshProgressEvent } from "../api/types.ts";
@@ -72,12 +73,13 @@ export function setManualRefreshRunning(running: boolean): void {
   notify();
 }
 
-import type { QueryClient } from "@tanstack/react-query";
-
 export function startManualSweep(
   queryClient: QueryClient,
   toast: { show: (msg: string, type?: "error" | "success") => void },
-  t: (key: string, opts?: any) => string,
+  messages: {
+    done: (newEpisodes: number) => string;
+    error: string;
+  },
 ): void {
   if (state.running || state.manualRefreshRunning) return;
 
@@ -91,10 +93,10 @@ export function startManualSweep(
   })
     .then((result) => {
       queryClient.invalidateQueries({ queryKey: ["library"] });
-      toast.show(t("library.refreshAllDone", { newEpisodes: result.newEpisodes }));
+      toast.show(messages.done(result.newEpisodes));
     })
     .catch(() => {
-      toast.show(t("errors.generic"), "error");
+      toast.show(messages.error, "error");
     })
     .finally(() => {
       state.manualRefreshRunning = false;

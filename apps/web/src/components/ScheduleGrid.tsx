@@ -85,17 +85,14 @@ export function ScheduleGrid({
 
   const weekdayLabels = weekdayFullLabels();
 
-  const seriesInfoMap = new Map<
-    string,
-    SeriesStrip & { dow: number }
-  >();
+  const seriesInfoMap = new Map<string, SeriesStrip & { dow: number }>();
 
   for (const day of days) {
     const d = new Date(`${day.date}T00:00:00Z`);
     const dow = ((d.getUTCDay() + 6) % 7) as 0 | 1 | 2 | 3 | 4 | 5 | 6;
     const absWeek = getAbsoluteWeek(day.date);
     const localWeekIdx = absWeek - minAbsWeek;
-    const inWindow = absWeek >= windowMin && absWeek <= windowMax;
+    const _inWindow = absWeek >= windowMin && absWeek <= windowMax;
 
     for (const entry of day.entries) {
       // Group by Day of Week, Series, and Season to prevent large gaps between seasons
@@ -112,7 +109,8 @@ export function ScheduleGrid({
           episodes: [],
         });
       }
-      const strip = seriesInfoMap.get(key)!;
+      const strip = seriesInfoMap.get(key);
+      if (!strip) continue;
       strip.startWeek = Math.min(strip.startWeek, localWeekIdx);
       strip.endWeek = Math.max(strip.endWeek, localWeekIdx);
 
@@ -194,7 +192,15 @@ export function ScheduleGrid({
 
   const containerRef = useRef<HTMLDivElement>(null);
   const headersRef = useRef<(HTMLDivElement | null)[]>([]);
-  const rowContentRefs = useRef<(HTMLDivElement | null)[]>([null, null, null, null, null, null, null]);
+  const _rowContentRefs = useRef<(HTMLDivElement | null)[]>([
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+  ]);
   const [hasScrolled, setHasScrolled] = useState(false);
 
   // Intersection observer for tracking visible week range
@@ -249,7 +255,9 @@ export function ScheduleGrid({
         }
 
         // Update focusedAbsWeek using the center of the container
-        const containerRect = containerRef.current!.getBoundingClientRect();
+        const containerEl = containerRef.current;
+        if (!containerEl) return;
+        const containerRect = containerEl.getBoundingClientRect();
         const containerCenter = containerRect.left + containerRect.width / 2;
         let closestAbs = -1;
         let minDistance = Infinity;
@@ -289,11 +297,16 @@ export function ScheduleGrid({
       observer.disconnect();
       visibleWeeksRef.current.clear();
     };
-  }, [onVisibleWeekChange, renderedColumns.length, currentIsoYear]);
+  }, [onVisibleWeekChange, currentIsoYear, absWeekToColIndex.get]);
 
   // Initial scroll to current week
   useEffect(() => {
-    if (autoScrollToCurrentWeek && !hasScrolled && containerRef.current && renderedColumns.length > 0) {
+    if (
+      autoScrollToCurrentWeek &&
+      !hasScrolled &&
+      containerRef.current &&
+      renderedColumns.length > 0
+    ) {
       const currentIdx = absWeekToColIndex.get(currentAbsWeek);
       if (currentIdx !== undefined) {
         // Approximate width of each column is 70px
@@ -305,7 +318,13 @@ export function ScheduleGrid({
         setHasScrolled(true);
       }
     }
-  }, [autoScrollToCurrentWeek, hasScrolled, currentAbsWeek, absWeekToColIndex, renderedColumns.length]);
+  }, [
+    autoScrollToCurrentWeek,
+    hasScrolled,
+    currentAbsWeek,
+    absWeekToColIndex,
+    renderedColumns.length,
+  ]);
 
   // Preserve scroll position when prepending historical data
   const prevFirstAbsWeekRef = useRef<number | null>(null);
@@ -313,7 +332,8 @@ export function ScheduleGrid({
     if (containerRef.current && renderedColumns.length > 0) {
       const firstCol = renderedColumns[0];
       if (!firstCol) return;
-      const currentFirstAbsWeek = firstCol.type === "week" ? firstCol.absWeek : firstCol.startAbsWeek;
+      const currentFirstAbsWeek =
+        firstCol.type === "week" ? firstCol.absWeek : firstCol.startAbsWeek;
       const prevFirstAbsWeek = prevFirstAbsWeekRef.current;
 
       if (prevFirstAbsWeek !== null && prevFirstAbsWeek !== currentFirstAbsWeek) {
@@ -330,6 +350,7 @@ export function ScheduleGrid({
       }
       prevFirstAbsWeekRef.current = currentFirstAbsWeek;
     }
+    // biome-ignore lint/correctness/useExhaustiveDependencies: renderedColumns is rebuilt each render; we only need its first absWeek identity
   }, [renderedColumns, absWeekToColIndex]);
 
   // Automatically fetch more if the screen is wider than the content
@@ -342,7 +363,7 @@ export function ScheduleGrid({
         if (onLoadMoreRight) onLoadMoreRight();
       }
     }
-  }, [renderedColumns.length, onLoadMoreLeft, onLoadMoreRight]);
+  }, [onLoadMoreLeft, onLoadMoreRight]);
 
   const updateScales = useCallback(() => {
     const target = containerRef.current;
@@ -376,9 +397,10 @@ export function ScheduleGrid({
         target.style.setProperty(`--strip-scale-${strip.stripKey}`, scale.toString());
         if (scale > maxScale) maxScale = scale;
       }
-      
+
       target.style.setProperty(`--dow-max-scale-${dow}`, maxScale.toString());
     }
+    // biome-ignore lint/correctness/useExhaustiveDependencies: stripsByDay is derived from days each render; absWeek map is the stable trigger we care about
   }, [minAbsWeek, stripsByDay, absWeekToColIndex]);
 
   // Initial scales setup
@@ -427,6 +449,7 @@ export function ScheduleGrid({
   const minContainerWidth = Math.max(400, renderedColumns.length * 70); // 70px per column
 
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: drag-to-pan scroll surface; keyboard uses native overflow scrolling
     <div
       ref={containerRef}
       className="overflow-x-auto touch-pan-x scrollbar-hide pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] select-none cursor-grab active:cursor-grabbing"
@@ -528,9 +551,13 @@ export function ScheduleGrid({
                       gridTemplateColumns: `repeat(${renderedColumns.length}, 1fr)`,
                     }}
                   >
-                    {renderedColumns.map((col, i) => (
+                    {renderedColumns.map((col) => (
                       <div
-                        key={i}
+                        key={
+                          col.type === "week"
+                            ? `week-${col.absWeek}`
+                            : `gap-${col.startAbsWeek}-${col.endAbsWeek}`
+                        }
                         className={`border-l border-white/5 ${col.type === "week" && col.absWeek === currentAbsWeek ? "bg-yellow/5" : ""} ${col.type === "gap" ? "bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,rgba(255,255,255,0.02)_10px,rgba(255,255,255,0.02)_20px)]" : ""}`}
                       />
                     ))}
@@ -544,11 +571,11 @@ export function ScheduleGrid({
                   </span>
                 </div>
 
-                <div 
+                <div
                   className="grid transition-all duration-100 ease-out"
                   style={{
                     paddingTop: `calc(28px * var(--dow-max-scale-${dow}, ${isEmpty ? 0 : 1}))`,
-                    paddingBottom: `calc(8px * var(--dow-max-scale-${dow}, ${isEmpty ? 0 : 1}))`
+                    paddingBottom: `calc(8px * var(--dow-max-scale-${dow}, ${isEmpty ? 0 : 1}))`,
                   }}
                 >
                   <div className="overflow-visible">
@@ -567,8 +594,10 @@ export function ScheduleGrid({
                           .slice()
                           .sort((a, b) => a.startWeek - b.startWeek)
                           .map((strip) => {
-                            const startColIdx = absWeekToColIndex.get(minAbsWeek + strip.startWeek) ?? 0;
-                            const endColIdx = absWeekToColIndex.get(minAbsWeek + strip.endWeek) ?? startColIdx;
+                            const startColIdx =
+                              absWeekToColIndex.get(minAbsWeek + strip.startWeek) ?? 0;
+                            const endColIdx =
+                              absWeekToColIndex.get(minAbsWeek + strip.endWeek) ?? startColIdx;
                             const colStart = startColIdx + 1;
                             const colSpan = endColIdx - startColIdx + 1;
                             return (
@@ -582,7 +611,7 @@ export function ScheduleGrid({
                                   opacity: `var(--strip-scale-${strip.stripKey}, 1)`,
                                   marginTop: `calc(4px * var(--strip-scale-${strip.stripKey}, 1))`,
                                   paddingTop: `calc(4px * var(--strip-scale-${strip.stripKey}, 1))`,
-                                  paddingBottom: `calc(4px * var(--strip-scale-${strip.stripKey}, 1))`
+                                  paddingBottom: `calc(4px * var(--strip-scale-${strip.stripKey}, 1))`,
                                 }}
                               >
                                 <div
@@ -607,19 +636,23 @@ export function ScheduleGrid({
                                   }}
                                 >
                                   {Array.from({ length: colSpan }).map((_, localIdx) => {
+                                    const weekKey = minAbsWeek + strip.startWeek + localIdx;
                                     const columnEpisodes = strip.episodes.filter(
                                       (ep) => ep.weekIndex - strip.startWeek === localIdx,
                                     );
-                                    if (columnEpisodes.length === 0) return <div key={localIdx} />;
+                                    if (columnEpisodes.length === 0) {
+                                      return <div key={`${strip.stripKey}-empty-${weekKey}`} />;
+                                    }
 
                                     return (
                                       <div
-                                        key={localIdx}
+                                        key={`${strip.stripKey}-week-${weekKey}`}
                                         className="flex flex-row items-center justify-start pointer-events-auto px-2 pb-1"
                                         style={{ gridColumn: localIdx + 1 }}
                                       >
                                         {(() => {
-                                          const firstEp = columnEpisodes[0]!;
+                                          const firstEp = columnEpisodes[0];
+                                          if (!firstEp) return null;
                                           const isToday = columnEpisodes.some(
                                             (ep) => ep.date === today,
                                           );

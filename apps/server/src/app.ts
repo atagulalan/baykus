@@ -1,7 +1,7 @@
 import type { Library } from "@baykus/core";
 import type { MetadataProvider } from "@baykus/provider-sdk";
-import { Hono } from "hono";
 import type { Database } from "better-sqlite3";
+import { Hono } from "hono";
 import { createLibraryProxy } from "./auth/library-context.ts";
 import { createLibraryPool } from "./auth/library-pool.ts";
 import { createRateLimiter } from "./auth/rate-limit.ts";
@@ -87,8 +87,9 @@ export function createApp(config: Config, deps: AppDeps) {
   app.route("/", createCalendarRoute(contextLibrary));
   app.route("/", createPushRoutes(contextLibrary, deps.vapid));
   app.route("/", createZipRoutes(contextLibrary));
-  const importProviders = deps.metadataCache
-    ? deps.providers.map((p) => withMetadataCache(p, deps.metadataCache!))
+  const cacheDb = deps.metadataCache;
+  const importProviders = cacheDb
+    ? deps.providers.map((p) => withMetadataCache(p, cacheDb))
     : deps.providers;
   app.route("/", createTvTimeRoutes(contextLibrary, importProviders));
 

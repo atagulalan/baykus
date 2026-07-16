@@ -1,7 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 import { ChevronRight, Settings } from "lucide-react";
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getStats, listSeries } from "../api/client.ts";
 import type { AuthSession } from "../api/types.ts";
@@ -174,7 +173,12 @@ function ProfilePageContent({ handle, session }: { handle: string; session: Auth
 
       <button
         type="button"
-        onClick={() => startManualSweep(queryClient, toast, t)}
+        onClick={() =>
+          startManualSweep(queryClient, toast, {
+            done: (newEpisodes) => t("library.refreshAllDone", { newEpisodes }),
+            error: t("errors.generic"),
+          })
+        }
         disabled={isManualRefreshRunning}
         className="w-full font-mono text-[10px] tracking-widest uppercase border border-white/10 text-muted px-4 py-3 hover:text-snow hover:border-white/20 transition-colors disabled:opacity-50"
       >

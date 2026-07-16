@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -7,7 +7,7 @@ import type { CalendarDay } from "../api/types.ts";
 import { CalendarEntryRow } from "../components/CalendarEntryRow.tsx";
 import { MonthGrid } from "../components/MonthGrid.tsx";
 import { ScheduleGrid } from "../components/ScheduleGrid.tsx";
-import { todayIso, getWeekRange, getIsoWeek, getAbsoluteWeek } from "../lib/date.ts";
+import { getAbsoluteWeek, getIsoWeek, getWeekRange, todayIso } from "../lib/date.ts";
 import { useToast } from "../lib/toast.tsx";
 
 type Mode = "timeline" | "month" | "schedule";
@@ -123,9 +123,7 @@ function TimelineView({
               // E24 gap-tracker: hide past watched rows unless pinned this session (E81).
               .filter(
                 (entry) =>
-                  entry.airDate > today ||
-                  !entry.isWatched ||
-                  justWatched.has(entry.episodeId),
+                  entry.airDate > today || !entry.isWatched || justWatched.has(entry.episodeId),
               )
               .map((entry) =>
                 entry.airDate <= today ? (
@@ -261,11 +259,11 @@ function ScheduleView() {
   const currentAbsWeek = getAbsoluteWeek(today);
   let minFetchedAbsWeek: number | undefined;
   let maxFetchedAbsWeek: number | undefined;
-  
+
   if (query.data?.pages && query.data.pages.length > 0) {
     const minPageParam = Math.min(...query.data.pages.map((p) => p.pageParam));
     const maxPageParam = Math.max(...query.data.pages.map((p) => p.pageParam));
-    
+
     minFetchedAbsWeek = currentAbsWeek + minPageParam;
     maxFetchedAbsWeek = currentAbsWeek + maxPageParam + 15; // 16 weeks span
   }
@@ -273,14 +271,22 @@ function ScheduleView() {
   useEffect(() => {
     if (!visibleWeekLabel) {
       const iso = getIsoWeek(today);
-      setVisibleWeekLabel(t("calendar.weekHeader", { year: iso.year, week: iso.week, defaultValue: `${iso.year} - ${iso.week}. Hafta` }));
+      setVisibleWeekLabel(
+        t("calendar.weekHeader", {
+          year: iso.year,
+          week: iso.week,
+          defaultValue: `${iso.year} - ${iso.week}. Hafta`,
+        }),
+      );
     }
   }, [today, t, visibleWeekLabel]);
 
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-center gap-4 h-11">
-        <span className="font-mono text-xs uppercase tracking-widest text-snow">{visibleWeekLabel}</span>
+        <span className="font-mono text-xs uppercase tracking-widest text-snow">
+          {visibleWeekLabel}
+        </span>
       </div>
 
       {query.isLoading ? (
@@ -297,13 +303,13 @@ function ScheduleView() {
           </button>
         </div>
       ) : (
-        <ScheduleGrid 
+        <ScheduleGrid
           days={days}
           minFetchedAbsWeek={minFetchedAbsWeek}
           maxFetchedAbsWeek={maxFetchedAbsWeek}
           hasNextPageRight={query.hasNextPage}
           hasNextPageLeft={query.hasPreviousPage}
-          onVisibleWeekChange={setVisibleWeekLabel} 
+          onVisibleWeekChange={setVisibleWeekLabel}
           autoScrollToCurrentWeek={true}
           onLoadMoreRight={query.fetchNextPage}
           onLoadMoreLeft={query.fetchPreviousPage}

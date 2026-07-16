@@ -1,4 +1,4 @@
-import type { MetadataProvider, SearchOptions, ExternalIds } from "@baykus/provider-sdk";
+import type { ExternalIds, MetadataProvider, SearchOptions } from "@baykus/provider-sdk";
 import Database from "better-sqlite3";
 
 export function openMetadataCache(path: string): Database.Database {

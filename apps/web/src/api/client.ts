@@ -163,10 +163,7 @@ export function bulkWatch(itemId: number, target: BulkWatchTarget): Promise<Bulk
   });
 }
 
-export function bulkUnwatch(
-  itemId: number,
-  target: BulkWatchTarget,
-): Promise<{ deleted: number }> {
+export function bulkUnwatch(itemId: number, target: BulkWatchTarget): Promise<{ deleted: number }> {
   return request<{ deleted: number }>(`/library/series/${itemId}/watches/bulk`, {
     method: "DELETE",
     body: JSON.stringify(target),

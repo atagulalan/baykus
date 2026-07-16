@@ -18,16 +18,37 @@ body {
 }
 
 @keyframes film-grain {
-  0%, 100% { transform: translate(0, 0); }
-  10% { transform: translate(-1%, -2%); }
-  20% { transform: translate(-3%, 1%); }
-  30% { transform: translate(1%, -5%); }
-  40% { transform: translate(-1%, 5%); }
-  50% { transform: translate(-3%, 2%); }
-  60% { transform: translate(3%, 0%); }
-  70% { transform: translate(0%, 3%); }
-  80% { transform: translate(1%, 7%); }
-  90% { transform: translate(-2%, 2%); }
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  10% {
+    transform: translate(-1%, -2%);
+  }
+  20% {
+    transform: translate(-3%, 1%);
+  }
+  30% {
+    transform: translate(1%, -5%);
+  }
+  40% {
+    transform: translate(-1%, 5%);
+  }
+  50% {
+    transform: translate(-3%, 2%);
+  }
+  60% {
+    transform: translate(3%, 0%);
+  }
+  70% {
+    transform: translate(0%, 3%);
+  }
+  80% {
+    transform: translate(1%, 7%);
+  }
+  90% {
+    transform: translate(-2%, 2%);
+  }
 }
 
 body::after {
@@ -43,8 +64,6 @@ body::after {
   z-index: 9999;
   animation: film-grain 4s steps(10) infinite;
 }
-
-
 
 /* E51: subtle root cross-fade on route changes; poster morph opts in per-item
    via view-transition-name="poster-${id}" on SeriesCard/detail containers.

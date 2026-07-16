@@ -123,11 +123,7 @@ async function importOneShow(
   for (const watchEvent of watchEvents) {
     // Season-level bulk mark (episode_number=0): stamp every aired episode in
     // that season with this watchedAt.
-    if (
-      watchEvent.seasonNumber !== undefined &&
-      watchEvent.episodeNumber === 0 &&
-      seriesDetail
-    ) {
+    if (watchEvent.seasonNumber !== undefined && watchEvent.episodeNumber === 0 && seriesDetail) {
       const season = seriesDetail.seasons.find((s) => s.number === watchEvent.seasonNumber);
       if (!season || season.episodes.length === 0) {
         watchesSkipped++;
