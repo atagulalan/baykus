@@ -2,25 +2,26 @@
 
 See [AGENTS.md](AGENTS.md) for full project instructions — read it before
 changing code. Constitution: `.specify/memory/constitution.md`. Specs
-001–004 (`specs/001-series-tracking/` through `specs/004-import-fidelity-ux/`,
+001–007 (`specs/001-series-tracking/` through `specs/007-post-006-deltas/`,
 each a delta over the previous, newest wins where they overlap) are all
-fully implemented. Spec 005 (`specs/005-mobile-profile-ux/`, M23–M27:
-mobile UX, profile hub, favorites, stale auto-refresh) is approved and not
-started — it is the active work; root `HANDOVER.md` has the entry point.
+fully implemented. Spec 008 (`specs/008-stats-dashboard/`, M44–M52: stats
+dashboard from the `dashboard.html` prototype) is **proposed and awaiting
+xava's approval — do not start it unprompted**; root `HANDOVER.md` has the
+entry point.
 
 Claude-specific notes:
 
 - This project follows spec-driven development. Before implementing a feature,
   read its spec + plan; if the request contradicts them, update the spec in the
   same PR (or flag the conflict) rather than silently diverging.
-- Specs 001–004's tasks.md files are checked off except browser-only
+- Specs 001–007's tasks.md files are checked off except browser-only
   boxes: 001 is finished except M9.2 (blocked on the user's credentials —
-  do not attempt); 002, 003, and 004 are implemented and test-green,
-  pending one combined browser-checkpoint pass (003's M17.7 + 004's M22,
-  see root `MANUELTEST.md` — foldable into 005's M27 sitting). Spec 005's
-  tasks (M23–M27) are all unchecked. If a root `HANDOVER.md` exists, read
-  it first — if it doesn't, there's nothing queued and you should ask the
-  user what's next before starting new work.
+  do not attempt); everything else is implemented and test-green, pending
+  one combined browser-checkpoint pass (root `MANUELTEST.md`, entry §M33 —
+  now also covering 007's underflow/needs_review UI). Spec 008's tasks
+  (M44–M52) are unchecked apart from the docs package. If a root
+  `HANDOVER.md` exists, read it first — if it doesn't, there's nothing
+  queued and you should ask the user what's next before starting new work.
 - Order of truth when docs disagree: AGENTS.md § Normative sources.
 - The user (xava) communicates in Turkish; reply in Turkish. Code, comments,
   commit messages, and docs under `specs/` stay in English. UI strings live in
