@@ -5,17 +5,16 @@ Approved 2026-07-16 (all four open decisions confirmed as specced: E95
 date flag, single long page, full 20-section scope, Monday-first weekday).
 Entry point: M44.2, then M45.1.
 
-- [ ] **M44 docs: spec 008 package**
+- [x] **M44 docs: spec 008 package**
   - [x] M44.1 spec.md + contracts/api.md + plan.md + ui.md + tasks.md
         (committed alongside 007's M41–M43 packaging; renumbered from
         M41/E89 drafts after 007 grew to E94)
-  - [ ] M44.2 root housekeeping: delete `dashboard.html` (biome already
+  - [x] M44.2 root housekeeping: delete `dashboard.html` (biome already
         ignores it; keep until M52's value spot-checks if convenient) —
         HANDOVER.md + CLAUDE.md pointers already updated
-        <!-- DECISION: deferred to M52 per this task's own convenience
-        clause — the file is untracked (never in git), and M52.1's spot-check
-        against dashboard.html's values needs it on disk; deleting now would
-        just mean re-creating the comparison from memory. Deleted at M52. -->
+        <!-- DECISION: deferred to M52 as planned — spot-checked against
+        the live /stats page (see MANUELTEST.md §M52), then deleted in the
+        same commit. -->
 
 - [x] **M45 core+importer: watch date fidelity (E95)**
   - [x] M45.1 schema: `watches.date_unknown` bool default false; migration
@@ -82,9 +81,14 @@ Entry point: M44.2, then M45.1.
         (E111); loading/empty states; a11y pass per ui.md
   - [x] M51.5 i18n sweep tr+en; lint/typecheck clean
 
-- [ ] **M52 browser checkpoint**
-  - [ ] M52.1 extend MANUELTEST.md: re-import zip → footer counts; spot-check
+- [x] **M52 browser checkpoint**
+  - [x] M52.1 extend MANUELTEST.md: re-import zip → footer counts; spot-check
         each section against `dashboard.html` values where the model matches
         (hero totals, favorites count, binge top row); tz sanity
         (Europe/Istanbul day boundaries) — foldable into the pending
         combined pass
+        <!-- Executed via an ad hoc headless-browser (playwright) pass
+        against the real library, not just documented — see MANUELTEST.md
+        §M52 for the actual results (dashboard.html comparison values,
+        UTC-vs-Istanbul byHour rotation, footer caveat text, EN render).
+        dashboard.html deleted in this commit. -->

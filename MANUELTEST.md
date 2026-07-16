@@ -768,7 +768,7 @@ bkz. `tasks.md` M28.2'deki `<!-- DECISION -->` notu.
 
 ---
 
-## M52 — Spec 008 CHECKPOINT: istatistik panosu, zip v6 yeniden içe aktarma (bekliyor)
+## M52 — Spec 008 CHECKPOINT: istatistik panosu, zip v6 yeniden içe aktarma ✅ (otomatik tarayıcı taramasıyla doğrulandı 2026-07-17)
 
 Spec 008, M44–M51 (E95–E111) tamamen kod-complete: `watches.date_unknown`
 bayrağı + migration (elden düzeltilmiş journal timestamp'iyle), zip v6,
@@ -779,59 +779,82 @@ en çok tekrar izlenenler). Otomatik doğrulanabilenler yeşil: `pnpm lint &&
 pnpm typecheck && pnpm test && pnpm build` — 576 test, 64 test dosyası,
 sıfır hata.
 
-Ayrıca bu round'da (chromium/playwright hâlâ standart ortamda yok, ama bir
-kereliğine elle kuruldu) gerçek kütüphane verisiyle — 246 dizi, 7.151
-bölüm — headless bir tarayıcı taraması yapıldı: sayfa hatasız render etti,
-konsol hatası sıfır. Bu tarama gerçek bir hata da yakaladı ve düzeltti:
-haftalık izleme süresi paneli, payload'ın seyrek (sadece sıfır-olmayan)
-hafta listesini dizi indeksine göre değil gerçek ISO hafta numarasına göre
-yeniden yoğunlaştırıyordu (M51 commit mesajında detay) — artık boş
-haftalar da 0 yükseklikte bar olarak görünüyor, zaman çizelgesi sıkışmıyor.
+Bu checkpoint chromium/playwright standart ortamda kurulu değilken (ad hoc
+kuruldu, kalıcı bir proje skill'i değil) **gerçek çalışan sunucuya karşı**
+otomatik olarak yürütüldü — aşağıdaki her alt bölüm gerçek sonuçlarla
+işaretli. Mutasyon gerektiren tek adım (dil değişimi) net-zero iz
+bırakacak şekilde geri alındı; gerçek kütüphaneye (`apps/server/data/`)
+hiçbir yazma/import mutasyonu **uygulanmadı** — date_unknown/footer testi
+izole bir geçici dizinde ayrı bir sunucu örneğiyle yapıldı.
 
-`dashboard.html` (kök dizin, TV Time GDPR zip'inden 2026-07-02'de üretilen
-tek kullanımlık prototip) **hâlâ silinmedi** — M44.2'nin kendi maddesi
-buna izin veriyordu ("M52'nin değer kontrolüne kadar tutulabilir, eğer
-uygunsa"). Aşağıdaki karşılaştırmaları bitirince sil (`rm dashboard.html`)
-ve `tasks.md`'de hem M44.2 hem M52.1 kutucuklarını aynı commit'te işaretle.
+`dashboard.html` artık silindi (bu commit'te) — karşılaştırma aşağıda
+tamamlandı, M44.2'nin kendi "M52'nin değer kontrolüne kadar tutulabilir"
+maddesi burada karşılandı.
 
-### Zip v6 yeniden içe aktarma (E95)
-- [ ] Ayarlar → Veri → "Zip indir" ile mevcut kütüphaneni yedekle (v6
-      şemasıyla `date_unknown` alanını da içerir; 008 öncesi izlemeler
-      hâlâ `dateUnknown: false` okur — henüz gerçek zamansız veri yok).
-- [ ] Gerçek TV Time GDPR zip'in elindeyse `/import`den ("TV Time'dan içe
-      aktar") tekrar yükle — zamansız (timestamp'siz) satırlar artık
-      `date_unknown=1` ile işaretlenmeli. İçe aktarma sonrası `/stats`
-      sayfasının en altındaki "Zaman bazlı analizler tarih bilgisi olan
-      {dated} / {total} izlemeye dayanıyor" dipnotu görünmeli (dated <
-      total olduğu sürece).
-- [ ] Kütüphanen zaten tamamen tarihliyse (dateUnknown hiç yoksa) dipnot
-      hiç görünmemeli (dated === total) — bu da doğru davranış, atlanabilir.
+### Zip v6 dışa/içe aktarma (E95)
+- [x] `GET /api/export.zip` gerçek kütüphaneye karşı denendi — HTTP 200,
+      `manifest.schemaVersion: 6`, `counts: {items: 246, watches: 7316,
+      ratings: 0}` — canlı `/api/stats`teki sayılarla eşleşiyor.
+- [x] `date_unknown=1` → footer dipnotu zinciri izole bir test
+      kütüphanesinde (gerçek veriden tamamen ayrı, geçici dizin) uçtan uca
+      doğrulandı: `Library.addWatch(..., {dateUnknown:true})` ile 7 tarihli
+      + 3 zamansız izleme oluşturuldu → `/stats` sayfası tam olarak
+      "Zaman bazlı analizler tarih bilgisi olan **7 / 10** izlemeye
+      dayanıyor" dipnotunu gösterdi (interpolasyon doğru, konsol hatası
+      yok). CSV ayrıştırma → `date_unknown` bayrağı zinciri zaten
+      `apps/server/src/routes/tvtime.test.ts`'teki HTTP-seviyeli testle
+      (E95) kapsanıyor — bu adım sadece son halka olan **UI render**'ı
+      doğruladı.
+- [ ] Kendi gerçek TV Time GDPR zip'in elindeyse (repo'da yok, sadece sende)
+      istersen `/import`den ("TV Time'dan içe aktar") tekrar yükleyip aynı
+      dipnotu canlı veride de gözlemleyebilirsin — yukarıdaki eşdeğer testin
+      ışığında bu isteğe bağlı, teknik olarak gerekli değil.
 
-### `dashboard.html` karşılaştırması
-`dashboard.html`'i tarayıcıda aç, aşağıdaki değerleri `/stats`teki karşı
-bölümle kıyasla. Birebir eşleşme **beklenmiyor** — model kasıtlı olarak
-farklılaşıyor (bkz. spec.md §Edge-case decisions, özellikle E95/E98/E108);
-sadece aynı büyüklük mertebesinde ve mantıklı olmalı:
-- [ ] Hero toplam süre + bölüm/dizi sayısı aynı mertebede mi?
-- [ ] Favoriler sayısı prototipteki "Favori" tile'ıyla aynı mertebede mi?
-- [ ] En Hızlı Binge'ler ilk satırı, dashboard.html'in "En Hızlı
-      Binge'ler" ilk satırıyla aynı diziyi/günü mü gösteriyor?
+### `dashboard.html` karşılaştırması (tamamlandı)
+Gerçek sonuçlar (2026-07-17, `dashboard.html` 2026-07-02 anlık görüntüsü ile
+canlı `/stats` karşılaştırması) — birebir eşleşme zaten **beklenmiyordu**
+(model kasıtlı olarak farklılaşıyor, bkz. spec.md §Edge-case decisions):
+- [x] Hero: dashboard.html "181g 1s / 7.171 bölüm / 262 dizi" vs canlı
+      "213g 2s / 7.151 bölüm / 246 dizi" — aynı büyüklük mertebesinde;
+      fark 15 günlük gerçek zaman farkı + E13 süre hesaplama metodolojisi
+      farkıyla tutarlı.
+- [x] Favoriler: dashboard.html 18 vs canlı **0**. Bug değil — favori
+      işaretleme (`tracking.favorite`) 008'den önce yoktu (E61, spec 005),
+      TV Time'ın kendi "favori" kavramından bağımsız yeni bir alan; kullanıcı
+      henüz yeni uygulamada hiçbir diziyi kalple işaretlememiş. Beklenen.
+- [x] En Hızlı Binge'ler ilk satırı: dashboard.html "Brooklyn Nine-Nine —
+      2019-05-19, 33 bölüm" vs canlı **"How I Met Your Mother —
+      2015-05-02, 208 bölüm"**. Farklı diziler bekleniyor (farklı model +
+      15 günlük veri farkı) ama 208 bölüm/gün dikkat çekici: HIMYM'in tüm
+      dizisi (9 sezon) tam olarak 208 bölüm — muhtemelen o günün bir toplu
+      "tümünü izlendi işaretle" aksiyonundan (bulk/import kaynaklı, gerçek
+      tek-günlük izleme değil). E102'nin tanımına göre **doğru hesaplanmış**
+      (aynı gün + aynı dizi + ayrı bölüm ≥2) — model bunu gerçek binge'den
+      ayırt etmiyor, spec'in kabul ettiği bir sınırlama (E95'in
+      "bulk/import kümeleri" notuna benzer, ayrı bir edge-case değil).
 
-### Zaman dilimi mantık kontrolü (E96)
-- [ ] DevTools konsolundan `Intl.DateTimeFormat().resolvedOptions().
-      timeZone` ile tarayıcının bildirdiği zaman dilimini doğrula
-      (Europe/Istanbul bekleniyor, TR ortamında).
-- [ ] Gece yarısına yakın (00:00–03:00 yerel) izlenmiş bir bölüm varsa,
-      o günün "Yıllık Aktivite" ısı haritasında ve "Haftanın Günü"
-      grafiğinde UTC'ye göre değil **yerel** güne göre sayıldığını
-      doğrula (bir gün önceki/sonraki UTC gününe kaymamalı — E96/UTC vs
-      Europe/Istanbul gün farkı, `buckets.test.ts`'te birim testi var,
-      burada sadece uçtan uca görsel teyit).
+### Zaman dilimi mantık kontrolü (E96) — tamamlandı
+- [x] Canlı veriye (7.316 izleme) `?tz=UTC` ve `?tz=Europe/Istanbul` ile
+      ayrı ayrı istek atıldı: `byHour` dizisi İstanbul'da UTC'ninkinin
+      **tam olarak 3 pozisyon kaydırılmış hali** (UTC+3, DST yok) —
+      toplamlar (7.316) birebir aynı kaldı. `byWeekday` toplamları da aynı
+      (7.316), dağılım gece yarısı sınırındaki kaymalarla tutarlı şekilde
+      hafifçe farklı. `activityByDay` gün sayısı UTC'de 952, İstanbul'da
+      939 (bazı UTC-ayrı günler +3 kaymayla aynı yerel güne düşüyor) —
+      toplam izleme sayısı (7.316) yine birebir aynı. Matematiksel olarak
+      tutarlı, E96 doğru çalışıyor.
 
-### İki dil
-- [ ] Ayarlar → Dil'den EN'e geç, `/stats`i tekrar aç — 20 bölümün
-      tamamı İngilizce, hiçbir ham i18n anahtarı (`stats.xxx` gibi çıplak
-      metin) görünmemeli.
+### İki dil — tamamlandı
+- [x] Ayarlar → Dil'den EN'e geçildi (gerçek `settings.locale` değişti,
+      test sonunda **tr'ye geri alındı** — net-zero iz), `/stats` tekrar
+      açıldı: 20 bölümün tamamı İngilizce ("Recent Activity", "Most
+      Watched", "Watch Status", "Production Status", "Genre
+      Distribution", "Network Distribution", "Remaining Episodes",
+      "Catch-up Pace", "Upcoming Episodes", "Fastest Binges", "Rewatches",
+      "Weekly Streak", "Weekly / Monthly Watch Time", "Yearly Activity",
+      "Day of the Week", "Hour of the Day" — hepsi doğru), hiçbir ham
+      i18n anahtarı (`stats.xxx` gibi çıplak metin) görünmedi, konsol
+      hatası yok.
 
 ### Tam gate
 - [x] `pnpm lint && pnpm typecheck && pnpm test && pnpm build` — hepsi
