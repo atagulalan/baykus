@@ -4,7 +4,7 @@ import { ManualListPicker } from "../components/ManualListPicker.tsx";
 import { SearchResultThumb } from "../components/SearchResultThumb.tsx";
 import { resultKey, useSeriesSearch } from "../lib/useSeriesSearch.ts";
 
-/** E68: full-page search — mobile's "Ara" tab destination. Adding stays on the page (multi-add). */
+/** E68/E77: full-page search — mobile's "Ara" tab and the desktop header icon's destination. Adding stays on the page (multi-add). */
 export function SearchPage() {
   const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -16,7 +16,7 @@ export function SearchPage() {
   }, []);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="mx-auto flex w-full max-w-xl flex-col gap-4">
       <input
         ref={inputRef}
         type="search"

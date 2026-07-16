@@ -13,7 +13,6 @@ import { useTranslation } from "react-i18next";
 import { getAuthSession } from "../api/client.ts";
 import { backAffordance } from "../lib/backFallback.ts";
 import { selfHandleParam } from "../lib/profilePath.ts";
-import { SearchBar } from "./SearchBar.tsx";
 
 /** E67: shared by the desktop text nav and the mobile tab bar (Profil excluded — needs the resolved handle). */
 const NAV_ITEMS = [
@@ -96,7 +95,8 @@ export function Layout() {
             </Link>
           </div>
 
-          {/* Desktop: wordmark left, search center, text nav right — unchanged. */}
+          {/* Desktop (E77): wordmark left, nav cluster right ending in the search icon-link —
+              the center inline-search slot is gone (dropdown retired); /search is header-only on desktop. */}
           <div className="hidden items-center justify-between sm:flex">
             <Link
               to="/"
@@ -104,9 +104,6 @@ export function Layout() {
             >
               baykuş
             </Link>
-            <div className="flex-1 max-w-md mx-6">
-              <SearchBar />
-            </div>
             <div className="flex items-center gap-6">
               {NAV_ITEMS.map((item) => (
                 <Link
@@ -123,6 +120,13 @@ export function Layout() {
                 className="font-mono text-xs tracking-widest uppercase text-muted hover:text-snow transition-colors [&.active]:text-yellow"
               >
                 {t("app.nav.profile")}
+              </Link>
+              <Link
+                to="/search"
+                aria-label={t("app.nav.search")}
+                className="flex h-11 w-11 items-center justify-center text-muted hover:text-snow transition-colors [&.active]:text-yellow"
+              >
+                <Search size={20} strokeWidth={1.5} />
               </Link>
             </div>
           </div>
