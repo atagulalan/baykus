@@ -75,7 +75,7 @@ export function SegmentedProgress({
             <div key={key} className={`flex-1 overflow-hidden bg-white/5 ${TRACK_HEIGHT[size]}`}>
               <div
                 className={`h-full ${colorClass} transition-all duration-500`}
-                style={{ width: `${segment.percent}%` }}
+                style={{ width: segment.percent === 0 && i > 0 ? "1px" : `${segment.percent}%` }}
               />
             </div>
           );

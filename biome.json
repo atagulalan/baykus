@@ -9,7 +9,9 @@
       "!**/*.gen.ts",
       "!fixtures",
       "!**/data",
-      "!specs/**/design"
+      "!specs/**/design",
+      "!tmp",
+      "!dashboard.html"
     ]
   },
   "formatter": {
