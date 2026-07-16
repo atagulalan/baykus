@@ -43,7 +43,15 @@ export type {
   TrackingPatch,
 } from "./library/types.ts";
 export type { AddWatchResult, BulkWatchResult, BulkWatchTarget } from "./library/watches.ts";
-export { type RefreshResult, refreshAll, refreshItem } from "./refresh/engine.ts";
+export {
+  filterStaleItemIds,
+  isStale,
+  type RefreshAllOptions,
+  type RefreshResult,
+  refreshAll,
+  refreshItem,
+  STALE_REFRESH_HOURS,
+} from "./refresh/engine.ts";
 export { type ExportOptions, exportLibraryZip } from "./zip/export.ts";
 export {
   type ImportMode,

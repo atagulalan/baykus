@@ -2,9 +2,13 @@ import type { Library, WatchCategory } from "@baykus/core";
 import type { MetadataProvider } from "@baykus/provider-sdk";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
+import { z } from "zod";
 import { ApiError } from "../middleware/errors.ts";
 import { notifyNewEpisodes } from "../push/notify.ts";
 import type { VapidKeys } from "../push/vapid.ts";
+
+/** E64: absent = full run (unchanged); junk values 400 VALIDATION_FAILED. */
+const staleOnlyQuerySchema = z.enum(["1", "true"]).optional();
 
 /** E22: push notifications are scoped to the active trio. */
 const ACTIVE_TRIO: ReadonlySet<WatchCategory> = new Set([
@@ -71,9 +75,12 @@ export function createRefreshRoutes(
     const provider = providers[0];
     if (!provider) throw new ApiError("INTERNAL", "no metadata providers registered");
 
+    const staleOnly = staleOnlyQuerySchema.parse(c.req.query("staleOnly")) !== undefined;
+
     const { items } = library.listSeries();
     const titleById = new Map(items.map((item) => [item.id, item.title]));
-    const itemIds = items.map((item) => item.id);
+    const allIds = items.map((item) => item.id);
+    const itemIds = staleOnly ? library.filterStaleItemIds(allIds) : allIds;
     const total = itemIds.length;
 
     return streamSSE(c, async (stream) => {

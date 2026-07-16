@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { LibraryDatabase } from "../db/open.ts";
 import { openLibraryDb } from "../db/open.ts";
 import * as schema from "../db/schema.ts";
-import { refreshAll, refreshItem } from "./engine.ts";
+import { filterStaleItemIds, isStale, refreshAll, refreshItem } from "./engine.ts";
 
 function addDays(days: number): string {
   const d = new Date();
@@ -14,7 +14,7 @@ function addDays(days: number): string {
 
 let nextTvmazeId = 1;
 
-function setupItem(db: LibraryDatabase, lastRefreshedAt: string): number {
+function setupItem(db: LibraryDatabase, lastRefreshedAt: string | null): number {
   const item = db
     .insert(schema.items)
     .values({
@@ -356,5 +356,56 @@ describe("refreshAll", () => {
 
     expect(results).toHaveLength(2);
     expect(maxInFlight).toBe(1);
+  });
+
+  describe("staleOnly (E64)", () => {
+    const now = "2026-01-10T00:00:00Z";
+
+    it("refreshes only stale items, NULL-lastRefreshedAt first then oldest-first; fresh items untouched", async () => {
+      const { db } = openLibraryDb(":memory:");
+      const fresh = setupItem(db, "2026-01-09T12:00:00Z"); // 12h ago — fresh
+      const staleOld = setupItem(db, "2026-01-01T00:00:00Z"); // very stale
+      const staleNull = setupItem(db, null); // never refreshed — always stale
+      const staleNewer = setupItem(db, "2026-01-05T00:00:00Z"); // stale, but newer than staleOld
+
+      const provider = fakeProvider(() => details([]));
+      const order: number[] = [];
+      for await (const result of refreshAll(
+        db,
+        provider,
+        [fresh, staleOld, staleNull, staleNewer],
+        1,
+        { staleOnly: true, now },
+      )) {
+        order.push(result.itemId);
+      }
+
+      expect(order).toEqual([staleNull, staleOld, staleNewer]);
+      const freshItem = db.select().from(schema.items).where(eq(schema.items.id, fresh)).get();
+      expect(freshItem?.lastRefreshedAt).toBe("2026-01-09T12:00:00Z"); // never touched
+    });
+  });
+});
+
+describe("isStale (E63)", () => {
+  const now = "2026-01-10T00:00:00Z";
+
+  it("null lastRefreshedAt is always stale (never refreshed)", () => {
+    expect(isStale(null, now)).toBe(true);
+  });
+
+  it("23 hours ago is fresh", () => {
+    expect(isStale("2026-01-09T01:00:00Z", now)).toBe(false);
+  });
+
+  it("25 hours ago is stale", () => {
+    expect(isStale("2026-01-08T23:00:00Z", now)).toBe(true);
+  });
+});
+
+describe("filterStaleItemIds (E64)", () => {
+  it("returns an empty array for an empty input without querying", () => {
+    const { db } = openLibraryDb(":memory:");
+    expect(filterStaleItemIds(db, [], "2026-01-10T00:00:00Z")).toEqual([]);
   });
 });

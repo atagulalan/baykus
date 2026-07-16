@@ -83,7 +83,7 @@ Checkpoint goal: with a stale library, opening home starts a quiet sweep
 just that series; the manual button (still on library until M25) behaves
 exactly as before.
 
-- [ ] M24.1 core+server: staleness predicate + `staleOnly` refresh
+- [x] M24.1 core+server: staleness predicate + `staleOnly` refresh
   - **Files:** `packages/core/src/refresh/{engine.ts,engine.test.ts}`
     (+ the module that exports refresh constants),
     `apps/server/src/routes/{library.ts,library.test.ts}` (wherever

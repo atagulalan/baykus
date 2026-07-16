@@ -1,7 +1,17 @@
 import type { ExternalIds, MetadataProvider } from "@baykus/provider-sdk";
-import { and, eq, ne, sql } from "drizzle-orm";
+import { and, eq, inArray, ne, sql } from "drizzle-orm";
 import type { LibraryDatabase } from "../db/open.ts";
 import * as schema from "../db/schema.ts";
+
+/** E63: deliberately a constant, not a settings key (see spec 005 §Non-goals). */
+export const STALE_REFRESH_HOURS = 24;
+
+/** E63: full ISO-timestamp compare — null (never refreshed) always counts as stale. */
+export function isStale(lastRefreshedAt: string | null, now: string): boolean {
+  if (lastRefreshedAt === null) return true;
+  const thresholdMs = new Date(now).getTime() - STALE_REFRESH_HOURS * 60 * 60 * 1000;
+  return new Date(lastRefreshedAt).getTime() < thresholdMs;
+}
 
 export interface RefreshResult {
   itemId: number;
@@ -233,19 +243,59 @@ export async function refreshItem(
   return { itemId, ok: true, newEpisodes, refreshedAt: now };
 }
 
+/** E64: NULL `lastRefreshedAt` first, then oldest-first. */
+function orderByStaleness(rows: { id: number; lastRefreshedAt: string | null }[]): number[] {
+  return [...rows]
+    .sort((a, b) => {
+      if (a.lastRefreshedAt === b.lastRefreshedAt) return 0;
+      if (a.lastRefreshedAt === null) return -1;
+      if (b.lastRefreshedAt === null) return 1;
+      return a.lastRefreshedAt < b.lastRefreshedAt ? -1 : 1;
+    })
+    .map((r) => r.id);
+}
+
+/** E64: narrows `itemIds` to the stale ones (E63), NULL-`lastRefreshedAt` first then oldest-first. */
+export function filterStaleItemIds(
+  db: LibraryDatabase,
+  itemIds: number[],
+  now: string = new Date().toISOString(),
+): number[] {
+  if (itemIds.length === 0) return [];
+  const rows = db
+    .select({ id: schema.items.id, lastRefreshedAt: schema.items.lastRefreshedAt })
+    .from(schema.items)
+    .where(inArray(schema.items.id, itemIds))
+    .all();
+  return orderByStaleness(rows.filter((r) => isStale(r.lastRefreshedAt, now)));
+}
+
+export interface RefreshAllOptions {
+  /** E64: narrow to stale items (E63), NULL-`lastRefreshedAt` first then oldest-first. */
+  staleOnly?: boolean;
+  /** Injectable for deterministic tests. */
+  now?: string;
+}
+
 /**
- * Refreshes every item in `itemIds`, at most `concurrency` in flight at once,
- * yielding a result for each as its batch completes. A single item failing
- * never aborts the run — it's yielded as `{ok: false, error}`.
+ * Refreshes every item in `itemIds` (or, with `staleOnly`, just the stale ones
+ * among them), at most `concurrency` in flight at once, yielding a result for
+ * each as its batch completes. A single item failing never aborts the run —
+ * it's yielded as `{ok: false, error}`.
  */
 export async function* refreshAll(
   db: LibraryDatabase,
   provider: MetadataProvider,
   itemIds: number[],
   concurrency = 3,
+  opts: RefreshAllOptions = {},
 ): AsyncGenerator<RefreshResult> {
-  for (let i = 0; i < itemIds.length; i += concurrency) {
-    const batch = itemIds.slice(i, i + concurrency);
+  const targetIds = opts.staleOnly
+    ? filterStaleItemIds(db, itemIds, opts.now ?? new Date().toISOString())
+    : itemIds;
+
+  for (let i = 0; i < targetIds.length; i += concurrency) {
+    const batch = targetIds.slice(i, i + concurrency);
     const settled = await Promise.allSettled(batch.map((id) => refreshItem(db, provider, id)));
     for (let j = 0; j < settled.length; j++) {
       const outcome = settled[j];

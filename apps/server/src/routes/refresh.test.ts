@@ -70,7 +70,8 @@ function fakeProvider(opts: { detailsError?: Error } = {}): MetadataProvider {
 }
 
 function setup(providers: MetadataProvider[] = [fakeProvider()]) {
-  const library = createLibrary(openLibraryDb(":memory:").db);
+  const db = openLibraryDb(":memory:").db;
+  const library = createLibrary(db);
   const summary = library.addSeries(fixtureSeries(1));
   const app = createApp(loadConfig({}), {
     library,
@@ -79,7 +80,7 @@ function setup(providers: MetadataProvider[] = [fakeProvider()]) {
     vapid: { publicKey: "test-public", privateKey: "test-private" },
     auth: { mode: "single", password: undefined, singleSessions: createSingleSessionStore() },
   });
-  return { app, itemId: summary.id, library };
+  return { app, itemId: summary.id, library, db };
 }
 
 const HEADERS = { "content-type": "application/json", "X-Baykus": "1" };
@@ -134,6 +135,68 @@ describe("POST /api/library/refresh (SSE)", () => {
     expect(progress[0]?.data).toMatchObject({ done: 1, total: 1, ok: true });
     expect(complete).toHaveLength(1);
     expect(complete[0]?.data).toMatchObject({ ok: 1, failed: 0 });
+  });
+
+  it("paramless behavior is byte-identical to before (regression)", async () => {
+    const { app } = setup();
+    const withoutParam = await app.request("/api/library/refresh", {
+      method: "POST",
+      headers: HEADERS,
+    });
+    const events = await readSseEvents(withoutParam);
+    expect(events.filter((e) => e.event === "progress")).toHaveLength(1);
+    expect(events.filter((e) => e.event === "complete")[0]?.data).toMatchObject({
+      ok: 1,
+      failed: 0,
+    });
+  });
+});
+
+describe("POST /api/library/refresh?staleOnly=1 (E64)", () => {
+  it("skips a just-refreshed (fresh) item — total excludes it, immediate complete", async () => {
+    const { app } = setup(); // setup() adds one item; a fresh add's lastRefreshedAt = addedAt = now
+    const res = await app.request("/api/library/refresh?staleOnly=1", {
+      method: "POST",
+      headers: HEADERS,
+    });
+    expect(res.status).toBe(200);
+
+    const events = await readSseEvents(res);
+    expect(events.filter((e) => e.event === "progress")).toHaveLength(0);
+    expect(events.filter((e) => e.event === "complete")[0]?.data).toMatchObject({
+      ok: 0,
+      failed: 0,
+    });
+  });
+
+  it("refreshes a stale item when present", async () => {
+    const { app, itemId, db } = setup();
+    // Backdate lastRefreshedAt well past the 24h staleness window (E63).
+    db.update(schema.items)
+      .set({ lastRefreshedAt: "2000-01-01T00:00:00Z" })
+      .where(eq(schema.items.id, itemId))
+      .run();
+
+    const res = await app.request("/api/library/refresh?staleOnly=true", {
+      method: "POST",
+      headers: HEADERS,
+    });
+    expect(res.status).toBe(200);
+
+    const events = await readSseEvents(res);
+    expect(events.filter((e) => e.event === "progress")).toHaveLength(1);
+    expect(events.filter((e) => e.event === "complete")[0]?.data).toMatchObject({ ok: 1 });
+  });
+
+  it("staleOnly=bogus -> 400 VALIDATION_FAILED", async () => {
+    const { app } = setup();
+    const res = await app.request("/api/library/refresh?staleOnly=bogus", {
+      method: "POST",
+      headers: HEADERS,
+    });
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error: { code: string } };
+    expect(body.error.code).toBe("VALIDATION_FAILED");
   });
 });
 

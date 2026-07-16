@@ -12,7 +12,13 @@ import { type CalendarResponse, getCalendar } from "../calendar/query.ts";
 import type { LibraryDatabase } from "../db/open.ts";
 import type { AddedVia, ManualList, RatingTargetType, WatchSource } from "../db/schema.ts";
 import * as schema from "../db/schema.ts";
-import { type RefreshResult, refreshAll, refreshItem } from "../refresh/engine.ts";
+import {
+  filterStaleItemIds,
+  type RefreshAllOptions,
+  type RefreshResult,
+  refreshAll,
+  refreshItem,
+} from "../refresh/engine.ts";
 import { type ExportOptions, exportLibraryZip } from "../zip/export.ts";
 import { type ImportMode, type ImportResult, importLibraryZip } from "../zip/import.ts";
 import {
@@ -248,7 +254,10 @@ export interface Library {
     provider: MetadataProvider,
     itemIds: number[],
     concurrency?: number,
+    opts?: RefreshAllOptions,
   ): AsyncGenerator<RefreshResult>;
+  /** E64: narrows `itemIds` to the stale ones (E63), NULL-`lastRefreshedAt` first then oldest-first. */
+  filterStaleItemIds(itemIds: number[], now?: string): number[];
   getCalendar(opts?: { from?: string; to?: string }): CalendarResponse;
   /** E27: newest-first watch log; `limit` is trusted as already-clamped 1-100 (the route validates). */
   getWatchHistory(limit: number): WatchHistoryEntry[];
@@ -564,8 +573,13 @@ export function createLibrary(db: LibraryDatabase): Library {
       provider: MetadataProvider,
       itemIds: number[],
       concurrency?: number,
+      opts?: RefreshAllOptions,
     ): AsyncGenerator<RefreshResult> {
-      return refreshAll(db, provider, itemIds, concurrency);
+      return refreshAll(db, provider, itemIds, concurrency, opts);
+    },
+
+    filterStaleItemIds(itemIds: number[], now?: string): number[] {
+      return filterStaleItemIds(db, itemIds, now);
     },
 
     getCalendar(opts?: { from?: string; to?: string }): CalendarResponse {
