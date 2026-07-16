@@ -115,7 +115,7 @@ describe("exportLibraryZip", () => {
 
     expect(manifest).toMatchObject({
       app: "baykus",
-      schemaVersion: 5,
+      schemaVersion: 6,
       exportedAt: "2026-01-03T00:00:00Z",
       mediaTypes: ["series"],
       counts: { items: 1, watches: 1, ratings: 2 },
@@ -166,7 +166,14 @@ describe("exportLibraryZip", () => {
     const watches = JSON.parse(entries["library/watches.json"] ?? "[]") as ZipWatchEntry[];
 
     expect(watches).toEqual([
-      { series: { tmdbId: 42 }, s: 1, e: 1, watchedAt: "2026-01-02T10:00:00Z", source: "manual" },
+      {
+        series: { tmdbId: 42 },
+        s: 1,
+        e: 1,
+        watchedAt: "2026-01-02T10:00:00Z",
+        source: "manual",
+        dateUnknown: false,
+      },
     ]);
   });
 

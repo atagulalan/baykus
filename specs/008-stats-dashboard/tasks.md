@@ -12,16 +12,22 @@ Entry point: M44.2, then M45.1.
   - [ ] M44.2 root housekeeping: delete `dashboard.html` (biome already
         ignores it; keep until M52's value spot-checks if convenient) —
         HANDOVER.md + CLAUDE.md pointers already updated
+        <!-- DECISION: deferred to M52 per this task's own convenience
+        clause — the file is untracked (never in git), and M52.1's spot-check
+        against dashboard.html's values needs it on disk; deleting now would
+        just mean re-creating the comparison from memory. Deleted at M52. -->
 
-- [ ] **M45 core+importer: watch date fidelity (E95)**
-  - [ ] M45.1 schema: `watches.date_unknown` bool default false; migration
+- [x] **M45 core+importer: watch date fidelity (E95)**
+  - [x] M45.1 schema: `watches.date_unknown` bool default false; migration
         (hand-bump `_journal.json` `when` past the future-dated entries)
-  - [ ] M45.2 `addWatch` accepts `dateUnknown`; persists flag; dedupe/result
+  - [x] M45.2 `addWatch` accepts `dateUnknown`; persists flag; dedupe/result
         shapes unchanged
-  - [ ] M45.3 importer: `TvTimeWatchEvent.dateUnknown` set in `parse.ts`
+  - [x] M45.3 importer: `TvTimeWatchEvent.dateUnknown` set in `parse.ts`
         when the raw record has no usable timestamp; propagate through
         `resolve-watch.ts` + `routes/tvtime.ts` (incl. season-0 bulk marks)
-  - [ ] M45.4 tests: parse flag cases, addWatch persistence, zip round-trip
+        — resolve-watch.ts itself needed no change: `WatchResolveInput` is a
+        position-only subset type that never carried date info.
+  - [x] M45.4 tests: parse flag cases, addWatch persistence, zip round-trip
         extended (not weakened), import route wiring
 
 - [ ] **M46 core: date-independent aggregates (stats/ part 1)**

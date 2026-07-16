@@ -1,0 +1,1 @@
+ALTER TABLE `watches` ADD `date_unknown` integer DEFAULT false NOT NULL;

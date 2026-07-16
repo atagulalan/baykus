@@ -21,6 +21,8 @@ export interface TvTimeWatchEvent {
   /** Present only for name-keyed rows (see NAME_KEYED_WATCH_COLUMNS) — lets the caller skip the network tvdbEpisodeId resolution entirely. */
   seasonNumber?: number;
   episodeNumber?: number;
+  /** E95: true when the raw record had no usable timestamp — watchedAt is a toIso(undefined) stand-in (import-run now()), not a real date. */
+  dateUnknown: boolean;
 }
 
 /** E49: a followed show TV Time itself hides (unfollowed, zero surviving watch events) — skipped before matching. */
@@ -87,12 +89,19 @@ function nameKey(name: string): string {
 }
 
 /** TV Time timestamps are space-separated with no timezone marker; research.md: treat as UTC. */
-function toIso(raw: string | undefined): string {
-  if (!raw) return new Date().toISOString();
+function parseTimestamp(raw: string | undefined): { iso: string; dateUnknown: boolean } {
+  if (!raw) return { iso: new Date().toISOString(), dateUnknown: true };
   const normalized = raw.trim().replace(" ", "T");
   const withZone = /[zZ]|[+-]\d{2}:?\d{2}$/.test(normalized) ? normalized : `${normalized}Z`;
   const date = new Date(withZone);
-  return Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
+  return Number.isNaN(date.getTime())
+    ? { iso: new Date().toISOString(), dateUnknown: true }
+    : { iso: date.toISOString(), dateUnknown: false };
+}
+
+/** E95: shows' followedAt has no date-fidelity flag — only watch events do. */
+function toIso(raw: string | undefined): string {
+  return parseTimestamp(raw).iso;
 }
 
 type WatchFileKind = "seenEpisode" | "trackingV1" | "trackingV2" | "nameKeyedWatch";
@@ -325,10 +334,12 @@ export function parseTvTimeFiles(fileContents: string[]): TvTimeParsed {
         const tvdbShowId = Number.parseInt(record.tv_show_id ?? "", 10);
         const tvdbEpisodeId = Number.parseInt(record.episode_id ?? "", 10);
         if (!Number.isFinite(tvdbShowId) || !Number.isFinite(tvdbEpisodeId)) continue;
+        const ts = parseTimestamp(record.created_at || record.updated_at);
         watches.push({
           tvdbShowId,
           tvdbEpisodeId,
-          watchedAt: toIso(record.created_at || record.updated_at),
+          watchedAt: ts.iso,
+          dateUnknown: ts.dateUnknown,
         });
       }
     } else if (kind === "trackingV1") {
@@ -337,10 +348,12 @@ export function parseTvTimeFiles(fileContents: string[]): TvTimeParsed {
         const tvdbShowId = Number.parseInt(record.series_id ?? "", 10);
         const tvdbEpisodeId = Number.parseInt(record.episode_id ?? "", 10);
         if (!Number.isFinite(tvdbShowId) || !Number.isFinite(tvdbEpisodeId)) continue;
+        const ts = parseTimestamp(record.created_at || record.watch_date || record.updated_at);
         const watch: TvTimeWatchEvent = {
           tvdbShowId,
           tvdbEpisodeId,
-          watchedAt: toIso(record.created_at || record.watch_date || record.updated_at),
+          watchedAt: ts.iso,
+          dateUnknown: ts.dateUnknown,
         };
         const seasonNumber = Number.parseInt(record.season_number ?? "", 10);
         const episodeNumber = Number.parseInt(record.episode_number ?? "", 10);
@@ -357,10 +370,12 @@ export function parseTvTimeFiles(fileContents: string[]): TvTimeParsed {
         const tvdbShowId = Number.parseInt(record.s_id ?? "", 10);
         const tvdbEpisodeId = Number.parseInt(record.ep_id ?? "", 10);
         if (!Number.isFinite(tvdbShowId) || !Number.isFinite(tvdbEpisodeId)) continue;
+        const ts = parseTimestamp(record.created_at || record.updated_at);
         const watch: TvTimeWatchEvent = {
           tvdbShowId,
           tvdbEpisodeId,
-          watchedAt: toIso(record.created_at || record.updated_at),
+          watchedAt: ts.iso,
+          dateUnknown: ts.dateUnknown,
         };
         const seasonNumber = Number.parseInt(record.season_number ?? record.s_no ?? "", 10);
         const episodeNumber = Number.parseInt(record.episode_number ?? record.ep_no ?? "", 10);
@@ -376,10 +391,12 @@ export function parseTvTimeFiles(fileContents: string[]): TvTimeParsed {
         const tvdbEpisodeId = Number.parseInt(record.episode_id ?? "", 10);
         if (tvdbShowId === undefined || !Number.isFinite(tvdbEpisodeId)) continue;
 
+        const ts = parseTimestamp(record.created_at || record.updated_at);
         const watch: TvTimeWatchEvent = {
           tvdbShowId,
           tvdbEpisodeId,
-          watchedAt: toIso(record.created_at || record.updated_at),
+          watchedAt: ts.iso,
+          dateUnknown: ts.dateUnknown,
         };
         const seasonNumber = Number.parseInt(record.episode_season_number ?? "", 10);
         const episodeNumber = Number.parseInt(record.episode_number ?? "", 10);

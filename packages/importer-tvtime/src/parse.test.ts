@@ -39,6 +39,28 @@ describe("parseTvTimeFiles", () => {
       tvdbShowId: 371572,
       tvdbEpisodeId: 8370139,
       watchedAt: "2022-08-22T05:12:33.000Z",
+      dateUnknown: false,
+    });
+  });
+
+  it("flags a watch event with no usable timestamp as dateUnknown (E95)", () => {
+    const result = parseTvTimeFiles(["tv_show_id,episode_id\n100,200\n"]);
+    expect(result.watches).toHaveLength(1);
+    expect(result.watches[0]).toMatchObject({
+      tvdbShowId: 100,
+      tvdbEpisodeId: 200,
+      dateUnknown: true,
+    });
+    // Still a valid ISO stand-in (import-run now()), never left empty/invalid.
+    expect(Number.isNaN(Date.parse(result.watches[0]?.watchedAt ?? ""))).toBe(false);
+  });
+
+  it("flags a watch event with an unparseable timestamp as dateUnknown (E95)", () => {
+    const result = parseTvTimeFiles(["tv_show_id,episode_id,created_at\n100,200,not-a-date\n"]);
+    expect(result.watches[0]).toMatchObject({
+      tvdbShowId: 100,
+      tvdbEpisodeId: 200,
+      dateUnknown: true,
     });
   });
 
@@ -73,6 +95,7 @@ describe("parseTvTimeFiles", () => {
       watchedAt: "2022-09-05T20:10:00.000Z",
       seasonNumber: 1,
       episodeNumber: 3,
+      dateUnknown: false,
     });
   });
 
@@ -97,6 +120,7 @@ describe("parseTvTimeFiles", () => {
         watchedAt: "2020-02-01T00:00:00.000Z",
         seasonNumber: 2,
         episodeNumber: 5,
+        dateUnknown: false,
       },
     ]);
   });
@@ -176,6 +200,7 @@ describe("parseTvTimeFiles", () => {
         watchedAt: "2018-03-05T07:49:20.000Z",
         seasonNumber: 1,
         episodeNumber: 13,
+        dateUnknown: false,
       },
     ]);
   });
@@ -194,6 +219,7 @@ describe("parseTvTimeFiles", () => {
         watchedAt: "2023-09-28T10:27:37.000Z",
         seasonNumber: 1,
         episodeNumber: 12,
+        dateUnknown: false,
       },
     ]);
   });
@@ -203,7 +229,12 @@ describe("parseTvTimeFiles", () => {
     const v2 = "created_at,s_id,ep_id,key\n2021-06-11 22:52:30,80348,349302,watch-episode-1\n";
     const result = parseTvTimeFiles([v1, v2]);
     expect(result.watches).toEqual([
-      { tvdbShowId: 80348, tvdbEpisodeId: 349302, watchedAt: "2021-06-11T22:52:00.000Z" },
+      {
+        tvdbShowId: 80348,
+        tvdbEpisodeId: 349302,
+        watchedAt: "2021-06-11T22:52:00.000Z",
+        dateUnknown: false,
+      },
     ]);
   });
 
@@ -225,6 +256,7 @@ describe("parseTvTimeFiles", () => {
         watchedAt: "2023-06-25T22:15:42.000Z",
         seasonNumber: 1,
         episodeNumber: 13,
+        dateUnknown: false,
       },
     ]);
   });
@@ -246,6 +278,7 @@ describe("parseTvTimeFiles", () => {
         watchedAt: "2023-06-25T22:15:42.000Z",
         seasonNumber: 1,
         episodeNumber: 13,
+        dateUnknown: false,
       },
     ]);
   });
@@ -257,8 +290,18 @@ describe("parseTvTimeFiles", () => {
       "2021-06-21 22:52:00,watch,80348,349302\n";
     const result = parseTvTimeFiles([v1]);
     expect(result.watches).toEqual([
-      { tvdbShowId: 80348, tvdbEpisodeId: 349302, watchedAt: "2021-06-11T22:52:00.000Z" },
-      { tvdbShowId: 80348, tvdbEpisodeId: 349302, watchedAt: "2021-06-21T22:52:00.000Z" },
+      {
+        tvdbShowId: 80348,
+        tvdbEpisodeId: 349302,
+        watchedAt: "2021-06-11T22:52:00.000Z",
+        dateUnknown: false,
+      },
+      {
+        tvdbShowId: 80348,
+        tvdbEpisodeId: 349302,
+        watchedAt: "2021-06-21T22:52:00.000Z",
+        dateUnknown: false,
+      },
     ]);
   });
 

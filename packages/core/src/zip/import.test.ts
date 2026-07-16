@@ -67,9 +67,9 @@ function setupOneItem(title: string, tmdbId: number) {
 }
 
 describe("importLibraryZip — schema validation", () => {
-  it("rejects an unsupported schemaVersion (6)", async () => {
+  it("rejects an unsupported schemaVersion (7)", async () => {
     const { db } = openLibraryDb(":memory:");
-    const badZip = await manifestOnlyZip({ schemaVersion: 6 });
+    const badZip = await manifestOnlyZip({ schemaVersion: 7 });
 
     await expect(importLibraryZip(db, badZip, "replace")).rejects.toMatchObject({
       code: "UNSUPPORTED_SCHEMA",
@@ -453,6 +453,49 @@ describe("importLibraryZip — v1 import (E26)", () => {
     await importLibraryZip(db, zip, "replace");
 
     expect(manualListByTmdbId(db).get(7)).toBe("stopped");
+  });
+});
+
+describe("importLibraryZip — legacy watch dateUnknown (E95)", () => {
+  it("a pre-v6 zip's watch entries (no dateUnknown field) import as dated (false)", async () => {
+    const { db } = openLibraryDb(":memory:");
+    const zip = await buildV1Zip(
+      [
+        {
+          tmdbId: 10,
+          title: "Pre-008 Export",
+          status: "watching",
+          seasons: [
+            {
+              number: 1,
+              name: null,
+              overview: null,
+              posterRef: null,
+              airDate: null,
+              episodes: [
+                {
+                  s: 1,
+                  e: 1,
+                  title: "Pilot",
+                  overview: null,
+                  airDate: "2020-01-01",
+                  runtimeMin: null,
+                  type: null,
+                  stillRef: null,
+                  externalRatings: null,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      [{ tmdbId: 10, s: 1, e: 1, watchedAt: "2020-01-01T00:00:00Z" }],
+    );
+
+    await importLibraryZip(db, zip, "replace");
+
+    const watch = db.select().from(schema.watches).all()[0];
+    expect(watch?.dateUnknown).toBe(false);
   });
 });
 

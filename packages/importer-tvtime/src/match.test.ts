@@ -67,7 +67,7 @@ function show(tvdbId: number, name: string): TvTimeShow {
 }
 
 function watch(tvdbShowId: number, tvdbEpisodeId: number): TvTimeWatchEvent {
-  return { tvdbShowId, tvdbEpisodeId, watchedAt: "2020-01-02T00:00:00.000Z" };
+  return { tvdbShowId, tvdbEpisodeId, watchedAt: "2020-01-02T00:00:00.000Z", dateUnknown: false };
 }
 
 describe("matchShows", () => {

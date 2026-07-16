@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { createLibrary, openLibraryDb } from "@baykus/core";
+import * as schema from "@baykus/core/db/schema";
 import type {
   EpisodePosition,
   ExternalIds,
@@ -386,6 +387,44 @@ describe("POST /api/import/tvtime/confirm", () => {
     const { complete } = await parseSSE(confirmRes);
     expect(complete).toEqual({ itemsCreated: 0, watchesCreated: 0, skipped: 4 });
     expect(library.listSeries().total).toBe(2);
+  });
+
+  it("flags a watch with no usable timestamp as dateUnknown, and a dated sibling row as false (E95)", async () => {
+    const { db } = openLibraryDb(":memory:");
+    const library = createLibrary(db);
+    const app = createApp(loadConfig({}), {
+      library,
+      providers: [fakeProvider()],
+      dataDir: "/tmp/baykus-test",
+      vapid: { publicKey: "test-public", privateKey: "test-private" },
+      auth: { mode: "single", password: undefined, singleSessions: createSingleSessionStore() },
+    });
+    const zip = await zipBuffer({
+      "followed_tv_show.csv":
+        "tv_show_id,tv_show_name,created_at\n371572,House of the Dragon,2022-08-21 10:00:00\n",
+      // No created_at/updated_at column at all (E95 — dateless row).
+      "seen_episode.csv": "tv_show_id,episode_id\n371572,8370139\n",
+      // A second, normally-dated file for the same show (real exports carry several).
+      "seen_episode_2.csv":
+        "tv_show_id,episode_id,created_at\n371572,8370140,2022-08-22 05:12:33\n",
+    });
+
+    const importRes = await postImport(app, zip, "export.zip");
+    const { report } = await readImportReport(importRes);
+    const confirmRes = await app.request("/api/import/tvtime/confirm", {
+      method: "POST",
+      headers: HEADERS,
+      body: JSON.stringify({ reportId: report.reportId, resolutions: [] }),
+    });
+    expect(confirmRes.status).toBe(200);
+
+    const dateUnknownFlags = db
+      .select({ dateUnknown: schema.watches.dateUnknown })
+      .from(schema.watches)
+      .all()
+      .map((w) => w.dateUnknown)
+      .sort();
+    expect(dateUnknownFlags).toEqual([false, true]);
   });
 
   it("imports a manually-resolved fuzzy show via resolutions", async () => {

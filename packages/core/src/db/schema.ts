@@ -138,6 +138,8 @@ export const watches = sqliteTable(
       .references(() => items.id, { onDelete: "cascade" }),
     watchedAt: text("watched_at").notNull(),
     source: text("source").$type<WatchSource>().notNull().default("manual"),
+    /** E95: true when the source record (TV Time row missing any usable timestamp) had no real date — watchedAt is an import-run stand-in. */
+    dateUnknown: integer("date_unknown", { mode: "boolean" }).notNull().default(false),
   },
   (t) => [
     index("watches_episode_idx").on(t.episodeId),

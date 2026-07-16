@@ -20,7 +20,7 @@ import type { AddedVia, ManualList, RatingTargetType, WatchSource } from "../db/
 
 export interface ZipManifest {
   app: "baykus";
-  schemaVersion: 5;
+  schemaVersion: 6;
   exportedAt: string;
   appVersion: string;
   mediaTypes: MediaType[];
@@ -93,6 +93,8 @@ export interface ZipWatchEntry {
   e: number;
   watchedAt: string;
   source: WatchSource;
+  /** E95: absent on pre-v6 zips — treated as false on import (pre-008 watches all read as dated). */
+  dateUnknown: boolean;
 }
 
 export interface ZipRatingEntry {

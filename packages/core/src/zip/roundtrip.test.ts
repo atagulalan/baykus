@@ -109,6 +109,16 @@ function buildPopulatedDb() {
       source: "manual",
     })
     .run();
+  // E95: a TV Time import row with no usable timestamp — watchedAt is an import-run stand-in.
+  db.insert(schema.watches)
+    .values({
+      episodeId: s1e10.id,
+      itemId: item1.id,
+      watchedAt: "2026-01-20T20:00:00Z",
+      source: "import:tvtime",
+      dateUnknown: true,
+    })
+    .run();
 
   db.insert(schema.ratings)
     .values({ targetType: "item", targetId: item1.id, value: 3, ratedAt: "2026-01-16T00:00:00Z" })

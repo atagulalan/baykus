@@ -14,7 +14,7 @@ import type {
 } from "./types.ts";
 
 const APP_VERSION = "0.1.0";
-const SCHEMA_VERSION = 5;
+const SCHEMA_VERSION = 6;
 
 type ItemRow = typeof schema.items.$inferSelect;
 type TrackingRow = typeof schema.tracking.$inferSelect;
@@ -157,6 +157,7 @@ function buildWatchEntries(db: LibraryDatabase): ZipWatchEntry[] {
       e: schema.episodes.episodeNumber,
       watchedAt: schema.watches.watchedAt,
       source: schema.watches.source,
+      dateUnknown: schema.watches.dateUnknown,
     })
     .from(schema.watches)
     .innerJoin(schema.episodes, eq(schema.episodes.id, schema.watches.episodeId))
@@ -165,7 +166,14 @@ function buildWatchEntries(db: LibraryDatabase): ZipWatchEntry[] {
 
   const entries = rows.map((row) => {
     const series = toExternalIds(row);
-    return { series, s: row.s, e: row.e, watchedAt: row.watchedAt, source: row.source };
+    return {
+      series,
+      s: row.s,
+      e: row.e,
+      watchedAt: row.watchedAt,
+      source: row.source,
+      dateUnknown: row.dateUnknown,
+    };
   });
 
   return entries.sort((a, b) => {

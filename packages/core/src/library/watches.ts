@@ -33,6 +33,7 @@ export function addWatch(
   episodeId: number,
   watchedAt?: string,
   source: WatchSource = "manual",
+  opts: { dateUnknown?: boolean } = {},
 ): AddWatchResult | null {
   const episode = db
     .select({ id: schema.episodes.id, itemId: schema.episodes.itemId })
@@ -54,7 +55,13 @@ export function addWatch(
       existing ??
       tx
         .insert(schema.watches)
-        .values({ episodeId, itemId: episode.itemId, watchedAt: at, source })
+        .values({
+          episodeId,
+          itemId: episode.itemId,
+          watchedAt: at,
+          source,
+          dateUnknown: opts.dateUnknown ?? false,
+        })
         .returning()
         .get();
 

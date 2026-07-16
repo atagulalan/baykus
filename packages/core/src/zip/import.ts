@@ -106,7 +106,7 @@ export interface ImportResult {
   warnings: string[];
 }
 
-const SUPPORTED_SCHEMA_VERSIONS = [1, 2, 3, 4, 5];
+const SUPPORTED_SCHEMA_VERSIONS = [1, 2, 3, 4, 5, 6];
 
 interface ParsedZip {
   manifest: ZipManifest;
@@ -515,6 +515,8 @@ export async function importLibraryZip(
           itemId,
           watchedAt: watch.watchedAt,
           source: watch.source,
+          // Pre-v6 zips never carry dateUnknown (E95) — default false.
+          dateUnknown: watch.dateUnknown ?? false,
         })
         .run();
       watchesWritten++;

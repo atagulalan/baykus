@@ -90,6 +90,26 @@ describe("addWatch", () => {
     const { db } = openLibraryDb(":memory:");
     expect(addWatch(db, 999, "2026-01-01T00:00:00Z")).toBeNull();
   });
+
+  it("defaults dateUnknown to false when omitted (E95)", () => {
+    const { db } = openLibraryDb(":memory:");
+    const itemId = setupItem(db);
+    const epId = insertEpisode(db, itemId, 1, 1, addDays(-10));
+
+    addWatch(db, epId, "2026-01-01T10:00:00Z");
+
+    expect(watchesFor(db, epId)[0]?.dateUnknown).toBe(false);
+  });
+
+  it("persists dateUnknown: true when passed (E95)", () => {
+    const { db } = openLibraryDb(":memory:");
+    const itemId = setupItem(db);
+    const epId = insertEpisode(db, itemId, 1, 1, addDays(-10));
+
+    addWatch(db, epId, "2026-01-01T10:00:00Z", "import:tvtime", { dateUnknown: true });
+
+    expect(watchesFor(db, epId)[0]?.dateUnknown).toBe(true);
+  });
 });
 
 describe("addWatch — E19 auto-clear", () => {

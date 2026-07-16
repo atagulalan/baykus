@@ -87,6 +87,7 @@ async function importOneShow(
     watchedAt: string;
     seasonNumber?: number;
     episodeNumber?: number;
+    dateUnknown: boolean;
   }[],
   status: TvTimeStatus = "watching",
   needsReview: boolean = false,
@@ -134,7 +135,9 @@ async function importOneShow(
       }
       let anyCreated = false;
       for (const episode of season.episodes) {
-        const result = library.addWatch(episode.id, watchEvent.watchedAt, "import:tvtime");
+        const result = library.addWatch(episode.id, watchEvent.watchedAt, "import:tvtime", {
+          dateUnknown: watchEvent.dateUnknown,
+        });
         if (result?.created) {
           watchesCreated++;
           anyCreated = true;
@@ -153,7 +156,9 @@ async function importOneShow(
       watchesSkipped++;
       continue;
     }
-    const result = library.addWatch(episodeId, watchEvent.watchedAt, "import:tvtime");
+    const result = library.addWatch(episodeId, watchEvent.watchedAt, "import:tvtime", {
+      dateUnknown: watchEvent.dateUnknown,
+    });
     if (result?.created) watchesCreated++;
     else watchesSkipped++;
   }

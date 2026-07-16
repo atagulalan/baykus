@@ -243,7 +243,12 @@ export interface Library {
   /** E26 cleanup: clears manual_list='stopped' on items whose dynamic category is finished — for import
    * paths (zip, TV Time) that write tracking directly and so bypass the E20 live guard. */
   clearStaleStoppedLists(): void;
-  addWatch(episodeId: number, watchedAt?: string, source?: WatchSource): AddWatchResult | null;
+  addWatch(
+    episodeId: number,
+    watchedAt?: string,
+    source?: WatchSource,
+    opts?: { dateUnknown?: boolean },
+  ): AddWatchResult | null;
   bulkWatch(itemId: number, target: BulkWatchTarget): BulkWatchResult | null;
   bulkUnwatch(itemId: number, target: BulkWatchTarget): BulkUnwatchResult | null;
   removeLatestWatch(episodeId: number): boolean;
@@ -536,8 +541,13 @@ export function createLibrary(db: LibraryDatabase): Library {
         .run();
     },
 
-    addWatch(episodeId: number, watchedAt?: string, source?: WatchSource): AddWatchResult | null {
-      return addWatch(db, episodeId, watchedAt, source);
+    addWatch(
+      episodeId: number,
+      watchedAt?: string,
+      source?: WatchSource,
+      opts?: { dateUnknown?: boolean },
+    ): AddWatchResult | null {
+      return addWatch(db, episodeId, watchedAt, source, opts);
     },
 
     bulkWatch(itemId: number, target: BulkWatchTarget): BulkWatchResult | null {
