@@ -68,7 +68,10 @@
     "removeConfirm": "\"{{title}}\" kütüphaneden kaldırılsın mı?",
     "removeError": "Kaldırılırken bir hata oluştu",
     "refreshAll": "Tümünü yenile",
-    "refreshAllDone": "Yenileme tamamlandı — {{newEpisodes}} yeni bölüm"
+    "refreshAllDone": "Yenileme tamamlandı — {{newEpisodes}} yeni bölüm",
+    "sweep": {
+      "progress": "{{done}}/{{total}} yenileniyor…"
+    }
   },
   "series": {
     "notFound": "Bu dizi kütüphanende değil",

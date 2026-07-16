@@ -102,7 +102,7 @@ exactly as before.
     paramless behavior byte-identical to before (regression assertion).
   - **Verify:** `pnpm test packages/core && pnpm test apps/server`
 
-- [ ] M24.2 web: sweep on library mount + detail auto-refresh
+- [x] M24.2 web: sweep on library mount + detail auto-refresh
   - **Files:** `apps/web/src/lib/staleSweep.ts` (new — module-scoped
     runner + `isStale` mirror + progress store),
     `apps/web/src/api/client.ts` (staleOnly param on `refreshAllSeries`),

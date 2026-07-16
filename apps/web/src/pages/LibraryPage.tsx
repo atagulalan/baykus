@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { listSeries, refreshAllSeries } from "../api/client.ts";
 import { CATEGORY_ORDER, type SeriesSummary } from "../api/types.ts";
@@ -12,6 +12,7 @@ import {
   type LibrarySort,
 } from "../components/FilterPanel.tsx";
 import { SeriesCard } from "../components/SeriesCard.tsx";
+import { maybeStartSweep, setManualRefreshRunning, useSweepProgress } from "../lib/staleSweep.ts";
 import { useToast } from "../lib/toast.tsx";
 
 function groupByCategory(items: SeriesSummary[]): Map<string, SeriesSummary[]> {
@@ -33,6 +34,7 @@ export function LibraryPage() {
   const [refreshProgress, setRefreshProgress] = useState<{ done: number; total: number } | null>(
     null,
   );
+  const sweepProgress = useSweepProgress();
 
   // One unfiltered query per sort — category filtering/grouping happens client-side (ui.md 002 §Home).
   const query = useQuery({
@@ -40,9 +42,21 @@ export function LibraryPage() {
     queryFn: () => listSeries({ sort }),
   });
 
+  // E64: quiet stale-refresh sweep on every library-home mount — module-scoped, throttled,
+  // and skipped entirely while the manual refresh-all below is running.
+  useEffect(() => {
+    maybeStartSweep({
+      onComplete: () => queryClient.invalidateQueries({ queryKey: ["library"] }),
+    });
+  }, [queryClient]);
+
   const refreshAllMutation = useMutation({
-    mutationFn: () =>
-      refreshAllSeries((event) => setRefreshProgress({ done: event.done, total: event.total })),
+    mutationFn: () => {
+      setManualRefreshRunning(true);
+      return refreshAllSeries((event) =>
+        setRefreshProgress({ done: event.done, total: event.total }),
+      );
+    },
     onSuccess: (result) => {
       setRefreshProgress(null);
       queryClient.invalidateQueries({ queryKey: ["library"] });
@@ -52,6 +66,7 @@ export function LibraryPage() {
       setRefreshProgress(null);
       toast.show(t("errors.generic"), "error");
     },
+    onSettled: () => setManualRefreshRunning(false),
   });
 
   const items = query.data?.items ?? [];
@@ -59,6 +74,11 @@ export function LibraryPage() {
 
   return (
     <section className="flex flex-col gap-6">
+      {sweepProgress && (
+        <p className="font-mono text-[10px] uppercase tracking-widest text-muted">
+          {t("library.sweep.progress", { done: sweepProgress.done, total: sweepProgress.total })}
+        </p>
+      )}
       <div className="flex flex-wrap items-center justify-end gap-2">
         {refreshProgress && (
           <span className="text-xs text-zinc-500">

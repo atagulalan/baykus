@@ -235,8 +235,10 @@ async function readSseStream<TProgress, TComplete>(
 /** contracts/api.md — POST /api/library/refresh streams progress via SSE. */
 export async function refreshAllSeries(
   onProgress: (event: RefreshProgressEvent) => void,
+  staleOnly?: boolean,
 ): Promise<RefreshCompleteEvent> {
-  const res = await fetch("/api/library/refresh", { method: "POST", headers: { "X-Baykus": "1" } });
+  const url = staleOnly ? "/api/library/refresh?staleOnly=1" : "/api/library/refresh";
+  const res = await fetch(url, { method: "POST", headers: { "X-Baykus": "1" } });
   if (!res.ok || !res.body) {
     throw new ApiError("INTERNAL", "refresh stream failed", res.status, null);
   }

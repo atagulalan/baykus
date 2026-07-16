@@ -31,6 +31,7 @@ import { WatchDateDialog } from "../components/WatchDateDialog.tsx";
 import { CATEGORY_TEXT_COLORS } from "../lib/categoryColors.ts";
 import { sortSeasonsSpecialsLast } from "../lib/seasons.ts";
 import { seriesParam } from "../lib/seriesPath.ts";
+import { isStale } from "../lib/staleSweep.ts";
 import { useToast } from "../lib/toast.tsx";
 
 const RATING_PROMPT_TIMEOUT_MS = 5000;
@@ -127,6 +128,24 @@ export function SeriesDetailPage() {
     queryClient.invalidateQueries({ queryKey });
     queryClient.invalidateQueries({ queryKey: ["library"] });
   }
+
+  // E65: opening a stale detail refreshes it once, silently — no toast, no spinner
+  // beyond the data updating in place; never retried within the same mount.
+  const staleAutoRefreshFired = useRef(false);
+  useEffect(() => {
+    if (!query.data) return;
+    if (staleAutoRefreshFired.current) return;
+    if (!isStale(query.data.lastRefreshedAt)) return;
+    staleAutoRefreshFired.current = true;
+    refreshSeries(query.data.id)
+      .then(() => {
+        queryClient.invalidateQueries({ queryKey });
+        queryClient.invalidateQueries({ queryKey: ["library"] });
+      })
+      .catch(() => {
+        // silent — E65; lastRefreshedAt stays stale so the next mount retries.
+      });
+  }, [query.data, queryClient, queryKey]);
 
   function reportError() {
     toast.show(t("errors.generic"), "error");
