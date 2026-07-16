@@ -9,7 +9,8 @@
       "settings": "Ayarlar",
       "search": "Ara",
       "profile": "Profil"
-    }
+    },
+    "back": "Geri"
   },
   "search": {
     "placeholder": "Dizi ara…",

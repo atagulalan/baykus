@@ -1,8 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link, Navigate, Outlet, useRouterState } from "@tanstack/react-router";
-import { CalendarDays, CircleUser, LayoutGrid, Play, Search } from "lucide-react";
+import {
+  Link,
+  Navigate,
+  Outlet,
+  useCanGoBack,
+  useNavigate,
+  useRouterState,
+} from "@tanstack/react-router";
+import { ArrowLeft, CalendarDays, CircleUser, LayoutGrid, Play, Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { getAuthSession } from "../api/client.ts";
+import { backAffordance } from "../lib/backFallback.ts";
 import { selfHandleParam } from "../lib/profilePath.ts";
 import { SearchBar } from "./SearchBar.tsx";
 
@@ -19,6 +27,8 @@ export function Layout() {
   const { t } = useTranslation();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const sessionQuery = useQuery({ queryKey: ["auth-session"], queryFn: getAuthSession });
+  const canGoBack = useCanGoBack();
+  const navigate = useNavigate();
 
   // /login and /claim render without nav chrome and manage their own
   // auth-redirect logic (they ARE the unauthenticated entry points).
@@ -28,6 +38,7 @@ export function Layout() {
   if (sessionQuery.data && !sessionQuery.data.authenticated) return <Navigate to="/login" />;
 
   const profileHandle = sessionQuery.data ? selfHandleParam(sessionQuery.data) : "me";
+  const back = backAffordance(pathname, profileHandle);
 
   return (
     <div className="min-h-screen bg-void text-snow font-sans">
@@ -36,10 +47,25 @@ export function Layout() {
         style={{ viewTransitionName: "app-header" }}
       >
         <nav className="mx-auto max-w-5xl px-6 py-4">
-          {/* Mobile (E67): single row — empty back-arrow slot (M26.2 fills it in), wordmark
-              absolutely centered independent of side-slot widths, nothing on the right. */}
+          {/* Mobile (E67): single row — back-arrow slot on the left (E72, empty on tab-bar
+              pages), wordmark absolutely centered independent of side-slot widths, nothing
+              on the right. */}
           <div className="relative flex items-center sm:hidden">
-            <div className="h-11 w-11 shrink-0" aria-hidden="true" />
+            <div className="h-11 w-11 shrink-0">
+              {back && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (canGoBack) window.history.back();
+                    else navigate(back);
+                  }}
+                  aria-label={t("app.back")}
+                  className="flex h-11 w-11 items-center justify-center text-muted transition-colors hover:text-snow"
+                >
+                  <ArrowLeft size={20} strokeWidth={1.5} />
+                </button>
+              )}
+            </div>
             <Link
               to="/"
               className="-translate-x-1/2 absolute left-1/2 font-display italic text-snow text-2xl leading-none tracking-tight"
@@ -80,7 +106,7 @@ export function Layout() {
           </div>
         </nav>
       </header>
-      <main className="mx-auto max-w-5xl px-6 py-8 pb-20 sm:pb-8">
+      <main className="mx-auto max-w-5xl px-3 py-8 pb-20 sm:px-6 sm:pb-8">
         <Outlet />
       </main>
       <nav

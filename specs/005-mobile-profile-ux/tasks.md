@@ -233,7 +233,7 @@ edge-to-edge rows, back arrows on subpages, Takvim opens at BUGÜN.
     columns everywhere incl. skeletons; sheet opens/applies/resets; dot
     appears on non-default filter.
 
-- [ ] M26.2 web: inset pass + back affordance
+- [x] M26.2 web: inset pass + back affordance
   - **Files:** `apps/web/src/components/{Layout.tsx,EpisodeRow.tsx,
     CalendarEntryRow.tsx,WatchNextRow.tsx}` (+ any row the 390px audit
     catches — SeasonSection etc.), `apps/web/src/lib/` (back-fallback

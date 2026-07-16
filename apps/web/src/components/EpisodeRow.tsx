@@ -59,7 +59,7 @@ export function EpisodeRow({
   return (
     <div className="flex flex-col">
       <div
-        className={`flex items-center gap-4 border-white/5 border-b px-4 py-3 transition-colors hover:bg-white/5 ${isAired ? "" : "opacity-50"}`}
+        className={`flex items-center gap-4 border-white/5 border-b px-2 py-3 transition-colors hover:bg-white/5 sm:px-4 ${isAired ? "" : "opacity-50"}`}
       >
         <span className="w-14 shrink-0 font-mono text-muted text-xs tabular-nums">
           S{episode.s}E{episode.e}

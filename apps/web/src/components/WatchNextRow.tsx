@@ -48,7 +48,7 @@ export function EpisodeRow({
   const imageUrl = buildImageUrl(posterRef);
 
   return (
-    <div className="flex items-center gap-4 px-6 py-4 transition-colors border-b border-white/5 hover:bg-white/5">
+    <div className="flex items-center gap-4 px-2 py-4 transition-colors border-b border-white/5 hover:bg-white/5 sm:px-6">
       <Link
         to="/series/$id"
         params={{ id: `i${itemId}` }}

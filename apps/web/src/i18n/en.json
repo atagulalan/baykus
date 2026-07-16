@@ -9,7 +9,8 @@
       "settings": "Settings",
       "search": "Search",
       "profile": "Profile"
-    }
+    },
+    "back": "Back"
   },
   "search": {
     "placeholder": "Search a series…",
