@@ -192,6 +192,18 @@
     "ratingDistribution": "Rating distribution",
     "empty": "No watch history yet"
   },
+  "profile": {
+    "title": "My profile",
+    "allSeries": "All series",
+    "detailedStats": "Detailed stats",
+    "favorites": {
+      "title": "Favorites",
+      "empty": "Heart a series on its detail page to see it here."
+    }
+  },
+  "notFound": {
+    "profile": "Profile not found."
+  },
   "calendar": {
     "mode": {
       "timeline": "Timeline",

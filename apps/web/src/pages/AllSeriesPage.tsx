@@ -1,8 +1,9 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useParams } from "@tanstack/react-router";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { listSeries } from "../api/client.ts";
-import { HOME_CATEGORY_ORDER } from "../api/types.ts";
+import { CATEGORY_ORDER } from "../api/types.ts";
 import { CategorySection } from "../components/CategorySection.tsx";
 import {
   DEFAULT_LIBRARY_CATEGORY,
@@ -11,42 +12,45 @@ import {
   type LibraryCategoryFilter,
   type LibrarySort,
 } from "../components/FilterPanel.tsx";
+import { ProfileGuard } from "../components/ProfileGuard.tsx";
 import { SeriesCard } from "../components/SeriesCard.tsx";
 import { groupByCategory } from "../lib/groupByCategory.ts";
-import { maybeStartSweep, useSweepProgress } from "../lib/staleSweep.ts";
 
-export function LibraryPage() {
+/** E60: the full seven-category library, relocated off the home page — no refresh-all, no sweep. */
+export function AllSeriesPage() {
+  const { handle } = useParams({ from: "/user/$handle/all-series" });
+
+  return (
+    <ProfileGuard handle={handle} to="/user/$handle/all-series">
+      {() => <AllSeriesPageContent />}
+    </ProfileGuard>
+  );
+}
+
+function AllSeriesPageContent() {
   const { t } = useTranslation();
-  const queryClient = useQueryClient();
   const [sort, setSort] = useState<LibrarySort>(DEFAULT_LIBRARY_SORT);
   const [category, setCategory] = useState<LibraryCategoryFilter>(DEFAULT_LIBRARY_CATEGORY);
-  const sweepProgress = useSweepProgress();
 
-  // One unfiltered query per sort — category filtering/grouping happens client-side (ui.md 002 §Home).
   const query = useQuery({
     queryKey: ["library", sort],
     queryFn: () => listSeries({ sort }),
   });
-
-  // E64: quiet stale-refresh sweep on every library-home mount — module-scoped, throttled,
-  // and skipped entirely while a manual refresh-all (now on the profile page) is running.
-  useEffect(() => {
-    maybeStartSweep({
-      onComplete: () => queryClient.invalidateQueries({ queryKey: ["library"] }),
-    });
-  }, [queryClient]);
 
   const items = query.data?.items ?? [];
   const byCategory = groupByCategory(items);
 
   return (
     <section className="flex flex-col gap-6">
-      {sweepProgress && (
-        <p className="font-mono text-[10px] uppercase tracking-widest text-muted">
-          {t("library.sweep.progress", { done: sweepProgress.done, total: sweepProgress.total })}
-        </p>
-      )}
-      <div className="flex flex-wrap items-center justify-end gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h1 className="font-display italic text-snow text-3xl tracking-tight">
+          {t("profile.allSeries")}
+          {query.data && (
+            <span className="font-sans not-italic text-lg text-muted ml-2">
+              ({query.data.total})
+            </span>
+          )}
+        </h1>
         <FilterPanel
           sort={sort}
           category={category}
@@ -88,7 +92,7 @@ export function LibraryPage() {
         </div>
       ) : category === "all" ? (
         <div className="flex flex-col gap-8">
-          {HOME_CATEGORY_ORDER.map((c) => (
+          {CATEGORY_ORDER.map((c) => (
             <CategorySection key={c} category={c} items={byCategory.get(c) ?? []} />
           ))}
         </div>

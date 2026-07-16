@@ -27,6 +27,15 @@ export const CATEGORY_ORDER: WatchCategory[] = [
   "stopped",
 ];
 
+/** E59: the five categories the library home page groups by — finished/stopped live in all-series. */
+export const HOME_CATEGORY_ORDER: WatchCategory[] = [
+  "watching",
+  "not_watched_recently",
+  "not_started",
+  "watch_later",
+  "up_to_date",
+];
+
 export interface ExternalIds {
   tmdbId?: number;
   tvmazeId?: number;

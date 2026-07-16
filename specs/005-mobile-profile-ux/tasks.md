@@ -134,7 +134,13 @@ Checkpoint goal: tab bar reads Kütüphane/İzle/Takvim/Ara/Profil; home shows
 five sections; `/user/me` shows favorites + stats + links; refresh-all
 lives there; search works as a page.
 
-- [ ] M25.1 web: `/user/$handle` routes + ProfilePage + button relocation
+<!-- DECISION: M25.1 and M25.2 were implemented and committed together. ProfilePage's
+"Tüm diziler" row links to `/user/$handle/all-series`, and TanStack Router's `Link to`
+prop is type-checked against the registered route tree — the build would not typecheck
+with M25.1 alone (the route wouldn't exist yet). Building AllSeriesPage first, then
+ProfilePage against it, was the smallest change that kept the app buildable at every
+step, per tasks.md's own "runtime-working after every task" rule. -->
+- [x] M25.1 web: `/user/$handle` routes + ProfilePage + button relocation
   - **Files:** `apps/web/src/router.tsx`,
     `apps/web/src/lib/{profilePath.ts,profilePath.test.ts}` (new),
     `apps/web/src/pages/ProfilePage.tsx` (new),
@@ -159,7 +165,7 @@ lives there; search works as a page.
     `/user/me` renders; `/stats` redirects; foreign handle 404s; heart a
     series → appears on the rail; Tümünü yenile works with progress.
 
-- [ ] M25.2 web: AllSeriesPage + home category trim
+- [x] M25.2 web: AllSeriesPage + home category trim
   - **Files:** `apps/web/src/pages/AllSeriesPage.tsx` (new),
     `apps/web/src/router.tsx`, `apps/web/src/api/types.ts`
     (`HOME_CATEGORY_ORDER`), `apps/web/src/pages/LibraryPage.tsx`,

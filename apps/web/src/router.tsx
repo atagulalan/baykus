@@ -1,10 +1,22 @@
-import { createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import {
+  createRootRoute,
+  createRoute,
+  createRouter,
+  Navigate,
+  useParams,
+} from "@tanstack/react-router";
+import { getAuthSession } from "./api/client.ts";
 import { Layout } from "./components/Layout.tsx";
+import { ProfileGuard } from "./components/ProfileGuard.tsx";
+import { selfHandleParam } from "./lib/profilePath.ts";
+import { AllSeriesPage } from "./pages/AllSeriesPage.tsx";
 import { CalendarPage } from "./pages/CalendarPage.tsx";
 import { ClaimPage } from "./pages/ClaimPage.tsx";
 import { ImportPage } from "./pages/ImportPage.tsx";
 import { LibraryPage } from "./pages/LibraryPage.tsx";
 import { LoginPage } from "./pages/LoginPage.tsx";
+import { ProfilePage } from "./pages/ProfilePage.tsx";
 import { SeriesDetailPage } from "./pages/SeriesDetailPage.tsx";
 import { SettingsPage } from "./pages/SettingsPage.tsx";
 import { StatsPage } from "./pages/StatsPage.tsx";
@@ -41,10 +53,50 @@ const calendarRoute = createRoute({
   component: CalendarPage,
 });
 
+// E57: /stats is a legacy bookmark — replace-redirects into the profile's stats subpage.
+function StatsRedirect() {
+  const sessionQuery = useQuery({ queryKey: ["auth-session"], queryFn: getAuthSession });
+  if (!sessionQuery.data) return null;
+  return (
+    <Navigate
+      to="/user/$handle/stats"
+      params={{ handle: selfHandleParam(sessionQuery.data) }}
+      replace
+    />
+  );
+}
+
 const statsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/stats",
-  component: StatsPage,
+  component: StatsRedirect,
+});
+
+const profileRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/user/$handle",
+  component: ProfilePage,
+});
+
+const allSeriesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/user/$handle/all-series",
+  component: AllSeriesPage,
+});
+
+function ProfileStatsRoute() {
+  const { handle } = useParams({ from: "/user/$handle/stats" });
+  return (
+    <ProfileGuard handle={handle} to="/user/$handle/stats">
+      {() => <StatsPage />}
+    </ProfileGuard>
+  );
+}
+
+const profileStatsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/user/$handle/stats",
+  component: ProfileStatsRoute,
 });
 
 const settingsRoute = createRoute({
@@ -77,6 +129,9 @@ const routeTree = rootRoute.addChildren([
   watchRoute,
   calendarRoute,
   statsRoute,
+  profileRoute,
+  allSeriesRoute,
+  profileStatsRoute,
   settingsRoute,
   loginRoute,
   claimRoute,

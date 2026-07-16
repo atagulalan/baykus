@@ -192,6 +192,18 @@
     "ratingDistribution": "Puan dağılımı",
     "empty": "Henüz izleme kaydı yok"
   },
+  "profile": {
+    "title": "Profilim",
+    "allSeries": "Tüm diziler",
+    "detailedStats": "Detaylı istatistikler",
+    "favorites": {
+      "title": "Favoriler",
+      "empty": "Dizi detayındaki kalple favorilerini seç."
+    }
+  },
+  "notFound": {
+    "profile": "Profil bulunamadı."
+  },
   "calendar": {
     "mode": {
       "timeline": "Zaman çizelgesi",
