@@ -246,6 +246,51 @@
       "episodeProgress": "{{watched}}/{{aired}} episodes",
       "showMore": "show more",
       "showLess": "show less"
+    },
+    "distribution": {
+      "other": "Other"
+    },
+    "genreDistribution": {
+      "title": "Genre Distribution"
+    },
+    "networkDistribution": {
+      "title": "Network Distribution",
+      "networkCount": "Networks Followed"
+    },
+    "backlog": {
+      "title": "Remaining Episodes",
+      "episodes": "Remaining Episodes",
+      "seriesSub": "{{count}} series",
+      "remainingTime": "Remaining Time",
+      "episodesShort": "{{count}} episodes"
+    },
+    "pace": {
+      "title": "Catch-up Pace",
+      "label": "Weekly Pace",
+      "value": "~{{count}} episodes",
+      "sub": "average of the last 2 months",
+      "projection": "~{{weeks}} weeks to catch up"
+    },
+    "upcoming": {
+      "title": "Upcoming Episodes",
+      "nextMonth": "Next Month",
+      "caveat": "Providers usually only know a few weeks ahead, so this list may be incomplete."
+    },
+    "binges": {
+      "title": "Fastest Binges",
+      "episodesShort": "{{count}} episodes"
+    },
+    "rewatchSummary": {
+      "title": "Rewatches",
+      "total": "Total Rewatches",
+      "episodes": "Rewatched Episodes"
+    },
+    "streaks": {
+      "title": "Weekly Streak",
+      "longest": "Longest Overall Streak",
+      "current": "Current Streak",
+      "mostConsistent": "Most Consistent Series",
+      "weeks": "{{count}} weeks"
     }
   },
   "profile": {

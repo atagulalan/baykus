@@ -1,14 +1,21 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
-import { ArrowDown, ArrowUp, Minus, RotateCw } from "lucide-react";
+import { ArrowDown, ArrowUp, Minus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { getStats } from "../api/client.ts";
+import { BacklogSection } from "../components/stats/BacklogSection.tsx";
+import { BingesSection } from "../components/stats/BingesSection.tsx";
 import { CategoryStatusSection } from "../components/stats/CategoryStatusSection.tsx";
 import { FavoritesSection } from "../components/stats/FavoritesSection.tsx";
+import { GenreDistributionSection } from "../components/stats/GenreDistributionSection.tsx";
 import { HeroSection } from "../components/stats/HeroSection.tsx";
 import { MostWatchedSection } from "../components/stats/MostWatchedSection.tsx";
+import { NetworkDistributionSection } from "../components/stats/NetworkDistributionSection.tsx";
+import { PaceSection } from "../components/stats/PaceSection.tsx";
 import { ProductionSection } from "../components/stats/ProductionSection.tsx";
 import { RecentSection } from "../components/stats/RecentSection.tsx";
+import { RewatchSummarySection } from "../components/stats/RewatchSummarySection.tsx";
+import { StreaksSection } from "../components/stats/StreaksSection.tsx";
+import { UpcomingSection } from "../components/stats/UpcomingSection.tsx";
 
 function last12Months(): string[] {
   const months: string[] = [];
@@ -89,6 +96,14 @@ export function StatsPage() {
       <CategoryStatusSection stats={stats} />
       <FavoritesSection stats={stats} />
       <ProductionSection stats={stats} />
+      <GenreDistributionSection stats={stats} />
+      <NetworkDistributionSection stats={stats} />
+      <BacklogSection stats={stats} />
+      <PaceSection stats={stats} />
+      <UpcomingSection stats={stats} />
+      <BingesSection stats={stats} />
+      <RewatchSummarySection stats={stats} />
+      <StreaksSection stats={stats} />
 
       <section className="flex flex-col gap-4 mt-4">
         <h2 className="font-display italic text-snow text-2xl tracking-tight">
@@ -148,36 +163,6 @@ export function StatsPage() {
           })}
         </div>
       </section>
-
-      {stats.mostRewatched && stats.mostRewatched.length > 0 && (
-        <section className="flex flex-col gap-4 mt-8">
-          <h2 className="font-display italic text-snow text-2xl tracking-tight">
-            {t("stats.mostRewatched")}
-          </h2>
-          <div className="flex flex-col gap-2">
-            {stats.mostRewatched.map((ep) => (
-              <Link
-                key={ep.episodeId}
-                to="/series/$id"
-                params={{ id: String(ep.itemId) }}
-                className="flex items-center justify-between border border-white/5 bg-[#101010] p-4 transition-colors hover:border-white/20"
-              >
-                <div className="flex flex-col">
-                  <span className="font-medium text-snow">{ep.itemTitle}</span>
-                  <span className="font-mono text-[10px] uppercase tracking-widest text-muted">
-                    S{ep.s.toString().padStart(2, "0")}E{ep.e.toString().padStart(2, "0")}
-                    {ep.episodeTitle ? ` · ${ep.episodeTitle}` : ""}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5 font-mono text-xs text-yellow">
-                  <RotateCw size={14} />
-                  <span>{ep.watchCount}x</span>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
     </div>
   );
 }

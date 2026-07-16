@@ -246,6 +246,51 @@
       "episodeProgress": "{{watched}}/{{aired}} bölüm",
       "showMore": "daha fazla",
       "showLess": "daha az"
+    },
+    "distribution": {
+      "other": "Diğer"
+    },
+    "genreDistribution": {
+      "title": "Tür Dağılımı"
+    },
+    "networkDistribution": {
+      "title": "Network Dağılımı",
+      "networkCount": "Takip Edilen Network"
+    },
+    "backlog": {
+      "title": "Kalan Bölümler",
+      "episodes": "Kalan Bölüm",
+      "seriesSub": "{{count}} dizi",
+      "remainingTime": "Kalan Süre",
+      "episodesShort": "{{count}} bölüm"
+    },
+    "pace": {
+      "title": "Yakalama Hızı",
+      "label": "Haftalık Hız",
+      "value": "~{{count}} bölüm",
+      "sub": "son 2 ayın ortalaması",
+      "projection": "~{{weeks}} haftada bitirirsin"
+    },
+    "upcoming": {
+      "title": "Yaklaşan Bölümler",
+      "nextMonth": "Gelecek Ay",
+      "caveat": "Yayın sağlayıcıları genellikle sadece birkaç hafta ilerisini bildiriyor, bu yüzden liste eksik olabilir."
+    },
+    "binges": {
+      "title": "En Hızlı Binge'ler",
+      "episodesShort": "{{count}} bölüm"
+    },
+    "rewatchSummary": {
+      "title": "Tekrar İzlemeler",
+      "total": "Toplam Tekrar",
+      "episodes": "Tekrar İzlenen Bölüm"
+    },
+    "streaks": {
+      "title": "Haftalık Seri",
+      "longest": "En Uzun Genel Seri",
+      "current": "Güncel Seri",
+      "mostConsistent": "En İstikrarlı Dizi",
+      "weeks": "{{count}} hafta"
     }
   },
   "profile": {

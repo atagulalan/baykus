@@ -65,13 +65,13 @@ Entry point: M44.2, then M45.1.
         Durumu (15 + expand)
   - [x] M49.5 i18n tr+en for group 1
 
-- [ ] **M50 web: sections group 2**
-  - [ ] M50.1 Tür + Network dağılımı
-  - [ ] M50.2 Kalan Bölümler + Yakalama Hızı (hide on `pace: null`)
-  - [ ] M50.3 Yaklaşan Bölümler + horizon caveat copy
-  - [ ] M50.4 En Hızlı Binge'ler + Tekrar İzlemeler (keep E86 list) +
+- [x] **M50 web: sections group 2**
+  - [x] M50.1 Tür + Network dağılımı
+  - [x] M50.2 Kalan Bölümler + Yakalama Hızı (hide on `pace: null`)
+  - [x] M50.3 Yaklaşan Bölümler + horizon caveat copy
+  - [x] M50.4 En Hızlı Binge'ler + Tekrar İzlemeler (keep E86 list) +
         Haftalık Seri
-  - [ ] M50.5 i18n tr+en for group 2
+  - [x] M50.5 i18n tr+en for group 2
 
 - [ ] **M51 web: sections group 3 + polish**
   - [ ] M51.1 `YearSelect` + Haftalık/Aylık İzleme Süresi split panel
