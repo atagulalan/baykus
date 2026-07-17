@@ -615,8 +615,7 @@ describe("POST /api/import/tvtime/confirm", () => {
       "followed_tv_show.csv":
         "tv_show_id,tv_show_name,active,diffusion,folder_id,archived,notification_type,user_id,created_at,updated_at\n" +
         "416998,NieR:Automata Ver1.1a,1,original,,0,2,1,2023-01-01 00:00:00,2023-01-01 00:00:00\n",
-      "tracking-prod-records-v2.csv":
-        "created_at,s_id,ep_id,key,s_no,ep_no,series_name\n" + trackingRows + "\n",
+      "tracking-prod-records-v2.csv": `created_at,s_id,ep_id,key,s_no,ep_no,series_name\n${trackingRows}\n`,
     });
 
     const importRes = await postImport(app, zip, "export.zip");

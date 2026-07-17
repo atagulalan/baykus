@@ -9,7 +9,7 @@ import {
   useRouterState,
 } from "@tanstack/react-router";
 import { ArrowLeft, CalendarDays, CircleUser, LayoutGrid, Play, Search } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { getAuthSession } from "../api/client.ts";
 import { backAffordance } from "../lib/backFallback.ts";
@@ -20,6 +20,7 @@ const NAV_ITEMS = [
   { to: "/", key: "app.nav.library", Icon: LayoutGrid },
   { to: "/watch", key: "app.nav.watch", Icon: Play },
   { to: "/calendar", key: "app.nav.calendar", Icon: CalendarDays },
+  { to: "/search", key: "app.nav.search", Icon: Search },
 ] as const;
 
 const BARE_PATHS = new Set(["/login", "/claim"]);
@@ -30,25 +31,27 @@ export function Layout() {
   const sessionQuery = useQuery({ queryKey: ["auth-session"], queryFn: getAuthSession });
   const canGoBack = useCanGoBack();
   const navigate = useNavigate();
-  const headerRef = useRef<HTMLElement>(null);
+  const headerObserverRef = useRef<ResizeObserver | null>(null);
 
-  // E73: publishes the sticky header's real height as a CSS var so pages (the calendar's
-  // BUGÜN anchor) can scroll-margin-top against a measured value, never a guessed constant.
-  useEffect(() => {
-    const el = headerRef.current;
+  // E73: publish the sticky header's real height as a CSS var. Callback ref (not
+  // useEffect([])) so we measure after session loading finishes and the <header>
+  // actually mounts — otherwise the var stays at the :root fallback and sticky
+  // page chrome (watch section headers, calendar today-anchor) sits under the nav.
+  const headerRef = useCallback((el: HTMLElement | null) => {
+    headerObserverRef.current?.disconnect();
+    headerObserverRef.current = null;
     if (!el) return;
+    const header = el;
     function updateHeight() {
-      if (el) {
-        document.documentElement.style.setProperty(
-          "--app-header-height",
-          `${el.getBoundingClientRect().height}px`,
-        );
-      }
+      document.documentElement.style.setProperty(
+        "--app-header-height",
+        `${header.getBoundingClientRect().height}px`,
+      );
     }
     updateHeight();
     const observer = new ResizeObserver(updateHeight);
-    observer.observe(el);
-    return () => observer.disconnect();
+    observer.observe(header);
+    headerObserverRef.current = observer;
   }, []);
 
   // /login and /claim render without nav chrome and manage their own
@@ -113,29 +116,28 @@ export function Layout() {
             >
               baykuş
             </Link>
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-1">
               {NAV_ITEMS.map((item) => (
                 <Link
                   key={item.to}
                   to={item.to}
-                  className="font-mono text-xs tracking-widest uppercase text-muted hover:text-snow transition-colors [&.active]:text-yellow"
+                  className="flex h-11 items-center gap-2 px-3 text-muted transition-colors hover:text-snow [&.active]:text-yellow"
                 >
-                  {t(item.key)}
+                  <item.Icon size={16} strokeWidth={1.5} />
+                  <span className="hidden font-mono text-xs uppercase tracking-widest lg:inline">
+                    {t(item.key)}
+                  </span>
                 </Link>
               ))}
               <Link
                 to="/user/$handle"
                 params={{ handle: profileHandle }}
-                className="font-mono text-xs tracking-widest uppercase text-muted hover:text-snow transition-colors [&.active]:text-yellow"
+                className="flex h-11 items-center gap-2 px-3 text-muted transition-colors hover:text-snow [&.active]:text-yellow"
               >
-                {t("app.nav.profile")}
-              </Link>
-              <Link
-                to="/search"
-                aria-label={t("app.nav.search")}
-                className="flex h-11 w-11 items-center justify-center text-muted hover:text-snow transition-colors [&.active]:text-yellow"
-              >
-                <Search size={20} strokeWidth={1.5} />
+                <CircleUser size={16} strokeWidth={1.5} />
+                <span className="hidden font-mono text-xs uppercase tracking-widest lg:inline">
+                  {t("app.nav.profile")}
+                </span>
               </Link>
             </div>
           </div>
@@ -158,15 +160,6 @@ export function Layout() {
             <span className="font-mono text-[9px] tracking-widest uppercase">{t(key)}</span>
           </Link>
         ))}
-        <Link
-          to="/search"
-          className="flex flex-1 flex-col items-center gap-1 py-3 text-muted hover:text-snow transition-colors [&.active]:text-yellow"
-        >
-          <Search size={20} strokeWidth={1.5} />
-          <span className="font-mono text-[9px] tracking-widest uppercase">
-            {t("app.nav.search")}
-          </span>
-        </Link>
         <Link
           to="/user/$handle"
           params={{ handle: profileHandle }}

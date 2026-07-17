@@ -1,9 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef } from "react";
+import type { LucideIcon } from "lucide-react";
+import { type Ref, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { addEpisodeWatch, getWatchHistory, listSeries } from "../api/client.ts";
 import type { WatchHistoryEntry, WatchHistoryResponse } from "../api/types.ts";
 import { EpisodeRow, WatchNextRow } from "../components/WatchNextRow.tsx";
+import { CATEGORY_ICONS } from "../lib/categoryIcons.ts";
 import { todayIso } from "../lib/date.ts";
 import { useToast } from "../lib/toast.tsx";
 
@@ -26,6 +28,38 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
         {t("errors.retry")}
       </button>
     </div>
+  );
+}
+
+/** Sticky section label aligned with EpisodeRow content (E129). */
+function SectionHeader({
+  title,
+  count,
+  icon: Icon,
+  headingRef,
+}: {
+  title: string;
+  count?: number | undefined;
+  icon?: LucideIcon | undefined;
+  headingRef?: Ref<HTMLHeadingElement> | undefined;
+}) {
+  return (
+    <h2
+      ref={headingRef}
+      // Inline top/scroll-margin: Tailwind arbitrary values break on the comma inside
+      // var(--x, fallback), so the sticky offset never applied and headers slid under the nav.
+      style={{
+        top: "var(--app-header-height, 3.5rem)",
+        scrollMarginTop: "var(--app-header-height, 3.5rem)",
+      }}
+      className="sticky z-30 flex items-center gap-2 border-b border-white/5 bg-void/95 px-2 py-2.5 backdrop-blur sm:px-6"
+    >
+      {Icon ? <Icon size={16} strokeWidth={1.75} className="shrink-0 text-muted" /> : null}
+      <span className="font-semibold text-base text-snow">{title}</span>
+      {count !== undefined ? (
+        <span className="font-mono text-sm tabular-nums text-muted">({count})</span>
+      ) : null}
+    </h2>
   );
 }
 
@@ -61,20 +95,22 @@ function HistoryRow({ entry }: { entry: WatchHistoryEntry }) {
 
 function HistorySection({ query }: { query: ReturnType<typeof useQuery<WatchHistoryResponse>> }) {
   const { t } = useTranslation();
+  const items = query.data?.items;
+  const count = query.isLoading || query.isError ? undefined : (items?.length ?? 0);
 
   return (
-    <section className="flex flex-col gap-2">
-      <h2 className="font-medium text-sm text-snow">{t("watch.history")}</h2>
+    <section className="flex flex-col gap-1">
+      <SectionHeader title={t("watch.history")} count={count} />
       {query.isLoading ? (
         <div className="h-48 animate-pulse bg-white/5" />
       ) : query.isError ? (
         <ErrorState onRetry={() => query.refetch()} />
-      ) : (query.data?.items.length ?? 0) === 0 ? (
-        <p className="text-sm text-muted">{t("watch.empty.history")}</p>
+      ) : (items?.length ?? 0) === 0 ? (
+        <p className="px-2 text-sm text-muted sm:px-6">{t("watch.empty.history")}</p>
       ) : (
         <div className="flex flex-col">
           {/* API returns newest-first; E27 renders oldest at top, newest at bottom. */}
-          {[...(query.data?.items ?? [])].reverse().map((entry) => (
+          {[...(items ?? [])].reverse().map((entry) => (
             <HistoryRow key={entry.watchId} entry={entry} />
           ))}
         </div>
@@ -107,7 +143,11 @@ export function WatchPage() {
   // calendar timeline's today-anchor pattern (E38, replaces the old history bottom-anchor).
   useEffect(() => {
     if (!historyQuery.isLoading && !libraryQuery.isLoading && !hasScrolledRef.current) {
-      nextHeadingRef.current?.scrollIntoView({ block: "start" });
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          nextHeadingRef.current?.scrollIntoView({ block: "start" });
+        });
+      });
       hasScrolledRef.current = true;
     }
   }, [historyQuery.isLoading, libraryQuery.isLoading]);
@@ -115,25 +155,27 @@ export function WatchPage() {
   const items = libraryQuery.data?.items ?? [];
   const watchNext = items.filter((s) => s.category === "watching");
   const notWatchedRecently = items.filter((s) => s.category === "not_watched_recently");
+  const librarySettled = !libraryQuery.isLoading && !libraryQuery.isError;
 
   return (
-    <div className="flex flex-col gap-8">
-      <h1 className="font-semibold text-2xl">{t("watch.title")}</h1>
+    <div className="flex flex-col gap-6">
+      <h1 className="font-display text-2xl italic tracking-tight text-snow">{t("watch.title")}</h1>
 
       <HistorySection query={historyQuery} />
 
-      <hr className="border-white/5" />
-
-      <section className="flex flex-col gap-2">
-        <h2 ref={nextHeadingRef} className="scroll-mt-16 font-medium text-sm text-snow">
-          {t("watch.next")}
-        </h2>
+      <section className="flex flex-col gap-1">
+        <SectionHeader
+          title={t("watch.next")}
+          count={librarySettled ? watchNext.length : undefined}
+          icon={CATEGORY_ICONS.watching}
+          headingRef={nextHeadingRef}
+        />
         {libraryQuery.isLoading ? (
           <div className="h-32 animate-pulse bg-white/5" />
         ) : libraryQuery.isError ? (
           <ErrorState onRetry={() => libraryQuery.refetch()} />
         ) : watchNext.length === 0 ? (
-          <p className="text-sm text-muted">{t("watch.empty.next")}</p>
+          <p className="px-2 text-sm text-muted sm:px-6">{t("watch.empty.next")}</p>
         ) : (
           <div className="flex flex-col">
             {watchNext.map((series) => (
@@ -147,16 +189,18 @@ export function WatchPage() {
         )}
       </section>
 
-      <hr className="border-white/5" />
-
-      <section className="flex flex-col gap-2">
-        <h2 className="font-medium text-sm text-snow">{t("watch.notWatchedRecently")}</h2>
+      <section className="flex flex-col gap-1">
+        <SectionHeader
+          title={t("watch.notWatchedRecently")}
+          count={librarySettled ? notWatchedRecently.length : undefined}
+          icon={CATEGORY_ICONS.not_watched_recently}
+        />
         {libraryQuery.isLoading ? (
           <div className="h-32 animate-pulse bg-white/5" />
         ) : libraryQuery.isError ? (
           <ErrorState onRetry={() => libraryQuery.refetch()} />
         ) : notWatchedRecently.length === 0 ? (
-          <p className="text-sm text-muted">{t("watch.empty.notWatchedRecently")}</p>
+          <p className="px-2 text-sm text-muted sm:px-6">{t("watch.empty.notWatchedRecently")}</p>
         ) : (
           <div className="flex flex-col">
             {notWatchedRecently.map((series) => (

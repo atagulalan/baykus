@@ -16,7 +16,8 @@ export function CategorySection({ category, items }: CategorySectionProps) {
   return (
     <section className="flex flex-col gap-3">
       <h2 className="font-semibold text-lg">
-        {t(`category.${category}`)} ({items.length})
+        {t(`category.${category}`)}{" "}
+        <span className="font-mono tabular-nums text-muted">({items.length})</span>
       </h2>
       <div className={SERIES_GRID_CLASSNAME}>
         {items.map((series) => (

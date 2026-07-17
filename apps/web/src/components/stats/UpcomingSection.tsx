@@ -26,9 +26,15 @@ export function UpcomingSection({ stats }: UpcomingSectionProps) {
   const tileValue = (month: { episodes: number; watchTimeMin: number }) => {
     const parts = formatDurationParts(month.watchTimeMin);
     const sub =
-      parts.mode === "daysHours"
-        ? t("stats.duration.daysHours", { days: parts.days, hours: parts.hours })
-        : t("stats.duration.hoursMinutes", { hours: parts.hours, minutes: parts.minutes });
+      parts.mode === "monthsDaysHours"
+        ? t("stats.duration.monthsDaysHours", {
+            months: parts.months,
+            days: parts.days,
+            hours: parts.hours,
+          })
+        : parts.mode === "daysHours"
+          ? t("stats.duration.daysHours", { days: parts.days, hours: parts.hours })
+          : t("stats.duration.hoursMinutes", { hours: parts.hours, minutes: parts.minutes });
     return { value: month.episodes.toLocaleString("tr-TR"), sub };
   };
 

@@ -4,6 +4,7 @@ interface CheckboxProps {
   checked: boolean;
   onChange: (checked: boolean) => void;
   disabled?: boolean;
+  showHint?: boolean;
   "aria-label"?: string;
   className?: string;
 }
@@ -12,6 +13,7 @@ export function Checkbox({
   checked,
   onChange,
   disabled,
+  showHint = false,
   "aria-label": ariaLabel,
   className = "",
 }: CheckboxProps) {
@@ -34,7 +36,11 @@ export function Checkbox({
         size={14}
         strokeWidth={3}
         className={`transition-all duration-300 ${
-          checked ? "scale-100 opacity-100" : "scale-50 opacity-0"
+          checked
+            ? "scale-100 opacity-100"
+            : showHint
+              ? "scale-75 opacity-20"
+              : "scale-50 opacity-0"
         }`}
       />
     </button>

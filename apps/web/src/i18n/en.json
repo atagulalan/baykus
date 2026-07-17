@@ -20,6 +20,7 @@
     "retry": "Retry",
     "add": "Add",
     "cancel": "Cancel",
+    "inLibrary": "in library",
     "added": "{{title}} was added to your library",
     "alreadyInLibrary": "This series is already in your library",
     "addError": "Something went wrong while adding",
@@ -44,13 +45,15 @@
   "library": {
     "empty": {
       "title": "Your library is empty",
-      "hint": "Use the search box above to find a series."
+      "hint": "Use the search box above to find a series.",
+      "filterTitle": "No results found",
+      "filterHint": "No series matches the selected filters.",
+      "resetFilter": "Reset Filters"
     },
     "filter": {
       "title": "Filter",
       "sortTitle": "Sort",
       "progressTitle": "Progress",
-      "allCategories": "All",
       "reset": "RESET",
       "apply": "APPLY",
       "close": "Close"
@@ -80,6 +83,8 @@
   },
   "series": {
     "notFound": "This series isn't in your library",
+    "previewMissingIds": "Missing series id for preview",
+    "startWatching": "Start watching",
     "needsReviewTitle": "Missing episodes detected",
     "needsReviewDesc": "This series came from an import, so some seasons may have unmarked episodes. Do you want to fill in the missing ones?",
     "needsReviewFill": "Fill missing",
@@ -106,13 +111,20 @@
     "toggleWatched": "Mark as watched",
     "untitled": "Untitled episode",
     "finale": "FINALE",
+    "seasonAndEpisode": "S{{season}} E{{episode}}",
     "watchAgain": "watch again",
-    "editDate": "edit date",
+    "editDate": "Edit Date",
+    "editDateHint": "Set the date and time for your watch history.",
+    "datePreset": {
+      "now": "Now",
+      "yesterday": "Yesterday"
+    },
     "watchedUpToHere": "watched up to here",
     "watchedUpToHereTitle": "Mark previous episodes?",
     "watchedUpToHereDesc": "There are unwatched episodes before this one. Mark everything up to here as watched?",
     "markOnlyThis": "No, just this episode",
     "markAsUnwatched": "Mark as unwatched",
+    "removeRewatch": "Remove rewatch",
     "save": "Save",
     "tag": {
       "new": "NEW",
@@ -144,21 +156,41 @@
         "tr": "Türkçe",
         "en": "English"
       },
+      "localeHint": "Language for the user interface.",
       "region": "Region",
+      "regionHint": "Region for release dates",
+      "episodeLabelFormat": "Episode Format",
+      "episodeLabelFormatHint": "How episode numbers are displayed across the app.",
       "watchingWindow": "Watching window (days)",
       "watchingWindowHint": "Shows watched, added, or with a new episode within this window stay in Watching.",
       "theme": "Theme",
       "themeDark": "Dark",
-      "themeSoon": "coming soon"
+      "themeSoon": "coming soon",
+      "themeHint": "Visual appearance of the application.",
+      "spoilerProtection": "Spoiler Protection",
+      "spoilerProtectionHint": "Blur images and summaries of unwatched episodes.",
+      "defaultStartPage": "Default Start Page",
+      "defaultStartPageName": {
+        "home": "Library",
+        "calendar": "Calendar",
+        "stats": "Stats"
+      },
+      "defaultStartPageHint": "The page you see first when opening the application.",
+      "newSeriesDefaultStatus": "New Series Status",
+      "newSeriesDefaultStatusName": {
+        "watching": "Watching",
+        "watchlist": "Watchlist"
+      },
+      "newSeriesDefaultStatusHint": "Where new series should be added by default."
     },
     "providers": {
-      "title": "Providers",
-      "tmdbKey": "TMDB API key",
-      "tmdbKeyPlaceholder": "Paste the key",
+      "title": "Extra Information Sources",
+      "tmdbKey": "Custom Connection Key (Optional)",
+      "tmdbKeyPlaceholder": "Paste your key here",
       "tmdbKeySet": "saved ✓",
       "clear": "Remove",
-      "scrapers": "Enable extra sources (IMDb, Serializd)",
-      "scrapersTos": "These sources scrape web pages; subject to each site's terms of use."
+      "scrapers": "Use Alternative Sources (Fetches extra info from sites like IMDb)",
+      "scrapersTos": "This feature collects missing information from other series websites."
     },
     "notifications": {
       "title": "Notifications",
@@ -170,28 +202,30 @@
       "testSent": "Test notification sent"
     },
     "data": {
-      "title": "Data",
-      "export": "Download zip",
-      "importTitle": "Upload zip",
+      "title": "Backup and Move",
+      "export": "Backup all my series (Download)",
+      "importTitle": "Restore my backup",
       "mode": {
-        "replace": "Replace (wipe the current library, rebuild from the zip)",
-        "merge": "Merge (add into the current library)"
+        "replace": "Delete old ones, install only the backup",
+        "merge": "Add backup items to my current list"
       },
-      "chooseFile": "Choose a zip file",
-      "importButton": "Upload",
-      "importing": "Uploading…",
+      "chooseFile": "Choose backup file",
+      "importButton": "Restore",
+      "importing": "Restoring…",
       "warnings": "Warnings",
       "success": "Imported {{items}} series, {{watches}} watches, {{ratings}} ratings",
       "error": "Import failed",
-      "tvtimeImport": "Import from TV Time"
+      "tvtimeImport": "Switch from another app (TV Time)"
     },
     "dangerZone": {
-      "title": "Danger zone",
-      "description": "Permanently deletes your entire library (series, watch history, ratings, settings). This cannot be undone.",
-      "button": "Delete all my data",
-      "warning": "This action cannot be undone. We recommend downloading a backup first.",
-      "confirmLabel": "Type <phrase>{{phrase}}</phrase> to confirm",
-      "confirmPhrase": "DELETE",
+      "title": "Reset Account",
+      "description": "If you want to start over, you can delete all your series and history.",
+      "button": "Delete Everything",
+      "warningTitle": "Warning! Everything will be deleted.",
+      "warningDesc": "You might want to take a backup before proceeding. Check the box below to confirm.",
+      "confirmCheckbox": "I accept that everything will be permanently deleted.",
+      "confirmLabel": "Type <phrase>{{phrase}}</phrase> to be sure",
+      "confirmPhrase": "DELETE EVERYTHING",
       "confirm": "Permanently delete",
       "success": "Library deleted"
     }
@@ -204,11 +238,21 @@
     "empty": "No watch history yet",
     "mostRewatched": "Most Rewatched",
     "duration": {
+      "monthsDaysHours": "{{months}}m {{days}}d {{hours}}h",
       "daysHours": "{{days}}d {{hours}}h",
       "hoursMinutes": "{{hours}}h {{minutes}}m"
     },
     "hero": {
-      "subline": "{{episodes}} episodes · {{series}} series"
+      "subline": "{{episodes}} episodes · {{series}} series",
+      "activities": {
+        "walkAroundWorld": "you could have walked around the world {{count}} times",
+        "shower": "you could have taken {{count}} showers",
+        "outerWilds": "you could have beaten Outer Wilds {{count}} times",
+        "lotr": "you could have watched the Lord of the Rings series {{count}} times",
+        "moonFlight": "you could have flown to the Moon and back {{count}} times",
+        "mountEverest": "you could have climbed Mount Everest {{count}} times",
+        "next": "Show another activity"
+      }
     },
     "tiles": {
       "tracked": "Tracked",
@@ -265,7 +309,9 @@
       "label": "Weekly Pace",
       "value": "~{{count}} episodes",
       "sub": "average of the last 2 months",
-      "projection": "~{{weeks}} weeks to catch up"
+      "projectionLabel": "Estimated finish",
+      "projection": "~{{weeks}} weeks to catch up",
+      "projectionDate": "around {{date}}"
     },
     "upcoming": {
       "title": "Upcoming Episodes",
@@ -333,7 +379,11 @@
     "prevMonth": "Previous month",
     "nextMonth": "Next month",
     "empty": {
-      "today": "(empty)",
+      "today": "Nothing airing today",
+      "suggestUnwatched": "You have unwatched episodes waiting",
+      "suggestUpcoming": "Coming up soon",
+      "suggestAdd": "Search series",
+      "suggestAddHint": "Add a series to your library to fill the calendar.",
       "month": "No episodes this month"
     },
     "weekHeader": "{{year}} - Week {{week}}"
@@ -386,7 +436,7 @@
   },
   "importWizard": {
     "title": "Import from TV Time",
-    "dropzone": "Drag your TV Time GDPR export (zip or csv) here",
+    "dropzone": "Drag your downloaded TV Time data file (zip or csv) here",
     "chooseFile": "Choose file",
     "uploading": "Uploading…",
     "uploadProgress": "{{done}}/{{total}} shows matched",
@@ -411,5 +461,45 @@
     "skipped": "Skipped",
     "goToLibrary": "Go to library",
     "episodeDiscrepancy": "Episode count mismatch (TV Time: {{tvTime}}, Ours: {{provider}}). Might be a wrong match."
+  },
+  "genres": {
+    "action": "Action",
+    "adventure": "Adventure",
+    "animation": "Animation",
+    "anime": "Anime",
+    "comedy": "Comedy",
+    "crime": "Crime",
+    "documentary": "Documentary",
+    "drama": "Drama",
+    "family": "Family",
+    "fantasy": "Fantasy",
+    "history": "History",
+    "horror": "Horror",
+    "kids": "Kids",
+    "mystery": "Mystery",
+    "news": "News",
+    "reality": "Reality",
+    "romance": "Romance",
+    "science_fiction": "Science Fiction",
+    "sci_fi___fantasy": "Sci-Fi & Fantasy",
+    "soap": "Soap",
+    "talk": "Talk",
+    "thriller": "Thriller",
+    "war": "War",
+    "western": "Western",
+    "action___adventure": "Action & Adventure",
+    "war___politics": "War & Politics",
+    "music": "Music",
+    "musical": "Musical",
+    "sport": "Sport",
+    "suspense": "Suspense",
+    "food": "Food",
+    "nature": "Nature",
+    "travel": "Travel"
+  },
+  "stepper": {
+    "decrease": "Decrease",
+    "increase": "Increase",
+    "value": "Value"
   }
 }

@@ -26,10 +26,13 @@ import type {
   SeriesSummary,
 } from "../api/types.ts";
 import { RatingControl } from "../components/RatingControl.tsx";
+import { RemoveSeriesDialog } from "../components/RemoveSeriesDialog.tsx";
 import { SeasonSection } from "../components/SeasonSection.tsx";
 import { SegmentedProgress } from "../components/SegmentedProgress.tsx";
 import { WatchDateDialog } from "../components/WatchDateDialog.tsx";
 import { CATEGORY_TEXT_COLORS } from "../lib/categoryColors.ts";
+import { CATEGORY_ICONS } from "../lib/categoryIcons.ts";
+import { genreKey } from "../lib/genreKey.ts";
 import { sortSeasonsSpecialsLast } from "../lib/seasons.ts";
 import { seriesParam } from "../lib/seriesPath.ts";
 import { isStale } from "../lib/staleSweep.ts";
@@ -124,6 +127,7 @@ export function SeriesDetailPage() {
   const [dateDialogEpisode, setDateDialogEpisode] = useState<EpisodeSummary | null>(null);
   const [promptEpisodeId, setPromptEpisodeId] = useState<number | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showRemoveDialog, setShowRemoveDialog] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const navigate = useNavigate();
@@ -376,8 +380,8 @@ export function SeriesDetailPage() {
   });
 
   function handleRemove() {
-    if (detail && window.confirm(t("library.removeConfirm", { title: detail.title }))) {
-      removeMutation.mutate();
+    if (detail) {
+      setShowRemoveDialog(true);
     }
   }
 
@@ -487,12 +491,11 @@ export function SeriesDetailPage() {
                 ""
               )}
             </h1>
-            <RatingControl
-              value={detail.rating}
-              onChange={(value) => rateItem.mutate(value)}
-              size="sm"
-            />
-            <span className="font-mono text-[10px] uppercase tracking-widest bg-white/5 px-2 py-1 text-muted">
+            <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest bg-white/5 px-2 py-1 text-muted">
+              {(() => {
+                const Icon = CATEGORY_ICONS[detail.category];
+                return <Icon size={12} />;
+              })()}
               {t(`category.${detail.category}`)}
             </span>
             <div className="ml-auto flex shrink-0 items-center gap-1">
@@ -589,6 +592,13 @@ export function SeriesDetailPage() {
               </div>
             </div>
           </div>
+          <div className="flex items-center">
+            <RatingControl
+              value={detail.rating}
+              onChange={(value) => rateItem.mutate(value)}
+              size="sm"
+            />
+          </div>
           {detail.tagline && <p className="text-sm text-muted italic">"{detail.tagline}"</p>}
 
           {(detail.networks.length > 0 || contentRating) && (
@@ -608,7 +618,7 @@ export function SeriesDetailPage() {
             <div className="flex flex-wrap gap-1">
               {detail.genres.map((g) => (
                 <span key={g.id ?? g.name} className="bg-white/5 px-2 py-0.5 text-xs text-muted">
-                  {g.name}
+                  {t(`genres.${genreKey(g.name)}`, { defaultValue: g.name })}
                 </span>
               ))}
             </div>
@@ -670,7 +680,9 @@ export function SeriesDetailPage() {
               className="max-w-sm"
             />
             <p className={`text-sm ${CATEGORY_TEXT_COLORS[detail.category]}`}>
-              {watched}/{aired}
+              <span className="font-mono tabular-nums">
+                {watched}/{aired}
+              </span>
               {detail.nextUnwatched && (
                 <>
                   <span className="text-muted">{" · "}</span>
@@ -717,6 +729,14 @@ export function SeriesDetailPage() {
             editDate.mutate({ episode: dateDialogEpisode, iso });
             setDateDialogEpisode(null);
           }}
+        />
+      )}
+
+      {showRemoveDialog && detail && (
+        <RemoveSeriesDialog
+          title={detail.title}
+          onConfirm={() => removeMutation.mutate()}
+          onClose={() => setShowRemoveDialog(false)}
         />
       )}
     </div>

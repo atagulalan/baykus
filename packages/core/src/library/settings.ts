@@ -4,6 +4,9 @@ import * as schema from "../db/schema.ts";
 
 export type Locale = "tr" | "en";
 export type Theme = "dark" | "light" | "system";
+export type EpisodeLabelFormat = "SxEy" | "S01E06" | "compact";
+export type DefaultStartPage = "home" | "calendar" | "stats";
+export type NewSeriesDefaultStatus = "watching" | "watchlist";
 
 export interface Settings {
   locale: Locale;
@@ -14,6 +17,11 @@ export interface Settings {
   tmdbApiKeySet: boolean;
   /** Days; governs watch recency, new-episode lift, newly-added lift (E31). */
   watchingWindowDays: number;
+  /** Episode label display format (E116). */
+  episodeLabelFormat: EpisodeLabelFormat;
+  spoilerProtection: boolean;
+  defaultStartPage: DefaultStartPage;
+  newSeriesDefaultStatus: NewSeriesDefaultStatus;
 }
 
 export interface SettingsPatch {
@@ -24,6 +32,10 @@ export interface SettingsPatch {
   /** null (or "") clears the stored key. */
   tmdbApiKey?: string | null;
   watchingWindowDays?: number;
+  episodeLabelFormat?: EpisodeLabelFormat;
+  spoilerProtection?: boolean;
+  defaultStartPage?: DefaultStartPage;
+  newSeriesDefaultStatus?: NewSeriesDefaultStatus;
 }
 
 const DEFAULTS = {
@@ -32,9 +44,17 @@ const DEFAULTS = {
   theme: "dark",
   scrapers_enabled: "0",
   watching_window_days: "30",
+  episode_label_format: "SxEy",
+  spoiler_protection: "0",
+  default_start_page: "home",
+  new_series_default_status: "watching",
 } as const;
 
 const DEFAULT_WATCHING_WINDOW_DAYS = 30;
+const DEFAULT_EPISODE_LABEL_FORMAT: EpisodeLabelFormat = "SxEy";
+const VALID_EPISODE_LABEL_FORMATS: ReadonlySet<string> = new Set(["SxEy", "S01E06", "compact"]);
+const VALID_START_PAGES: ReadonlySet<string> = new Set(["home", "calendar", "stats"]);
+const VALID_DEFAULT_STATUSES: ReadonlySet<string> = new Set(["watching", "watchlist"]);
 
 /** Route zod is the write-side guard; a weird stored value never throws here (E31). */
 function parseWatchingWindowDays(raw: string | undefined): number {
@@ -42,6 +62,22 @@ function parseWatchingWindowDays(raw: string | undefined): number {
   const n = Number(raw);
   if (!Number.isInteger(n) || n < 1 || n > 365) return DEFAULT_WATCHING_WINDOW_DAYS;
   return n;
+}
+
+/** Route zod is the write-side guard; a weird stored value never throws here (E116). */
+function parseEpisodeLabelFormat(raw: string | undefined): EpisodeLabelFormat {
+  if (raw !== undefined && VALID_EPISODE_LABEL_FORMATS.has(raw)) return raw as EpisodeLabelFormat;
+  return DEFAULT_EPISODE_LABEL_FORMAT;
+}
+
+function parseStartPage(raw: string | undefined): DefaultStartPage {
+  if (raw !== undefined && VALID_START_PAGES.has(raw)) return raw as DefaultStartPage;
+  return "home";
+}
+
+function parseNewSeriesStatus(raw: string | undefined): NewSeriesDefaultStatus {
+  if (raw !== undefined && VALID_DEFAULT_STATUSES.has(raw)) return raw as NewSeriesDefaultStatus;
+  return "watching";
 }
 
 function readAll(db: LibraryDatabase): Map<string, string> {
@@ -68,6 +104,10 @@ function toSettings(kv: Map<string, string>): Settings {
     scrapersEnabled: (kv.get("scrapers_enabled") ?? DEFAULTS.scrapers_enabled) === "1",
     tmdbApiKeySet: Boolean(kv.get("tmdb_api_key")),
     watchingWindowDays: parseWatchingWindowDays(kv.get("watching_window_days")),
+    episodeLabelFormat: parseEpisodeLabelFormat(kv.get("episode_label_format")),
+    spoilerProtection: (kv.get("spoiler_protection") ?? DEFAULTS.spoiler_protection) === "1",
+    defaultStartPage: parseStartPage(kv.get("default_start_page")),
+    newSeriesDefaultStatus: parseNewSeriesStatus(kv.get("new_series_default_status")),
   };
 }
 
@@ -88,6 +128,18 @@ export function updateSettings(db: LibraryDatabase, patch: SettingsPatch): Setti
   }
   if (patch.watchingWindowDays !== undefined) {
     upsert(db, "watching_window_days", String(patch.watchingWindowDays));
+  }
+  if (patch.episodeLabelFormat !== undefined) {
+    upsert(db, "episode_label_format", patch.episodeLabelFormat);
+  }
+  if (patch.spoilerProtection !== undefined) {
+    upsert(db, "spoiler_protection", patch.spoilerProtection ? "1" : "0");
+  }
+  if (patch.defaultStartPage !== undefined) {
+    upsert(db, "default_start_page", patch.defaultStartPage);
+  }
+  if (patch.newSeriesDefaultStatus !== undefined) {
+    upsert(db, "new_series_default_status", patch.newSeriesDefaultStatus);
   }
   return getSettings(db);
 }

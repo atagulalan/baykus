@@ -9,6 +9,7 @@ export interface EpisodeTagsProps {
   episodeType: EpisodeType | null;
   episodeTitle?: string | null;
   seasonName?: string | null;
+  excludeTags?: EpisodeTagKind[];
 }
 
 export type EpisodeTagKind = "new" | "upcoming" | "premiere" | "finale" | "special" | "ova";
@@ -78,7 +79,10 @@ const TAG_LABEL_KEYS: Record<EpisodeTagKind, string> = {
 /** Shared by calendar rows/cells and the watch page. */
 export function EpisodeTags(props: EpisodeTagsProps) {
   const { t } = useTranslation();
-  const kinds = computeEpisodeTagKinds(props);
+  let kinds = computeEpisodeTagKinds(props);
+  if (props.excludeTags) {
+    kinds = kinds.filter((k) => !props.excludeTags?.includes(k));
+  }
   if (kinds.length === 0) return null;
 
   return (

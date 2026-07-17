@@ -1,0 +1,20 @@
+stats kısmındaki yıllık aktivite'yi yayın akışındaki gibi elle tutup sürüklenebilir yapabilir miyiz? genel olarak selectboxu sevmiyorum.
+projede genel selectbox kullanılan yerleri bul. azaltacağız. 
+/watch ekranına girildiğinde bazen scrolled şekilde değil en üstte karşılıyor. 
+/watch ve /calendar ekranlarındaki scroll tam sıradaki bölüme/bugüne gelmeli. şu an 
+/calendar listesinde yaklaşan tagini kullanmaya gerek yok, gizlenebilir. bölüm adı önemli.
+S1E6 gibi sezon stringi alıp formatlayan bi bileşen işimize yarayacaktır. gösterimi ayarlardan düzenleyebiliriz. S01|E06 gibi de göstermek isteyebilir, minik şekilde de.
+checkboxlarda showHint şeklinde bir prop olsun, true iken içerisinde checkmark (✓) olsun. zaman çizelgesinde, dizi içeriğinde falan bu şekilde kullanalım. çünkü kullanıcı checkboxun olduğunu tam anlamıyor
+izleniyor penceresi (gün) için kullanılan yukarı aşağı butonlu input için custom bi bileşen yazabiliriz.
+ayarlar ekranındaki selectboxları kaldırabilir, ayarlar ekranını web'de iki column gösterebiliriz.
+ayarlar > dil ve bölge için bayrak icon kullanılabilir. neden bölge istediğimizi de tooltiple anlatabiliriz.
+navbarda en önemli özelliklerden biri (search) ikonla gösterilmiş, ancak diğerleri text ile. hepsini icon + text olarak güncelleyelim. boyut kısaldığında (tablet) sadece ikona geçelim. mobilde zaten aşağıda farklı bir bottom navbarımız var.
+arama ekranında tıklayınca poster büyüyerek ekran açılmıyor, onu da animasyonlu yapsak iyi olur
+dizinin kendi için iyi kötü normal butonları konumunu beğenmiyorum.
+izleniyor, sonra izlenecek, bırakıldı gibi statülere ikon lazım.
+Drama, comedy, action gibi tagler translation için translateable tagler olarak düşünülmeli.
+seasonsection bileşenindeki checkbox ile episoderow'daki checkbox aynı spacinge sahip olmadığından kaymış gözüküyor.
+seasonsection genel olarak daha iyi tasarlanabilir. örneğin şu an açık section için sezon yazısının altında border yok, ama her bir elemanın altında var, kötü bi görüntü oluşturuyor. ayrıca animasyonlu şekilde açılıp kapanabilir.
+tarihi düzenle modalı daha iyi olabilir.
+filtrele butonu sayfa aşağı kaydığında yukarıda kalıyor, sticky olmalı
+izleniyor, Bir süredir izlenmedi (19) vb. titlelar sticky olmalı, aşağı kayınca hangi sectionda olduğu karışıyor yoksa

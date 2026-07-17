@@ -12,6 +12,10 @@ const patchSettingsSchema = z
     scrapersEnabled: z.boolean().optional(),
     tmdbApiKey: z.string().nullable().optional(),
     watchingWindowDays: z.number().int().min(1).max(365).optional(),
+    episodeLabelFormat: z.enum(["SxEy", "S01E06", "compact"]).optional(),
+    spoilerProtection: z.boolean().optional(),
+    defaultStartPage: z.enum(["home", "calendar", "stats"]).optional(),
+    newSeriesDefaultStatus: z.enum(["watching", "watchlist"]).optional(),
   })
   .strict();
 
@@ -24,6 +28,18 @@ function toSettingsPatch(parsed: z.infer<typeof patchSettingsSchema>): SettingsP
   if (parsed.tmdbApiKey !== undefined) patch.tmdbApiKey = parsed.tmdbApiKey;
   if (parsed.watchingWindowDays !== undefined) {
     patch.watchingWindowDays = parsed.watchingWindowDays;
+  }
+  if (parsed.episodeLabelFormat !== undefined) {
+    patch.episodeLabelFormat = parsed.episodeLabelFormat;
+  }
+  if (parsed.spoilerProtection !== undefined) {
+    patch.spoilerProtection = parsed.spoilerProtection;
+  }
+  if (parsed.defaultStartPage !== undefined) {
+    patch.defaultStartPage = parsed.defaultStartPage;
+  }
+  if (parsed.newSeriesDefaultStatus !== undefined) {
+    patch.newSeriesDefaultStatus = parsed.newSeriesDefaultStatus;
   }
   return patch;
 }

@@ -13,7 +13,6 @@ import {
   type LibrarySort,
 } from "../components/FilterPanel.tsx";
 import { ProfileGuard } from "../components/ProfileGuard.tsx";
-import { SeriesCard } from "../components/SeriesCard.tsx";
 import { SERIES_GRID_CLASSNAME } from "../lib/grid.ts";
 import { groupByCategory } from "../lib/groupByCategory.ts";
 
@@ -40,6 +39,8 @@ function AllSeriesPageContent() {
 
   const items = query.data?.items ?? [];
   const byCategory = groupByCategory(items);
+  const categoriesToRender = category.length === 0 ? CATEGORY_ORDER : category;
+  const hasVisibleItems = categoriesToRender.some((c) => (byCategory.get(c) ?? []).length > 0);
 
   return (
     <section className="flex flex-col gap-6">
@@ -52,14 +53,16 @@ function AllSeriesPageContent() {
             </span>
           )}
         </h1>
-        <FilterPanel
-          sort={sort}
-          category={category}
-          onApply={(next) => {
-            setSort(next.sort);
-            setCategory(next.category);
-          }}
-        />
+        {items.length > 0 && (
+          <FilterPanel
+            sort={sort}
+            category={category}
+            onApply={(next) => {
+              setSort(next.sort);
+              setCategory(next.category);
+            }}
+          />
+        )}
       </div>
 
       {query.isLoading ? (
@@ -91,16 +94,24 @@ function AllSeriesPageContent() {
           </h1>
           <p className="font-mono text-xs text-muted/70">{t("library.empty.hint")}</p>
         </div>
-      ) : category === "all" ? (
-        <div className="flex flex-col gap-8">
-          {CATEGORY_ORDER.map((c) => (
-            <CategorySection key={c} category={c} items={byCategory.get(c) ?? []} />
-          ))}
+      ) : !hasVisibleItems ? (
+        <div className="flex flex-col items-center gap-4 py-24 text-center border border-white/5 bg-[#101010] p-6 mt-4">
+          <h1 className="font-display italic text-snow text-4xl tracking-tight">
+            {t("library.empty.filterTitle")}
+          </h1>
+          <p className="font-mono text-xs text-muted/70">{t("library.empty.filterHint")}</p>
+          <button
+            type="button"
+            onClick={() => setCategory([])}
+            className="font-mono text-[10px] tracking-widest uppercase bg-yellow text-[#080808] px-4 py-2 mt-4 transition-opacity hover:opacity-90"
+          >
+            {t("library.empty.resetFilter")}
+          </button>
         </div>
       ) : (
-        <div className={SERIES_GRID_CLASSNAME}>
-          {(byCategory.get(category) ?? []).map((series) => (
-            <SeriesCard key={series.id} series={series} />
+        <div className="flex flex-col gap-8">
+          {categoriesToRender.map((c) => (
+            <CategorySection key={c} category={c} items={byCategory.get(c) ?? []} />
           ))}
         </div>
       )}

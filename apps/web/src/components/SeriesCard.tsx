@@ -69,7 +69,7 @@ export function SeriesCard({ series }: SeriesCardProps) {
           <p className="truncate font-display italic text-snow text-xs leading-tight sm:text-lg">
             {series.title}
           </p>
-          <div className="flex items-center justify-between font-mono text-[10px] text-muted tracking-wide">
+          <div className="flex items-center justify-between font-mono text-[10px] tabular-nums text-muted tracking-wide">
             <span>{series.year ?? "—"}</span>
             <span className={textColor}>
               {watched} / {aired}

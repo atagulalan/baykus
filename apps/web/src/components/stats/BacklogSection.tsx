@@ -16,9 +16,15 @@ export function BacklogSection({ stats }: BacklogSectionProps) {
 
   const parts = formatDurationParts(watchTimeMin);
   const timeValue =
-    parts.mode === "daysHours"
-      ? t("stats.duration.daysHours", { days: parts.days, hours: parts.hours })
-      : t("stats.duration.hoursMinutes", { hours: parts.hours, minutes: parts.minutes });
+    parts.mode === "monthsDaysHours"
+      ? t("stats.duration.monthsDaysHours", {
+          months: parts.months,
+          days: parts.days,
+          hours: parts.hours,
+        })
+      : parts.mode === "daysHours"
+        ? t("stats.duration.daysHours", { days: parts.days, hours: parts.hours })
+        : t("stats.duration.hoursMinutes", { hours: parts.hours, minutes: parts.minutes });
 
   return (
     <section className="flex flex-col gap-4">

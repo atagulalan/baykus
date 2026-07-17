@@ -233,6 +233,8 @@ export interface AddSeriesOptions {
 
 export interface Library {
   addSeries(details: SeriesDetails, opts?: AddSeriesOptions): SeriesSummary;
+  /** Returns the library item id when any external id already matches, else null. */
+  findItemIdByExternalIds(ids: ExternalIds): number | null;
   listSeries(opts?: ListSeriesOptions): { items: SeriesSummary[]; total: number };
   getSeries(id: number): SeriesDetail | null;
   removeSeries(id: number): boolean;
@@ -280,6 +282,10 @@ export interface Library {
 
 export function createLibrary(db: LibraryDatabase): Library {
   return {
+    findItemIdByExternalIds(ids: ExternalIds): number | null {
+      return findConflictingItemId(db, ids);
+    },
+
     addSeries(details: SeriesDetails, opts: AddSeriesOptions = {}): SeriesSummary {
       const existingId = findConflictingItemId(db, details.externalIds);
       if (existingId != null) throw new AlreadyInLibraryError(existingId);
@@ -302,10 +308,13 @@ export function createLibrary(db: LibraryDatabase): Library {
           .returning({ id: schema.items.id })
           .get();
 
+        const settings = getSettings(db);
+        const defaultList = settings.newSeriesDefaultStatus === "watchlist" ? "watch_later" : null;
+
         tx.insert(schema.tracking)
           .values({
             itemId: inserted.id,
-            manualList: opts.manualList ?? null,
+            manualList: opts.manualList ?? defaultList,
             pushMuted: false,
             note: null,
             listChangedAt: now,

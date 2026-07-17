@@ -8,4 +8,6 @@ tmp/
 *.db-shm
 .env
 .env.*
+!.env.example
+**/data-multi/
 *.tsbuildinfo

@@ -1,10 +1,13 @@
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { getSeriesByParam, getSettings } from "../api/client.ts";
 import { buildImageUrl } from "../api/images.ts";
 import type { EpisodeType, SeriesSummary } from "../api/types.ts";
 import { todayIso } from "../lib/date.ts";
 import { Checkbox } from "./Checkbox.tsx";
+import { EpisodeLabel } from "./EpisodeLabel.tsx";
 import { EpisodeTags } from "./EpisodeTags.tsx";
 
 /** E28: how many more aired episodes queue behind the shown next one, hidden when 0. */
@@ -45,6 +48,9 @@ export function EpisodeRow({
   episodeType,
   trailing,
 }: EpisodeRowProps) {
+  const queryClient = useQueryClient();
+  const { data: settings } = useQuery({ queryKey: ["settings"], queryFn: getSettings });
+  const hideSpoilers = settings?.spoilerProtection ?? false;
   const imageUrl = buildImageUrl(posterRef);
 
   return (
@@ -53,23 +59,46 @@ export function EpisodeRow({
         to="/series/$id"
         params={{ id: `i${itemId}` }}
         className="flex flex-1 items-center gap-4 overflow-hidden"
+        onMouseEnter={() => {
+          queryClient.prefetchQuery({
+            queryKey: ["series", `i${itemId}`],
+            queryFn: () => getSeriesByParam(`i${itemId}`),
+          });
+        }}
+        onClickCapture={(e) => {
+          document
+            .querySelectorAll(`[style*="view-transition-name: poster-${itemId}"]`)
+            .forEach((el) => {
+              (el as HTMLElement).style.viewTransitionName = "";
+            });
+          const poster = e.currentTarget.querySelector(".js-poster") as HTMLElement;
+          if (poster) {
+            poster.style.viewTransitionName = `poster-${itemId}`;
+          }
+        }}
       >
         {imageUrl && (
-          <div className="h-12 w-8 shrink-0 overflow-hidden bg-[#101010]">
-            <img src={imageUrl} alt="" className="h-full w-full object-cover opacity-90" />
+          <div className="js-poster h-12 w-8 shrink-0 overflow-hidden bg-[#101010]">
+            <img
+              src={imageUrl}
+              alt=""
+              className={`h-full w-full object-cover opacity-90 ${hideSpoilers ? "blur-md" : ""}`}
+            />
           </div>
         )}
-        <div className="flex flex-1 flex-col justify-center overflow-hidden">
-          <div className="flex items-baseline gap-3">
-            <span className="font-display italic text-snow text-base truncate">{title}</span>
-            <span className="font-mono text-xs text-muted shrink-0">
-              S{s < 10 ? `0${s}` : s}E{e < 10 ? `0${e}` : e}
-              {overflow > 0 && <span className="opacity-50 ml-1">+{overflow}</span>}
+        <div className="flex flex-1 flex-col justify-center gap-0.5 overflow-hidden">
+          <span className="truncate font-display text-base italic text-snow">{title}</span>
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="shrink-0 font-mono text-xs text-muted">
+              <EpisodeLabel s={s} e={e} />
+              {overflow > 0 && <span className="ml-1 opacity-50">+{overflow}</span>}
             </span>
-          </div>
-          <div className="flex items-center gap-3 mt-1">
             {episodeTitle && (
-              <span className="font-mono text-[10px] text-muted/70 truncate">{episodeTitle}</span>
+              <span
+                className={`truncate font-mono text-xs text-muted/70 ${hideSpoilers ? "blur-sm" : ""}`}
+              >
+                {episodeTitle}
+              </span>
             )}
             <EpisodeTags s={s} e={e} airDate={airDate} episodeType={episodeType} />
           </div>

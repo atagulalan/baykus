@@ -36,7 +36,7 @@ export function FavoritesSection({ stats }: FavoritesSectionProps) {
               <div className="h-1 overflow-hidden bg-white/5">
                 <div
                   aria-hidden
-                  className="h-full bg-yellow/60 transition-all duration-500"
+                  className="h-full bg-yellow transition-all duration-500"
                   style={{ width: `${percent}%` }}
                 />
               </div>

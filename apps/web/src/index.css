@@ -11,10 +11,34 @@
   --font-mono: "JetBrains Mono", monospace;
 }
 
+:root {
+  /* Overwritten by Layout when the sticky <header> mounts; ~76px desktop nav. */
+  --app-header-height: 4.75rem;
+}
+
 body {
   background-color: var(--color-void);
   color: var(--color-snow);
   font-family: var(--font-sans);
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+}
+
+input,
+textarea,
+[contenteditable="true"] {
+  user-select: auto;
+  -webkit-user-select: auto;
+  cursor: text;
+}
+
+a,
+button,
+[role="button"],
+label,
+select {
+  cursor: pointer;
 }
 
 @keyframes film-grain {
@@ -74,10 +98,116 @@ body::after {
   animation-duration: 160ms;
 }
 
+/* Prevent sticky/fixed navs from cross-fading their semi-transparent backdrops */
+::view-transition-old(app-header),
+::view-transition-old(app-tabbar) {
+  display: none;
+}
+::view-transition-new(app-header),
+::view-transition-new(app-tabbar) {
+  animation: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*),
   ::view-transition-old(*),
   ::view-transition-new(*) {
-    animation: none !important;
+    animation: none;
   }
+}
+
+@keyframes sheet-slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes modal-scale-up {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes rating-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.7) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes rating-pop-up {
+  from {
+    opacity: 0;
+    transform: scale(0.7) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes backdrop-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-sheet {
+  animation: sheet-slide-up 200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-modal {
+  animation: modal-scale-up 200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-backdrop {
+  animation: backdrop-fade 200ms ease-out forwards;
+}
+
+.animate-rating-pop {
+  transform-origin: top right;
+  animation: rating-pop 180ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-rating-pop-up {
+  transform-origin: bottom right;
+  animation: rating-pop-up 180ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-sheet,
+  .animate-modal,
+  .animate-backdrop,
+  .animate-rating-pop,
+  .animate-rating-pop-up {
+    animation: none;
+  }
+}
+
+.season-episodes {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 200ms ease-out;
+  overflow: hidden;
+}
+.season-episodes[data-expanded="true"] {
+  grid-template-rows: 1fr;
+}
+.season-episodes > div {
+  min-height: 0;
 }

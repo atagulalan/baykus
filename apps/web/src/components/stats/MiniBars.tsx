@@ -21,7 +21,7 @@ export function MiniBars({ items, labelEvery = 1 }: MiniBarsProps) {
           <div key={item.key} title={item.tooltip} className="flex h-full flex-1 items-end">
             <div
               aria-hidden
-              className="w-full bg-yellow/60 transition-all duration-500"
+              className="w-full bg-yellow transition-all duration-500"
               style={{ height: item.value > 0 ? `${Math.max(2, (item.value / max) * 100)}%` : 0 }}
             />
           </div>
@@ -31,7 +31,7 @@ export function MiniBars({ items, labelEvery = 1 }: MiniBarsProps) {
         {items.map((item, i) => (
           <span
             key={item.key}
-            className="flex-1 truncate text-center font-mono text-[9px] uppercase tracking-widest text-muted/50"
+            className="flex-1 truncate text-center font-mono text-[9px] uppercase tracking-widest text-muted"
           >
             {i % labelEvery === 0 ? item.label : ""}
           </span>

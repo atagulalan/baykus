@@ -19,6 +19,7 @@ import type {
   SearchResponse,
   SeriesDetail,
   SeriesListResponse,
+  SeriesPreview,
   SeriesSummary,
   Settings,
   SettingsPatch,
@@ -71,6 +72,16 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 
 export function searchSeries(query: string, limit = 10): Promise<SearchResponse> {
   return request<SearchResponse>(`/search?q=${encodeURIComponent(query)}&limit=${limit}`);
+}
+
+/** E131: provider details for a search hit; redirects client if already in library. */
+export function getSeriesPreview(externalIds: ExternalIds): Promise<SeriesPreview> {
+  const query = new URLSearchParams();
+  if (externalIds.tmdbId != null) query.set("tmdbId", String(externalIds.tmdbId));
+  if (externalIds.tvmazeId != null) query.set("tvmazeId", String(externalIds.tvmazeId));
+  if (externalIds.imdbId) query.set("imdbId", externalIds.imdbId);
+  if (externalIds.tvdbId != null) query.set("tvdbId", String(externalIds.tvdbId));
+  return request<SeriesPreview>(`/search/preview?${query.toString()}`);
 }
 
 export function addSeries(

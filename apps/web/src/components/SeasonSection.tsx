@@ -51,24 +51,25 @@ export function SeasonSection({
       : t("series.seasonNumber", { number: season.number }));
 
   return (
-    <div className="border-white/5 border-b py-2">
-      <div className="flex items-center gap-2 px-1 py-1">
+    <div className="flex flex-col">
+      <div className="flex border-white/5 border-b">
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
-          className="flex flex-1 items-center gap-2 text-left text-sm"
+          className="flex flex-1 items-center gap-2 text-left text-sm py-5 pl-2 sm:pl-4"
         >
           <span className="text-muted">
             {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
           </span>
           <span className="font-medium">{label}</span>
-          <span className="text-xs text-muted">
-            ({watchedCount}/{season.episodes.length})
+          <span className="ml-auto font-mono text-xs tabular-nums text-muted">
+            {watchedCount}/{season.episodes.length}
           </span>
         </button>
-        <div className="flex items-center gap-2 pr-2">
+        <div className="flex items-center py-5 pr-2 sm:pr-4 pl-4">
           <Checkbox
             checked={complete}
+            showHint
             disabled={airedCount === 0}
             onChange={(checked) => {
               if (checked && !complete) {
@@ -91,7 +92,7 @@ export function SeasonSection({
           onConfirm={() => onUnwatchSeason()}
         />
       )}
-      {expanded && (
+      <div data-expanded={expanded} className="season-episodes">
         <div className="flex flex-col gap-0.5">
           {season.episodes.map((episode) => {
             const hasUnwatchedBefore =
@@ -114,7 +115,7 @@ export function SeasonSection({
             );
           })}
         </div>
-      )}
+      </div>
     </div>
   );
 }

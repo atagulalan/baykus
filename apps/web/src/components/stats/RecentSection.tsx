@@ -14,9 +14,15 @@ function windowValue(
 ): { value: string; sub: string } {
   const parts = formatDurationParts(window.watchTimeMin);
   const value =
-    parts.mode === "daysHours"
-      ? t("stats.duration.daysHours", { days: parts.days, hours: parts.hours })
-      : t("stats.duration.hoursMinutes", { hours: parts.hours, minutes: parts.minutes });
+    parts.mode === "monthsDaysHours"
+      ? t("stats.duration.monthsDaysHours", {
+          months: parts.months,
+          days: parts.days,
+          hours: parts.hours,
+        })
+      : parts.mode === "daysHours"
+        ? t("stats.duration.daysHours", { days: parts.days, hours: parts.hours })
+        : t("stats.duration.hoursMinutes", { hours: parts.hours, minutes: parts.minutes });
   return { value, sub: t("stats.recent.episodesSub", { count: window.episodes }) };
 }
 

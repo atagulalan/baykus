@@ -69,6 +69,14 @@ function anotherShowDetails(): SeriesDetails {
 }
 
 describe("createLibrary.addSeries", () => {
+  it("findItemIdByExternalIds returns null when nothing matches, else the item id", () => {
+    const library = createLibrary(openLibraryDb(":memory:").db);
+    expect(library.findItemIdByExternalIds({ tvmazeId: 44778 })).toBeNull();
+    const summary = library.addSeries(houseOfTheDragonDetails());
+    expect(library.findItemIdByExternalIds({ tvmazeId: 44778 })).toBe(summary.id);
+    expect(library.findItemIdByExternalIds({ imdbId: "tt11198330" })).toBe(summary.id);
+    expect(library.findItemIdByExternalIds({ tvmazeId: 99999 })).toBeNull();
+  });
   it("adds a series from a mapped provider fixture, round-tripping seasons/episodes/progress", () => {
     const { db } = openLibraryDb(":memory:");
     const library = createLibrary(db);

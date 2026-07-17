@@ -1,23 +1,19 @@
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Stats } from "../../api/types.ts";
 import { Heatmap } from "./Heatmap.tsx";
-import { YearSelect } from "./YearSelect.tsx";
 
 interface ActivityHeatmapSectionProps {
   stats: Pick<Stats, "activityByDay" | "timeByYear">;
 }
 
-/** spec.md §17 (E106) — independent year selector from Yearly Time's; non-zero days only in the payload. */
+/** spec.md §17 (E106) — continuous heatmap showing all years end-to-end; non-zero days only in the payload. */
 export function ActivityHeatmapSection({ stats }: ActivityHeatmapSectionProps) {
   const { t } = useTranslation();
-  const years = stats.timeByYear.map((y) => y.year);
-  const [selectedYear, setSelectedYear] = useState(years[0]);
-  if (years.length === 0 || selectedYear === undefined) return null;
 
-  const yearStart = `${selectedYear}-01-01`;
-  const yearEnd = `${selectedYear}-12-31`;
-  const daysInYear = stats.activityByDay.filter((d) => d.date >= yearStart && d.date <= yearEnd);
+  // Sort years ascending so they display chronologically left-to-right (oldest -> newest)
+  const years = [...stats.timeByYear.map((y) => y.year)].sort((a, b) => a - b);
+
+  if (years.length === 0) return null;
 
   return (
     <section className="flex flex-col gap-4">
@@ -25,13 +21,20 @@ export function ActivityHeatmapSection({ stats }: ActivityHeatmapSectionProps) {
         <h2 className="font-display italic text-snow text-2xl tracking-tight">
           {t("stats.activityHeatmap.title")}
         </h2>
-        <YearSelect years={years} value={selectedYear} onChange={setSelectedYear} />
       </div>
-      <Heatmap
-        year={selectedYear}
-        days={daysInYear}
-        tooltipFor={(date, count) => t("stats.activityHeatmap.tooltip", { date, count })}
-      />
+      {stats.activityByDay.length === 0 ? (
+        <div className="flex h-32 items-center justify-center border border-white/5 bg-white/5">
+          <p className="font-mono text-[10px] uppercase tracking-widest text-muted">
+            {t("stats.empty", { defaultValue: "No activity" })}
+          </p>
+        </div>
+      ) : (
+        <Heatmap
+          years={years}
+          days={stats.activityByDay}
+          tooltipFor={(date, count) => t("stats.activityHeatmap.tooltip", { date, count })}
+        />
+      )}
       <div className="flex items-center justify-end gap-1.5 font-mono text-[10px] uppercase tracking-widest text-muted">
         <span>{t("stats.activityHeatmap.legendLow")}</span>
         <span aria-hidden className="h-[11px] w-[11px] bg-white/5" />

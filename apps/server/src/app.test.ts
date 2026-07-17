@@ -111,6 +111,116 @@ describe("server app", () => {
       expect(await res.json()).toEqual({ items: results, total: 1 });
     });
 
+    it("annotates results already in the library with libraryItemId (E131)", async () => {
+      const results: SearchResult[] = [
+        {
+          providerId: "fake",
+          mediaType: "series",
+          externalIds: { tvmazeId: 44778, imdbId: "tt11198330" },
+          title: "House of the Dragon",
+          year: 2022,
+          network: "HBO",
+          score: 0.98,
+        },
+      ];
+      const library = createLibrary(openLibraryDb(":memory:").db);
+      const added = library.addSeries({
+        mediaType: "series",
+        externalIds: { tvmazeId: 44778 },
+        title: "House of the Dragon",
+        seasons: [],
+        providerId: "fake",
+      });
+      const app = createTestApp({
+        library,
+        providers: [createFakeProvider({ searchResults: results })],
+      });
+
+      const res = await app.request("/api/search?q=dragon");
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({
+        items: [{ ...results[0], libraryItemId: added.id }],
+        total: 1,
+      });
+    });
+
+    it("GET /api/search/preview returns provider metadata without adding (E131)", async () => {
+      const app = createTestApp({ providers: [createFakeProvider()] });
+      const res = await app.request("/api/search/preview?tvmazeId=44778");
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as {
+        title: string;
+        libraryItemId: number | null;
+        externalIds: { tvmazeId?: number };
+        seasons: { number: number; episodes: { s: number; e: number; watchCount: number }[] }[];
+      };
+      expect(body.title).toContain("44778");
+      expect(body.libraryItemId).toBeNull();
+      expect(body.externalIds.tvmazeId).toBe(44778);
+      expect(body.seasons.length).toBeGreaterThan(0);
+      expect(body.seasons[0]?.episodes[0]).toMatchObject({ s: 1, e: 1, watchCount: 0 });
+    });
+
+    it("GET /api/search/preview reports libraryItemId when already added", async () => {
+      const library = createLibrary(openLibraryDb(":memory:").db);
+      const added = library.addSeries(fixtureSeries({ tvmazeId: 44778 }));
+      const app = createTestApp({ library, providers: [createFakeProvider()] });
+      const res = await app.request("/api/search/preview?tvmazeId=44778");
+      expect(res.status).toBe(200);
+      expect(await res.json()).toMatchObject({ libraryItemId: added.id });
+    });
+
+    it("GET /api/search/preview rejects missing ids with 400", async () => {
+      const app = createTestApp();
+      const res = await app.request("/api/search/preview");
+      expect(res.status).toBe(400);
+    });
+
+    it("sorts in-library hits ahead of the rest", async () => {
+      const results: SearchResult[] = [
+        {
+          providerId: "fake",
+          mediaType: "series",
+          externalIds: { tvmazeId: 1 },
+          title: "Not In Library",
+          score: 0.99,
+        },
+        {
+          providerId: "fake",
+          mediaType: "series",
+          externalIds: { tvmazeId: 44778 },
+          title: "House of the Dragon",
+          score: 0.9,
+        },
+        {
+          providerId: "fake",
+          mediaType: "series",
+          externalIds: { tvmazeId: 2 },
+          title: "Also Not In Library",
+          score: 0.8,
+        },
+      ];
+      const library = createLibrary(openLibraryDb(":memory:").db);
+      const added = library.addSeries({
+        mediaType: "series",
+        externalIds: { tvmazeId: 44778 },
+        title: "House of the Dragon",
+        seasons: [],
+        providerId: "fake",
+      });
+      const app = createTestApp({
+        library,
+        providers: [createFakeProvider({ searchResults: results })],
+      });
+
+      const res = await app.request("/api/search?q=dragon");
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({
+        items: [{ ...results[1], libraryItemId: added.id }, results[0], results[2]],
+        total: 3,
+      });
+    });
+
     it("provider failure maps to a 502 PROVIDER_ERROR envelope", async () => {
       const app = createTestApp({
         providers: [

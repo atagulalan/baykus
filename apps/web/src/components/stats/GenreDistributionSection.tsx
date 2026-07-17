@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import type { Stats } from "../../api/types.ts";
+import { genreKey } from "../../lib/genreKey.ts";
 import { HBarList, type HBarListItem } from "./HBarList.tsx";
 
 interface GenreDistributionSectionProps {
@@ -14,7 +15,7 @@ export function GenreDistributionSection({ stats }: GenreDistributionSectionProp
 
   const items: HBarListItem[] = top.map((g) => ({
     key: g.name,
-    label: g.name,
+    label: t(`genres.${genreKey(g.name)}`, { defaultValue: g.name }),
     value: g.episodes,
     displayValue: g.episodes.toLocaleString("tr-TR"),
   }));

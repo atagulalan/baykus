@@ -1,9 +1,10 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { addEpisodeWatch, getCalendar, removeLatestEpisodeWatch } from "../api/client.ts";
-import type { CalendarDay } from "../api/types.ts";
+import type { CalendarDay, CalendarEntry } from "../api/types.ts";
 import { CalendarEntryRow } from "../components/CalendarEntryRow.tsx";
 import { MonthGrid } from "../components/MonthGrid.tsx";
 import { ScheduleGrid } from "../components/ScheduleGrid.tsx";
@@ -12,12 +13,95 @@ import { useToast } from "../lib/toast.tsx";
 
 type Mode = "timeline" | "month" | "schedule";
 
+const TODAY_SUGGEST_LIMIT = 3;
+
 function formatDayHeader(dateStr: string): string {
   return new Intl.DateTimeFormat("tr-TR", {
     weekday: "long",
     day: "numeric",
     month: "short",
   }).format(new Date(`${dateStr}T00:00:00Z`));
+}
+
+/** Nearest-to-today unwatched past entries first (still visible above the BUGÜN row). */
+function pickUnwatchedPast(
+  days: CalendarDay[],
+  today: string,
+  justWatched: Set<number>,
+): CalendarEntry[] {
+  const past = days
+    .filter((d) => d.date < today)
+    .flatMap((d) => d.entries)
+    .filter((e) => !e.isWatched && !justWatched.has(e.episodeId));
+  return past.slice(-TODAY_SUGGEST_LIMIT).reverse();
+}
+
+function pickUpcoming(days: CalendarDay[], today: string): CalendarEntry[] {
+  return days
+    .filter((d) => d.date > today)
+    .flatMap((d) => d.entries)
+    .slice(0, TODAY_SUGGEST_LIMIT);
+}
+
+function TodayEmptyPanel({
+  days,
+  today,
+  justWatched,
+  onToggleWatched,
+}: {
+  days: CalendarDay[];
+  today: string;
+  justWatched: Set<number>;
+  onToggleWatched: (episodeId: number) => void;
+}) {
+  const { t } = useTranslation();
+  const unwatched = pickUnwatchedPast(days, today, justWatched);
+  const upcoming = unwatched.length === 0 ? pickUpcoming(days, today) : [];
+
+  return (
+    <div className="flex flex-col gap-3 border border-white/5 bg-[#101010] px-4 py-6">
+      <div className="flex flex-col items-center gap-1 text-center">
+        <p className="font-display italic text-xl tracking-tight text-snow">
+          {t("calendar.empty.today")}
+        </p>
+        {unwatched.length > 0 ? (
+          <p className="font-mono text-xs text-muted/70">{t("calendar.empty.suggestUnwatched")}</p>
+        ) : upcoming.length > 0 ? (
+          <p className="font-mono text-xs text-muted/70">{t("calendar.empty.suggestUpcoming")}</p>
+        ) : (
+          <p className="font-mono text-xs text-muted/70">{t("calendar.empty.suggestAddHint")}</p>
+        )}
+      </div>
+
+      {unwatched.length > 0 ? (
+        <div className="flex flex-col">
+          {unwatched.map((entry) => (
+            <CalendarEntryRow
+              key={entry.episodeId}
+              entry={entry}
+              watched={justWatched.has(entry.episodeId)}
+              onToggleWatched={() => onToggleWatched(entry.episodeId)}
+            />
+          ))}
+        </div>
+      ) : upcoming.length > 0 ? (
+        <div className="flex flex-col">
+          {upcoming.map((entry) => (
+            <CalendarEntryRow key={entry.episodeId} entry={entry} />
+          ))}
+        </div>
+      ) : (
+        <div className="flex justify-center pt-1">
+          <Link
+            to="/search"
+            className="border border-white/10 px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-snow transition-colors hover:bg-white/5"
+          >
+            {t("calendar.empty.suggestAdd")}
+          </Link>
+        </div>
+      )}
+    </div>
+  );
 }
 
 /** The API omits days with zero entries — synthesize today so the BUGÜN row always renders. */
@@ -104,28 +188,35 @@ function TimelineView({
 
   return (
     <div className="flex flex-col gap-4">
-      {days.map((day) => (
-        <div
-          key={day.date}
-          ref={day.date === today ? todayRef : undefined}
-          className="flex flex-col gap-1"
-          style={{ scrollMarginTop: "var(--app-header-height, 4rem)" }}
-        >
-          <h3 className="text-xs text-muted uppercase">
-            {day.date === today
-              ? t("calendar.today", { date: day.date })
-              : formatDayHeader(day.date)}
-          </h3>
-          {day.entries.length === 0 ? (
-            <p className="px-2 text-sm text-muted">{t("calendar.empty.today")}</p>
-          ) : (
-            day.entries
-              // E24 gap-tracker: hide past watched rows unless pinned this session (E81).
-              .filter(
-                (entry) =>
-                  entry.airDate > today || !entry.isWatched || justWatched.has(entry.episodeId),
-              )
-              .map((entry) =>
+      {days.map((day) => {
+        // E24 gap-tracker: hide past watched rows unless pinned this session (E81).
+        const visibleEntries = day.entries.filter(
+          (entry) => entry.airDate > today || !entry.isWatched || justWatched.has(entry.episodeId),
+        );
+        // API still returns fully-watched past days; drop their empty headers.
+        // Today always stays so the BUGÜN row / empty panel can render.
+        if (visibleEntries.length === 0 && day.date !== today) return null;
+        return (
+          <div
+            key={day.date}
+            ref={day.date === today ? todayRef : undefined}
+            className="flex flex-col gap-1"
+            style={{ scrollMarginTop: "var(--app-header-height, 4rem)" }}
+          >
+            <h3 className="text-xs text-muted uppercase">
+              {day.date === today
+                ? t("calendar.today", { date: formatDayHeader(day.date) })
+                : formatDayHeader(day.date)}
+            </h3>
+            {visibleEntries.length === 0 ? (
+              <TodayEmptyPanel
+                days={days}
+                today={today}
+                justWatched={justWatched}
+                onToggleWatched={onToggleWatched}
+              />
+            ) : (
+              visibleEntries.map((entry) =>
                 entry.airDate <= today ? (
                   <CalendarEntryRow
                     key={entry.episodeId}
@@ -137,9 +228,10 @@ function TimelineView({
                   <CalendarEntryRow key={entry.episodeId} entry={entry} />
                 ),
               )
-          )}
-        </div>
-      ))}
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

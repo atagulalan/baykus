@@ -30,7 +30,13 @@ export {
 export type { PushSubscriptionRecord } from "./library/push.ts";
 export type { Rating } from "./library/ratings.ts";
 export { type AddSeriesOptions, createLibrary, type Library } from "./library/service.ts";
-export type { Locale, Settings, SettingsPatch, Theme } from "./library/settings.ts";
+export type {
+  EpisodeLabelFormat,
+  Locale,
+  Settings,
+  SettingsPatch,
+  Theme,
+} from "./library/settings.ts";
 export type { Stats } from "./library/stats/index.ts";
 export type {
   EpisodeSummary,

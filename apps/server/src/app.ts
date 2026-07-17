@@ -66,7 +66,7 @@ export function createApp(config: Config, deps: AppDeps) {
       onAccountDeleted,
     ),
   );
-  app.route("/api/search", createSearchRoute(deps.providers));
+  app.route("/api/search", createSearchRoute(deps.providers, contextLibrary));
   app.route("/api/library", createLibraryRoutes(contextLibrary, deps.providers));
   app.route("/", createWatchRoutes(contextLibrary));
   app.route("/", createRatingRoutes(contextLibrary));

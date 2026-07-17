@@ -11,7 +11,6 @@ import {
   type LibraryCategoryFilter,
   type LibrarySort,
 } from "../components/FilterPanel.tsx";
-import { SeriesCard } from "../components/SeriesCard.tsx";
 import { SERIES_GRID_CLASSNAME } from "../lib/grid.ts";
 import { groupByCategory } from "../lib/groupByCategory.ts";
 import { maybeStartSweep, useSweepProgress } from "../lib/staleSweep.ts";
@@ -39,6 +38,8 @@ export function LibraryPage() {
 
   const items = query.data?.items ?? [];
   const byCategory = groupByCategory(items);
+  const categoriesToRender = category.length === 0 ? HOME_CATEGORY_ORDER : category;
+  const hasVisibleItems = categoriesToRender.some((c) => (byCategory.get(c) ?? []).length > 0);
 
   return (
     <section className="flex flex-col gap-6">
@@ -47,16 +48,18 @@ export function LibraryPage() {
           {t("library.sweep.progress", { done: sweepProgress.done, total: sweepProgress.total })}
         </p>
       )}
-      <div className="flex flex-wrap items-center justify-end gap-2">
-        <FilterPanel
-          sort={sort}
-          category={category}
-          onApply={(next) => {
-            setSort(next.sort);
-            setCategory(next.category);
-          }}
-        />
-      </div>
+      {items.length > 0 && (
+        <div className="sticky top-14 z-20 flex flex-wrap items-center justify-end gap-2 sm:border-b sm:border-white/5 sm:bg-void/90 sm:py-2 sm:backdrop-blur">
+          <FilterPanel
+            sort={sort}
+            category={category}
+            onApply={(next) => {
+              setSort(next.sort);
+              setCategory(next.category);
+            }}
+          />
+        </div>
+      )}
 
       {query.isLoading ? (
         <div className={SERIES_GRID_CLASSNAME}>
@@ -87,16 +90,24 @@ export function LibraryPage() {
           </h1>
           <p className="font-mono text-xs text-muted/70">{t("library.empty.hint")}</p>
         </div>
-      ) : category === "all" ? (
-        <div className="flex flex-col gap-8">
-          {HOME_CATEGORY_ORDER.map((c) => (
-            <CategorySection key={c} category={c} items={byCategory.get(c) ?? []} />
-          ))}
+      ) : !hasVisibleItems ? (
+        <div className="flex flex-col items-center gap-4 py-24 text-center border border-white/5 bg-[#101010] p-6 mt-4">
+          <h1 className="font-display italic text-snow text-4xl tracking-tight">
+            {t("library.empty.filterTitle")}
+          </h1>
+          <p className="font-mono text-xs text-muted/70">{t("library.empty.filterHint")}</p>
+          <button
+            type="button"
+            onClick={() => setCategory([])}
+            className="font-mono text-[10px] tracking-widest uppercase bg-yellow text-[#080808] px-4 py-2 mt-4 transition-opacity hover:opacity-90"
+          >
+            {t("library.empty.resetFilter")}
+          </button>
         </div>
       ) : (
-        <div className={SERIES_GRID_CLASSNAME}>
-          {(byCategory.get(category) ?? []).map((series) => (
-            <SeriesCard key={series.id} series={series} />
+        <div className="flex flex-col gap-8">
+          {categoriesToRender.map((c) => (
+            <CategorySection key={c} category={c} items={byCategory.get(c) ?? []} />
           ))}
         </div>
       )}

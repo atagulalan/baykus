@@ -10,11 +10,11 @@ describe("hasActiveFilter (E70 FAB dot)", () => {
     expect(hasActiveFilter("title", DEFAULT_LIBRARY_CATEGORY)).toBe(true);
   });
 
-  it("is true when category differs from 'all'", () => {
-    expect(hasActiveFilter(DEFAULT_LIBRARY_SORT, "watching")).toBe(true);
+  it("is true when category differs from default", () => {
+    expect(hasActiveFilter(DEFAULT_LIBRARY_SORT, ["watching"])).toBe(true);
   });
 
   it("is true when both differ", () => {
-    expect(hasActiveFilter("rating", "finished")).toBe(true);
+    expect(hasActiveFilter("rating", ["finished"])).toBe(true);
   });
 });

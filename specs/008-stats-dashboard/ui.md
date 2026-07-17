@@ -15,12 +15,12 @@ inventory table. All strings via i18n (tr default + en).
 | Tiles | Existing `StatTile`, 6-up grid (2-up mobile): tracked, episodes, favorites, watching, finished, watch_later. |
 | Son Dönem | 3 `StatTile`s with sub-value (episode count). |
 | En Çok İzlediklerim | `HBarList` primitive: label / track / value row, widths relative to max, `title` tooltip. Top 12. |
-| İzleme Durumu | `StackedBar` over 8 categories (skip zero segments) + wrapped legend with counts. Reuse category color tokens if 002 defined them; else a single-hue ramp in CSS vars. |
+| İzleme Durumu | `StackedBar` over 7 categories (skip zero segments; **omit `needs_review`**) + wrapped legend with counts. <!-- DECISION: E55's shared yellow collapses adjacent segments — use `CATEGORY_CHART_COLORS` (distinct hue per bucket); terminal hues stay E55-aligned. needs_review is import-review noise and stays out of this chart. --> Uses `CATEGORY_CHART_COLORS`, not the shared badge/progress tokens. |
 | Favoriler | Card grid `minmax(220px,1fr)`: title, `N bölüm · %P`, 4px progress bar. |
 | Prodüksiyon Durumu | 2 `StatTile`s + alphabetical card grid `watched/aired bölüm`; show 15, `daha fazla` expand (E109). |
 | Tür / Network Dağılımı | Two `HBarList`s, top 8 + muted `Diğer` row (full-width track, muted fill); network panel adds a `networkCount` tile. |
 | Kalan Bölümler | 2 `StatTile`s (episodes+series, remaining time) + top-10 `HBarList`. |
-| Yakalama Hızı | 1 `StatTile` (`Haftada ~N bölüm`, sub: `son 2 ayın ortalaması`) + projection sentence; whole body hidden when `pace: null` (E100). |
+| Yakalama Hızı | Two `StatTile`s side-by-side (`sm+`): projection (`~N haftada bitirirsin` + estimated calendar date sub) and weekly pace. Whole body hidden when `pace: null` (E100). |
 | Yaklaşan Bölümler | 2 `StatTile`s (this/next month with time sub) + `MiniBars` per month + horizon caveat as muted paragraph (copy from prototype). |
 | En Hızlı Binge'ler | `HBarList`, label `Title — YYYY-MM-DD`, value `N bölüm`. |
 | Tekrar İzlemeler | 2 `StatTile`s + per-series `HBarList`; existing per-episode mostRewatched list stays below it. |
@@ -33,10 +33,11 @@ inventory table. All strings via i18n (tr default + en).
 ## Primitives (new, `apps/web/src/components/stats/`)
 
 - `HBarList` — rows of label/track/value; track `h-2 bg-white/5`, fill
-  `bg-yellow/60`; `Diğer` rows use `bg-white/10`.
+  `bg-yellow` (full accent — `/60` looked washed-out across the page);
+  `Diğer` rows use `bg-white/10`.
 - `StackedBar` — flex segments, 2px gaps, native `title` tooltips.
 - `MiniBars` — vertical bars, fixed height 120px, min-height 2px for
-  non-zero, `title` tooltips, muted labels.
+  non-zero, `title` tooltips, muted labels; fill `bg-yellow`.
 - `Heatmap` — pure CSS grid; no JS beyond render.
 - `YearSelect` — controlled `<select>`, shared state per section pair? No:
   **independent per section** (prototype has two groups; keep them

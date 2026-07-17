@@ -23,7 +23,7 @@ export function resultKey(result: SearchResult): string {
   return `${result.providerId}:${ids.tmdbId ?? ""}:${ids.tvmazeId ?? ""}:${ids.imdbId ?? ""}:${ids.tvdbId ?? ""}`;
 }
 
-/** E68: search + add-flow engine behind the /search page — adding stays on the page (multi-add). The header dropdown consumer retired in E77. */
+/** E68: search + add-flow engine behind the /search page. Explicit add only (009 E87 amend); header dropdown retired in E77. */
 export function useSeriesSearch() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();

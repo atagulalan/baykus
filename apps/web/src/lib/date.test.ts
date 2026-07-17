@@ -17,9 +17,25 @@ describe("formatDurationParts", () => {
     expect(formatDurationParts(24 * 60 + 61)).toEqual({ mode: "daysHours", days: 1, hours: 1 });
   });
 
-  it("matches the prototype's 181g 1s example", () => {
+  it("switches to monthsDaysHours at exactly 30 days", () => {
+    // 30 days = 30 * 24 hours
+    const totalMin = 30 * 24 * 60;
+    expect(formatDurationParts(totalMin)).toEqual({
+      mode: "monthsDaysHours",
+      months: 1,
+      days: 0,
+      hours: 0,
+    });
+  });
+
+  it("matches the prototype's 181g 1s example (now 6m 1d 1h)", () => {
     // 181 days, 1 hour = (181*24 + 1) hours of minutes.
     const totalMin = (181 * 24 + 1) * 60;
-    expect(formatDurationParts(totalMin)).toEqual({ mode: "daysHours", days: 181, hours: 1 });
+    expect(formatDurationParts(totalMin)).toEqual({
+      mode: "monthsDaysHours",
+      months: 6,
+      days: 1,
+      hours: 1,
+    });
   });
 });

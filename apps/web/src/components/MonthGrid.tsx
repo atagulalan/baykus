@@ -1,10 +1,13 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { getSeriesByParam } from "../api/client.ts";
 import { buildImageUrl } from "../api/images.ts";
 import type { CalendarDay, CalendarEntry } from "../api/types.ts";
 import { todayIso } from "../lib/date.ts";
 import { CalendarEntryRow } from "./CalendarEntryRow.tsx";
+import { EpisodeLabel } from "./EpisodeLabel.tsx";
 import { EpisodeTags } from "./EpisodeTags.tsx";
 
 const MAX_CELL_ENTRIES = 3;
@@ -44,7 +47,16 @@ function weekdayShortLabels(): string[] {
   });
 }
 
+function formatDayHeader(dateStr: string): string {
+  return new Intl.DateTimeFormat("tr-TR", {
+    weekday: "long",
+    day: "numeric",
+    month: "short",
+  }).format(new Date(`${dateStr}T00:00:00Z`));
+}
+
 function CompactEntry({ entry }: { entry: CalendarEntry }) {
+  const queryClient = useQueryClient();
   const [imageFailed, setImageFailed] = useState(false);
   const imageUrl = buildImageUrl(entry.posterRef);
   return (
@@ -52,6 +64,21 @@ function CompactEntry({ entry }: { entry: CalendarEntry }) {
       to="/series/$id"
       params={{ id: `i${entry.itemId}` }}
       className="flex items-start gap-2 px-1.5 py-1 text-[11px] leading-tight hover:bg-white/5 transition-colors"
+      onMouseEnter={() => {
+        queryClient.prefetchQuery({
+          queryKey: ["series", `i${entry.itemId}`],
+          queryFn: () => getSeriesByParam(`i${entry.itemId}`),
+        });
+      }}
+      onClickCapture={(e) => {
+        document
+          .querySelectorAll(`[style*="view-transition-name: poster-${entry.itemId}"]`)
+          .forEach((el) => {
+            (el as HTMLElement).style.viewTransitionName = "";
+          });
+        const img = e.currentTarget.querySelector("img");
+        if (img) img.style.viewTransitionName = `poster-${entry.itemId}`;
+      }}
     >
       {imageUrl && !imageFailed && (
         <img
@@ -64,9 +91,7 @@ function CompactEntry({ entry }: { entry: CalendarEntry }) {
       <div className="flex min-w-0 flex-col gap-0.5">
         <span className="truncate font-display italic text-snow">
           {entry.title}{" "}
-          <span className="font-sans not-italic text-muted text-[10px]">
-            S{entry.s}E{entry.e}
-          </span>
+          <EpisodeLabel s={entry.s} e={entry.e} className="not-italic text-muted text-[10px]" />
         </span>
         <EpisodeTags
           s={entry.s}
@@ -145,12 +170,8 @@ export function MonthGrid({ year, month, days }: MonthGridProps) {
             <div key={day.date} className="flex flex-col gap-1">
               <h3 className="text-xs text-muted uppercase">
                 {day.date === today
-                  ? t("calendar.today", { date: day.date })
-                  : new Intl.DateTimeFormat("tr-TR", {
-                      weekday: "long",
-                      day: "numeric",
-                      month: "short",
-                    }).format(new Date(`${day.date}T00:00:00Z`))}
+                  ? t("calendar.today", { date: formatDayHeader(day.date) })
+                  : formatDayHeader(day.date)}
               </h3>
               {day.entries.map((entry) => (
                 <CalendarEntryRow key={entry.episodeId} entry={entry} />

@@ -57,6 +57,25 @@ export interface SearchResult {
   posterRef?: string;
   network?: string;
   score?: number;
+  /** Set by GET /api/search when any external id already matches a library item. */
+  libraryItemId?: number;
+}
+
+/** GET /api/search/preview — provider metadata for a show not yet added (E131). */
+export interface SeriesPreview {
+  externalIds: ExternalIds;
+  title: string;
+  year: number | null;
+  overview: string | null;
+  posterRef: string | null;
+  backdropRef: string | null;
+  tagline: string | null;
+  network: string | null;
+  genres: GenreInfo[];
+  releaseStatus: string | null;
+  libraryItemId: number | null;
+  /** Full inventory; episode ids are synthetic (s/e encoded) until the show is added. */
+  seasons: SeasonSummary[];
 }
 
 export interface SearchResponse {
@@ -240,6 +259,9 @@ export interface Rating {
 
 export type Locale = "tr" | "en";
 export type Theme = "dark" | "light" | "system";
+export type EpisodeLabelFormat = "SxEy" | "S01E06" | "compact";
+export type DefaultStartPage = "home" | "calendar" | "stats";
+export type NewSeriesDefaultStatus = "watching" | "watchlist";
 
 export interface Settings {
   locale: Locale;
@@ -248,6 +270,10 @@ export interface Settings {
   scrapersEnabled: boolean;
   tmdbApiKeySet: boolean;
   watchingWindowDays: number;
+  episodeLabelFormat: EpisodeLabelFormat;
+  spoilerProtection: boolean;
+  defaultStartPage: DefaultStartPage;
+  newSeriesDefaultStatus: NewSeriesDefaultStatus;
 }
 
 export interface SettingsPatch {
@@ -257,6 +283,10 @@ export interface SettingsPatch {
   scrapersEnabled?: boolean;
   tmdbApiKey?: string | null;
   watchingWindowDays?: number;
+  episodeLabelFormat?: EpisodeLabelFormat;
+  spoilerProtection?: boolean;
+  defaultStartPage?: DefaultStartPage;
+  newSeriesDefaultStatus?: NewSeriesDefaultStatus;
 }
 
 export interface RewatchedEpisode {

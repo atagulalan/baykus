@@ -3,6 +3,45 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { useTranslation } from "react-i18next";
 import type { CalendarDay, CalendarEntry } from "../api/types.ts";
 import { getAbsoluteWeek, getIsoWeek, getWeekStartIso, todayIso } from "../lib/date.ts";
+import { EpisodeLabel } from "./EpisodeLabel.tsx";
+
+function getMockTimeData(itemId: number) {
+  // Generate a consistent pseudo-random time based on the itemId
+  const seed = (itemId * 13) % 24;
+  const hour = seed.toString().padStart(2, "0");
+  const localTime = `${hour}:00`;
+  // Fake an origin timezone offset (e.g. EST is UTC-5)
+  const _tzOffset = -5;
+  // Let's assume the local timezone is UTC+3 (Istanbul), so difference is 8 hours
+  const diff = -8;
+  const originHour = (seed + diff + 24) % 24;
+  const originTime = `${originHour.toString().padStart(2, "0")}:00 EST`;
+
+  return { localTime, originTime };
+}
+
+function MockReleaseTime({ itemId, isWatched }: { itemId: number; isWatched: boolean }) {
+  const [showOrigin, setShowOrigin] = useState(false);
+  const { localTime, originTime } = getMockTimeData(itemId);
+
+  return (
+    <button
+      type="button"
+      className={`text-[9px] font-medium ml-1 px-1 rounded cursor-pointer transition-colors ${
+        isWatched
+          ? "bg-white/10 text-muted hover:bg-white/20 hover:text-snow"
+          : "bg-white/5 text-muted hover:bg-white/15 hover:text-snow border border-white/5"
+      }`}
+      onClick={(e) => {
+        e.preventDefault();
+        setShowOrigin((p) => !p);
+      }}
+      title={showOrigin ? `Yerel Saat: ${localTime}` : `Orijinal Saat: ${originTime}`}
+    >
+      {showOrigin ? originTime : localTime}
+    </button>
+  );
+}
 
 interface StripEpisode {
   episodeId: number;
@@ -676,9 +715,11 @@ export function ScheduleGrid({
                                                 .map((ep) => `S${ep.s}E${ep.e}`)
                                                 .join(", ")}
                                             >
-                                              <span>
-                                                S{firstEp.s}E{firstEp.e}
-                                              </span>
+                                              <EpisodeLabel s={firstEp.s} e={firstEp.e} />
+                                              <MockReleaseTime
+                                                itemId={strip.itemId}
+                                                isWatched={isWatched}
+                                              />
                                               {extraCount > 0 && (
                                                 <span className="text-yellow text-[9px] font-bold px-1 rounded bg-yellow/10">
                                                   +{extraCount}

@@ -90,11 +90,59 @@ Auth required. Rate limit 30/min/session.
     "overview": "The Targaryen dynasty…",
     "posterRef": "tmdb:/okrubNzXkGSa6LgrBKRz0eaviHn.jpg",
     "network": "HBO",
-    "score": 0.98
+    "score": 0.98,
+    "libraryItemId": 12
   } ], "total": 1 }
 ```
 Provider = registry order (TMDB if key, else TVmaze). 502 `PROVIDER_ERROR` on
-upstream failure.
+upstream failure. `libraryItemId` is set only when any of the result's
+external ids already matches a library item (009 E131); omitted otherwise.
+
+### GET /api/search/preview?tmdbId=94997&tvmazeId=44778
+Auth required. At least one external id query param. Fetches provider
+`getSeriesDetails` without writing to the library.
+```json
+← 200 {
+  "externalIds": { "tmdbId": 94997, "tvmazeId": 44778 },
+  "title": "House of the Dragon",
+  "year": 2022,
+  "overview": "…",
+  "posterRef": "tmdb:/…",
+  "backdropRef": null,
+  "tagline": null,
+  "network": "HBO",
+  "genres": [{ "name": "Drama" }],
+  "releaseStatus": "returning",
+  "libraryItemId": null,
+  "seasons": [{
+    "number": 1,
+    "name": null,
+    "overview": null,
+    "posterRef": null,
+    "airDate": "2022-08-21",
+    "episodes": [{
+      "id": 100001,
+      "s": 1, "e": 1,
+      "title": "The Heirs of the Dragon",
+      "overview": null,
+      "airDate": "2022-08-21",
+      "runtimeMin": 66,
+      "stillRef": null,
+      "episodeType": null,
+      "communityRating": null,
+      "myRating": null,
+      "watchCount": 0,
+      "lastWatchedAt": null
+    }]
+  }]
+}
+```
+`libraryItemId` is non-null when the ids already match a library item (web
+replace-redirects to `/series/i{id}`). Episode `id`s are **synthetic**
+(`(s+1)*100000+e`) — preview only; real ids appear after add. 400 if no
+external id is supplied. 502 `PROVIDER_ERROR` on upstream failure.
+Items with `libraryItemId` are sorted ahead of the rest (relative order within
+each group preserved).
 
 ## Library
 

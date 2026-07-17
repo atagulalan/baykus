@@ -1,3 +1,5 @@
+import { RefreshCw } from "lucide-react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Stats } from "../../api/types.ts";
 import { formatDurationParts } from "../../lib/date.ts";
@@ -7,14 +9,49 @@ interface HeroSectionProps {
   stats: Stats;
 }
 
+const FUN_ACTIVITIES = [
+  { id: "walkAroundWorld", minutes: 480000 },
+  { id: "shower", minutes: 15 },
+  { id: "outerWilds", minutes: 22 },
+  { id: "lotr", minutes: 683 },
+  { id: "moonFlight", minutes: 4320 },
+  { id: "mountEverest", minutes: 57600 },
+] as const;
+
 /** spec.md §1-2: hero total + the 6-up tile grid. */
 export function HeroSection({ stats }: HeroSectionProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const [activityIndex, setActivityIndex] = useState(() =>
+    Math.floor(Math.random() * FUN_ACTIVITIES.length),
+  );
+
+  const currentActivity = FUN_ACTIVITIES[activityIndex]!;
+  const activityTimes = stats.watchTimeMin / currentActivity.minutes;
+  const formattedCount = new Intl.NumberFormat(i18n.language || "tr-TR", {
+    maximumFractionDigits: activityTimes >= 100 ? 0 : 2,
+  }).format(activityTimes);
+
+  const handleNextActivity = () => {
+    setActivityIndex((prev) => (prev + 1) % FUN_ACTIVITIES.length);
+  };
+
   const parts = formatDurationParts(stats.watchTimeMin);
   const durationText =
-    parts.mode === "daysHours"
-      ? t("stats.duration.daysHours", { days: parts.days, hours: parts.hours })
-      : t("stats.duration.hoursMinutes", { hours: parts.hours, minutes: parts.minutes });
+    parts.mode === "monthsDaysHours"
+      ? t("stats.duration.monthsDaysHours", {
+          months: parts.months,
+          days: parts.days,
+          hours: parts.hours,
+        })
+      : parts.mode === "daysHours"
+        ? t("stats.duration.daysHours", {
+            days: parts.days,
+            hours: parts.hours,
+          })
+        : t("stats.duration.hoursMinutes", {
+            hours: parts.hours,
+            minutes: parts.minutes,
+          });
 
   return (
     <div className="flex flex-col gap-8">
@@ -22,12 +59,21 @@ export function HeroSection({ stats }: HeroSectionProps) {
         <p className="font-display italic text-snow text-6xl leading-none tracking-tight sm:text-7xl">
           {durationText}
         </p>
-        <p className="font-mono text-xs uppercase tracking-widest text-muted">
-          {t("stats.hero.subline", {
-            episodes: stats.episodesWatched.toLocaleString("tr-TR"),
-            series: stats.seriesCount.toLocaleString("tr-TR"),
-          })}
-        </p>
+        <div className="flex items-center gap-2 text-muted">
+          <p className="font-mono text-xs uppercase tracking-widest">
+            {t(`stats.hero.activities.${currentActivity.id}`, {
+              count: formattedCount,
+            })}
+          </p>
+          <button
+            type="button"
+            onClick={handleNextActivity}
+            className="rounded-full p-1 hover:bg-white/5 hover:text-snow transition-colors"
+            title={t("stats.hero.activities.next")}
+          >
+            <RefreshCw size={14} />
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">

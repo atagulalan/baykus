@@ -20,6 +20,7 @@
     "retry": "Tekrar dene",
     "add": "Ekle",
     "cancel": "İptal",
+    "inLibrary": "kütüphanede",
     "added": "{{title}} kütüphanene eklendi",
     "alreadyInLibrary": "Bu dizi zaten kütüphanende",
     "addError": "Eklenirken bir hata oluştu",
@@ -44,13 +45,15 @@
   "library": {
     "empty": {
       "title": "Kütüphanen boş",
-      "hint": "Bir dizi aramak için yukarıdaki arama kutusunu kullan."
+      "hint": "Bir dizi aramak için yukarıdaki arama kutusunu kullan.",
+      "filterTitle": "Sonuç bulunamadı",
+      "filterHint": "Seçtiğin filtrelere uyan hiçbir dizi yok.",
+      "resetFilter": "Filtreleri Sıfırla"
     },
     "filter": {
       "title": "Filtrele",
       "sortTitle": "Sıralama",
       "progressTitle": "İlerleme",
-      "allCategories": "Tümü",
       "reset": "SIFIRLA",
       "apply": "UYGULA",
       "close": "Kapat"
@@ -80,6 +83,8 @@
   },
   "series": {
     "notFound": "Bu dizi kütüphanende değil",
+    "previewMissingIds": "Önizleme için dizi kimliği eksik",
+    "startWatching": "İzlemeye başla",
     "needsReviewTitle": "Eksik bölümler tespit edildi",
     "needsReviewDesc": "Bu dizi içe aktarımdan geldiği için bazı sezonlarda işaretlenmemiş bölümler olabilir. Eksik bölümleri doldurmak ister misin?",
     "needsReviewFill": "Eksikleri doldur",
@@ -106,13 +111,20 @@
     "toggleWatched": "İzlendi olarak işaretle",
     "untitled": "İsimsiz bölüm",
     "finale": "FİNAL",
+    "seasonAndEpisode": "S{{season}} B{{episode}}",
     "watchAgain": "tekrar izledim",
-    "editDate": "tarihi düzenle",
+    "editDate": "Tarihi Düzenle",
+    "editDateHint": "İzleme geçmişi için tarihi ve saati belirleyin.",
+    "datePreset": {
+      "now": "Şimdi",
+      "yesterday": "Dün"
+    },
     "watchedUpToHere": "buraya kadar izledim",
     "watchedUpToHereTitle": "Önceki bölümler işaretlensin mi?",
     "watchedUpToHereDesc": "Bundan önce izlenmemiş bölümler var. Buraya kadar hepsi izlendi olarak işaretlensin mi?",
     "markOnlyThis": "Hayır, sadece bu bölüm",
     "markAsUnwatched": "İzlenmedi olarak işaretle",
+    "removeRewatch": "Tekrar izlemeyi kaldır",
     "save": "Kaydet",
     "tag": {
       "new": "YENİ",
@@ -144,21 +156,41 @@
         "tr": "Türkçe",
         "en": "English"
       },
+      "localeHint": "Arayüz için kullanılacak dil.",
       "region": "Bölge",
+      "regionHint": "Çıkış tarihleri için bölge",
+      "episodeLabelFormat": "Bölüm Gösterimi",
+      "episodeLabelFormatHint": "Bölüm numaralarının uygulama genelinde nasıl görüneceği.",
       "watchingWindow": "İzleniyor penceresi (gün)",
       "watchingWindowHint": "Bu süre içinde izlenen/eklenen/yeni bölümü çıkan diziler İzleniyor'da kalır.",
       "theme": "Tema",
       "themeDark": "Koyu",
-      "themeSoon": "yakında"
+      "themeSoon": "yakında",
+      "themeHint": "Uygulamanın görsel teması.",
+      "spoilerProtection": "Spoiler Koruması",
+      "spoilerProtectionHint": "İzlenmemiş bölümlerin resimlerini ve özetlerini bulanıklaştırır.",
+      "defaultStartPage": "Başlangıç Sayfası",
+      "defaultStartPageName": {
+        "home": "Kütüphane",
+        "calendar": "Takvim",
+        "stats": "İstatistikler"
+      },
+      "defaultStartPageHint": "Uygulamayı açtığınızda ilk göreceğiniz sayfa.",
+      "newSeriesDefaultStatus": "Yeni Dizi Durumu",
+      "newSeriesDefaultStatusName": {
+        "watching": "İzleniyor",
+        "watchlist": "Sonra İzlenecekler"
+      },
+      "newSeriesDefaultStatusHint": "Yeni eklenen dizilerin varsayılan olarak hangi listeye ekleneceği."
     },
     "providers": {
-      "title": "Sağlayıcılar",
-      "tmdbKey": "TMDB API anahtarı",
-      "tmdbKeyPlaceholder": "Anahtarı yapıştır",
+      "title": "Ekstra Bilgi Kaynakları",
+      "tmdbKey": "Özel Bağlantı Anahtarı (İsteğe Bağlı)",
+      "tmdbKeyPlaceholder": "Anahtarı buraya yapıştırın",
       "tmdbKeySet": "kayıtlı ✓",
       "clear": "Kaldır",
-      "scrapers": "Ek kaynakları (IMDb, Serializd) etkinleştir",
-      "scrapersTos": "Bu kaynaklar web scraping ile veri çeker; ilgili sitelerin kullanım şartlarına tabidir."
+      "scrapers": "Alternatif Kaynakları Kullan (IMDb vb. sitelerden ek bilgiler getirir)",
+      "scrapersTos": "Bu özellik internetteki diğer dizi sitelerinden eksik bilgileri toplar."
     },
     "notifications": {
       "title": "Bildirimler",
@@ -170,28 +202,30 @@
       "testSent": "Test bildirimi gönderildi"
     },
     "data": {
-      "title": "Veri",
-      "export": "Zip indir",
-      "importTitle": "Zip yükle",
+      "title": "Yedekleme ve Taşıma",
+      "export": "Tüm dizilerimi yedekle (Bilgisayara İndir)",
+      "importTitle": "Yedeğimi geri yükle",
       "mode": {
-        "replace": "Değiştir (mevcut kütüphaneyi sil, zip'ten yeniden kur)",
-        "merge": "Birleştir (mevcut kütüphaneye ekle)"
+        "replace": "Eskileri sil, sadece yedeği kur",
+        "merge": "Yedektekileri mevcut listeme ekle"
       },
-      "chooseFile": "Zip dosyası seç",
-      "importButton": "Yükle",
+      "chooseFile": "Yedek dosyasını seç",
+      "importButton": "Geri Yükle",
       "importing": "Yükleniyor…",
       "warnings": "Uyarılar",
       "success": "{{items}} dizi, {{watches}} izleme, {{ratings}} puan içe aktarıldı",
       "error": "İçe aktarma başarısız oldu",
-      "tvtimeImport": "TV Time'dan içe aktar"
+      "tvtimeImport": "Başka uygulamadan geçiş yap (TV Time)"
     },
     "dangerZone": {
-      "title": "Tehlikeli bölge",
-      "description": "Tüm kütüphaneni (diziler, izleme geçmişi, puanlar, ayarlar) kalıcı olarak siler. Bu işlem geri alınamaz.",
-      "button": "Tüm verimi sil",
-      "warning": "Bu işlem geri alınamaz. Devam etmeden önce bir yedek indirmeni öneririz.",
-      "confirmLabel": "Onaylamak için <phrase>{{phrase}}</phrase> yaz",
-      "confirmPhrase": "SİL",
+      "title": "Hesabı Sıfırla",
+      "description": "Her şeye baştan başlamak istersen tüm dizilerini ve geçmişini silebilirsin.",
+      "button": "Her Şeyi Sil",
+      "warningTitle": "Dikkat! Her şey silinecek.",
+      "warningDesc": "Devam etmeden önce yedek almak isteyebilirsin. Onaylamak için aşağıdaki kutuyu işaretle.",
+      "confirmCheckbox": "Her şeyin kalıcı olarak silineceğini kabul ediyorum.",
+      "confirmLabel": "Emin olmak için <phrase>{{phrase}}</phrase> yaz",
+      "confirmPhrase": "HER SEYI SIL",
       "confirm": "Kalıcı olarak sil",
       "success": "Kütüphane silindi"
     }
@@ -204,11 +238,21 @@
     "empty": "Henüz izleme kaydı yok",
     "mostRewatched": "En Çok Tekrar İzlenenler",
     "duration": {
+      "monthsDaysHours": "{{months}}a {{days}}g {{hours}}s",
       "daysHours": "{{days}}g {{hours}}s",
       "hoursMinutes": "{{hours}}s {{minutes}}dk"
     },
     "hero": {
-      "subline": "{{episodes}} bölüm · {{series}} dizi"
+      "subline": "{{episodes}} bölüm · {{series}} dizi",
+      "activities": {
+        "walkAroundWorld": "dünyayı yürüyerek {{count}} kere dolaşabilirdin",
+        "shower": "{{count}} kere duş alabilirdin",
+        "outerWilds": "Outer Wilds'ı {{count}} kere bitirebilirdin",
+        "lotr": "Yüzüklerin Efendisi serisini {{count}} kere izleyebilirdin",
+        "moonFlight": "Ay'a {{count}} kere gidip gelebilirdin",
+        "mountEverest": "Everest Dağı'na {{count}} kere tırmanabilirdin",
+        "next": "Başka bir aktivite göster"
+      }
     },
     "tiles": {
       "tracked": "Takip Edilen",
@@ -265,7 +309,9 @@
       "label": "Haftalık Hız",
       "value": "~{{count}} bölüm",
       "sub": "son 2 ayın ortalaması",
-      "projection": "~{{weeks}} haftada bitirirsin"
+      "projectionLabel": "Tahmini bitiş",
+      "projection": "~{{weeks}} haftada bitirirsin",
+      "projectionDate": "yani tahmini {{date}} gibi"
     },
     "upcoming": {
       "title": "Yaklaşan Bölümler",
@@ -333,7 +379,11 @@
     "prevMonth": "Önceki ay",
     "nextMonth": "Sonraki ay",
     "empty": {
-      "today": "(boş)",
+      "today": "Bugün yayın yok",
+      "suggestUnwatched": "İzlenmeyi bekleyen bölümlerin var",
+      "suggestUpcoming": "Yakında yayınlanacaklar",
+      "suggestAdd": "Dizi ara",
+      "suggestAddHint": "Kütüphanene bir dizi ekleyerek takvimi doldurabilirsin.",
       "month": "Bu ay için bölüm yok"
     },
     "weekHeader": "{{year}} - {{week}}. Hafta"
@@ -386,7 +436,7 @@
   },
   "importWizard": {
     "title": "TV Time içe aktar",
-    "dropzone": "TV Time GDPR dışa aktarımını (zip veya csv) buraya sürükle",
+    "dropzone": "TV Time'dan indirdiğin veri dosyasını (zip veya csv) buraya sürükle",
     "chooseFile": "Dosya seç",
     "uploading": "Yükleniyor…",
     "uploadProgress": "{{done}}/{{total}} gösteri eşleştirildi",
@@ -411,5 +461,45 @@
     "skipped": "Atlanan",
     "goToLibrary": "Kütüphaneye git",
     "episodeDiscrepancy": "Bölüm sayısı uyuşmuyor (TV Time: {{tvTime}}, Bizde: {{provider}}). Yanlış eşleşme olabilir."
+  },
+  "genres": {
+    "action": "Aksiyon",
+    "adventure": "Macera",
+    "animation": "Animasyon",
+    "anime": "Anime",
+    "comedy": "Komedi",
+    "crime": "Suç",
+    "documentary": "Belgesel",
+    "drama": "Dram",
+    "family": "Aile",
+    "fantasy": "Fantastik",
+    "history": "Tarih",
+    "horror": "Korku",
+    "kids": "Çocuk",
+    "mystery": "Gizem",
+    "news": "Haber",
+    "reality": "Reality",
+    "romance": "Romantik",
+    "science_fiction": "Bilim Kurgu",
+    "sci_fi___fantasy": "Bilim Kurgu & Fantastik",
+    "soap": "Pembe Dizi",
+    "talk": "Talk Show",
+    "thriller": "Gerilim",
+    "war": "Savaş",
+    "western": "Vahşi Batı",
+    "action___adventure": "Aksiyon & Macera",
+    "war___politics": "Savaş & Politika",
+    "music": "Müzik",
+    "musical": "Müzikal",
+    "sport": "Spor",
+    "suspense": "Gerilim",
+    "food": "Yemek",
+    "nature": "Doğa",
+    "travel": "Seyahat"
+  },
+  "stepper": {
+    "decrease": "Azalt",
+    "increase": "Arttır",
+    "value": "Değer"
   }
 }

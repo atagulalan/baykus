@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { Stats } from "../../api/types.ts";
 import { formatDurationParts } from "../../lib/date.ts";
 import { MiniBars } from "./MiniBars.tsx";
-import { YearSelect } from "./YearSelect.tsx";
+import { YearStrip } from "./YearStrip.tsx";
 
 interface YearlyTimeSectionProps {
   stats: Pick<Stats, "timeByYear">;
@@ -45,9 +45,15 @@ export function YearlyTimeSection({ stats }: YearlyTimeSectionProps) {
 
   const parts = formatDurationParts(yearData.totalMin);
   const totalText =
-    parts.mode === "daysHours"
-      ? t("stats.duration.daysHours", { days: parts.days, hours: parts.hours })
-      : t("stats.duration.hoursMinutes", { hours: parts.hours, minutes: parts.minutes });
+    parts.mode === "monthsDaysHours"
+      ? t("stats.duration.monthsDaysHours", {
+          months: parts.months,
+          days: parts.days,
+          hours: parts.hours,
+        })
+      : parts.mode === "daysHours"
+        ? t("stats.duration.daysHours", { days: parts.days, hours: parts.hours })
+        : t("stats.duration.hoursMinutes", { hours: parts.hours, minutes: parts.minutes });
 
   return (
     <section className="flex flex-col gap-4">
@@ -55,7 +61,7 @@ export function YearlyTimeSection({ stats }: YearlyTimeSectionProps) {
         <h2 className="font-display italic text-snow text-2xl tracking-tight">
           {t("stats.yearlyTime.title")}
         </h2>
-        <YearSelect years={years} value={selectedYear} onChange={setSelectedYear} />
+        <YearStrip years={years} value={selectedYear} onChange={setSelectedYear} />
       </div>
       <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
         <div className="flex flex-col gap-2">

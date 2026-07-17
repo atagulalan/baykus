@@ -15,26 +15,29 @@ interface HBarListProps {
 export function HBarList({ items }: HBarListProps) {
   const max = Math.max(1, ...items.map((i) => i.value));
   return (
-    <div className="flex flex-col gap-2">
+    <div className="grid grid-cols-[7rem_1fr_auto] items-center gap-x-3 gap-y-2 text-sm">
       {items.map((item) => {
         const width = item.value > 0 ? Math.max(2, (item.value / max) * 100) : 0;
+        const title = `${item.label}: ${item.displayValue}`;
         return (
-          <div
-            key={item.key}
-            title={`${item.label}: ${item.displayValue}`}
-            className="flex items-center gap-3 text-sm"
-          >
-            <span className="w-28 shrink-0 truncate font-mono text-xs uppercase tracking-widest text-muted">
+          <div key={item.key} className="contents">
+            <span
+              title={title}
+              className="truncate font-mono text-xs uppercase tracking-widest text-muted"
+            >
               {item.label}
             </span>
-            <div className="h-2 flex-1 overflow-hidden bg-white/5">
+            <div title={title} className="h-2 overflow-hidden bg-white/5">
               <div
                 aria-hidden
-                className={`h-full transition-all duration-500 ${item.muted ? "bg-white/10" : "bg-yellow/60"}`}
+                className={`h-full transition-all duration-500 ${item.muted ? "bg-white/10" : "bg-yellow"}`}
                 style={{ width: `${width}%` }}
               />
             </div>
-            <span className="w-16 shrink-0 text-right font-mono text-xs text-muted tabular-nums">
+            <span
+              title={title}
+              className="whitespace-nowrap text-right font-mono text-xs text-muted tabular-nums"
+            >
               {item.displayValue}
             </span>
           </div>
