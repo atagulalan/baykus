@@ -38,11 +38,8 @@
     "needs_review": "İnceleme bekliyor"
   },
   "manualList": {
-    "label": "Liste",
-    "none": "Otomatik",
     "watch_later": "Sonra izlenecek",
-    "stopped": "Bırakıldı",
-    "addDefault": "Ekle"
+    "stopped": "Bırakıldı"
   },
   "library": {
     "empty": {

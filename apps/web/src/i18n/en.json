@@ -38,11 +38,8 @@
     "needs_review": "Needs review"
   },
   "manualList": {
-    "label": "List",
-    "none": "Automatic",
     "watch_later": "Watch later",
-    "stopped": "Stopped",
-    "addDefault": "Add"
+    "stopped": "Stopped"
   },
   "library": {
     "empty": {

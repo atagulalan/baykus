@@ -14,8 +14,8 @@
   "dependencies": {
     "@baykus/provider-sdk": "workspace:*",
     "archiver": "^8.0.0",
-    "better-sqlite3": "^12.2.0",
-    "drizzle-orm": "^0.44.3",
+    "better-sqlite3": "^12.11.1",
+    "drizzle-orm": "^0.44.7",
     "yauzl": "^3.4.0"
   },
   "devDependencies": {

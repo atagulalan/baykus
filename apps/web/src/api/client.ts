@@ -100,12 +100,12 @@ export function removeSeries(id: number): Promise<void> {
   return request<void>(`/library/series/${id}`, { method: "DELETE" });
 }
 
-export function getSeries(id: number): Promise<SeriesDetail> {
+function getSeries(id: number): Promise<SeriesDetail> {
   return request<SeriesDetail>(`/library/series/${id}`);
 }
 
 /** E52: TMDB-parity URL — 404s when no item carries this tmdbId (yet). */
-export function getSeriesByTmdb(tmdbId: number): Promise<SeriesDetail> {
+function getSeriesByTmdb(tmdbId: number): Promise<SeriesDetail> {
   return request<SeriesDetail>(`/library/series/by-tmdb/${tmdbId}`);
 }
 

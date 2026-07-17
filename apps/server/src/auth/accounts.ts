@@ -27,7 +27,7 @@ const RESERVED_HANDLES = [
   "assets",
 ] as const;
 
-export const HANDLE_PATTERN = /^[a-z0-9-]{3,30}$/;
+const HANDLE_PATTERN = /^[a-z0-9-]{3,30}$/;
 
 export type AccountErrorCode = "INVALID_HANDLE" | "RESERVED" | "TAKEN";
 

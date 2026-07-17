@@ -8,7 +8,7 @@ import { useToast } from "./toast.tsx";
 const DEBOUNCE_MS = 300;
 const MIN_QUERY_LENGTH = 2;
 
-export function useDebouncedValue<T>(value: T, delayMs: number): T {
+function useDebouncedValue<T>(value: T, delayMs: number): T {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
     const timer = setTimeout(() => setDebounced(value), delayMs);

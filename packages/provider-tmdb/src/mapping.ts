@@ -118,7 +118,7 @@ export interface TmdbWatchProvidersResponse {
   results: Record<string, TmdbWatchProvidersRegion>;
 }
 
-export function toImageRef(path?: string | null): ImageRef | undefined {
+function toImageRef(path?: string | null): ImageRef | undefined {
   return path ? `tmdb:${path}` : undefined;
 }
 

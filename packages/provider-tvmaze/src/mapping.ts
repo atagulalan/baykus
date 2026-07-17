@@ -55,7 +55,7 @@ export interface TvmazeSearchEntry {
   show: TvmazeShow;
 }
 
-export function stripHtml(html?: string | null): string | undefined {
+function stripHtml(html?: string | null): string | undefined {
   if (!html) return undefined;
   const text = html
     .replace(/<[^>]+>/g, "")
@@ -67,7 +67,7 @@ export function stripHtml(html?: string | null): string | undefined {
 /** TVmaze `image.medium`/`original` differ only in a size-bucket path segment. */
 const TVMAZE_MEDIUM_SEGMENT = /medium_(portrait|landscape)/;
 
-export function toImageRef(image?: TvmazeImage | null): ImageRef | undefined {
+function toImageRef(image?: TvmazeImage | null): ImageRef | undefined {
   const path = image?.medium ?? image?.original;
   return path ? `tvmaze:${path}` : undefined;
 }

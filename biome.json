@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.1.2/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.3/schema.json",
   "files": {
     "ignoreUnknown": true,
     "includes": [
@@ -10,8 +10,7 @@
       "!fixtures",
       "!**/data",
       "!specs/**/design",
-      "!tmp",
-      "!dashboard.html"
+      "!tmp"
     ]
   },
   "formatter": {

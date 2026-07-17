@@ -1,4 +1,4 @@
-export interface StackedBarSegment {
+interface StackedBarSegment {
   key: string;
   label: string;
   value: number;

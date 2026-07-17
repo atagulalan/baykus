@@ -1,4 +1,4 @@
-export interface MiniBarsItem {
+interface MiniBarsItem {
   key: string;
   label: string;
   value: number;
