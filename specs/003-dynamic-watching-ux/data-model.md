@@ -67,6 +67,13 @@ interface SeasonProgress { seasons: SeasonProgressEntry[]; sequential: boolean }
 
 ## Zip format (`schemaVersion: 3`)
 
+*(SUPERSEDED by 005: current schemaVersion is 4 — items gain `favorite`;
+further superseded by 007 (v5, `needsReview`) and 008 (v6, watch-level
+`dateUnknown`). v3 remains importable. See data-model 005 §Zip format
+v4; 007 and 008 ship no data-model.md — 007's v5 delta is in its
+spec.md §Edge-case decisions (E90), 008's v6 bump is recorded in its
+spec.md §Edge-case decisions (E95).)*
+
 File layout, canonical JSON rules, and every file except items.json are
 unchanged from 002. manifest.json: `"schemaVersion": 3`.
 

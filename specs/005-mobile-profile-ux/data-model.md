@@ -22,6 +22,13 @@ favorite: integer("favorite", { mode: "boolean" }).notNull().default(false),
 
 ## Zip format v4 (E61)
 
+*(SUPERSEDED by 007: current schemaVersion is 5 — items gain
+`tracking.needsReview`; further superseded by 008 (v6, watch-level
+`dateUnknown`). v4 remains importable. Neither 007 nor 008 ships a
+standalone data-model.md — 007 documents its zip delta in spec.md
+§Edge-case decisions (E90); 008 records its v6 bump in spec.md
+§Edge-case decisions (E95).)*
+
 - `SCHEMA_VERSION = 4` (export), `SUPPORTED_SCHEMA_VERSIONS = [1, 2, 3, 4]`
   (import).
 - Per-item `tracking` block in `items.jsonl` gains one always-present field:

@@ -28,21 +28,39 @@ baykus.xava.me (multi mode, handle-claim accounts).
    HTTP contract), ui.md (screens), tasks.md (order of work).
 3. `specs/002-watch-categories/` — computed watch categories, calendar modes,
    watch page. Same file structure; its docs are deltas that override the
-   matching 001 sections. Its tasks.md (M10–M13) is implemented; only
-   browser-checkpoint confirmations remain (see root MANUELTEST.md).
+   matching 001 sections. Its tasks.md (M10–M13) is implemented; browser
+   confirmations are folded into root `MANUELTEST.md` §M33.
 4. `specs/003-dynamic-watching-ux/` — dynamic İzleniyor signals, configurable
    window, UI polish + brand refresh. Deltas over 002 + 001. Its tasks.md
-   (M14–M17) is implemented; only the M17.7 browser checkpoint remains.
+   (M14–M17) is implemented; the M17.7 browser checkpoint is folded into
+   root `MANUELTEST.md` §M33.
 5. `specs/004-import-fidelity-ux/` — TV Time import fidelity, aired-only
    progress, view transitions, TMDB-parity URLs. Deltas over 003 + 002 +
    001; 004 wins where they overlap. Its tasks.md (M18–M22) is
-   implemented; only the M22 browser checkpoint remains (see root
-   `MANUELTEST.md` §M22).
+   implemented; the M22 browser checkpoint is folded into root
+   `MANUELTEST.md` §M33.
 6. `specs/005-mobile-profile-ux/` — mobile-first UX pass, profile hub
    (`/user/:handle`), favorites (zip v4), stale auto-refresh. Deltas over
    all four earlier specs; 005 wins where they overlap. Its tasks.md
-   (M23–M27) is **approved and not started** — see root `HANDOVER.md` for
-   the entry point.
+   (M23–M27) is implemented; browser confirmations are folded into root
+   `MANUELTEST.md` §M33.
+7. `specs/006-design-conformance/` — design-system conformance sweep: modal
+   and icon idiom, desktop search, calendar header + segmented switcher,
+   favorites cap, residual drift audit. Deltas over all five earlier
+   specs; 006 wins where they overlap. Its tasks.md (M28–M33, E74–E81) is
+   implemented; browser confirmations are folded into root `MANUELTEST.md`
+   §M33.
+8. `specs/007-post-006-deltas/` — out-of-band batches: schedule calendar
+   mode, TV Time watch resolve + parse fidelity round 2, bulk unwatch,
+   rewatched stats, `needs_review` category + zip v5, metadata cache.
+   Deltas over 001–006; 007 wins where they overlap. Its tasks.md
+   (M34–M43, E82–E94) is implemented; browser confirmations are folded
+   into root `MANUELTEST.md` §M33.
+9. `specs/008-stats-dashboard/` — stats aggregates + `/stats` page
+   rebuild, `watches.date_unknown` + zip v6. Deltas over 001–007; 008
+   wins where they overlap. Its tasks.md (M44–M52, E95–E111) is fully
+   implemented including its own M52 browser checkpoint, executed
+   2026-07-17 (see root `MANUELTEST.md` §M52).
 
 ## Normative sources — order of truth
 
@@ -52,9 +70,11 @@ When documents disagree, the higher one wins; fix the lower one in the same PR:
 2. **Code contracts:** `packages/provider-sdk/src/types.ts` (DTOs),
    `packages/core/src/db/schema.ts` (DB)
 3. Contracts: `specs/001-series-tracking/contracts/api.md` (HTTP) as amended
-   by 002's, 003's and then 004's `contracts/api.md`, and the spec.md
-   §Edge-case decisions tables (001 + 002 + 003 + 004; **newer spec wins on
-   overlap**)
+   by 002's, 003's, 004's, 005's and then 008's `contracts/api.md` (006 and
+   007 ship no `contracts/` dir — their API-relevant changes live only in
+   spec.md §Edge-case decisions; 008's contract explicitly amends 005 and
+   007's E86), and the spec.md §Edge-case decisions tables (001 + 002 +
+   003 + 004 + 005 + 006 + 007 + 008; **newer spec wins on overlap**)
 4. Prose specs (spec.md, plan.md, data-model.md, ui.md — same newest-wins rule)
 
 **Never invent a field, endpoint, or behavior.** If something you need is not
@@ -82,9 +102,12 @@ comment. Silent divergence is the one unforgivable failure mode.
 | any provider package | provider-sdk `types.ts` + `errors.ts`, research.md §that provider, its `fixtures/` files |
 | core storage / Library service | `schema.ts`, data-model.md, spec.md §Edge-case decisions |
 | categories / manual lists / calendar / watch page | 002 spec.md §Edge-case decisions (E16–E29) as amended by 003 (E30–E47) and 004 E50, 002+003 plan.md, `packages/core/src/library/category.ts` |
-| watching window / added_via / zip v3 / UI polish | 003 spec.md §Edge-case decisions (E30–E47), 003 plan.md + data-model.md |
+| watching window / added_via / zip v3–v6 lineage (003→005→007→008) / UI polish | 003 spec.md §Edge-case decisions (E30–E47), 003 plan.md + data-model.md |
 | import fidelity / season progress / series URLs / transitions | 004 spec.md §Edge-case decisions (E48–E56), 004 plan.md + data-model.md |
 | profile hub / favorites / stale refresh / mobile chrome & ergonomics | 005 spec.md §Edge-case decisions (E57–E73), 005 plan.md + data-model.md + ui.md |
+| design idiom / dialogs / icons | 006 spec.md §Edge-case decisions (E74–E81) |
+| schedule strips / needs_review / parse fidelity round 2 | 007 spec.md §Edge-case decisions + tasks.md commit map |
+| stats aggregates / /stats page / date_unknown | 008 spec.md §Edge-case decisions (E95–E111), 008 plan.md, `packages/core/src/library/stats/` |
 | zip export/import | data-model.md §Zip + §Merge, constitution Article III |
 | server routes | contracts/api.md (that section), the core service it wraps |
 | web pages/components | ui.md §that screen, contracts/api.md (endpoints it calls) |

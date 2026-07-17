@@ -43,7 +43,7 @@ Dizi (ve ileride film + kitap) takip uygulaması. TV Time / Serializd benzeri, a
   diğer sayfa değişimlerinde hafif bir cross-fade olur; "hareketi azalt" ayarında veya View
   Transitions API'yi desteklemeyen tarayıcılarda anlık geçişe düşer
 - Favoriler: dizi detayında kalp ile favorile, profilde poster rafı olarak görünür — zip
-  export/import'ta korunur (schemaVersion 4)
+  export/import'ta korunur (güncel schemaVersion 6)
 - Profil hub (`/user/handle`): favoriler rafı, özet istatistikler, tüm diziler / detaylı
   istatistikler / ayarlar linkleri, "Tümünü yenile" — kütüphane sayfası artık sadece aktif
   takip edilen 5 kategoriyi gösterir, Bitirildi/Bırakıldı profil üzerinden "Tüm diziler"e taşındı
@@ -134,32 +134,31 @@ Durum: **v1 (M0–M9.4) tamam**, M9.2 hariç (bkz.
 erişimi gerektirdiği için otonom yürütme kapsamı dışında bırakıldı.
 
 **Spec 002 (dinamik kategoriler, takvim modları, izleme sayfası) — M10–M13.2
-tamam** (bkz. [002 tasks.md](specs/002-watch-categories/tasks.md)). Kalan iş:
-M10.8/M11.4/M12.4 checkpoint'lerinin tarayıcı doğrulaması — otonom yürütmede
-tarayıcı erişimi yok, adımlar [MANUELTEST.md](MANUELTEST.md)'de toplandı.
+tamam** (bkz. [002 tasks.md](specs/002-watch-categories/tasks.md)).
+Checkpoint'lerin tarayıcı doğrulaması [MANUELTEST.md](MANUELTEST.md)
+§M33'e katlandı (aşağıdaki birleşik duruma bakın).
 
 **Spec 003 (dinamik İzleniyor sinyalleri, yapılandırılabilir pencere, UI
 cilası) — M14–M17.14 tamam** (bkz. [003 tasks.md](specs/003-dynamic-watching-ux/tasks.md)).
-Kalan iş: M17.7 — tüm checkpoint'lerin (002'nin bekleyenleri dahil) tek
-seferlik tarayıcı doğrulaması; adımlar [MANUELTEST.md](MANUELTEST.md)'de
-toplandı.
+M17.7 tarayıcı doğrulaması [MANUELTEST.md](MANUELTEST.md) §M33'e katlandı.
 
 **Spec 004 (TV Time içe aktarma sadakati, aired-only sezon ilerlemesi,
 TMDB-parity dizi adresleri, sayfa geçişleri) — M18–M21 tamam** (bkz.
 [004 tasks.md](specs/004-import-fidelity-ux/tasks.md)): lint + typecheck +
 test yeşil (484 test), her E48–E53 kararının en az bir testi var, zip
-round-trip hâlâ yeşil ve dokunulmadı. Kalan iş: M22 — tüm checkpoint'lerin
-tek seferlik tarayıcı doğrulaması; adımlar [MANUELTEST.md](MANUELTEST.md)'de
-toplandı.
+round-trip hâlâ yeşil ve dokunulmadı. M22 tarayıcı doğrulaması
+[MANUELTEST.md](MANUELTEST.md) §M33'e katlandı.
 
-**Spec 005 (mobil-öncelikli UX, profil hub, favoriler, otomatik yenileme)
-— M23–M26 tamam** (bkz.
-[005 tasks.md](specs/005-mobile-profile-ux/tasks.md)): lint + typecheck +
-test yeşil (528 test), her otomatikleştirilebilir E57–E73 kararının en az
-bir testi var, zip round-trip **genişletildi** (schemaVersion 4, favorite
-alanı, mevcut assertion'lara dokunulmadı). Kalan iş: M27 — tüm
-checkpoint'lerin (002/003/004'ün bekleyenleri dahil) tek seferlik tarayıcı
-doğrulaması; adımlar [MANUELTEST.md](MANUELTEST.md)'de toplandı.
+**Specs 001–008 tamamı uygulandı** (bkz. specs/001-series-tracking'ten
+specs/008-stats-dashboard'a kadar her spesin kendi tasks.md'si): lint +
+typecheck + test yeşil (576 test, 64 dosya), zip formatı schemaVersion
+**6**'ya kadar genişledi ama round-trip hiçbir adımda zayıflatılmadı
+(v3→v4 favorite/005, v4→v5 needs_review/007, v5→v6 date_unknown/008).
+008'in kendi tarayıcı checkpoint'i (M52) 2026-07-17'de yürütüldü, sonuçlar
+[MANUELTEST.md](MANUELTEST.md) §M52'de kayıtlı. Kalan iş:
+[MANUELTEST.md](MANUELTEST.md) §M33 — spec 002–007'yi kapsayan tek
+seferlik tarayıcı yürüyüşü (ayrı bir oturumda sürüyor) + M9.2 (hosted
+deploy doğrulaması, kullanıcı kimlik bilgilerine bağlı, dokunulmuyor).
 
 ```bash
 pnpm install

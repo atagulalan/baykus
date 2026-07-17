@@ -214,6 +214,8 @@ As a user, I get new-episode push notifications for series in the active trio
       complete" (i.e. actually renders correctly end-to-end in both
       languages) still needs the same human browser pass as the items
       above. -->
-- [ ] README feature list updated (statuses → categories, calendar modes,
+- [x] README feature list updated (statuses → categories, calendar modes,
       watch page).
-      <!-- M13.2's job, not yet done. -->
+      <!-- Done in a later pass (2026-07): README.md's "Özellikler" section
+      was rewritten and now describes computed dynamic categories,
+      calendar timeline/month modes, and the watch page in detail. -->

@@ -52,7 +52,7 @@ else 0).
 
 | # | Question | Decision |
 |---|---|---|
-| E95 | TV Time rows without any timestamp get `toIso(undefined)` = import-run `now()`, which would dump ~4k watches onto the import day and poison every time-bucketed stat. How do stats stay honest? | Add `watches.date_unknown` (bool, default false). The tvtime importer flags watch events whose raw record had no usable timestamp; `addWatch` persists the flag. `watchedAt` fallback behavior is **unchanged** (still import-run now(); `lastWatchedAt`, sorts, dedupe untouched). Every time-bucketed stat (§3, 11, 13, 15, 16, 17, 18, 19) excludes flagged watches; totals (§1, 2, 4, 5–10, 12, 14) include them. Stats payload exposes `datedWatches {dated,total}`; footer caveat shown when they differ. Pre-008 imported rows all read as dated until the user re-imports the zip (documented limitation; re-import is the backfill path). Re-import duplication of dateless watches (fresh now() each run) is a pre-existing issue and stays **out of scope**. |
+| E95 | TV Time rows without any timestamp get `toIso(undefined)` = import-run `now()`, which would dump ~4k watches onto the import day and poison every time-bucketed stat. How do stats stay honest? | Add `watches.date_unknown` (bool, default false). The tvtime importer flags watch events whose raw record had no usable timestamp; `addWatch` persists the flag. `watchedAt` fallback behavior is **unchanged** (still import-run now(); `lastWatchedAt`, sorts, dedupe untouched). Every time-bucketed stat (§3, 11, 13, 15, 16, 17, 18, 19) excludes flagged watches; totals (§1, 2, 4, 5–10, 12, 14) include them. Stats payload exposes `datedWatches {dated,total}`; footer caveat shown when they differ. Pre-008 imported rows all read as dated until the user re-imports the zip (documented limitation; re-import is the backfill path). Re-import duplication of dateless watches (fresh now() each run) is a pre-existing issue and stays **out of scope**. Zip: `dateUnknown` rides each watch row and the manifest **schemaVersion bumps 5 → 6** (older zips import with the flag defaulting to false); round-trip test extended, never weakened. <!-- DECISION 2026-07-17: v6 bump was implemented in M45 but this spec never said it in prose; recorded here during housekeeping so the zip lineage (v1/001→v2/002→v3/003→v4/005→v5/007→v6/008) is traceable from specs alone. --> |
 | E96 | Day/week/month/hour bucketing needs a timezone; SQLite has none. | `GET /api/stats` gains optional `?tz=<IANA name>`. Server buckets in TypeScript via `Intl.DateTimeFormat` with that zone (DST-correct); invalid or absent `tz` → UTC. Web always sends the browser zone. |
 | E97 | Prototype's stacked bar uses TV Time's 6 buckets. | The app's own 8 `WatchCategory` buckets in `CATEGORY_ORDER` win. Zero-count categories are skipped in the bar but kept in the legend. |
 | E98 | Genre vs network attribution differ in the prototype (genre sums ≫ total, network sums ≈ total). | Deliberate: genres multi-count (an episode counts toward every genre of its item), networks attribute each episode to the item's **first-listed** network only. Both use distinct watched episodes, top 8 + `other` remainder; genre `other` may exceed the true total (overlap) — documented, not a bug. Items with no genres/networks fall into `other`. |
@@ -82,13 +82,17 @@ else 0).
 
 ## Acceptance
 
-- [ ] `pnpm test` green: new core stats units (tz bucketing, dateUnknown
+- [x] `pnpm test` green: new core stats units (tz bucketing, dateUnknown
       exclusion, streaks, binges, backlog scope, genre/network attribution,
       pace, upcoming, heatmap buckets) + importer flag propagation + server
-      contract test for `?tz=` and the extended payload.
-- [ ] Stats page renders all 20 sections against the real imported library;
+      contract test for `?tz=` and the extended payload. (verified
+      2026-07-17, see root MANUELTEST.md §M52 — green in the 576-test gate.)
+- [x] Stats page renders all 20 sections against the real imported library;
       Turkish + English catalogs complete; dark/light unaffected (app is
-      dark-only per 006 — conformance to ui.md).
-- [ ] Footer caveat appears with correct dated/total counts after a fresh
-      TV Time re-import.
-- [ ] Browser checkpoint folded into MANUELTEST.md (§M52).
+      dark-only per 006 — conformance to ui.md). (verified 2026-07-17, see
+      root MANUELTEST.md §M52 — zero console errors on render.)
+- [x] Footer caveat appears with correct dated/total counts after a fresh
+      TV Time re-import. (verified 2026-07-17, see root MANUELTEST.md §M52
+      — confirmed in isolated library.)
+- [x] Browser checkpoint folded into MANUELTEST.md (§M52). (verified
+      2026-07-17 — checkpoint executed, see root MANUELTEST.md §M52.)
