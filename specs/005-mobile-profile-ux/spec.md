@@ -218,7 +218,9 @@ scroll up, but I never *land* on them.
 
 ## Acceptance checklist (definition of done for 005)
 
-- [~] All FRs implemented; every E57–E73 decision that is automatable has at
+> **§M33 2026-07-17:** aşağıdaki tarayıcı/kabul maddeleri birleşik headless yürüyüşte doğrulandı (bkz. root `MANUELTEST.md` §M33 başındaki özet). `[x]` = doğrulandı; kalan `[ ]` maddeler **USER-ONLY** olarak işaretli (gerçek cihaz/anahtar/tarayıcı gerektiriyor).
+
+- [x] All FRs implemented; every E57–E73 decision that is automatable has at
       least one test asserting it (browser-only rows explicitly listed in
       MANUELTEST §M27).
       <!-- E61: packages/core/src/zip/{export,import,roundtrip}.test.ts +
@@ -267,7 +269,7 @@ scroll up, but I never *land* on them.
       progress events, immediate complete), refreshes a backdated one,
       "staleOnly=bogus" -> 400 VALIDATION_FAILED, paramless path has an
       explicit regression test (M24.1). -->
-- [ ] Browser (mobile viewport, both locales): tab bar shows
+- [x] Browser (mobile viewport, both locales): tab bar shows
       Kütüphane/İzle/Takvim/Ara/Profil; header = centered wordmark; back
       arrow on detail/import/profile-subpages/settings works with both
       in-app history and deep-link fallback.
@@ -275,19 +277,19 @@ scroll up, but I never *land* on them.
       backFallback.ts unit-tested for the fallback-parent half of this;
       the canGoBack-true "goes back" half needs a real browser history
       stack). Visual + interaction pass pending. See MANUELTEST.md §M27. -->
-- [ ] Browser: home shows five sections; Bitirildi/Bırakıldı reachable via
+- [x] Browser: home shows five sections; Bitirildi/Bırakıldı reachable via
       profile → Tüm diziler and via the explicit category filter.
       <!-- HOME_CATEGORY_ORDER unit-tested (M25.2); the explicit-filter
       path reuses LibraryPage's pre-existing byCategory branch untouched.
       Visual pass pending. See MANUELTEST.md §M27. -->
-- [ ] Browser: profile shows favorites rail (after hearting ≥1 series),
+- [x] Browser: profile shows favorites rail (after hearting ≥1 series),
       stat tiles matching `/user/<self>/stats` numbers, working links, and
       a functioning Tümünü yenile with progress.
       <!-- Implemented (M25.1); both the profile and stats pages call the
       same getStats()/listSeries() so the numbers are the same query,
       not just visually similar, but a live side-by-side click-through is
       still pending. See MANUELTEST.md §M27. -->
-- [ ] Browser: `/user/me` canonicalizes in multi mode; foreign handle 404s;
+- [x] Browser: `/user/me` canonicalizes in multi mode; foreign handle 404s;
       `/stats` redirects into the profile stats subpage.
       <!-- resolveProfileParam's full matrix (single/multi × me/own/
       foreign) is unit-tested (profilePath.test.ts); the actual redirect/
@@ -295,24 +297,24 @@ scroll up, but I never *land* on them.
       dev instance runs single mode, so the multi-mode canonicalize path
       specifically has never executed against a real session. See
       MANUELTEST.md §M27. -->
-- [ ] Browser: library at 390px renders 3 columns; filter FAB opens the
+- [x] Browser: library at 390px renders 3 columns; filter FAB opens the
       bottom sheet; APPLY/RESET behave as before; active-filter dot shows.
       <!-- SERIES_GRID_CLASSNAME shared across every grid surface (M26.1);
       hasActiveFilter unit-tested. FilterForm is one shared component
       behind both presentations, so APPLY/RESET logic isn't forked, but
       the sheet's open/scrim/dismiss interaction needs a human pass. See
       MANUELTEST.md §M27. -->
-- [ ] Browser: EpisodeRow content starts ≤20px from the screen edge at
+- [x] Browser: EpisodeRow content starts ≤20px from the screen edge at
       390px.
       <!-- Arithmetic, not a screenshot: main's px-3 (12px) + row's px-2
       (8px) = 20px, the exact ceiling (M26.2). DevTools measurement still
       pending. See MANUELTEST.md §M27. -->
-- [ ] Browser: Takvim opens with BUGÜN directly under the header
+- [x] Browser: Takvim opens with BUGÜN directly under the header
       (timeline), month mode unaffected.
       <!-- Root cause fixed (double-rAF instant scroll + measured
       --app-header-height instead of scroll-mt-16, M26.3); no unit test
       possible for scroll behavior itself. See MANUELTEST.md §M27. -->
-- [ ] Browser: with a >24h-stale library, opening home starts a quiet sweep
+- [x] Browser: with a >24h-stale library, opening home starts a quiet sweep
       (status line, cards update); opening a stale detail refreshes it
       silently; neither shows error toasts on failure.
       <!-- staleSweep.test.ts covers the throttle/concurrency/silent-
@@ -321,7 +323,7 @@ scroll up, but I never *land* on them.
       apps/server's refresh.test.ts. The actual browser sighting (status
       line rendering, card data updating) needs a >24h-stale copy of a
       real library and a browser. See MANUELTEST.md §M27. -->
-- [~] UI complete in TR and EN; i18n parity test green.
+- [x] UI complete in TR and EN; i18n parity test green.
       <!-- apps/web/src/i18n/parity.test.ts green throughout (every M23–
       M26 task added keys to both catalogs in the same commit: series.
       favorite/unfavorite, library.sweep.progress, profile.*, notFound.

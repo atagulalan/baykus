@@ -390,8 +390,10 @@ active trio, specials tagged, past-unwatched quick-markable.
   <!-- DECISION: the "İzleme" nav item deferral from M10.7 still stands —
   not revisited here, still waiting on M12.3's /watch page. -->
 
-- [ ] M11.4 CHECKPOINT M11 — browser pass (both modes, both locales) + M10
-  regression (home sections unaffected) + full green suite.
+- [x] M11.4 CHECKPOINT M11 — browser pass executed 2026-07-17 in the §M33
+  combined headless walk (root MANUELTEST.md); month grid Monday-first +
+  BUGÜN highlight, EpisodeTags (YENİ/YAKLAŞAN/PREMIER), E24 past-unwatched
+  filter, both locales all confirmed against the real library (read-only).
   <!-- DECISION: box left unchecked, same reason as M10.8 — no
   browser-automation tool available. Full green suite IS confirmed:
   `pnpm lint && pnpm -r typecheck && pnpm exec vitest run` all clean
@@ -468,8 +470,9 @@ badges, and the not-watched-recently section.
   M12.3 + M12.4 written to MANUELTEST.md per xava's instruction to defer
   all browser testing to one pass at the end, rather than blocking here. -->
 
-- [ ] M12.4 CHECKPOINT M12 — full browser pass of US-16 in both locales +
-  M10/M11 regression + green suite.
+- [x] M12.4 CHECKPOINT M12 — browser pass executed 2026-07-17 in the §M33
+  combined headless walk; watch page (history 30 newest-at-bottom + auto
+  scroll, quick-mark advancing nextUnwatched), both locales confirmed.
   <!-- DECISION: box left unchecked, same reason as M10.8/M11.4. Full gate
   confirmed green (49 test files, 375 tests, zero typecheck errors,
   clean build) as of M12.3's commit. Browser checklist written to

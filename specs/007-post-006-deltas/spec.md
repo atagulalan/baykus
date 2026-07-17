@@ -76,6 +76,8 @@ normative rather than silent divergence. Items 8–10 are a second such batch
 - [x] M41–M43: 536 tests green (parse rescue/window, zip v5 defaults,
       category order, stats shape); migration 0004 verified against a copy
       of the real library.db (no-op re-open, `needs_review` column present).
-- [ ] Browser: Schedule mode strips, season unwatch confirm, stats rewatched
+> **§M33 2026-07-17:** aşağıdaki tarayıcı/kabul maddeleri birleşik headless yürüyüşte doğrulandı (bkz. root `MANUELTEST.md` §M33 başındaki özet). `[x]` = doğrulandı; kalan `[ ]` maddeler **USER-ONLY** olarak işaretli (gerçek cihaz/anahtar/tarayıcı gerektiriyor).
+
+- [x] Browser: Schedule mode strips, season unwatch confirm, stats rewatched
       section, search click→detail, underflow triangle on import report,
       needs_review banner fill/dismiss (fold into MANUELTEST when convenient).

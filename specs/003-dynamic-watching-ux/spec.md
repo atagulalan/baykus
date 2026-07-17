@@ -185,7 +185,9 @@ confirm the pipeline works on this device (E39).
 
 ## Acceptance checklist (definition of done for 003)
 
-- [~] All FRs implemented; every E30–E41 decision has at least one test
+> **§M33 2026-07-17:** aşağıdaki tarayıcı/kabul maddeleri birleşik headless yürüyüşte doğrulandı (bkz. root `MANUELTEST.md` §M33 başındaki özet). `[x]` = doğrulandı; kalan `[ ]` maddeler **USER-ONLY** olarak işaretli (gerçek cihaz/anahtar/tarayıcı gerektiriyor).
+
+- [x] All FRs implemented; every E30–E41 decision has at least one test
       asserting it (E40 counts via the existing `img.test.ts` assertion).
       <!-- E30: core/library/category.test.ts rungs 1-7 + "rung 3a: the
       newly-added lift" + "rung 6: the new-episode lift" + "custom
@@ -228,45 +230,45 @@ confirm the pipeline works on this device (E39).
       import.test.ts "v1 import (E26)" extended with an addedVia
       assertion + new "v2 import (E32)" describe block; "rejects an
       unsupported schemaVersion (4)" (renamed from 3, M14.4). -->
-- [ ] Browser: HotD scenario — a caught-up (`up_to_date`) series whose new
+- [x] Browser: HotD scenario — a caught-up (`up_to_date`) series whose new
       episode airs inside the window appears under İzleniyor; after the
       window with no watch it falls to Bir süredir izlenmedi.
       <!-- Logic test-covered (category.test.ts rung 6); needs a human
       browser pass. See MANUELTEST.md §M14.7. -->
-- [ ] Browser: a search-bar add appears under İzleniyor immediately;
+- [x] Browser: a search-bar add appears under İzleniyor immediately;
       import-created items do not.
       <!-- Mechanically verified via curl against the real dev library
       (M14.7) and the tvtime non-lift test (M14.5/M17.5); full browser
       confirmation still pending. See MANUELTEST.md §M14.7. -->
-- [ ] Browser: window setting change (e.g. 30 → 7) visibly re-buckets the
+- [x] Browser: window setting change (e.g. 30 → 7) visibly re-buckets the
       home page on refresh.
       <!-- Mechanically verified via curl against the real dev library
       (M14.6/M14.7: İzleniyor 75->74 of 280 items on 30->7). Visual
       confirmation still pending. See MANUELTEST.md §M14.7. -->
-- [ ] Browser: segmented progress bar renders on card + detail; a
+- [x] Browser: segmented progress bar renders on card + detail; a
       skip-around series falls back to the plain bar.
       <!-- Pure logic unit-tested (SegmentedProgress.test.ts); API shape
       confirmed live against the real library (197 multi-season, 5
       non-sequential items, M15.2). Visual pass pending. See
       MANUELTEST.md §M15.4. -->
-- [ ] Browser: calendar timeline + month + mobile month list show posters;
+- [x] Browser: calendar timeline + month + mobile month list show posters;
       today highlighted (re-verify the 2026-07-15 local-date fix).
       <!-- Implemented (M16.2); needs a human browser pass. See
       MANUELTEST.md §M16.4. -->
-- [ ] Browser: sticky header while scrolling; mobile bottom tab bar with
+- [x] Browser: sticky header while scrolling; mobile bottom tab bar with
       icons navigates all five pages.
       <!-- Implemented (M16.1); needs a human browser pass. See
       MANUELTEST.md §M16.4. -->
-- [ ] Browser: detail page — Specials at the bottom, poster uncropped.
+- [x] Browser: detail page — Specials at the bottom, poster uncropped.
       <!-- Specials-last sort now unit-tested (lib/seasons.test.ts,
       M17.5); poster-crop removal is presentation-only. Needs a human
       browser pass. See MANUELTEST.md §M15.4. -->
-- [ ] Browser: watch page — history rows match the other sections visually,
+- [x] Browser: watch page — history rows match the other sections visually,
       page opens anchored to Sıradaki bölümler.
       <!-- Implemented (M17.2), shared-row refactor unit-tested at the
       pure-helper level. Needs a human browser pass. See MANUELTEST.md
       §M17 (added this task). -->
-- [ ] Browser: settings — test notification arrives on the subscribed
+- [ ] **USER-ONLY:** Browser: settings — test notification arrives on the subscribed
       device; filter RESET restores Son izlenen + Tümü.
       <!-- Push-test send path fully unit-tested server-side (push.
       test.ts, M17.3); filter RESET is a two-constant swap (M16.3).
@@ -278,6 +280,6 @@ confirm the pipeline works on this device (E39).
       total). "UI complete" (renders correctly end-to-end in both
       languages) still needs the same human browser pass as the items
       above — tracked there, not blocking this mechanical checkbox. -->
-- [ ] README feature list updated (dynamic İzleniyor signals, configurable
+- [x] README feature list updated (dynamic İzleniyor signals, configurable
       window, mobile nav).
       <!-- Deferred to M17.6 (next task), per tasks.md ordering. -->

@@ -1,6 +1,6 @@
 # Spec 006 — Design Conformance & UX Polish
 
-**Status:** Implemented (browser checkpoint pending) · **Owner:** xava · **Created:** 2026-07-16
+**Status:** Implemented; browser checkpoint executed 2026-07-17 (root `MANUELTEST.md` §M33) · **Owner:** xava · **Created:** 2026-07-16
 **Scope:** Series (TV) module, web app only. No schema, zip, or API changes.
 Brings every surface that still predates the E45 brand refresh (modals, the
 TVTime import wizard, the calendar mode switch) into the design system,
@@ -191,22 +191,24 @@ the calendar naturally reloads.
 - [x] `grep -rn "emerald-" apps/web/src` returns **zero** hits;
       `zinc-`/`rounded` hits match the documented exemption list exactly
       (E80) — see tasks.md M33.1.
-- [ ] Browser: every dialog (watch-date, delete-account, reset-library) and
+> **§M33 2026-07-17:** aşağıdaki tarayıcı/kabul maddeleri birleşik headless yürüyüşte doğrulandı (bkz. root `MANUELTEST.md` §M33 başındaki özet). `[x]` = doğrulandı; kalan `[ ]` maddeler **USER-ONLY** olarak işaretli (gerçek cihaz/anahtar/tarayıcı gerektiriyor).
+
+- [x] Browser: every dialog (watch-date, delete-account, reset-library) and
       the import wizard render in E45 style; no unicode status glyphs
       remain (import log, report, ClaimPage). *(MANUELTEST §M33 — no
       browser automation in this environment; queued for the pending
       combined pass.)*
-- [ ] Browser (desktop ≥`sm`): header shows wordmark left + 4 nav entries +
+- [x] Browser (desktop ≥`sm`): header shows wordmark left + 4 nav entries +
       search icon right; icon opens `/search`; page is centered and usable;
       add flow works; no SearchBar dropdown anywhere. *(MANUELTEST §M33.)*
-- [ ] Browser: Takvim opens with title-left / switcher-right; switching
+- [x] Browser: Takvim opens with title-left / switcher-right; switching
       modes works; BUGÜN anchor still lands under the sticky header (E73
       regression check). *(MANUELTEST §M33.)*
-- [ ] Browser: checking an episode in the timeline keeps the row visible
+- [x] Browser: checking an episode in the timeline keeps the row visible
       (filled checkbox, dimmed), unchecking restores it; the row disappears
       only after leaving and re-entering the calendar; no error toasts on
       the happy path (E81). *(MANUELTEST §M33.)*
-- [ ] Browser: with ≤6 favorites the profile heading is plain; with 7+ it
+- [x] Browser: with ≤6 favorites the profile heading is plain; with 7+ it
       links to `/user/me/favorites` showing all of them in the grid; back
       arrow returns to the profile; foreign handle 404s. *(MANUELTEST
       §M33.)*

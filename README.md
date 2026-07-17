@@ -154,11 +154,13 @@ specs/008-stats-dashboard'a kadar her spesin kendi tasks.md'si): lint +
 typecheck + test yeşil (576 test, 64 dosya), zip formatı schemaVersion
 **6**'ya kadar genişledi ama round-trip hiçbir adımda zayıflatılmadı
 (v3→v4 favorite/005, v4→v5 needs_review/007, v5→v6 date_unknown/008).
-008'in kendi tarayıcı checkpoint'i (M52) 2026-07-17'de yürütüldü, sonuçlar
-[MANUELTEST.md](MANUELTEST.md) §M52'de kayıtlı. Kalan iş:
-[MANUELTEST.md](MANUELTEST.md) §M33 — spec 002–007'yi kapsayan tek
-seferlik tarayıcı yürüyüşü (ayrı bir oturumda sürüyor) + M9.2 (hosted
-deploy doğrulaması, kullanıcı kimlik bilgilerine bağlı, dokunulmuyor).
+Tüm tarayıcı checkpoint'leri artık yürütüldü: 008'in kendi §M52'si ve
+spec 002–007'yi kapsayan birleşik §M33 yürüyüşü (ikisi de 2026-07-17,
+sonuçlar [MANUELTEST.md](MANUELTEST.md)'de; gerçek kütüphaneye sıfır
+mutasyonla). Kalan iş yalnızca M9.2 (hosted deploy, kullanıcı kimlik
+bilgilerine bağlı) + headless ortamın kapsayamadığı birkaç USER-ONLY
+manuel kontrol (push teslimi, TMDB backfill, animasyon akıcılığı,
+multi-mode ekranları — [HANDOVER.md](HANDOVER.md)'de listeli).
 
 ```bash
 pnpm install

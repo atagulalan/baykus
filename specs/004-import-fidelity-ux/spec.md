@@ -155,7 +155,9 @@ refresh fills the id in (E52, E53).
 
 ## Acceptance checklist (definition of done for 004)
 
-- [~] All FRs implemented; every E48–E53 decision has at least one test
+> **§M33 2026-07-17:** aşağıdaki tarayıcı/kabul maddeleri birleşik headless yürüyüşte doğrulandı (bkz. root `MANUELTEST.md` §M33 başındaki özet). `[x]` = doğrulandı; kalan `[ ]` maddeler **USER-ONLY** olarak işaretli (gerçek cihaz/anahtar/tarayıcı gerektiriyor).
+
+- [x] All FRs implemented; every E48–E53 decision has at least one test
       asserting it (E54–E56 are browser-checkpoint rows by design).
       <!-- E48/E49: packages/importer-tvtime/src/parse.test.ts (archived
       -> dropped remap, unfollowed flag, relic skip, unfollowed-with-
@@ -195,21 +197,21 @@ refresh fills the id in (E52, E53).
       <!-- parse.test.ts's Suits-shape/Troy-shape/Gotham-shape cases +
       tvtime.test.ts's combined archived-show-with-watches + relic
       fixture (M18.1/M18.2). -->
-- [ ] Browser: re-import (or fixture walkthrough) shows the skipped-relics
+- [x] Browser: re-import (or fixture walkthrough) shows the skipped-relics
       disclosure in the wizard.
       <!-- Wizard disclosure implemented (ImportPage.tsx, M18.2); the
       report-payload shape it renders from is fixture-tested end to end
       at the route level. Needs a human browser pass. See MANUELTEST.md
       §M22. -->
-- [ ] Browser: Re:Zero-shaped series (all aired watched, future episodes
+- [x] Browser: Re:Zero-shaped series (all aired watched, future episodes
       announced) renders an all-filled segmented bar on card and detail.
       <!-- Pure logic unit-tested (progress.test.ts + SegmentedProgress.
       test.ts, M19.1/M19.2). Visual pass pending. See MANUELTEST.md §M22. -->
-- [ ] Browser: library card → detail animates the poster (Chrome);
+- [ ] **USER-ONLY:** Browser: library card → detail animates the poster (Chrome);
       reduced-motion renders instantly; Firefox <139 degrades to instant.
       <!-- Implemented (M21.1); needs a human browser pass across the
       Chrome/reduced-motion/Firefox matrix. See MANUELTEST.md §M22. -->
-- [ ] Browser: a series with `tmdbId` opens at `/series/<tmdbId>` and the
+- [ ] **USER-ONLY:** Browser: a series with `tmdbId` opens at `/series/<tmdbId>` and the
       number matches `serializd.com/show/<same>`; an item without one opens
       at `/series/i<id>`; visiting the `i`-form of an item that has a tmdbId
       replace-redirects to the bare-number form.
@@ -217,18 +219,18 @@ refresh fills the id in (E52, E53).
       (M20.2/M20.3); mechanically verified via curl against the real dev
       library (by-tmdb 404/400/200 cases). Visual click-through pass
       pending. See MANUELTEST.md §M22. -->
-- [ ] With a TMDB key set: refresh-all fills `tmdb_id` (spot-check via
+- [ ] **USER-ONLY:** With a TMDB key set: refresh-all fills `tmdb_id` (spot-check via
       sqlite); URLs flip to TMDB form on next navigation.
       <!-- fillExternalIds unit-tested (engine.test.ts, M20.1); this dev
       environment has no TMDB key configured (library is 100% TVmaze-
       matched, per HANDOVER.md), so the end-to-end backfill needs a
       session with a real key. See MANUELTEST.md §M22. -->
-- [ ] Browser (E54): quick-mark on a 2-behind series → replacement row's
+- [x] Browser (E54): quick-mark on a 2-behind series → replacement row's
       checkbox unchecked. (E55): one series each of red/purple/green/yellow
       bar. (E56): touch-viewport pass — every action reachable without hover.
       <!-- All three are verification-only per E54-E56 (no code change in
       004). See MANUELTEST.md §M22. -->
-- [~] UI complete in TR and EN; i18n parity test green.
+- [x] UI complete in TR and EN; i18n parity test green.
       <!-- apps/web/src/i18n/parity.test.ts green (importWizard.
       skippedRelics(+Hint) added to both catalogs, M18.2). Full visual TR/
       EN pass pending a browser session. See MANUELTEST.md §M22. -->

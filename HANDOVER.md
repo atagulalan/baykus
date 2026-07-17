@@ -1,64 +1,83 @@
-# HANDOVER — specs 001–008 fully done; only the pre-008 §M33 browser pass is left
+# HANDOVER — specs 001–008 fully done, §M33 browser pass executed; only M9.2 + user-only checks remain
 
-**Status (2026-07-17):** Specs 001–008 are all code-complete, and spec
-008's own browser checkpoint (M52) is done too. Nothing is queued for new
-code work. The only remaining item anywhere in the repo is `MANUELTEST.md`
-**§M33**, an older backlog predating 008 (specs 002–007) — see below.
+**Status (2026-07-17, updated):** Specs 001–008 are all code-complete, and
+**every browser checkpoint has now been executed** — 008's own §M52 (earlier)
+and the combined pre-008 §M33 walk (specs 002–007) this session. Nothing is
+queued for new code work. What's left is not automatable here:
 
-Spec **007** (`specs/007-post-006-deltas/`) documents out-of-006 work that
-landed in the same working tree, in two batches: M34–M40 (schedule calendar
-mode, TV Time watch resolve, bulk unwatch, rewatched stats, search
-open-on-select, chrome polish, metadata cache) and M41–M43 (TV Time parse
-fidelity round 2, `needs_review` category + zip v5, polish — found as an
-uncommitted working-tree batch, audited/fixed/packaged 2026-07-16, E89–E94).
-See that folder's tasks.md for the commit map.
+- **M9.2** (hosted deploy of baykus.xava.me) — needs real DNS/TLS/hosting
+  credentials, stays blocked on xava. Do not attempt.
+- A handful of **USER-ONLY** manual checks that a headless environment cannot
+  cover (listed below).
 
-Spec **008** (`specs/008-stats-dashboard/`, M44–M52, E95–E111) rebuilt the
-full statistics surface prototyped in root `dashboard.html` as a native part
-of the app: `watches.date_unknown` fidelity flag + zip v6, the full
-`packages/core/src/library/stats/` aggregate suite (`totals.ts`/
-`buckets.ts`/`timeline.ts`), `GET /api/stats?tz=`, and a restructured
-`/stats` page (20 sections). Landed 2026-07-17, one commit per milestone (M44.2 through M52), full gate
-green on each — see that folder's tasks.md for the commit map (all boxes
-checked).
+## The §M33 combined browser pass — what happened (2026-07-17)
 
-**M52 (the browser checkpoint) is done, not just documented** —
-`MANUELTEST.md` §M52 has the actual results, run via an ad hoc
-headless-browser (playwright, not a standing project skill) pass against
-xava's real library (246 series, 7316 watches), with zero mutation of that
-real data (the one mutating check — dateUnknown → footer caveat — ran
-against an isolated throwaway library; the one real-data mutation, a
-language switch, was reverted to leave no trace):
-- Full page renders with zero console errors; caught and fixed one real
-  bug along the way (weekly watch-time panel was spacing bars by array
-  position over the sparse week list instead of true ISO week number).
-- `dashboard.html` comparison done and recorded (hero/favorites/binges) —
-  file deleted afterward per M44.2's own deferral clause.
-- tz correctness proven mathematically on live data: `?tz=Europe/Istanbul`'s
-  `byHour` is exactly UTC's rotated by 3 (fixed UTC+3, no DST), totals
-  identical.
-- Two-language pass: full EN render confirmed, zero raw i18n keys.
+Run the same way as §M52: an ad hoc headless playwright (chromium from
+`~/.cache/ms-playwright`, **not** a standing project skill) driving the real
+dev server. `MANUELTEST.md` §M11.4→§M33 are now checked with real results;
+the file's top carries a full summary block.
 
-## What's left, period: `MANUELTEST.md` §M33 (pre-008, older backlog)
+- **Zero mutation of the real library** (`apps/server/data/`): only read-only
+  checks ran against it; a table-count fingerprint taken before and after the
+  walk is byte-identical. The one transient real mutation (locale EN↔TR) was
+  reverted net-zero.
+- **Every mutating scenario** (E61 favorites zip round-trip incl. a real
+  reset, TV Time fixture import, E33/E63 fabrications, stale-sweep
+  `last_refreshed_at` edits, episode-mark modals) ran against a `sqlite3
+  .backup` **copy** of the real DB on a second server instance
+  (`BAYKUS_DATA_DIR` + port 4104).
+- **One real bug found and fixed:** switching locale to EN left `<html lang>`
+  at "tr", so CSS `text-transform: uppercase` applied Turkish casing
+  ("LİBRARY", "PROFİLE" with dotted İ). Fixed in
+  `apps/web/src/i18n/index.ts` (a `languageChanged` → `document.documentElement.lang`
+  sync); verified live. Committed separately.
+- **One open product decision resolved (E74):** ResetLibraryDialog's confirm
+  phrase is now a `bg-white/5 px-1 font-mono` block via react-i18next
+  `<Trans>` (xava's call: implement). Spec 006 tasks.md M28.2 DECISION +
+  spec.md acceptance updated to resolved.
 
-§M33 covers specs 002–007 and folds in every older pending item (§M27 and
-earlier) — none of it is 008 work, none of it needs new code. It just
-never got walked in a session with browser access before this one.
+### USER-ONLY checks still open (cannot be done headless — not blockers)
+- **Push notification delivery (E39):** headless chromium has no Push API
+  (incognito restriction), so the subscribe→test-notification chain can't run.
+  Server-side `push.test.ts` is green; only real-device delivery is unverified.
+- **TMDB backfill + tmdbId URL forms (§M22):** the whole library is
+  TVmaze-matched (no `tmdbId` set), so `/series/<tmdbId>` and the
+  i-form→bare-number replace-redirect need a real TMDB key + backfill first.
+  Grammar/no-loop covered by `seriesPath.test.ts`.
+- **Poster morph / cross-fade smoothness + Firefox <139 fallback:** the
+  mechanical layer is verified live (`poster-${id}` view-transition names,
+  `app-header`/`app-tabbar` groups, 160ms root cross-fade, reduced-motion
+  `animation:none`, feature-detected `startViewTransition`); animation
+  smoothness is a human-eye call and Firefox isn't in this environment.
+- **Multi-mode-only surfaces:** DeleteAccountDialog and ClaimPage's warning
+  branch don't render in single mode (this dev instance). `TriangleAlert` is
+  wired and the same lucide icon was observed live in the import report; no
+  `⚠` glyph exists in source.
 
-One open judgment call from 006 still needs a human decision before it's
-code-work (unrelated to 008): **ResetLibraryDialog's E74 phrase-block
-styling** — see `specs/006-design-conformance/tasks.md` M28.2's
-`<!-- DECISION -->` note and `spec.md`'s acceptance checklist. Not a bug,
-just out of M28's className-only scope.
+## Housekeeping done the same session (2026-07-17)
 
-If §M33 is done and that decision's been made by the time you read this,
-there is nothing queued — ask xava what's next before starting new work.
+Three commits before the §M33 walk, one after:
+- **docs refresh:** AGENTS.md gained 006/007/008 entries + extended
+  normative/reading-map through 008; README zip version 4→6 and a consolidated
+  001–008 status block; stale acceptance boxes closed (008 §M52, 002 README);
+  003/005 data-model.md got SUPERSEDED zip-version pointers.
+- **dead-code + config cleanup** (fallow-verified): deleted the orphaned
+  `ManualListPicker.tsx` (+ its now-unused i18n keys), dropped the `export`
+  keyword from 9 in-file-only symbols, removed biome.json's stale
+  `!dashboard.html` ignore + bumped its `$schema` to 2.5.3, aligned
+  same-major dep ranges (better-sqlite3/drizzle-orm/zod).
+- **E74 phrase block** (feat).
+- **§M33 results** (docs, this final commit): MANUELTEST + all spec.md
+  acceptance boxes + 002/003 checkpoint tasks.md + this handover.
 
 ## Commands
 
 ```bash
 pnpm install
 pnpm dev            # server (4004) + web (5173, proxies /api and /img)
-pnpm test           # vitest across workspace
+pnpm test           # vitest across workspace (baseline: 576 tests, 64 files)
 pnpm typecheck && pnpm lint && pnpm build
 ```
+
+If M9.2 stays credential-blocked and the USER-ONLY checks above are all that's
+left, there is nothing queued — ask xava what's next before starting new work.

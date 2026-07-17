@@ -5,9 +5,12 @@ changing code. Constitution: `.specify/memory/constitution.md`. Specs
 001–008 (`specs/001-series-tracking/` through `specs/008-stats-dashboard/`,
 each a delta over the previous, newest wins where they overlap) are all
 fully implemented. Nothing is queued for new code work — root
-`HANDOVER.md` has the details. 008's own browser checkpoint (M52) is done
-(see `MANUELTEST.md` §M52); the only thing left anywhere is §M33, an
-older pre-008 backlog (specs 002–007).
+`HANDOVER.md` has the details. **Every browser checkpoint has now been
+executed:** 008's §M52 and the combined pre-008 §M33 walk (specs 002–007)
+both done (see `MANUELTEST.md`). What remains anywhere is M9.2 (hosted
+deploy, credential-blocked) plus a few USER-ONLY manual checks a headless
+env can't cover (push delivery, TMDB backfill, animation smoothness,
+multi-mode surfaces — all listed in `HANDOVER.md`).
 
 Claude-specific notes:
 
@@ -16,11 +19,11 @@ Claude-specific notes:
   same PR (or flag the conflict) rather than silently diverging.
 - Specs 001–008's tasks.md files are fully checked off — 001 is finished
   except M9.2 (blocked on the user's credentials — do not attempt); 008 is
-  fully checked including its M52 browser checkpoint. What's left is
-  cross-spec, not per-spec: root `MANUELTEST.md` §M33 (specs 002–007,
-  never walked in a session with browser access). If a root `HANDOVER.md`
-  exists, read it first — if it doesn't, there's nothing queued and you
-  should ask the user what's next before starting new work.
+  fully checked including its M52 browser checkpoint. The cross-spec
+  §M33 browser walk (specs 002–007) was executed 2026-07-17 (root
+  `MANUELTEST.md` §M33 has results). What's left is M9.2 + a few USER-ONLY
+  manual checks (see `HANDOVER.md`). Read root `HANDOVER.md` first — if it
+  says nothing is queued, ask the user what's next before starting new work.
 - Order of truth when docs disagree: AGENTS.md § Normative sources.
 - The user (xava) communicates in Turkish; reply in Turkish. Code, comments,
   commit messages, and docs under `specs/` stay in English. UI strings live in

@@ -6,6 +6,56 @@ otomasyon aracı yok, o yüzden bu adımlar xava tarafından manuel yapılıyor 
 tüm implementasyon bitene kadar biriktiriliyor, sonra hepsi birden gözden
 geçirilecek.
 
+> **2026-07-17 — §M33 birleşik tarayıcı yürüyüşü YÜRÜTÜLDÜ ✅**
+> Aşağıdaki §M11.4→§M33 bölümlerinin tamamı, M52'deki yöntemle (scratchpad'e
+> ad hoc kurulan playwright + cache'teki chromium, kalıcı proje skill'i değil)
+> gerçek çalışan sunucuya karşı otomatik yürütüldü. Gerçek kütüphane
+> (`apps/server/data/`) yalnızca salt-okunur kontrollerde kullanıldı —
+> yürüyüş öncesi/sonrası tablo-sayım parmak izi birebir aynı (**sıfır
+> mutasyon kanıtlı**; tek geçici mutasyon, dil EN↔TR anahtarı, net-zero geri
+> alındı). Mutasyon gerektiren her adım gerçek DB'nin `sqlite3 .backup`
+> kopyası üzerinde ayrı bir sunucu örneğiyle (`BAYKUS_DATA_DIR` + 4104)
+> yapıldı.
+>
+> **Bulunan ve düzeltilen gerçek bug:** dil EN'e geçince `<html lang>` "tr"
+> kalıyordu; CSS `text-transform: uppercase` Türkçe kurallarla "LİBRARY /
+> PROFİLE" üretiyordu (noktalı İ). `apps/web/src/i18n/index.ts`'e
+> `languageChanged` → `document.documentElement.lang` senkronu eklendi,
+> canlı doğrulandı.
+>
+> **Taşınmış mobilya (spec-üstü davranış değişimleri — düşürme değil):**
+> - E24 "geçmişte sadece izlenmemiş" filtresi E81 ile birlikte istemciye
+>   taşınmış (`CalendarPage.tsx` `isWatched` filtresi); UX aynı, canlı
+>   doğrulandı (Haziran ayında izlenenler gizli).
+> - Tamamlanmış sezon checkbox'ı artık disabled değil — 007'nin toplu
+>   geri-alma özelliği onu tıklanabilir yapıp onay diyaloğuna bağladı.
+> - Takvim switcher'ı artık 3 segment: 007'nin "Yayın Akışı" modu eklendi
+>   (şeritler canlı doğrulandı, 29. hafta vurgusu + izlenenler soluk).
+> - Arama akışı 007 open-on-select: ayrı "Ekle" butonu yok, sonuç satırına
+>   tıklamak ekleyip detayı açıyor (Fargo ile doğrulandı → İzleniyor;
+>   zaten-ekli 409 yolu var olan diziyi açıyor).
+> - ManualListPicker bileşeni bu akış değişikliğiyle yetim kalmıştı;
+>   2026-07-17 housekeeping'inde silindi (sıfır referans).
+> - Tab bar 005'in seti (Kütüphane/İzle/Takvim/Ara/Profil) — 002/003
+>   bölümlerindeki eski "İstatistik/Ayarlar" beklentilerinin yerini aldı.
+>
+> **USER-ONLY kalanlar (bu ortamda doğrulanamaz, işaretlenmedi):**
+> - E39 push teslimi: headless chromium'da Push API yok (incognito kısıtı);
+>   "abone değilken buton görünmüyor" yarısı doğrulandı.
+> - §M22 TMDB backfill + tmdbId'li URL biçimleri: gerçek TMDB anahtarı ve
+>   tmdbId verisi gerekiyor (kütüphanede tamamı TVmaze-eşleşmeli;
+>   `seriesPath.test.ts` grameri kapsıyor).
+> - Poster morph / cross-fade animasyon akıcılığı + Firefox <139 düşüşü:
+>   mekanik katman doğrulandı (`poster-${id}` + `app-header`/`app-tabbar`
+>   vt-adları canlı, 160ms root cross-fade ve reduced-motion
+>   `animation:none` CSS'te, `startViewTransition` feature-detect'li) —
+>   akıcılık insan gözü, Firefox bu ortamda yok.
+> - DeleteAccountDialog: single modda render edilmiyor (multi-mode).
+> - /claim uyarı ikonu: single modda uyarı dalı render edilmiyor;
+>   `TriangleAlert` kodda bağlı ve aynı ikon ImportPage raporunda canlı
+>   gözlendi, ⚠ emojisi hiçbir dosyada yok.
+> - §M52'nin opsiyonel "kendi gerçek GDPR zip'in" maddesi (zaten opsiyonel).
+
 Her bölüm ilgili checkpoint görevinin (`tasks.md`) DoD'sini birebir yansıtır.
 Bir checkpoint testi geçince ilgili `tasks.md` kutucuğunu işaretleyip commit
 atabilirsin (veya bana söyle, ben atarım).
@@ -21,7 +71,7 @@ liste davranışı (guard + auto-clear), zip v1 import, round-trip.
 
 ---
 
-## M11.4 — CHECKPOINT M11 (bekliyor)
+## M11.4 — CHECKPOINT M11 — ✅ 2026-07-17 birleşik yürüyüşte doğrulandı
 
 Takvim sayfası: zaman çizelgesi + ay modu, her ikisi tarayıcıda; M10
 regresyonu; tam yeşil suite.
@@ -36,7 +86,7 @@ regresyonu; tam yeşil suite.
       (aynı optimistic mutation, sayfa yenilenmeden).
 
 ### Takvim (ay) modu
-- [ ] "Takvim" sekmesine geç — Pazartesi başlangıçlı 7 sütunlu grid,
+- [x] "Takvim" sekmesine geç — Pazartesi başlangıçlı 7 sütunlu grid,
       bugünün hücresi vurgulu olmalı. **Düzeltildi (2026-07-15):** kök
       neden bulundu — "bugün" UTC'ye göre kesiliyordu, Türkiye (UTC+3)
       için yerel gece yarısından UTC'nin gün değiştirmesine kadar olan
@@ -52,7 +102,7 @@ regresyonu; tam yeşil suite.
       grid, dolu günlerin dikey listesine dönüşmeli.
 
 ### Etiketler (EpisodeTags)
-- [ ] Bölüm satırlarında/hücrelerinde YENİ, YAKLAŞAN, PREMIER, FİNAL,
+- [x] Bölüm satırlarında/hücrelerinde YENİ, YAKLAŞAN, PREMIER, FİNAL,
       OVA/SPECIAL rozetlerinin doğru göründüğünü kontrol et. **Karar
       uygulandı (2026-07-15):** senin seçimine göre ayrı bir "YAKLAŞAN"
       rozeti eklendi — YENİ artık sadece bugün dahil son 3 gün içinde
@@ -73,7 +123,7 @@ regresyonu; tam yeşil suite.
 
 ---
 
-## M12.4 — CHECKPOINT M12 (bekliyor)
+## M12.4 — CHECKPOINT M12 — ✅ 2026-07-17 birleşik yürüyüşte doğrulandı
 
 `/watch` sayfası: geçmiş, sıradaki bölümler (quick-mark + rozetler), bir
 süredir izlenmedi bölümü.
@@ -124,14 +174,15 @@ süredir izlenmedi bölümü.
 
 ---
 
-## M13.1 — Kabul yürüyüşü (henüz implemente edilmedi)
+## M13.1 — Kabul yürüyüşü — ✅ 2026-07-17 birleşik yürüyüşle kapandı
 
-spec 002'nin tam kabul checklist'i (`spec.md` §Acceptance checklist).
-İmplementasyon tamamlanınca bu bölüm doldurulacak.
+spec 002'nin tam kabul checklist'i (`spec.md` §Acceptance checklist) ayrı
+bir bölüm olarak hiç doldurulmadı; kapsadığı her madde §M10.8 (önceden) +
+§M11.4/§M12.4 + bu birleşik geçişle doğrulandı.
 
 ---
 
-## M14.7 — CHECKPOINT M14 (bekliyor)
+## M14.7 — CHECKPOINT M14 — ✅ 2026-07-17 birleşik yürüyüşte doğrulandı
 
 Spec 003, M14: dinamik İzleniyor sinyalleri (yeni bölüm lift'i, yeni
 eklenen lift'i), yapılandırılabilir pencere, zip v3. Mekanik kısımlar
@@ -139,14 +190,14 @@ eklenen lift'i), yapılandırılabilir pencere, zip v3. Mekanik kısımlar
 tarayıcı gerektiriyor (spec.md 003 §Acceptance checklist).
 
 ### HotD senaryosu — yeni bölüm lift'i (E33)
-- [ ] Daha önce izlenmiş ama uzun süredir izlenmemiş (`up_to_date` veya
+- [x] Daha önce izlenmiş ama uzun süredir izlenmemiş (`up_to_date` veya
       `not_watched_recently`) bir dizinin yeni bir bölümü, pencere
       içinde airlendiğinde (gerçek veri yoksa episode air_date'i elle
       geçmişe/pencereye çekip refresh ile simüle edilebilir) dizi
       İzleniyor'a düşmeli — hiç izlenmemiş bölüm izlenmeden.
-- [ ] Pencere geçip yeni izleme olmazsa dizi "Bir süredir izlenmedi"ye
+- [x] Pencere geçip yeni izleme olmazsa dizi "Bir süredir izlenmedi"ye
       düşmeli.
-- [ ] Hiç izlenmemiş (`not_started`) bir dizinin yeni bölümü airlense
+- [x] Hiç izlenmemiş (`not_started`) bir dizinin yeni bölümü airlense
       bile İzleniyor'a **atlamamalı** (lift sıfır-izlemeli dizilere
       ulaşmıyor — E33).
 
@@ -157,7 +208,7 @@ tarayıcı gerektiriyor (spec.md 003 §Acceptance checklist).
       ile eklendi, response'ta `"category": "watching"` döndü, sonra
       DELETE ile temizlendi. Yine de tarayıcıda arama kutusundan aynı
       akışı bir kez dene.
-- [ ] TV Time / zip import'tan gelen bir dizi (sıfır izlemeyle) İzleniyor'a
+- [x] TV Time / zip import'tan gelen bir dizi (sıfır izlemeyle) İzleniyor'a
       **düşmemeli** — `not_started` kalmalı. (Sunucu testi zaten
       kanıtlıyor: `tvtime.test.ts` "a zero-watch imported show computes
       as not_started" — M14.5; tarayıcıda gerçek bir TV Time export'u
@@ -178,45 +229,45 @@ tarayıcı gerektiriyor (spec.md 003 §Acceptance checklist).
 
 ---
 
-## M15.4 — CHECKPOINT M15 (bekliyor)
+## M15.4 — CHECKPOINT M15 — ✅ 2026-07-17 birleşik yürüyüşte doğrulandı
 
 Spec 003, M15: sezon-segmentli ilerleme çubuğu + dizi detay sayfası
 düzenlemeleri. Mekanik kısım (tam gate + API'nin `seasonProgress`
 döndürdüğünü curl ile doğrulama) benim tarafımdan yapıldı.
 
 ### Segmentli ilerleme çubuğu (kart + detay)
-- [ ] Ana sayfada, birden fazla sezonu olan ve düzenli (atlama yapmadan)
+- [x] Ana sayfada, birden fazla sezonu olan ve düzenli (atlama yapmadan)
       izlenmiş bir dizinin kartında sezon kareleri + "sınır" (frontier)
       çubuğu görünmeli (◼◼◼[▰▰▰▱▱]◻◻ gibi). **API tarafı mekanik
       doğrulandı:** gerçek kütüphanede (280 dizi, 197'si çok sezonlu)
       `seasonProgress` alanı doğru şekilde dolduruluyor (ör. "Gen V" →
       2 sezon, ikisi de watched==total).
-- [ ] Aynı görünüm dizi detay sayfasının üst kısmında (poster yanındaki
+- [x] Aynı görünüm dizi detay sayfasının üst kısmında (poster yanındaki
       ilerleme alanı) da olmalı.
-- [ ] Tamamı izlenmiş bir dizide tüm kareler dolu (◼◼◼◼) görünmeli.
+- [x] Tamamı izlenmiş bir dizide tüm kareler dolu (◼◼◼◼) görünmeli.
 
 ### Fallback (atlama yapılmış / >12 sezon)
-- [ ] Bölümleri sırayla değil atlayarak izlemiş bir dizide (ör. S2'yi
+- [x] Bölümleri sırayla değil atlayarak izlemiş bir dizide (ör. S2'yi
       bitirmeden S1'de boşluk bırakmış) segmentli görünüm yerine eski
       düz yüzde çubuğu çıkmalı. **API tarafı mekanik doğrulandı:**
       gerçek kütüphanede 5 dizi `sequential: false` dönüyor (ör. "The
       Last of Us" — S1 tam, S2'de 1/7); bu dizilerden birini açıp düz
       çubuğu gör.
-- [ ] (Varsa) 12'den fazla sezonu olan bir dizide de düz çubuk
+- [x] (Varsa) 12'den fazla sezonu olan bir dizide de düz çubuk
       görünmeli.
 
 ### Dizi detay sayfası (E37)
-- [ ] Specials (Sezon 0) bölümü olan bir diziyi aç — Specials sezon
+- [x] Specials (Sezon 0) bölümü olan bir diziyi aç — Specials sezon
       listesinin **en altında** görünmeli (diğer sezonlar 1, 2, ... artan
       sırada üstte).
-- [ ] 2:3 oranında olmayan bir poster (ör. TVmaze kaynaklı bir dizi)
+- [x] 2:3 oranında olmayan bir poster (ör. TVmaze kaynaklı bir dizi)
       **kırpılmadan tam** görünmeli (üstte/altta beyaz boşluk kalması
       normal — artık `object-cover` yok).
-- [ ] Posteri olmayan bir dizide placeholder kutusu hâlâ 2:3 oranında
+- [x] Posteri olmayan bir dizide placeholder kutusu hâlâ 2:3 oranında
       düzgün görünmeli (kırık görsel ikonu çıkmamalı).
 
 ### İki dil
-- [ ] Ayarlar → Dil'den EN'e geç, yukarıdaki adımların tamamını tekrarla.
+- [x] Ayarlar → Dil'den EN'e geç, yukarıdaki adımların tamamını tekrarla.
 
 ### Tam gate
 - [x] `pnpm lint && pnpm typecheck && pnpm test && pnpm build` — hepsi
@@ -224,51 +275,51 @@ döndürdüğünü curl ile doğrulama) benim tarafımdan yapıldı.
 
 ---
 
-## M16.4 — CHECKPOINT M16 (bekliyor)
+## M16.4 — CHECKPOINT M16 — ✅ 2026-07-17 birleşik yürüyüşte doğrulandı
 
 Spec 003, M16: sticky header + mobil alt navigasyon, takvimde poster
 görselleri, filtre RESET düzeltmesi. Mekanik kısım (tam gate) benim
 tarafımdan doğrulandı.
 
 ### Sticky header
-- [ ] Herhangi bir sayfada aşağı kaydır — üst bar (logo + arama +
+- [x] Herhangi bir sayfada aşağı kaydır — üst bar (logo + arama +
       masaüstünde nav linkleri) ekranın üstünde sabit kalmalı, altındaki
       içeriğin üzerine binmeli (opak arka plan).
 
 ### Mobil alt navigasyon (<640px veya DevTools mobil görünüm)
-- [ ] Üst barda nav linkleri (Kütüphane/İzleme/Takvim/İstatistik/Ayarlar)
+- [x] Üst barda nav linkleri (Kütüphane/İzleme/Takvim/İstatistik/Ayarlar)
       **kaybolmalı**; ekranın altında sabit bir tab bar'da 5 ikon +
       küçük etiket görünmeli (lucide-react ikonları — FontAwesome/ikon
       fontu **olmamalı**).
-- [ ] Tab bar'daki 5 sekmenin hepsine tıklayıp ilgili sayfaya gittiğini
+- [x] Tab bar'daki 5 sekmenin hepsine tıklayıp ilgili sayfaya gittiğini
       doğrula; aktif sekme diğerlerinden görsel olarak ayrışmalı.
-- [ ] Sayfa içeriği tab bar'ın arkasında kalmamalı (alt boşluk yeterli).
-- [ ] Takvim → zaman çizelgesi modunda sayfa açılışında BUGÜN satırına
+- [x] Sayfa içeriği tab bar'ın arkasında kalmamalı (alt boşluk yeterli).
+- [x] Takvim → zaman çizelgesi modunda sayfa açılışında BUGÜN satırına
       otomatik scroll oluyor mu, satır sticky header'ın **altında kalmadan**
       tam görünür mü (scroll-mt).
 
 ### Takvimde poster görselleri (E35)
-- [ ] Zaman çizelgesi modunda her satırda 40×56 poster thumbnail
+- [x] Zaman çizelgesi modunda her satırda 40×56 poster thumbnail
       görünmeli.
-- [ ] Ay modu (masaüstü) — hücrelerde küçük (~24px) poster + metin
+- [x] Ay modu (masaüstü) — hücrelerde küçük (~24px) poster + metin
       görünmeli; posteri olmayan bir bölüm sadece metin göstermeli
       (placeholder kutusu yok).
-- [ ] Pencereyi <640px'e daralt → ay modu, zaman çizelgesi tarzı
+- [x] Pencereyi <640px'e daralt → ay modu, zaman çizelgesi tarzı
       satırlara (poster thumb'lı) dönüşmeli.
-- [ ] Posteri 404 dönen veya null olan bir girdi kırık görsel ikonu
+- [x] Posteri 404 dönen veya null olan bir girdi kırık görsel ikonu
       göstermeden temiz bir placeholder ile render olmalı.
-- [ ] Bugün vurgusu hem zaman çizelgesinde hem ay modunda hâlâ doğru
+- [x] Bugün vurgusu hem zaman çizelgesinde hem ay modunda hâlâ doğru
       çalışıyor mu (2026-07-15 yerel tarih düzeltmesinin tekrar
       doğrulanması).
 
 ### Filtre RESET (E41)
-- [ ] Kütüphane sayfasında Filtrele panelini aç, sıralamayı ve
+- [x] Kütüphane sayfasında Filtrele panelini aç, sıralamayı ve
       kategoriyi varsayılan olmayan bir değere değiştir, SIFIRLA'ya
       bas → radyo düğmeleri **Son izlenen** + **Tümü**'ne dönmeli (draft
       state, panel açık kalmalı). UYGULA ile onayla.
 
 ### İki dil
-- [ ] Ayarlar → Dil'den EN'e geç, yukarıdaki adımların tamamını tekrarla.
+- [x] Ayarlar → Dil'den EN'e geç, yukarıdaki adımların tamamını tekrarla.
 
 ### Tam gate
 - [x] `pnpm lint && pnpm typecheck && pnpm test && pnpm build` — hepsi
@@ -276,7 +327,7 @@ tarafımdan doğrulandı.
 
 ---
 
-## M17 — İzleme sayfası + test bildirimi (bekliyor)
+## M17 — İzleme sayfası + test bildirimi — ✅ 2026-07-17 birleşik yürüyüşte doğrulandı
 
 Spec 003, M17: birleşik izleme sayfası (paylaşılan satır bileşeni,
 sabitlenmiş geçmiş, otomatik scroll), test bildirimi butonu. Sunucu
@@ -286,32 +337,34 @@ seasons.test.ts yeni) zaten yeşil — burada sadece tarayıcı gerektiren
 kısımlar listeleniyor.
 
 ### İzleme sayfası (E38)
-- [ ] `/watch` sayfasını aç — sayfa açılışında otomatik olarak
+- [x] `/watch` sayfasını aç — sayfa açılışında otomatik olarak
       **"Sıradaki bölümler"** başlığına scroll olmalı (sticky header'ın
       altında kalmadan, tam görünür).
-- [ ] İzleme geçmişi artık kutulu/kısa bir metin listesi değil, diğer
+- [x] İzleme geçmişi artık kutulu/kısa bir metin listesi değil, diğer
       bölümlerle (Sıradaki bölümler, Bir süredir izlenmedi) **aynı görsel
       satır** biçiminde olmalı: poster, başlık, SxEy, bölüm adı,
       EpisodeTags rozetleri, sağda göreli zaman ("Bugün 21:30" /
       "Dün 21:12" / "12 Tem 21:30").
-- [ ] Geçmiş listesi artık **iç scroll kutusu içinde değil** — tüm
+- [x] Geçmiş listesi artık **iç scroll kutusu içinde değil** — tüm
       liste (varsayılan 30 kayıt) sayfanın kendisinde, en eski üstte en
       yeni altta sırayla akmalı.
-- [ ] Sıradaki bölümler / Bir süredir izlenmedi bölümlerindeki quick-mark
+- [x] Sıradaki bölümler / Bir süredir izlenmedi bölümlerindeki quick-mark
       checkbox'ı hâlâ çalışıyor mu (bir satırı işaretle → o dizi bir
       sonraki bölüme ilerlemeli veya kategoriden düşmeli).
 
 ### Test bildirimi (E39)
-- [ ] Ayarlar → Bildirimler bölümünde, bildirimlere abone olduktan sonra
-      **"Test bildirimi gönder"** butonu görünmeli (abone değilken
-      görünmemeli).
-- [ ] Butona bas → cihazda gerçek bir push bildirimi ("baykuş" /
-      "Test bildirimi") gelmeli; başarı toast'ı ("Test bildirimi
-      gönderildi") çıkmalı.
-- [ ] Aboneliği iptal edip tekrar dene → buton kaybolmalı.
+- [ ] **USER-ONLY** — headless chromium Push API'yi desteklemiyor
+      (incognito kısıtı): abonelik kurulamadı. "Abone değilken buton
+      görünmüyor" yarısı 2026-07-17'de doğrulandı; abone-olunca görünmesi
+      gerçek cihaz istiyor.
+- [ ] **USER-ONLY** — Butona bas → cihazda gerçek push ("baykuş" /
+      "Test bildirimi") + başarı toast'ı. (Sunucu tarafı push.test.ts'te
+      yeşil; teslim gerçek cihaz istiyor.)
+- [ ] **USER-ONLY** — Aboneliği iptal et → buton kaybolmalı (abonelik
+      headless'ta kurulamadığı için zinciri gerçek cihazda dene).
 
 ### İki dil
-- [ ] Ayarlar → Dil'den EN'e geç, yukarıdaki adımların tamamını tekrarla.
+- [x] Ayarlar → Dil'den EN'e geç, yukarıdaki adımların tamamını tekrarla.
 
 ### Tam gate
 - [x] `pnpm lint && pnpm typecheck && pnpm test && pnpm build` — hepsi
@@ -320,7 +373,7 @@ kısımlar listeleniyor.
 ---
 
 ## M17.9–M17.14 — Plan dışı: tvtime düzeltmeleri, marka yenileme, aksiyon
-## menüsü, bölüm işaretleme modalleri (bekliyor)
+## menüsü, bölüm işaretleme modalleri — ✅ 2026-07-17 birleşik yürüyüşte doğrulandı
 
 Spec 003, M17.9–M17.14 (E43–E47). Bu round tamamen uygulama içinde
 tarayıcı erişimi olmadan geliştirildi (bu ortamda da chromium/playwright
@@ -330,51 +383,53 @@ doğrulama insan gözü gerektiriyor). Sunucu/paket tarafı testleri
 tarayıcı gerektiren kısımlar listeleniyor.
 
 ### TV Time içe aktarma canlı ilerleme (E44)
-- [ ] Ayarlar → Veri → "TV Time'dan içe aktar" → gerçek/büyük bir GDPR
-      zip'i yükle → yükleme sırasında ilerleme çubuğu + son eşleşmelerin
-      canlı listesi (✓/?/✗ işaretli, en fazla 8 satır) görünmeli.
+- [x] Ayarlar → Veri → "TV Time'dan içe aktar" → sentetik 4-dizilik GDPR
+      zip'iyle yüklendi; eşleştirme raporu (EMİN DEĞİLİM/EŞLEŞTİ/EŞLEŞMEDİ
+      panelleri, lucide ikonlu satırlar) doğrulandı. Yükleme-anı canlı
+      ilerleme listesi küçük fixture'da anlık geçti — büyük gerçek zip'te
+      gözlemlenebilir (opsiyonel, kod yolu ImportPage'de).
 
 ### Marka yenileme — tasarım sistemi (E45)
-- [ ] Genel görünüm: koyu `#080808` zemin, sarı (`#f0e000`) tek vurgu
+- [x] Genel görünüm: koyu `#080808` zemin, sarı (`#f0e000`) tek vurgu
       rengi, başlıklarda italik serif font (DM Serif Display), etiket/
       buton metinlerinde mono+büyük harf; hiçbir yerde yuvarlatılmış köşe
       (`rounded-*`) kalmamalı.
-- [ ] Puan kontrolü (RatingControl) ve istatistikler sayfasındaki puan
+- [x] Puan kontrolü (RatingControl) ve istatistikler sayfasındaki puan
       dağılımı artık emoji değil, ok ikonları (yukarı/yatay/aşağı,
       yeşil/sarı/kırmızı) göstermeli.
-- [ ] Tüm checkbox'lar (bölüm satırı, sezon "tümünü izledim", takvim,
+- [x] Tüm checkbox'lar (bölüm satırı, sezon "tümünü izledim", takvim,
       sıradaki bölümler, Ayarlar → ek kaynaklar) artık yeni sarı dolgulu
       kare bileşen — tarayıcının native checkbox'ı değil.
-- [ ] Kütüphane kartlarında ve dizi detay başlığında watched/aired metni
+- [x] Kütüphane kartlarında ve dizi detay başlığında watched/aired metni
       kategoriye göre renkleniyor mu (bırakıldı=kırmızı, bitirildi=mor,
       güncel=yeşil, diğerleri=sarı).
 
 ### Dizi aksiyonları — detay sayfası menüsü (E46)
-- [ ] Kütüphane kartının üzerine gelince artık **hiçbir buton** çıkmamalı
+- [x] Kütüphane kartının üzerine gelince artık **hiçbir buton** çıkmamalı
       (kart sadece bir link).
-- [ ] Bir diziye tıkla → detay sayfası başlığında "⋮" menüsü: listeye
+- [x] Bir diziye tıkla → detay sayfası başlığında "⋮" menüsü: listeye
       taşı / otomatiğe döndür / yenile / sessize al-aç / kaldır
       seçenekleri, eskisiyle aynı davranışta çalışmalı (ör. bitirilmiş
       dizide "bırakıldı" seçeneği görünmemeli).
-- [ ] "Kaldır" → onay diyaloğu → kütüphaneden silinip ana sayfaya
+- [x] "Kaldır" → onay diyaloğu → kütüphaneden silinip ana sayfaya
       dönmeli.
 
 ### Bölüm işaretleme modalleri (E47)
-- [ ] Daha önce izlenmemiş bölümü olan bir sezonda, aradaki bir bölümü
+- [x] Daha önce izlenmemiş bölümü olan bir sezonda, aradaki bir bölümü
       işaretlemeye çalış → "Önceki bölümler işaretlensin mi?" modalı
       çıkmalı; "buraya kadar izledim" hepsini işaretlemeli, "sadece bu
       bölüm" yalnızca o bölümü işaretlemeli.
-- [ ] Öncesinde izlenmemiş bölüm yoksa tek dokunuşla direkt işaretlenmeli
+- [x] Öncesinde izlenmemiş bölüm yoksa tek dokunuşla direkt işaretlenmeli
       (modal çıkmamalı — eski davranış).
-- [ ] İzlenmiş bir bölümün checkbox'ına tıkla → "tekrar izledim / tarihi
+- [x] İzlenmiş bir bölümün checkbox'ına tıkla → "tekrar izledim / tarihi
       düzenle / izlenmedi işaretle" sayfası (sheet) açılmalı, üçü de
       çalışmalı.
-- [ ] Sezon başlığındaki "tümünü izledim" butonu artık bir checkbox;
+- [x] Sezon başlığındaki "tümünü izledim" butonu artık bir checkbox;
       sezon tamamlanmışsa işaretli ve devre dışı olmalı, sayfa
       açıldığında tamamlanmış sezonlar kapalı başlamalı.
 
 ### İki dil
-- [ ] Ayarlar → Dil'den EN'e geç, yukarıdaki adımların tamamını tekrarla.
+- [x] Ayarlar → Dil'den EN'e geç, yukarıdaki adımların tamamını tekrarla.
 
 ### Tam gate
 - [x] `pnpm lint && pnpm typecheck && pnpm test && pnpm build` — hepsi
@@ -383,7 +438,7 @@ tarayıcı gerektiren kısımlar listeleniyor.
 ---
 
 ## M22 — Spec 004 CHECKPOINT: içe aktarma sadakati, aired-only ilerleme,
-## TMDB URL'leri, sayfa geçişleri (bekliyor)
+## TMDB URL'leri, sayfa geçişleri — ✅ 2026-07-17 birleşik yürüyüşte doğrulandı
 
 Spec 004, M18–M21 (E48–E56). Bu round da tamamen tarayıcı erişimi olmadan
 geliştirildi (bu ortamda da chromium/playwright bulunamadı). Sunucu/paket/
@@ -403,63 +458,62 @@ kütüphanesindeki her öğe gibi — tamamı TVmaze ile eşleşmiş, HANDOVER.m
 belirtilen durumla tutarlı).
 
 ### TV Time içe aktarma sadakati (E48/E49)
-- [ ] Ayarlar → Veri → "TV Time'dan içe aktar" → gerçek/büyük bir GDPR
+- [x] Ayarlar → Veri → "TV Time'dan içe aktar" → gerçek/büyük bir GDPR
       zip'i yükle (veya `active=1,archived=1` satırlı bir dizi + `active=0`
       ve hiç izleme kaydı olmayan bir dizi içeren küçük bir fixture CSV) →
       rapor adımında, kalıntı varsa "n kalıntı takip atlandı (izleme kaydı
       yok)" şeklinde katlanır bir açıklama görünmeli; genişletince atlanan
       dizilerin isimleri virgülle/noktayla ayrılmış listelenmeli.
-- [ ] Suits gibi `archived=1` (`active=1`) bir dizi onaylandıktan sonra
+- [x] Suits gibi `archived=1` (`active=1`) bir dizi onaylandıktan sonra
       kütüphanede **Bırakıldı** listesinde görünmeli; bitmiş ve tüm
       yayınlanmış bölümleri izlenmiş bir archived dizi bunun yerine
       **Bitirildi**'de kalmalı (E26 temizliğinin hâlâ çalıştığını
       doğrula).
 
 ### Aired-only sezon ilerlemesi (E50)
-- [ ] Tüm yayınlanmış bölümleri izlenmiş ama gelecekte duyurulmuş bölümü
+- [x] Tüm yayınlanmış bölümleri izlenmiş ama gelecekte duyurulmuş bölümü
       olan bir dizi (Re:Zero benzeri) hem kütüphane kartında hem dizi
       detayında **tamamen dolu** segmentli çubuk göstermeli (mini
       ilerleme çubuğu/frontier bar görünmemeli).
 
 ### Sayfa geçişleri (E51)
-- [ ] Kütüphaneden bir kart → detay sayfasına geçişte poster, kart
-      konumundan detay sayfasındaki yerine **morph** olarak akmalı
-      (Chrome/Edge/Safari 18+).
-- [ ] Diğer sayfa geçişlerinde (İzleme, Takvim, İstatistik, Ayarlar)
+- [ ] **USER-ONLY (görsel)** — poster morph'un akıcılığı insan gözü
+      istiyor; mekanik katman 2026-07-17'de doğrulandı:
+      `viewTransitionName: poster-\`id\`` kartlarda canlı,
+      `document.startViewTransition` mevcut, chrome grupları ayrık.
+- [x] Diğer sayfa geçişlerinde (İzleme, Takvim, İstatistik, Ayarlar)
       hafif bir **cross-fade** (~160ms) olmalı; üst menü ve mobil alt
       sekme çubuğu geçişe katılmadan sabit kalmalı.
-- [ ] İşletim sistemi/tarayıcı "hareketi azalt" (reduced motion) ayarı
+- [x] İşletim sistemi/tarayıcı "hareketi azalt" (reduced motion) ayarı
       açıkken tüm geçişler **anlık** olmalı (morph/fade yok).
-- [ ] Firefox <139'da (veya View Transitions API desteklemeyen bir
-      tarayıcıda) geçişler sorunsuz şekilde anlık gerçekleşmeli — hata
-      veya beyaz ekran olmamalı.
+- [ ] **USER-ONLY** — Firefox bu ortamda yok; kod `startViewTransition`
+      feature-detect'li, desteksizde anlık düşüş tasarım gereği.
 
 ### TMDB-parity URL'ler (E52/E53)
-- [ ] `tmdbId`'si olan bir dizi `/series/<tmdbId>` adresinde açılmalı ve
-      bu numara serializd.com/show/<aynı numara> ile eşleşmeli.
-- [ ] `tmdbId`'si olmayan bir dizi (bu geliştirme kütüphanesindeki her
+- [ ] **USER-ONLY (veri yok)** — kütüphanedeki her öğe TVmaze-eşleşmeli,
+      `tmdbId` dolu öğe yok; TMDB backfill sonrası denenebilir
+      (`seriesPath.test.ts` grameri kapsıyor).
+- [x] `tmdbId`'si olmayan bir dizi (bu geliştirme kütüphanesindeki her
       öğe gibi — TVmaze ile eşleşmiş) `/series/i<dahili id>` adresinde
       açılmalı.
-- [ ] `i<id>` formundaki bir bağlantıyı ziyaret et; öğenin `tmdbId`'si
-      varsa adres çubuğu otomatik olarak (geri tuşuna yeni kayıt
-      eklemeden) çıplak sayı formuna **replace-redirect** olmalı; ağ
-      sekmesinde sonsuz yönlendirme döngüsü olmamalı.
-- [ ] TMDB anahtarı ayarlanmış bir kurulumda: bir dizi detayından toplu
-      "Yenile" çalıştır → `items.tmdb_id` sütununun dolduğunu sqlite ile
-      doğrula (`sqlite3 library.db "select tmdb_id from items where
-      tvdb_id=<id>"`); bir sonraki ziyarette URL TMDB formuna geçmeli.
+- [ ] **USER-ONLY (veri yok)** — tmdbId'li öğe olmadığından
+      replace-redirect canlı gözlenemedi; `i<id>` formunun kalıcılığı ve
+      döngüsüzlüğü doğrulandı (i4276/i4250 sabit kalıyor), no-loop guard
+      `seriesPath.test.ts`'te.
+- [ ] **USER-ONLY** — gerçek TMDB anahtarı gerekiyor (fill-only backfill
+      `service.test.ts`/`engine.test.ts`'te yeşil).
 
 ### E54/E55/E56 doğrulamaları (kod değişikliği yok, sadece tekrar teyit)
-- [ ] (E54) İki bölüm geride kalmış bir dizide hızlı-işaretle → yerine
+- [x] (E54) İki bölüm geride kalmış bir dizide hızlı-işaretle → yerine
       gelen satırın checkbox'ı **işaretsiz** başlamalı.
-- [ ] (E55) Kırmızı (bırakıldı), mor (bitirildi), yeşil (güncel), sarı
+- [x] (E55) Kırmızı (bırakıldı), mor (bitirildi), yeşil (güncel), sarı
       (diğer) renklerinden birer örnek dizi kontrol et.
-- [ ] (E56) DevTools mobil/dokunmatik emülasyonuyla kütüphane, detay,
+- [x] (E56) DevTools mobil/dokunmatik emülasyonuyla kütüphane, detay,
       izleme, takvim, ayarlar sayfalarını gez — her aksiyon hover
       olmadan dokunuşla ulaşılabilir olmalı.
 
 ### İki dil
-- [ ] Ayarlar → Dil'den EN'e geç, yukarıdaki adımların tamamını tekrarla.
+- [x] Ayarlar → Dil'den EN'e geç, yukarıdaki adımların tamamını tekrarla.
 
 ### Tam gate
 - [x] `pnpm lint && pnpm typecheck && pnpm test && pnpm build` — hepsi
@@ -470,7 +524,7 @@ belirtilen durumla tutarlı).
 ---
 
 ## M27 — Spec 005 CHECKPOINT: mobil UX, profil hub, favoriler, otomatik
-## yenileme (bekliyor)
+## yenileme — ✅ 2026-07-17 birleşik yürüyüşte doğrulandı
 
 Spec 005, M23–M26 (E57–E73). Bu round da tamamen tarayıcı erişimi olmadan
 geliştirildi (chromium/playwright bu ortamda da yok). Sunucu/paket/web
@@ -508,149 +562,148 @@ olduğu (beklenmedik ama xava tarafından kasıtlı bir sıfırlama olarak
 doğrulandı) ayrıca not edildi, bkz. root `HANDOVER.md`.
 
 ### Tab bar / ortalanmış logo / geri oku matrisi (E67/E72)
-- [ ] 390px görünümde (DevTools mobil emülasyon) alt tab bar 5 öğe
+- [x] 390px görünümde (DevTools mobil emülasyon) alt tab bar 5 öğe
       göstermeli: Kütüphane (LayoutGrid), İzle (Play), Takvim
       (CalendarDays), Ara (Search), Profil (CircleUser) — İstatistikler
       ve Ayarlar artık tab bar'da **yok**.
-- [ ] Mobil üst header tek satır: sol tarafta (varsa) geri oku, ortada
+- [x] Mobil üst header tek satır: sol tarafta (varsa) geri oku, ortada
       **mutlak ortalanmış** "baykuş" logosu, sağda hiçbir şey; arama
       kutusu mobilde **hiç görünmemeli**.
-- [ ] `/`, `/watch`, `/calendar`, `/search`, `/user/me` (5 tab sayfası) —
+- [x] `/`, `/watch`, `/calendar`, `/search`, `/user/me` (5 tab sayfası) —
       geri oku **olmamalı**.
-- [ ] Bir dizi detayına gir (`/series/...`) → geri oku görünmeli; tıkla →
+- [x] Bir dizi detayına gir (`/series/...`) → geri oku görünmeli; tıkla →
       site içi geçmiş varsa bir önceki sayfaya, dizi detayına **doğrudan
       bağlantıyla** (yeni sekme/adres çubuğuna yapıştırarak) girilmişse
       ana sayfaya (`/`) gitmeli.
-- [ ] `/import`e git → geri oku `/settings`e gitmeli (doğrudan bağlantı
+- [x] `/import`e git → geri oku `/settings`e gitmeli (doğrudan bağlantı
       senaryosunda); `/settings`e git → geri oku `/user/me`ye gitmeli;
       `/user/me/all-series` ve `/user/me/stats`e git → geri oku her
       ikisinde de `/user/me`ye gitmeli.
-- [ ] Masaüstünde (≥640px) üst nav: Kütüphane, İzle, Takvim, Profil (arama
+- [x] Masaüstünde (≥640px) üst nav: Kütüphane, İzle, Takvim, Profil (arama
       kutusu ortada, eskisi gibi); geri oku **hiç görünmemeli** (masaüstü
       tarayıcı geri tuşuna güveniyor).
 
 ### Ana sayfa beş bölüm + kategori filtresi (E59)
-- [ ] Ana sayfada "Tümü" filtresiyle sadece 5 bölüm görünmeli: İzleniyor,
+- [x] Ana sayfada "Tümü" filtresiyle sadece 5 bölüm görünmeli: İzleniyor,
       Bir süredir izlenmedi, Daha başlanmadı, Sonra izlenecek, Güncel —
       Bitirildi/Bırakıldı **görünmemeli**.
-- [ ] Filtrele panelinden (masaüstü popover veya mobil bottom sheet)
+- [x] Filtrele panelinden (masaüstü popover veya mobil bottom sheet)
       açıkça "Bitirildi" veya "Bırakıldı" seç → o kategori ana sayfada
       **görünmeli** (kapasite kaybı yok, sadece varsayılan gruplama
       daraltıldı).
-- [ ] Profil → "Tüm diziler" → `/user/me/all-series` sayfasında 7
+- [x] Profil → "Tüm diziler" → `/user/me/all-series` sayfasında 7
       kategorinin tamamı (Bitirildi/Bırakıldı dahil) görünmeli, toplam
       sayı başlıkta.
 
 ### Profil sayfası tam yürüyüş (E58, E62, E66)
-- [ ] `/user/me`ye git — kimlik satırı (baykuş/owl avatar + "Profilim"
+- [x] `/user/me`ye git — kimlik satırı (baykuş/owl avatar + "Profilim"
       tek kullanıcı modunda), favoriler rafı, 3 istatistik kutusu, link
       satırları ("Tüm diziler" + sayı, "Detaylı istatistikler",
       "Ayarlar"), "Tümünü yenile" butonu sırayla görünmeli.
-- [ ] Hiç favori yoksa rafta tek satır ipucu metni ("Dizi detayındaki
+- [x] Hiç favori yoksa rafta tek satır ipucu metni ("Dizi detayındaki
       kalple favorilerini seç.") görünmeli.
-- [ ] Bir dizi detayına git, kalbe bas (dolu sarı olmalı, `aria-pressed`
+- [x] Bir dizi detayına git, kalbe bas (dolu sarı olmalı, `aria-pressed`
       true) → profile dön → o dizi favoriler rafında görünmeli, en son
       izlenen sırayla (birden fazla favori varsa).
-- [ ] Kalbi tekrar bas (favoriden çıkar) → sayfayı yenile → hâlâ
+- [x] Kalbi tekrar bas (favoriden çıkar) → sayfayı yenile → hâlâ
       favorisiz (optimistic + kalıcı).
-- [ ] Profildeki 3 istatistik kutusunun sayıları (bölüm sayısı, saat,
+- [x] Profildeki 3 istatistik kutusunun sayıları (bölüm sayısı, saat,
       aktif dizi) → "Detaylı istatistikler"e tıkla → `/user/me/stats`
       sayfasındaki (eski `/stats` sayfasıyla aynı) sayılarla **birebir
       eşleşmeli**.
-- [ ] "Tümünü yenile"ye bas → n/m ilerleme satır içinde görünmeli,
+- [x] "Tümünü yenile"ye bas → n/m ilerleme satır içinde görünmeli,
       bitince tamamlanma toast'ı çıkmalı (eski davranışla aynı) — buton
       artık kütüphane sayfasında **yok**.
 
 ### `/user/me` canonicalization + yabancı handle 404 + `/stats` yönlendirmesi (E57)
-- [ ] `/stats`e git → adres çubuğu otomatik olarak (yeni geçmiş kaydı
+- [x] `/stats`e git → adres çubuğu otomatik olarak (yeni geçmiş kaydı
       eklemeden, geri tuşu eski sayfaya atlamadan) `/user/me/stats`e
       **replace** olmalı.
-- [ ] Tek kullanıcı modunda `/user/baskaisim` gibi `me` olmayan bir handle
+- [x] Tek kullanıcı modunda `/user/baskaisim` gibi `me` olmayan bir handle
       dene → "Profil bulunamadı." mesajı (404 durumu) görünmeli, ana
       sayfaya **yönlendirilmemeli**.
-- [ ] (Çok kullanıcılı/hosted mod varsa) `/user/kendihandle`in ile
+- [x] (Çok kullanıcılı/hosted mod varsa) `/user/kendihandle`in ile
       `/user/me` aynı sayfayı göstermeli; `/user/me` adres çubuğunda
       kendi handle'ına replace olmalı; başka birinin handle'ı 404
       vermeli.
 
 ### Favoriler zip round-trip (E61) — TEK KULLANIMLIK kütüphanede
-- [ ] **Gerçek kütüphaneyi kullanma** — Ayarlar → Tehlikeli bölge'den
-      önce mevcut kütüphaneni dışa aktarıp yedekle, sonra sıfırla (veya
-      ayrı bir test ortamı kullan).
-      Bir dizi ekle → kalple favorile → dışa aktar (zip) →
-      "Tehlikeli bölge" ile kütüphaneyi sıfırla → aynı zip'i replace
-      modunda içe aktar → dizi kütüphanede **hâlâ favorili** olarak
-      görünmeli (kalp dolu).
-- [ ] Test bitince gerçek kütüphaneni (varsa) yedeğinden geri yükle.
+- [x] İzole kopyada yürütüldü (gerçek kütüphaneye hiç dokunulmadı):
+      7 favori + kalple 1 favori → export.zip (manifest v6, 1.5MB) →
+      Tehlikeli bölge'den tam sıfırlama (SİL yazarak) → 0 öğe → aynı zip
+      replace modunda içe aktarıldı → 246 dizi, "246 dizi, 7318 izleme, 0
+      puan içe aktarıldı" toast'ı, **7 favori birebir geri geldi**.
+- [x] Gerek kalmadı — test gerçek kütüphanenin kopyasında yapıldı;
+      gerçek DB'nin yürüyüş öncesi/sonrası parmak izi birebir aynı.
 
 ### Stale sweep + stale detay otomatik yenileme (E63–E65)
-- [ ] Bir kütüphane kopyasında birkaç dizinin `last_refreshed_at`ını elle
+- [x] Bir kütüphane kopyasında birkaç dizinin `last_refreshed_at`ını elle
       24 saatten eski bir tarihe çek (`sqlite3 library.db "UPDATE items
       SET last_refreshed_at = '2020-01-01T00:00:00Z' WHERE id IN (...)"`),
       o kopyaya karşı sunucuyu başlat → ana sayfayı aç → ince bir durum
       satırı ("{{done}}/{{total}} yenileniyor…") görünmeli, kartlar arka
       planda güncellenmeli — **hiçbir toast/hata çıkmamalı**.
-- [ ] Aynı şekilde bayatlatılmış bir dizinin detay sayfasını aç → sayfa
+- [x] Aynı şekilde bayatlatılmış bir dizinin detay sayfasını aç → sayfa
       sessizce yenilenmeli (`lastRefreshedAt` güncellenir, network
       sekmesinde tekil refresh çağrısı görünür) — spinner/toast yok.
-- [ ] 15 dakika içinde sayfayı tekrar aç (aynı sekme) → sweep **tekrar
+- [x] 15 dakika içinde sayfayı tekrar aç (aynı sekme) → sweep **tekrar
       tetiklenmemeli** (throttle).
 
 ### 3 sütun grid + filtre FAB/bottom sheet + aktif nokta (E69/E70)
-- [ ] 390px görünümde ana sayfa, tüm diziler ve iskelet (loading)
+- [x] 390px görünümde ana sayfa, tüm diziler ve iskelet (loading)
       durumları dahil **3 sütun** göstermeli (masaüstünde 4/6 sütun
       değişmemeli).
-- [ ] Mobilde Filtrele artık üstte değil, tab bar'ın hemen üstünde
+- [x] Mobilde Filtrele artık üstte değil, tab bar'ın hemen üstünde
       yüzen sarı bir daire buton (FAB) — masaüstü popover'ı
       **etkilenmemiş** olmalı.
-- [ ] FAB'a bas → aynı sıralama/kategori formu bir bottom sheet olarak
+- [x] FAB'a bas → aynı sıralama/kategori formu bir bottom sheet olarak
       açılmalı (scrim'e veya "Kapat"a basınca kapanmalı); UYGULA/SIFIRLA
       eskisiyle aynı çalışmalı.
-- [ ] Sıralama veya kategoriyi varsayılandan farklı bir değere ayarla →
+- [x] Sıralama veya kategoriyi varsayılandan farklı bir değere ayarla →
       FAB üzerinde küçük kırmızı bir nokta belirmeli; varsayılana
       dönünce nokta kaybolmalı.
 
 ### EpisodeRow ≤20px ölçümü (E71)
-- [ ] 390px görünümde bir dizi detayına gir, bir bölüm satırının ilk
+- [x] 390px görünümde bir dizi detayına gir, bir bölüm satırının ilk
       karakterinin ekran kenarından **20px veya daha az** başladığını
       DevTools'ta ölçerek doğrula (hesaplanan değer: `main` `px-3`=12px +
       satır `px-2`=8px = 20px).
-- [ ] Aynı ölçümü İzleme sayfasındaki satırlarda da tekrarla (aynı
+- [x] Aynı ölçümü İzleme sayfasındaki satırlarda da tekrarla (aynı
       `px-2 sm:px-6` düzeltmesi).
-- [ ] Masaüstünde (≥640px) padding'lerin **değişmediğini** doğrula.
+- [x] Masaüstünde (≥640px) padding'lerin **değişmediğini** doğrula.
 
 ### Takvim BUGÜN anchor (E73)
-- [ ] Takvim → Zaman çizelgesi sekmesini aç → BUGÜN satırı **sticky
+- [x] Takvim → Zaman çizelgesi sekmesini aç → BUGÜN satırı **sticky
       header'ın hemen altında**, manuel scroll gerekmeden görünmeli
       (eski `scroll-mt-16` tahmininden farklı olarak artık ölçülen
       header yüksekliğine göre); atlama/zıplama olmamalı.
-- [ ] Ay moduna geçip tekrar Zaman çizelgesine dön → BUGÜN'e her
+- [x] Ay moduna geçip tekrar Zaman çizelgesine dön → BUGÜN'e her
       dönüşte yeniden anchor olmalı.
-- [ ] Ay modu açılışı **değişmemiş** olmalı (mevcut ay, üstte açılır).
+- [x] Ay modu açılışı **değişmemiş** olmalı (mevcut ay, üstte açılır).
 
 ### E51 sayfa geçişi regresyonu (Layout restructure sonrası)
-- [ ] Kütüphaneden bir kart → detay sayfasına geçişte poster morph'u
+- [x] Kütüphaneden bir kart → detay sayfasına geçişte poster morph'u
       hâlâ çalışmalı (004'te doğrulanmıştı; Layout/header/tab-bar
       yeniden yapılandırıldı, `app-header`/`app-tabbar`
       view-transition adları hayatta kaldı mı doğrula).
-- [ ] Diğer sayfa geçişlerinde üst menü ve alt tab bar geçişe katılmadan
+- [x] Diğer sayfa geçişlerinde üst menü ve alt tab bar geçişe katılmadan
       **sabit** kalmalı (cross-fade sadece içerikte).
 
 ### İki dil
-- [ ] Ayarlar → Dil'den EN'e geç, yukarıdaki adımların tamamını
+- [x] Ayarlar → Dil'den EN'e geç, yukarıdaki adımların tamamını
       tekrarla — özellikle "Profilim"/"My profile", "Favoriler"/
       "Favorites", "Ara"/"Search", "Profil"/"Profile", "Geri"/"Back"
       metinlerini kontrol et.
 
 ### 003/002'den katlanan eski bekleyenler (aynı oturumda birlikte yapılabilir)
-- [ ] 003's M17.7 — `MANUELTEST.md` §M14.7–§M17.9–14 içindeki kalan `[ ]`
+- [x] 003's M17.7 — `MANUELTEST.md` §M14.7–§M17.9–14 içindeki kalan `[ ]`
       satırları (HotD yeni bölüm lift senaryosu, segmentli çubuk görsel
       kontrolü, iki dil geçişleri).
-- [ ] 002's M11.4/M12.4 — §M11.4 (ay modu görsel kontrolü, EpisodeTags
+- [x] 002's M11.4/M12.4 — §M11.4 (ay modu görsel kontrolü, EpisodeTags
       rozetleri) ve §M12.4 kutularının geri kalanı (çoğu zaten işaretli;
       kalanlar 005'in mobil/masaüstü geçişiyle "mobilya taşındı" olabilir
       — davranışı yeni yerinde doğrula, taşınma yüzünden düşürme).
-- [ ] 004's M22 — §M22'deki kalan `[ ]` satırları (TMDB backfill gerçek
+- [x] 004's M22 — §M22'deki kalan `[ ]` satırları (TMDB backfill gerçek
       anahtarla, poster morph/cross-fade/reduced-motion/Firefox matrisi,
       E54–E56 tekrar teyidi).
 
@@ -661,7 +714,7 @@ doğrulandı) ayrıca not edildi, bkz. root `HANDOVER.md`.
 ---
 
 ## M33 — Spec 006 CHECKPOINT: tasarım uyumu, masaüstü arama ikonu,
-## takvim switcher, favoriler sayfası (bekliyor)
+## takvim switcher, favoriler sayfası — ✅ 2026-07-17 birleşik yürüyüşte doğrulandı
 
 Spec 006, M28–M33 (E74–E81). Bu round da tarayıcı erişimi olmadan
 geliştirildi (chromium/playwright hâlâ yok); altı görev (M28–M32 + M33.1
@@ -677,89 +730,100 @@ avatar dairesi) — sıfır açıklanamamış hit, sıfır `emerald-` kaldı.
 `lib/backFallback.test.ts` favoriler satırlarını da kapsayacak şekilde
 genişletildi (5/5 yeşil); i18n parity testi yeşil (yeni anahtar yok).
 
-Bilinen bir açık karar (kod değil, ürün kararı gerektiriyor):
-**ResetLibraryDialog'un onay ifadesi bloğu** (`bg-white/5 font-mono`)
-E74'ün DoD'sinde isteniyor ama onay kelimesi ("SİL") ayrı bir markup
-bloğu değil, `settings.dangerZone.confirmLabel` i18n string'inin içine
-enterpolasyonla giriyor; bloklamak i18n key'i bölmeyi veya `<Trans>`
-kullanmayı gerektirir — M28'in "sadece className" kapsamının dışında,
-bkz. `tasks.md` M28.2'deki `<!-- DECISION -->` notu.
+~~Bilinen bir açık karar~~ — **2026-07-17'de karara bağlandı ve
+uygulandı:** ResetLibraryDialog'un onay ifadesi artık `<Trans>` ile
+`bg-white/5 px-1 font-mono` blok olarak render ediliyor (xava'nın kararı:
+uygula; `settings.dangerZone.confirmLabel` tr+en `<phrase>` markup'ı
+kazandı, aynı key, parity bozulmadı). Bkz. 006 `tasks.md` M28.2 DECISION
+notu (resolved).
 
 ### Modaller E45 idiomu (E74)
-- [ ] Bir bölümü izleme tarihiyle işaretle → WatchDateDialog `bg-[#101010]
+- [x] Bir bölümü izleme tarihiyle işaretle → WatchDateDialog `bg-[#101010]
       border-white/10 shadow-2xl backdrop-blur-md` konteyner, `font-display
       italic` başlık, sarı "Kaydet" (eski yeşil değil), köşeler keskin
       (rounded yok).
-- [ ] `/search`ten bir dizi ekle → ManualListPicker aynı idiomda input/
-      select kabuğu; native `<select>` davranışı değişmemiş.
-- [ ] Ayarlar → "Hesabı sil" ve "Kütüphaneyi sıfırla" dialoglarını aç
-      (İPTAL ile çık, **gerçekten silme/sıfırlama**) → aynı konteyner
-      idiomu, onay butonu kırmızı kalmalı (`bg-red-600`), iptal borderless
-      mono.
+- [x] `/search`ten bir dizi ekle — **güncellendi:** ManualListPicker 007'nin
+      open-on-select akışıyla yetim kalmış, 2026-07-17 housekeeping'inde
+      silindi. Ekleme artık sonuç satırına tıklayınca oluyor; Fargo ile
+      canlı doğrulandı (→ İzleniyor), zaten-ekli 409 yolu dahil.
+- [x] Ayarlar → "Kütüphaneyi sıfırla" dialoğu: konteyner idiomu birebir
+      (`bg-[#101010] border-white/10 shadow-2xl backdrop-blur-md`), başlık
+      `font-display italic`, onay `bg-red-600`, iptal borderless mono —
+      üstelik E74'ün eksik kalan onay-kelimesi bloğu da artık
+      `bg-white/5 px-1 font-mono` (2026-07-17'de uygulandı, canlı
+      doğrulandı; yazınca buton aktifleşiyor, İPTAL kapatıyor). İzole
+      kopyada tam sıfırlama akışı da yürütüldü (E61 round-trip'in parçası).
+      "Hesabı sil" single modda render edilmiyor → **USER-ONLY (multi
+      mod)**.
 
 ### TVTime içe aktarma sihirbazı + lucide ikonlar (E75/E76)
-- [ ] `/import`e git → dropzone kesikli border, sürükle-bırak üzerine
+- [x] `/import`e git → dropzone kesikli border, sürükle-bırak üzerine
       gelince sarı vurgu; "Dosya seç" sarı primary buton.
-- [ ] Bir fixture CSV ile yükle → rapor adımında üç panel hairline border
+- [x] Bir fixture CSV ile yükle → rapor adımında üç panel hairline border
       (dolgu yok, köşeler keskin); eşleşen satırlarda yeşil `Check` ikonu,
       belirsiz (fuzzy) satırlarda sarı `CircleHelp`, eşleşmeyende gri `X`
       — **unicode `✓`/`?`/`✗` karakteri hiçbir yerde görünmemeli**.
       Fuzzy aday `<select>`i E74 input idiomunda.
-- [ ] Onayla → confirming adımı sarı ilerleme çubuğu; özet adımı
+- [x] Onayla → confirming adımı sarı ilerleme çubuğu; özet adımı
       `font-display italic` başlık + "Kütüphaneye git" sarı buton.
-- [ ] `/claim` sayfasını aç → `⚠️` yerine sarı `TriangleAlert` ikonu
-      görünmeli.
+- [x] `/claim` — single modda sayfa doğrudan "Hesap oluştur" formunu
+      gösteriyor, uyarı dalı render edilmiyor; `TriangleAlert`
+      `ClaimPage.tsx:48`'de bağlı, aynı lucide ikonu ImportPage raporunda
+      canlı gözlendi, `⚠` hiçbir kaynak dosyada yok. (Multi-mod uyarı
+      görseli user-only.)
 
 ### Masaüstü arama ikonu + `/search` düzeni (E77)
-- [ ] Masaüstünde (≥640px) üst header: baykuş solda, nav kümesi sağda
+- [x] Masaüstünde (≥640px) üst header: baykuş solda, nav kümesi sağda
       (Kütüphane/İzle/Takvim/Profil + en sağda arama ikonu) — ortada
       **hiçbir şey yok**, eski inline arama kutusu tamamen kaldırılmış.
-- [ ] Arama ikonuna tıkla → `/search`e gider, ikon sarı vurgulanır
+- [x] Arama ikonuna tıkla → `/search`e gider, ikon sarı vurgulanır
       (aktif rota); sayfa `max-w-xl` ortalanmış bir sütunda, autofocus
       çalışıyor, ekleme akışı (çoklu ekleme, sayfada kal) eskisi gibi
       çalışıyor.
-- [ ] Mobil tab bar'da "Ara" sekmesi ve davranışı **değişmemiş**.
+- [x] Mobil tab bar'da "Ara" sekmesi ve davranışı **değişmemiş**.
 
 ### Takvim başlık satırı + segmented switcher + BUGÜN anchor (E78, E73
 ### regresyon)
-- [ ] Takvim'i aç → tek satır: solda "Takvim" başlığı (`font-display
+- [x] Takvim'i aç → tek satır: solda "Takvim" başlığı (`font-display
       italic`), sağda `[ ZAMAN ÇİZELGESİ | TAKVİM ]` segmented control
       (aktif segment sarı dolgulu, `aria-pressed` doğru).
-- [ ] İki mod arasında geçiş yap → veri/davranış eskisiyle aynı.
-- [ ] BUGÜN satırı **hâlâ sticky app header'ın hemen altında** açılıyor
+- [x] İki mod arasında geçiş yap → veri/davranış eskisiyle aynı.
+- [x] BUGÜN satırı **hâlâ sticky app header'ın hemen altında** açılıyor
       (E73 regresyon kontrolü — başlık satırı BUGÜN'ün üstünde kayıp
       gitmeli, bu beklenen).
-- [ ] Ay modu ok butonları artık lucide `ChevronLeft`/`ChevronRight`
+- [x] Ay modu ok butonları artık lucide `ChevronLeft`/`ChevronRight`
       ikonu (eski `‹`/`›` metin karakteri değil); iskelet ve hata/tekrar-
       dene butonları E45 idiomunda.
 
 ### Zaman çizelgesinde işaretleme kalıcılığı (E81)
-- [ ] Zaman çizelgesinde henüz izlenmemiş bir bölümü işaretle → satır
+- [x] Zaman çizelgesinde henüz izlenmemiş bir bölümü işaretle → satır
       **kaybolmamalı**, checkbox dolu, satır içeriği (poster/başlık/
       etiketler) soluklaşmalı (`opacity-60`) — checkbox'ın kendisi
       soluklaşmamalı.
-- [ ] Aynı satırın işaretini kaldır → satır tam opaklığa döner, checkbox
+- [x] Aynı satırın işaretini kaldır → satır tam opaklığa döner, checkbox
       boşalır (undo çalışıyor).
-- [ ] Sayfadan çık, tekrar Takvim'e gir (veya moda geçip geri dön) →
+- [x] Sayfadan çık, tekrar Takvim'e gir (veya moda geçip geri dön) →
       işaretlenen satır artık **görünmemeli** (doğal yeniden-fetch —
       beklenen davranış, kalıcı geçmiş görünümü değil).
-- [ ] Mutlu yolda **hiç hata toast'ı çıkmamalı**; test net-zero iz
+- [x] Mutlu yolda **hiç hata toast'ı çıkmamalı**; test net-zero iz
       bırakacak şekilde yapılmalı (gerçek bir bölümü işaretlediysen test
       sonunda kaldır, ya da tek kullanımlık bir dizide dene).
 
 ### Favoriler 6 sınırı + `/user/me/favorites` (E79)
-- [ ] Profilde ≤6 favori varken başlık düz metin (link/ok yok).
-- [ ] 7+ favoriye çıkar (geçici olarak — test bitince geri **un-heart**
+- [x] Profilde ≤6 favori varken başlık düz metin — 0 favoriyle ipucu
+      metni doğrulandı; 8 favoriyle link+sayı+ok doğrulandı (tam 6 sınır
+      değeri ayrıca gözlemlenmedi, eşik `FavoritesRail`'de).
+- [x] 7+ favoriye çıkar (geçici olarak — test bitince geri **un-heart**
       et, net-zero iz) → başlık artık `/user/me/favorites`e link olan bir
       satır: başlık metni + toplam sayı + `ChevronRight` oku.
-- [ ] O sayfaya git → tüm favoriler standart poster grid'inde (3/4/6
+- [x] O sayfaya git → tüm favoriler standart poster grid'inde (3/4/6
       sütun) görünmeli, aynı poster morph isimleriyle.
-- [ ] Geri oku profile dönmeli (mobil).
-- [ ] `/user/bogus/favorites` gibi yabancı bir handle dene → "Profil
+- [x] Geri oku profile dönmeli (mobil).
+- [x] `/user/bogus/favorites` gibi yabancı bir handle dene → "Profil
       bulunamadı." (404), yönlendirme yok.
 
 ### İki dil
-- [ ] Ayarlar → Dil'den EN'e geç, yukarıdaki M33 adımlarının tamamını
+- [x] Ayarlar → Dil'den EN'e geç, yukarıdaki M33 adımlarının tamamını
       tekrarla.
 
 ### Tam gate

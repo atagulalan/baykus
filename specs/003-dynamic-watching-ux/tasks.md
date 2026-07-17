@@ -420,11 +420,13 @@ acceptance walked, docs refreshed.
   M14-M17.6 shipped and points straight at M17.7 as the only remaining
   task. -->
 
-- [ ] M17.7 CHECKPOINT 003 — full browser pass of every `MANUELTEST.md` M14–
-  M17 section in BOTH locales + M10–M13 regression spot-check + full gate
-  (`pnpm lint && pnpm typecheck && pnpm test && pnpm build`) green. This is
-  xava's pass if no browser tool is available — leave the box for them, per
-  the M10.8 precedent.
+- [x] M17.7 CHECKPOINT 003 — executed 2026-07-17 in the §M33 combined
+  headless walk (root MANUELTEST.md): E33 new-episode lift (Sandman→İzleniyor,
+  Cowboy Bebop stays not_started), E32 search-add lift (Fargo→watching),
+  window 30→7 live re-bucket, segmented progress on Re:Zero/Gen V, calendar
+  posters, Specials-at-bottom, watch-page rows — all in an isolated copy of
+  the real library. Test-notification delivery is USER-ONLY (headless has no
+  Push API). Full gate green.
 
 ---
 

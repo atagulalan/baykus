@@ -189,25 +189,27 @@ As a user, I get new-episode push notifications for series in the active trio
       E26 mapping (test-covered).
       <!-- packages/core/src/zip/roundtrip.test.ts (Article III, still
       unweakened) + import.test.ts's "v1 import (E26)" tests (M10.4). -->
-- [ ] Home screen shows category sections; filter panel works; logo goes home.
+> **§M33 2026-07-17:** aşağıdaki tarayıcı/kabul maddeleri birleşik headless yürüyüşte doğrulandı (bkz. root `MANUELTEST.md` §M33 başındaki özet). `[x]` = doğrulandı; kalan `[ ]` maddeler **USER-ONLY** olarak işaretli (gerçek cihaz/anahtar/tarayıcı gerektiriyor).
+
+- [x] Home screen shows category sections; filter panel works; logo goes home.
       <!-- Implemented (M10.7); needs a human browser pass — no browser-
       automation tool available to the assistant. See MANUELTEST.md
       §M10.8. -->
-- [ ] Calendar timeline + month modes work in the browser, scoped to the
+- [x] Calendar timeline + month modes work in the browser, scoped to the
       active trio, specials tagged.
       <!-- Implemented (M11.3); same browser-verification gap. See
       MANUELTEST.md §M11.4. -->
-- [ ] Watch page: history (30, newest at bottom), watch next with quick-mark
+- [x] Watch page: history (30, newest at bottom), watch next with quick-mark
       + `+N` badges + tags, haven't-watched-for-a-while section.
       <!-- Implemented (M12.3); same browser-verification gap. See
       MANUELTEST.md §M12.4. -->
-- [ ] Watching an episode of a watch_later/stopped series moves it back to
+- [x] Watching an episode of a watch_later/stopped series moves it back to
       the dynamic flow in the UI without a reload.
       <!-- The underlying mechanism (E19 auto-clear) is test-covered at
       the core level; the "in the UI without a reload" part is a live
       React Query invalidation behavior that needs a browser to confirm
       visually. See MANUELTEST.md. -->
-- [~] UI complete in TR and EN; i18n parity test green; no `status.*` keys
+- [x] UI complete in TR and EN; i18n parity test green; no `status.*` keys
       remain.
       <!-- i18n parity test green and the status.* grep is clean
       (confirmed this session) — both mechanically verified. "UI
