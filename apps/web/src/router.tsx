@@ -20,6 +20,7 @@ import { LoginPage } from "./pages/LoginPage.tsx";
 import { ProfilePage } from "./pages/ProfilePage.tsx";
 import { SearchPage } from "./pages/SearchPage.tsx";
 import { SeriesDetailPage } from "./pages/SeriesDetailPage.tsx";
+import { SeriesPreviewPage } from "./pages/SeriesPreviewPage.tsx";
 import { SettingsPage } from "./pages/SettingsPage.tsx";
 import { StatsPage } from "./pages/StatsPage.tsx";
 import { WatchPage } from "./pages/WatchPage.tsx";
@@ -41,6 +42,27 @@ const seriesDetailRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/series/$id",
   component: SeriesDetailPage,
+});
+
+const seriesPreviewRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/series/new",
+  component: SeriesPreviewPage,
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): {
+    tmdbId?: number | undefined;
+    tvmazeId?: number | undefined;
+    imdbId?: string | undefined;
+    tvdbId?: number | undefined;
+  } => {
+    return {
+      tmdbId: search.tmdbId ? Number(search.tmdbId) : undefined,
+      tvmazeId: search.tvmazeId ? Number(search.tvmazeId) : undefined,
+      imdbId: search.imdbId ? String(search.imdbId) : undefined,
+      tvdbId: search.tvdbId ? Number(search.tvdbId) : undefined,
+    };
+  },
 });
 
 const watchRoute = createRoute({
@@ -140,6 +162,7 @@ const importRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   libraryRoute,
   seriesDetailRoute,
+  seriesPreviewRoute,
   watchRoute,
   calendarRoute,
   statsRoute,
