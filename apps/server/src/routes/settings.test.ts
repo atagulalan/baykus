@@ -57,6 +57,10 @@ describe("GET /api/settings", () => {
       scrapersEnabled: false,
       tmdbApiKeySet: false,
       watchingWindowDays: 30,
+      episodeLabelFormat: "SxEy",
+      spoilerProtection: false,
+      defaultStartPage: "home",
+      newSeriesDefaultStatus: "watching",
     });
   });
 });
@@ -148,6 +152,32 @@ describe("PATCH /api/settings", () => {
       method: "PATCH",
       headers: HEADERS,
       body: JSON.stringify({ watchingWindowDays: value }),
+    });
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error: { code: string } };
+    expect(body.error.code).toBe("VALIDATION_FAILED");
+  });
+
+  it("updates episodeLabelFormat and round-trips it (E116)", async () => {
+    const { app } = setup();
+    const res = await app.request("/api/settings", {
+      method: "PATCH",
+      headers: HEADERS,
+      body: JSON.stringify({ episodeLabelFormat: "S01E06" }),
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ episodeLabelFormat: "S01E06" });
+
+    const getRes = await app.request("/api/settings");
+    expect(await getRes.json()).toMatchObject({ episodeLabelFormat: "S01E06" });
+  });
+
+  it("400 VALIDATION_FAILED for an invalid episodeLabelFormat", async () => {
+    const { app } = setup();
+    const res = await app.request("/api/settings", {
+      method: "PATCH",
+      headers: HEADERS,
+      body: JSON.stringify({ episodeLabelFormat: "invalid" }),
     });
     expect(res.status).toBe(400);
     const body = (await res.json()) as { error: { code: string } };

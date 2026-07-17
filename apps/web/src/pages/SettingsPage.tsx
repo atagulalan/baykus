@@ -13,10 +13,13 @@ import {
   sendTestPush,
   updateSettings,
 } from "../api/client.ts";
-import type { ImportMode, ImportZipResult, Locale, Settings, SettingsPatch } from "../api/types.ts";
+import type { ImportZipResult, Locale, Settings, SettingsPatch } from "../api/types.ts";
 import { Checkbox } from "../components/Checkbox.tsx";
 import { DeleteAccountDialog } from "../components/DeleteAccountDialog.tsx";
+import { Modal } from "../components/Modal.tsx";
 import { ResetLibraryDialog } from "../components/ResetLibraryDialog.tsx";
+import { SettingsSelect } from "../components/SettingsSelect.tsx";
+import { StepperInput } from "../components/StepperInput.tsx";
 import {
   getCurrentPushSubscription,
   isPushSupported,
@@ -26,7 +29,16 @@ import {
 import { useToast } from "../lib/toast.tsx";
 
 const LOCALES: Locale[] = ["tr", "en"];
-const REGIONS = ["TR", "US", "GB", "DE", "FR", "ES", "IT", "NL"];
+const REGIONS = [
+  { code: "TR", flag: "🇹🇷" },
+  { code: "US", flag: "🇺🇸" },
+  { code: "GB", flag: "🇬🇧" },
+  { code: "DE", flag: "🇩🇪" },
+  { code: "FR", flag: "🇫🇷" },
+  { code: "ES", flag: "🇪🇸" },
+  { code: "IT", flag: "🇮🇹" },
+  { code: "NL", flag: "🇳🇱" },
+];
 
 export function SettingsPage() {
   const { t, i18n } = useTranslation();
@@ -34,12 +46,13 @@ export function SettingsPage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [tmdbKeyInput, setTmdbKeyInput] = useState("");
-  const [windowInput, setWindowInput] = useState<string | null>(null);
-  const [importMode, setImportMode] = useState<ImportMode>("merge");
+  const [tmdbKeyPreview, setTmdbKeyPreview] = useState<string | null>(null);
+  const [isEditingTmdbKey, setIsEditingTmdbKey] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importResult, setImportResult] = useState<ImportZipResult | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const query = useQuery({ queryKey: ["settings"], queryFn: getSettings });
   const sessionQuery = useQuery({ queryKey: ["auth-session"], queryFn: getAuthSession });
@@ -64,18 +77,11 @@ export function SettingsPage() {
     patch.mutate({ locale });
   }
 
-  function handleWindowBlur(currentWindowDays: number) {
-    if (windowInput === null) return;
-    const parsed = Number(windowInput);
-    if (Number.isInteger(parsed) && parsed >= 1 && parsed <= 365 && parsed !== currentWindowDays) {
-      patch.mutate({ watchingWindowDays: parsed });
-    }
-    setWindowInput(null);
-  }
-
   function handleSaveTmdbKey() {
     const value = tmdbKeyInput.trim();
     if (!value) return;
+    setTmdbKeyPreview(value.slice(0, 5));
+    setIsEditingTmdbKey(false);
     patch.mutate({ tmdbApiKey: value });
     setTmdbKeyInput("");
   }
@@ -108,7 +114,7 @@ export function SettingsPage() {
   const importMutation = useMutation({
     mutationFn: () => {
       if (!importFile) throw new Error("no file selected");
-      return importZip(importFile, importMode);
+      return importZip(importFile, "merge");
     },
     onSuccess: (result) => {
       setImportResult(result);
@@ -171,306 +177,448 @@ export function SettingsPage() {
   const settings = query.data;
   if (!settings) return null;
 
-  return (
-    <div className="flex max-w-2xl flex-col gap-6">
-      <h1 className="font-display italic text-snow text-4xl leading-none tracking-tight mb-2">
-        {t("settings.title")}
-      </h1>
-
-      <section className="flex flex-col gap-4 border border-white/5 bg-[#101010] p-6">
-        <h2 className="font-mono text-xs text-yellow tracking-widest uppercase mb-2">
+  const sections = (
+    <>
+      {/* General */}
+      <section className="break-inside-avoid mb-6 flex flex-col border border-white/5 bg-[#101010] overflow-hidden">
+        <h2 className="font-mono text-xs text-yellow tracking-widest uppercase px-6 pt-6 pb-2 border-b border-white/5 bg-[#0a0a0a]">
           {t("settings.general.title")}
         </h2>
 
-        <label className="flex flex-col gap-1 text-sm font-sans text-snow">
-          {t("settings.general.locale")}
-          <select
+        <div className="flex flex-col">
+          <SettingsSelect
+            label={t("settings.general.locale")}
+            options={LOCALES.map((l) => ({
+              value: l,
+              label: t(`settings.general.localeName.${l}`),
+            }))}
             value={settings.locale}
-            onChange={(e) => handleLocaleChange(e.target.value as Locale)}
-            className="border-b border-white/20 bg-transparent px-2 py-2 text-snow focus:outline-none focus:border-yellow transition-colors mt-1"
-          >
-            {LOCALES.map((locale) => (
-              <option key={locale} value={locale} className="bg-[#101010]">
-                {t(`settings.general.localeName.${locale}`)}
-              </option>
-            ))}
-          </select>
-        </label>
+            onChange={(val) => handleLocaleChange(val as Locale)}
+          />
 
-        <label className="flex flex-col gap-1 text-sm font-sans text-snow mt-2">
-          {t("settings.general.region")}
-          <select
+          <SettingsSelect
+            label={t("settings.general.region")}
+            options={REGIONS.map((r) => ({ value: r.code, label: `${r.flag} ${r.code}` }))}
             value={settings.region}
-            onChange={(e) => patch.mutate({ region: e.target.value })}
-            className="border-b border-white/20 bg-transparent px-2 py-2 text-snow focus:outline-none focus:border-yellow transition-colors mt-1"
-          >
-            {REGIONS.map((region) => (
-              <option key={region} value={region} className="bg-[#101010]">
-                {region}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="flex flex-col gap-1 text-sm font-sans text-snow mt-2">
-          {t("settings.general.watchingWindow")}
-          <input
-            type="number"
-            min={1}
-            max={365}
-            value={windowInput ?? String(settings.watchingWindowDays)}
-            onChange={(e) => setWindowInput(e.target.value)}
-            onBlur={() => handleWindowBlur(settings.watchingWindowDays)}
-            className="border-b border-white/20 bg-transparent px-2 py-2 text-snow focus:outline-none focus:border-yellow transition-colors mt-1"
+            onChange={(val) => patch.mutate({ region: val })}
           />
-          <span className="font-mono text-[10px] text-muted mt-1">
-            {t("settings.general.watchingWindowHint")}
-          </span>
-        </label>
 
-        <label className="flex flex-col gap-1 text-sm font-sans text-muted mt-2">
-          {t("settings.general.theme")}
-          <select
-            disabled
+          <SettingsSelect
+            label={t("settings.general.episodeLabelFormat")}
+            options={[
+              { value: "SxEy", label: "S1E6" },
+              { value: "S01E06", label: "S01E06" },
+              { value: "compact", label: "1×6" },
+            ]}
+            value={settings.episodeLabelFormat}
+            onChange={(val) =>
+              patch.mutate({ episodeLabelFormat: val as "SxEy" | "S01E06" | "compact" })
+            }
+          />
+
+          <div className="flex w-full flex-col border-b border-white/5 px-6 py-4 text-snow transition-colors last:border-b-0">
+            <div className="flex w-full items-center justify-between">
+              <span className="font-sans text-sm">{t("settings.general.watchingWindow")}</span>
+              <div className="w-32">
+                <StepperInput
+                  value={settings.watchingWindowDays}
+                  min={1}
+                  max={365}
+                  onChange={(val) => patch.mutate({ watchingWindowDays: val })}
+                />
+              </div>
+            </div>
+            <span className="mt-1 font-mono text-[10px] text-muted">
+              {t("settings.general.watchingWindowHint")}
+            </span>
+          </div>
+
+          <SettingsSelect
+            label={t("settings.general.defaultStartPage")}
+            options={[
+              { value: "home", label: t("settings.general.defaultStartPageName.home") },
+              { value: "calendar", label: t("settings.general.defaultStartPageName.calendar") },
+              { value: "stats", label: t("settings.general.defaultStartPageName.stats") },
+            ]}
+            value={settings.defaultStartPage}
+            onChange={(val) =>
+              patch.mutate({ defaultStartPage: val as "home" | "calendar" | "stats" })
+            }
+          />
+
+          <SettingsSelect
+            label={t("settings.general.newSeriesDefaultStatus")}
+            options={[
+              {
+                value: "watching",
+                label: t("settings.general.newSeriesDefaultStatusName.watching"),
+              },
+              {
+                value: "watchlist",
+                label: t("settings.general.newSeriesDefaultStatusName.watchlist"),
+              },
+            ]}
+            value={settings.newSeriesDefaultStatus}
+            onChange={(val) =>
+              patch.mutate({ newSeriesDefaultStatus: val as "watching" | "watchlist" })
+            }
+          />
+
+          <div className="flex w-full flex-col border-b border-white/5 px-6 py-4 text-snow transition-colors last:border-b-0">
+            <div className="flex w-full items-center justify-between gap-3">
+              {/* biome-ignore lint/a11y/noLabelWithoutControl: wraps Checkbox */}
+              <label className="cursor-pointer font-sans text-sm hover:text-white flex-1">
+                {t("settings.general.spoilerProtection")}
+              </label>
+              <Checkbox
+                checked={settings.spoilerProtection}
+                onChange={(checked) => patch.mutate({ spoilerProtection: checked })}
+              />
+            </div>
+            <span className="mt-1 font-mono text-[10px] text-muted">
+              {t("settings.general.spoilerProtectionHint")}
+            </span>
+          </div>
+
+          <SettingsSelect
+            label={t("settings.general.theme")}
+            options={[{ value: "dark", label: t("settings.general.themeDark") }]}
             value="dark"
-            className="border-b border-white/10 bg-transparent px-2 py-2 text-muted mt-1"
-          >
-            <option value="dark">{t("settings.general.themeDark")}</option>
-          </select>
-          <span className="font-mono text-[10px] text-muted mt-1">
-            {t("settings.general.themeSoon")}
-          </span>
-        </label>
-      </section>
-
-      <section className="flex flex-col gap-4 border border-white/5 bg-[#101010] p-6">
-        <h2 className="font-mono text-xs text-yellow tracking-widest uppercase mb-2">
-          {t("settings.providers.title")}
-        </h2>
-
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2 text-sm text-snow">
-            <span>{t("settings.providers.tmdbKey")}</span>
-            {settings.tmdbApiKeySet && (
-              <span className="text-yellow text-xs font-mono">
-                {t("settings.providers.tmdbKeySet")}
-              </span>
-            )}
-          </div>
-          <div className="flex gap-4">
-            <input
-              type="password"
-              value={tmdbKeyInput}
-              onChange={(e) => setTmdbKeyInput(e.target.value)}
-              placeholder={t("settings.providers.tmdbKeyPlaceholder")}
-              className="flex-1 border-b border-white/20 bg-transparent px-2 py-2 text-sm text-snow focus:outline-none focus:border-yellow transition-colors"
-              autoComplete="off"
-            />
-            <button
-              type="button"
-              onClick={handleSaveTmdbKey}
-              disabled={!tmdbKeyInput.trim()}
-              className="font-mono text-[10px] tracking-widest uppercase bg-yellow text-[#080808] px-4 py-2 transition-opacity disabled:opacity-50 hover:opacity-90"
-            >
-              {t("settings.save")}
-            </button>
-            {settings.tmdbApiKeySet && (
-              <button
-                type="button"
-                onClick={() => patch.mutate({ tmdbApiKey: null })}
-                className="font-mono text-[10px] tracking-widest uppercase border border-white/10 text-muted px-4 py-2 hover:text-snow hover:border-white/20 transition-colors"
-              >
-                {t("settings.providers.clear")}
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* biome-ignore lint/a11y/noLabelWithoutControl: wraps Checkbox, which renders a native <button> — a labelable element per the HTML spec, so click-to-toggle still works. */}
-        <label className="flex items-center gap-3 text-sm text-snow mt-4 cursor-pointer">
-          <Checkbox
-            checked={settings.scrapersEnabled}
-            onChange={(checked) => patch.mutate({ scrapersEnabled: checked })}
+            onChange={() => {}}
           />
-          {t("settings.providers.scrapers")}
-        </label>
-        <p className="font-mono text-[10px] text-muted">{t("settings.providers.scrapersTos")}</p>
+        </div>
       </section>
 
-      <section className="flex flex-col gap-4 border border-white/5 bg-[#101010] p-6">
-        <h2 className="font-mono text-xs text-yellow tracking-widest uppercase mb-2">
+      {/* Notifications */}
+      <section className="break-inside-avoid mb-6 flex flex-col border border-white/5 bg-[#101010] overflow-hidden">
+        <h2 className="font-mono text-xs text-yellow tracking-widest uppercase px-6 pt-6 pb-2 border-b border-white/5 bg-[#0a0a0a]">
           {t("settings.notifications.title")}
         </h2>
-        {!pushSupported ? (
-          <p className="font-mono text-[10px] text-muted">
-            {t("settings.notifications.unsupported")}
-          </p>
-        ) : pushStatusQuery.data ? (
-          <div className="flex gap-4">
-            <button
-              type="button"
-              onClick={() => unsubscribeMutation.mutate()}
-              disabled={unsubscribeMutation.isPending}
-              className="font-mono text-[10px] tracking-widest uppercase border border-white/10 text-muted px-4 py-2 hover:text-snow hover:border-white/20 transition-colors disabled:opacity-50"
-            >
-              {t("settings.notifications.disable")}
-            </button>
-            <button
-              type="button"
-              onClick={() => testPushMutation.mutate()}
-              disabled={testPushMutation.isPending}
-              className="font-mono text-[10px] tracking-widest uppercase border border-white/10 text-snow px-4 py-2 hover:bg-white/5 transition-colors disabled:opacity-50"
-            >
-              {t("settings.notifications.test")}
-            </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => subscribeMutation.mutate()}
-            disabled={subscribeMutation.isPending}
-            className="self-start font-mono text-[10px] tracking-widest uppercase bg-yellow text-[#080808] px-4 py-2 transition-opacity disabled:opacity-50 hover:opacity-90"
-          >
-            {t("settings.notifications.enable")}
-          </button>
-        )}
-      </section>
 
-      <section className="flex flex-col gap-4 border border-white/5 bg-[#101010] p-6">
-        <h2 className="font-mono text-xs text-yellow tracking-widest uppercase mb-2">
-          {t("settings.data.title")}
-        </h2>
-
-        <a
-          href={exportZipUrl()}
-          download
-          className="self-start font-mono text-[10px] tracking-widest uppercase border border-white/10 text-muted px-4 py-2 hover:text-snow hover:border-white/20 transition-colors"
-        >
-          {t("settings.data.export")}
-        </a>
-
-        <div className="flex flex-col gap-4 border-t border-white/5 pt-4 mt-2">
-          <span className="text-sm font-sans text-snow">{t("settings.data.importTitle")}</span>
-
-          <div className="flex flex-col gap-2 text-sm text-snow">
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="radio"
-                name="import-mode"
-                checked={importMode === "merge"}
-                onChange={() => setImportMode("merge")}
-                className="accent-yellow"
-              />
-              {t("settings.data.mode.merge")}
-            </label>
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="radio"
-                name="import-mode"
-                checked={importMode === "replace"}
-                onChange={() => setImportMode("replace")}
-                className="accent-yellow"
-              />
-              {t("settings.data.mode.replace")}
-            </label>
-          </div>
-
-          <div className="flex gap-4 items-center">
-            <input
-              type="file"
-              accept=".zip,application/zip"
-              onChange={(e) => {
-                setImportFile(e.target.files?.[0] ?? null);
-                setImportResult(null);
-              }}
-              className="flex-1 font-mono text-xs text-muted file:bg-[#101010] file:border file:border-white/10 file:px-3 file:py-1 file:text-muted file:font-mono file:text-[10px] file:uppercase file:tracking-widest file:mr-4 hover:file:text-snow transition-colors"
-            />
-            <button
-              type="button"
-              onClick={() => importMutation.mutate()}
-              disabled={!importFile || importMutation.isPending}
-              className="shrink-0 font-mono text-[10px] tracking-widest uppercase bg-yellow text-[#080808] px-4 py-2 transition-opacity disabled:opacity-50 hover:opacity-90"
-            >
-              {importMutation.isPending
-                ? t("settings.data.importing")
-                : t("settings.data.importButton")}
-            </button>
-          </div>
-
-          {importResult && (
-            <div className="flex flex-col gap-2 border border-white/5 bg-white/5 p-4 text-sm">
-              <p className="text-yellow font-mono text-xs">
-                {t("settings.data.success", {
-                  items: importResult.items,
-                  watches: importResult.watches,
-                  ratings: importResult.ratings,
-                })}
-              </p>
-              {importResult.warnings.length > 0 && (
-                <div className="flex flex-col gap-1 text-[10px] font-mono text-muted/70">
-                  <span className="text-muted tracking-widest uppercase">
-                    {t("settings.data.warnings")}
-                  </span>
-                  <ul className="list-inside list-disc">
-                    {importResult.warnings.map((warning) => (
-                      <li key={warning}>{warning}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+        <div className="flex w-full flex-col border-b border-white/5 px-6 py-4 text-snow transition-colors last:border-b-0">
+          {!pushSupported ? (
+            <p className="font-mono text-[10px] text-muted">
+              {t("settings.notifications.unsupported")}
+            </p>
+          ) : pushStatusQuery.data ? (
+            <div className="flex gap-4">
+              <button
+                type="button"
+                onClick={() => unsubscribeMutation.mutate()}
+                disabled={unsubscribeMutation.isPending}
+                className="font-mono text-[10px] tracking-widest uppercase border border-white/10 text-muted px-4 py-2 hover:text-snow hover:border-white/20 transition-colors disabled:opacity-50"
+              >
+                {t("settings.notifications.disable")}
+              </button>
+              <button
+                type="button"
+                onClick={() => testPushMutation.mutate()}
+                disabled={testPushMutation.isPending}
+                className="font-mono text-[10px] tracking-widest uppercase border border-white/10 text-snow px-4 py-2 hover:bg-white/5 transition-colors disabled:opacity-50"
+              >
+                {t("settings.notifications.test")}
+              </button>
             </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => subscribeMutation.mutate()}
+              disabled={subscribeMutation.isPending}
+              className="self-start font-mono text-[10px] tracking-widest uppercase bg-yellow text-[#080808] px-4 py-2 transition-opacity disabled:opacity-50 hover:opacity-90"
+            >
+              {t("settings.notifications.enable")}
+            </button>
           )}
         </div>
-
-        <Link
-          to="/import"
-          className="self-start font-mono text-[10px] tracking-widest uppercase border border-white/10 text-muted px-4 py-2 hover:text-snow hover:border-white/20 transition-colors mt-2"
-        >
-          {t("settings.data.tvtimeImport")}
-        </Link>
       </section>
 
-      <section className="flex flex-col gap-4 border border-red-900/20 bg-[#101010] p-6">
-        <h2 className="font-mono text-xs text-red-400 tracking-widest uppercase mb-2">
-          {t("settings.dangerZone.title")}
-        </h2>
-        <p className="font-mono text-[10px] text-muted">{t("settings.dangerZone.description")}</p>
-        <button
-          type="button"
-          onClick={() => setResetDialogOpen(true)}
-          className="self-start font-mono text-[10px] tracking-widest uppercase border border-red-900/50 text-red-400 px-4 py-2 hover:bg-red-900/20 transition-colors mt-2"
-        >
-          {t("settings.dangerZone.button")}
-        </button>
-      </section>
-
+      {/* Account (multi mode only) */}
       {sessionQuery.data?.mode === "multi" && (
-        <section className="flex flex-col gap-4 border border-white/5 bg-[#101010] p-6">
-          <h2 className="font-mono text-xs text-yellow tracking-widest uppercase mb-2">
+        <section className="break-inside-avoid mb-6 flex flex-col border border-white/5 bg-[#101010] overflow-hidden">
+          <h2 className="font-mono text-xs text-yellow tracking-widest uppercase px-6 pt-6 pb-2 border-b border-white/5 bg-[#0a0a0a]">
             {t("auth.account.title")}
           </h2>
-          <p className="font-sans text-sm text-snow">
-            {t("auth.account.handle", { handle: sessionQuery.data.handle ?? "" })}
-          </p>
-          <div className="flex gap-4 mt-2">
-            <button
-              type="button"
-              onClick={() => logoutMutation.mutate()}
-              disabled={logoutMutation.isPending}
-              className="font-mono text-[10px] tracking-widest uppercase border border-white/10 text-muted px-4 py-2 hover:text-snow hover:border-white/20 transition-colors disabled:opacity-50"
-            >
-              {t("auth.account.logout")}
-            </button>
-            <button
-              type="button"
-              onClick={() => setDeleteDialogOpen(true)}
-              className="font-mono text-[10px] tracking-widest uppercase border border-red-900/50 text-red-400 px-4 py-2 hover:bg-red-900/20 transition-colors"
-            >
-              {t("auth.account.delete")}
-            </button>
+          <div className="flex w-full flex-col border-b border-white/5 px-6 py-4 text-snow transition-colors last:border-b-0">
+            <p className="font-sans text-sm text-snow">
+              {t("auth.account.handle", { handle: sessionQuery.data.handle ?? "" })}
+            </p>
+            <div className="flex gap-4 mt-2">
+              <button
+                type="button"
+                onClick={() => logoutMutation.mutate()}
+                disabled={logoutMutation.isPending}
+                className="font-mono text-[10px] tracking-widest uppercase border border-white/10 text-muted px-4 py-2 hover:text-snow hover:border-white/20 transition-colors disabled:opacity-50"
+              >
+                {t("auth.account.logout")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setDeleteDialogOpen(true)}
+                className="font-mono text-[10px] tracking-widest uppercase border border-red-900/50 text-red-400 px-4 py-2 hover:bg-red-900/20 transition-colors"
+              >
+                {t("auth.account.delete")}
+              </button>
+            </div>
           </div>
         </section>
       )}
+
+      {/* Advanced toggle */}
+      {!showAdvanced ? (
+        <section className="break-inside-avoid mb-6 flex flex-col border border-white/5 bg-[#101010] overflow-hidden">
+          <div className="flex w-full flex-col px-6 py-6 items-center justify-center text-center">
+            <span className="font-mono text-xs text-yellow tracking-widest uppercase mb-2">
+              {t("settings.providers.title")}
+            </span>
+            <button
+              type="button"
+              onClick={() => setShowAdvanced(true)}
+              className="font-mono text-[10px] tracking-widest uppercase border border-white/10 text-snow px-4 py-2 hover:bg-white/5 transition-colors mt-2"
+            >
+              Göster
+            </button>
+          </div>
+        </section>
+      ) : (
+        <>
+          {/* Providers */}
+          <section className="break-inside-avoid mb-6 flex flex-col border border-white/5 bg-[#101010] overflow-hidden">
+            <h2 className="font-mono text-xs text-yellow tracking-widest uppercase px-6 pt-6 pb-2 border-b border-white/5 bg-[#0a0a0a]">
+              {t("settings.providers.title")}
+            </h2>
+
+            {/* TMDB Key */}
+            <div className="flex w-full flex-col border-b border-white/5 px-6 py-4 text-snow last:border-b-0">
+              <div className="flex items-center justify-between mb-3">
+                <span className="font-sans text-sm">{t("settings.providers.tmdbKey")}</span>
+                {settings.tmdbApiKeySet && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      patch.mutate({ tmdbApiKey: null });
+                      setTmdbKeyPreview(null);
+                      setIsEditingTmdbKey(false);
+                      setTmdbKeyInput("");
+                    }}
+                    className="font-mono text-[10px] tracking-widest uppercase text-muted hover:text-red-400 transition-colors"
+                  >
+                    {t("settings.providers.clear")}
+                  </button>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={
+                    settings.tmdbApiKeySet && !isEditingTmdbKey
+                      ? `${tmdbKeyPreview ?? ""}${"•".repeat(8)}`
+                      : tmdbKeyInput
+                  }
+                  readOnly={settings.tmdbApiKeySet && !isEditingTmdbKey}
+                  onFocus={() => {
+                    if (settings.tmdbApiKeySet) setIsEditingTmdbKey(true);
+                  }}
+                  onBlur={() => {
+                    if (!tmdbKeyInput) setIsEditingTmdbKey(false);
+                  }}
+                  onChange={(e) => setTmdbKeyInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSaveTmdbKey()}
+                  placeholder={t("settings.providers.tmdbKeyPlaceholder")}
+                  className="flex-1 border-b border-white/20 bg-transparent px-2 py-2 text-snow focus:outline-none focus:border-yellow transition-colors font-mono text-xs"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck={false}
+                />
+                <button
+                  type="button"
+                  onClick={handleSaveTmdbKey}
+                  disabled={!tmdbKeyInput.trim()}
+                  className="font-mono text-[10px] tracking-widest uppercase bg-yellow text-[#080808] px-4 py-2 transition-opacity disabled:opacity-30 hover:opacity-90 shrink-0"
+                >
+                  {t("settings.save")}
+                </button>
+              </div>
+            </div>
+
+            {/* Scrapers toggle */}
+            {/* biome-ignore lint/a11y/noLabelWithoutControl: wraps Checkbox */}
+            <label className="flex w-full cursor-pointer items-center justify-between border-b border-white/5 px-6 py-4 text-snow hover:bg-white/5 transition-colors last:border-b-0">
+              <div className="flex flex-col gap-0.5">
+                <span className="font-sans text-sm">{t("settings.providers.scrapers")}</span>
+                <span className="font-mono text-[10px] text-muted">
+                  {t("settings.providers.scrapersTos")}
+                </span>
+              </div>
+              <Checkbox
+                checked={settings.scrapersEnabled}
+                onChange={(checked) => patch.mutate({ scrapersEnabled: checked })}
+              />
+            </label>
+          </section>
+
+          {/* Data */}
+          <section className="break-inside-avoid mb-6 flex flex-col border border-white/5 bg-[#101010] overflow-hidden">
+            <h2 className="font-mono text-xs text-yellow tracking-widest uppercase px-6 pt-6 pb-2 border-b border-white/5 bg-[#0a0a0a]">
+              {t("settings.data.title")}
+            </h2>
+
+            <div className="flex w-full flex-col border-b border-white/5 px-6 py-4 text-snow transition-colors last:border-b-0">
+              <a
+                href={exportZipUrl()}
+                download
+                className="self-start font-mono text-[10px] tracking-widest uppercase border border-white/10 text-muted px-4 py-2 hover:text-snow hover:border-white/20 transition-colors"
+              >
+                {t("settings.data.export")}
+              </a>
+            </div>
+
+            <div className="flex w-full flex-col border-b border-white/5 px-6 py-5 text-snow last:border-b-0">
+              <span className="text-sm font-sans text-snow mb-4">
+                {t("settings.data.importTitle")}
+              </span>
+
+              {/* File drop zone */}
+              <label
+                className={`flex flex-col items-center justify-center gap-2 border border-dashed py-8 cursor-pointer transition-colors ${
+                  importFile
+                    ? "border-yellow/40 bg-yellow/5"
+                    : "border-white/10 hover:border-white/20 hover:bg-white/[0.02]"
+                }`}
+              >
+                <input
+                  type="file"
+                  accept=".zip,application/zip"
+                  className="sr-only"
+                  onChange={(e) => {
+                    setImportFile(e.target.files?.[0] ?? null);
+                    setImportResult(null);
+                  }}
+                />
+                {importFile ? (
+                  <>
+                    <span className="font-mono text-xs text-yellow">📦 {importFile.name}</span>
+                    <span className="font-mono text-[10px] text-muted">
+                      {(importFile.size / 1024).toFixed(1)} KB
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="font-mono text-[10px] text-muted tracking-widest uppercase">
+                      Zip dosyası seç
+                    </span>
+                    <span className="font-mono text-[10px] text-muted/50">.zip</span>
+                  </>
+                )}
+              </label>
+
+              <button
+                type="button"
+                onClick={() => importMutation.mutate()}
+                disabled={!importFile || importMutation.isPending}
+                className="mt-3 w-full font-mono text-[10px] tracking-widest uppercase bg-yellow text-[#080808] px-4 py-3 transition-opacity disabled:opacity-30 hover:opacity-90"
+              >
+                {importMutation.isPending
+                  ? t("settings.data.importing")
+                  : t("settings.data.importButton")}
+              </button>
+
+              {importResult && (
+                <div className="flex flex-col gap-2 border border-white/5 bg-white/5 p-4 text-sm mt-3">
+                  <p className="text-yellow font-mono text-xs">
+                    {t("settings.data.success", {
+                      items: importResult.items,
+                      watches: importResult.watches,
+                      ratings: importResult.ratings,
+                    })}
+                  </p>
+                  {importResult.warnings.length > 0 && (
+                    <div className="flex flex-col gap-1 text-[10px] font-mono text-muted/70">
+                      <span className="text-muted tracking-widest uppercase">
+                        {t("settings.data.warnings")}
+                      </span>
+                      <ul className="list-inside list-disc">
+                        {importResult.warnings.map((warning) => (
+                          <li key={warning}>{warning}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="flex w-full flex-col border-b border-white/5 px-6 py-4 text-snow transition-colors last:border-b-0">
+              <Link
+                to="/import"
+                className="self-start font-mono text-[10px] tracking-widest uppercase border border-white/10 text-muted px-4 py-2 hover:text-snow hover:border-white/20 transition-colors"
+              >
+                {t("settings.data.tvtimeImport")}
+              </Link>
+            </div>
+          </section>
+
+          {/* Danger Zone */}
+          <section className="break-inside-avoid mb-6 flex flex-col border border-red-900/20 bg-[#101010] overflow-hidden">
+            <h2 className="font-mono text-xs text-red-400 tracking-widest uppercase px-6 pt-6 pb-2 border-b border-red-900/20 bg-[#0a0a0a]">
+              {t("settings.dangerZone.title")}
+            </h2>
+            <div className="flex w-full flex-col border-b border-white/5 px-6 py-4 text-snow transition-colors last:border-b-0">
+              <p className="font-mono text-[10px] text-muted mb-2">
+                {t("settings.dangerZone.description")}
+              </p>
+              <button
+                type="button"
+                onClick={() => setResetDialogOpen(true)}
+                className="self-start font-mono text-[10px] tracking-widest uppercase border border-red-900/50 text-red-400 px-4 py-2 hover:bg-red-900/20 transition-colors mt-2"
+              >
+                {t("settings.dangerZone.button")}
+              </button>
+            </div>
+          </section>
+
+          <div className="flex justify-center mb-6">
+            <button
+              type="button"
+              onClick={() => setShowAdvanced(false)}
+              className="font-mono text-[10px] tracking-widest uppercase border border-white/10 text-muted px-4 py-2 hover:text-snow hover:border-white/20 transition-colors"
+            >
+              Gizle
+            </button>
+          </div>
+        </>
+      )}
+    </>
+  );
+
+  return (
+    <>
+      {/* Desktop */}
+      <div className="hidden max-w-4xl sm:block">
+        <h1 className="mb-6 font-display text-4xl italic leading-none tracking-tight text-snow">
+          {t("settings.title")}
+        </h1>
+        <div className="columns-1 gap-6 sm:columns-2">{sections}</div>
+      </div>
+
+      {/* Mobile: bottom-sheet Modal */}
+      <Modal
+        isOpen={true}
+        onClose={() => window.history.back()}
+        className="p-0 bg-[#080808]"
+        rootClassName="sm:hidden"
+      >
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-white/5 bg-[#0a0a0a]/90 px-6 py-4 backdrop-blur-md">
+          <h2 className="font-display italic text-snow text-xl">{t("settings.title")}</h2>
+          <button
+            type="button"
+            onClick={() => window.history.back()}
+            className="font-mono text-[10px] uppercase tracking-widest text-muted transition-colors hover:text-snow"
+          >
+            {t("library.filter.close", { defaultValue: "Kapat" })}
+          </button>
+        </div>
+        <div className="flex flex-col pb-24">{sections}</div>
+      </Modal>
 
       {deleteDialogOpen && (
         <DeleteAccountDialog
@@ -489,6 +637,6 @@ export function SettingsPage() {
           onConfirm={() => resetLibraryMutation.mutate()}
         />
       )}
-    </div>
+    </>
   );
 }

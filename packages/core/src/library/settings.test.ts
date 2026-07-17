@@ -12,6 +12,10 @@ describe("getSettings", () => {
       scrapersEnabled: false,
       tmdbApiKeySet: false,
       watchingWindowDays: 30,
+      episodeLabelFormat: "SxEy",
+      spoilerProtection: false,
+      defaultStartPage: "home",
+      newSeriesDefaultStatus: "watching",
     });
   });
 });
@@ -49,6 +53,42 @@ describe("watchingWindowDays (E31)", () => {
   });
 });
 
+describe("episodeLabelFormat (E116)", () => {
+  it("defaults to 'SxEy' when absent", () => {
+    const { db } = openLibraryDb(":memory:");
+    expect(getSettings(db).episodeLabelFormat).toBe("SxEy");
+  });
+
+  it.each(["SxEy", "S01E06", "compact"] as const)("round-trips a written value (%s)", (format) => {
+    const { db } = openLibraryDb(":memory:");
+    const result = updateSettings(db, { episodeLabelFormat: format });
+    expect(result.episodeLabelFormat).toBe(format);
+    expect(getSettings(db).episodeLabelFormat).toBe(format);
+  });
+
+  it.each([
+    "unknown",
+    "sxey",
+    "",
+    "S1E6",
+  ])("a garbage stored value (%s) reads back as 'SxEy'", (raw) => {
+    const { db, sqlite } = openLibraryDb(":memory:");
+    sqlite.prepare("INSERT INTO settings (key, value) VALUES ('episode_label_format', ?)").run(raw);
+    expect(getSettings(db).episodeLabelFormat).toBe("SxEy");
+  });
+
+  it("patching episodeLabelFormat leaves other keys intact", () => {
+    const { db } = openLibraryDb(":memory:");
+    updateSettings(db, { locale: "en", watchingWindowDays: 7 });
+    const result = updateSettings(db, { episodeLabelFormat: "compact" });
+    expect(result).toMatchObject({
+      locale: "en",
+      watchingWindowDays: 7,
+      episodeLabelFormat: "compact",
+    });
+  });
+});
+
 describe("updateSettings", () => {
   it("upserts individual keys and returns the merged settings", () => {
     const { db } = openLibraryDb(":memory:");
@@ -64,6 +104,10 @@ describe("updateSettings", () => {
       scrapersEnabled: true,
       tmdbApiKeySet: false,
       watchingWindowDays: 30,
+      episodeLabelFormat: "SxEy",
+      spoilerProtection: false,
+      defaultStartPage: "home",
+      newSeriesDefaultStatus: "watching",
     });
   });
 
