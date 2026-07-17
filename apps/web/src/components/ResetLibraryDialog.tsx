@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 import { exportZipUrl } from "../api/client.ts";
 
 interface ResetLibraryDialogProps {
@@ -46,7 +46,15 @@ export function ResetLibraryDialog({
         </a>
 
         <label className="flex flex-col gap-1 text-sm text-snow">
-          {t("settings.dangerZone.confirmLabel", { phrase: confirmPhrase })}
+          <span>
+            <Trans
+              i18nKey="settings.dangerZone.confirmLabel"
+              values={{ phrase: confirmPhrase }}
+              components={{
+                phrase: <span className="bg-white/5 px-1 font-mono" />,
+              }}
+            />
+          </span>
           <input
             type="text"
             value={input}

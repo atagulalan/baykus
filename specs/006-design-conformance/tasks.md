@@ -52,16 +52,16 @@ idiom from the FilterPanel bottom sheet.
   - **Tests:** none beyond typecheck.
   - **Verify:** open both dialogs from Settings; cancel out (do NOT
     actually reset/delete against the real library).
-  - <!-- DECISION: flagged, not done — ResetLibraryDialog's confirm
-    phrase ("SİL") is interpolated as plain text inside the
-    `settings.dangerZone.confirmLabel` i18n string
-    (`Onaylamak için "{{phrase}}" yaz`), not a separate markup block.
-    Making it a `bg-white/5 font-mono` highlighted block per the DoD
-    requires either splitting the i18n key or introducing `<Trans>` —
-    both structural/i18n changes outside M28's className-only scope.
-    Left as plain interpolated text; needs an explicit call (spec
-    amendment to drop the block requirement, or a follow-up task) before
-    touching. -->
+  - <!-- DECISION: resolved 2026-07-17 (xava's call) — implemented as a
+    follow-up outside M28's className-only scope. The
+    `settings.dangerZone.confirmLabel` value (tr+en) now wraps the
+    phrase in `<phrase>{{phrase}}</phrase>` markup and
+    ResetLibraryDialog renders it via react-i18next `<Trans>` with a
+    `bg-white/5 px-1 font-mono` span, satisfying the E74 phrase-block
+    DoD. Same key, no parity change; confirmation logic untouched.
+    (Original state: the phrase was plain interpolated text —
+    `Onaylamak için "{{phrase}}" yaz` — flagged here because boxing it
+    needed an i18n structure change.) -->
 
 ---
 

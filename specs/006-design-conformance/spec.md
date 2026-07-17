@@ -218,8 +218,9 @@ the calendar naturally reloads.
       "arama" mention describes the add-series-via-search feature, not
       header chrome layout — left unchanged.
 
-One open judgment call, not a code gap: **ResetLibraryDialog's E74 phrase
-block** (see tasks.md M28.2 `<!-- DECISION -->`) — the confirm phrase is
-i18n-interpolated text, not a separable markup block; boxing it requires
-an i18n key split outside M28's className-only scope. Needs a spec call
-(drop the block requirement, or a follow-up task) before touching.
+~~One open judgment call, not a code gap: **ResetLibraryDialog's E74 phrase
+block**~~ — resolved 2026-07-17 (xava's call: implement). The confirm
+phrase now renders as a `bg-white/5 px-1 font-mono` block via
+react-i18next `<Trans>` markup in `settings.dangerZone.confirmLabel`
+(same key, tr+en, parity unchanged); see tasks.md M28.2
+`<!-- DECISION -->` for the details. E74's phrase-block DoD is met.
