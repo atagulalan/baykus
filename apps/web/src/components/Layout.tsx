@@ -17,11 +17,40 @@ import { selfHandleParam } from "../lib/profilePath.ts";
 import { readBrowsePath, updateUiPrefs } from "../lib/uiPrefs.ts";
 import { Z } from "../lib/zIndex.ts";
 
+/**
+ * Instagram-style active treatment (spec 010 WP1): active tab = filled icon;
+ * search has no natural filled form, so active = bolder stroke instead.
+ * Targets the descendant `<svg>` directly — CSS beats lucide's `fill="none"`
+ * presentation attribute, an inherited value from the `<a>` would not.
+ */
+const ACTIVE_FILL = "[&.active_svg]:fill-current";
+const ACTIVE_BOLD = "[&.active_svg]:stroke-[2.5]";
+/** Non-`.active`-class fallback for the browse (grid⇄list) forced-active case below. */
+const FORCE_FILL = "[&_svg]:fill-current";
+
 /** E67 / E138: desktop + mobile tab bar. Library grid is a peer view of Watch (E142). */
 const NAV_ITEMS = [
-  { to: "/watch" as const, key: "app.nav.watch", Icon: Play, browse: true as const },
-  { to: "/calendar" as const, key: "app.nav.calendar", Icon: CalendarDays, browse: false as const },
-  { to: "/search" as const, key: "app.nav.search", Icon: Search, browse: false as const },
+  {
+    to: "/watch" as const,
+    key: "app.nav.watch",
+    Icon: Play,
+    browse: true as const,
+    activeClass: ACTIVE_FILL,
+  },
+  {
+    to: "/calendar" as const,
+    key: "app.nav.calendar",
+    Icon: CalendarDays,
+    browse: false as const,
+    activeClass: ACTIVE_FILL,
+  },
+  {
+    to: "/search" as const,
+    key: "app.nav.search",
+    Icon: Search,
+    browse: false as const,
+    activeClass: ACTIVE_BOLD,
+  },
 ];
 
 const BARE_PATHS = new Set(["/login", "/claim"]);
@@ -232,9 +261,9 @@ const AppHeader = memo(function AppHeader({ profileHandle }: { profileHandle: st
                 {...(item.to === "/calendar" ? { activeOptions: { exact: false as const } } : {})}
                 aria-label={t(item.key)}
                 title={t(item.key)}
-                className={`flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-void/70 text-muted shadow-lg backdrop-blur-md transition-colors hover:border-white/20 hover:text-snow [&.active]:text-yellow${
-                  item.browse && browseActive ? " text-yellow" : ""
-                }`}
+                className={`flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-void/70 text-muted shadow-lg backdrop-blur-md transition-colors hover:border-white/20 hover:text-snow [&.active]:text-yellow ${
+                  item.activeClass
+                }${item.browse && browseActive ? ` text-yellow ${FORCE_FILL}` : ""}`}
               >
                 <item.Icon size={16} strokeWidth={1.5} />
               </Link>
@@ -251,7 +280,7 @@ const AppHeader = memo(function AppHeader({ profileHandle }: { profileHandle: st
               to="/search"
               aria-label={t("app.nav.search")}
               title={t("app.nav.search")}
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-void/70 text-muted shadow-lg backdrop-blur-md transition-colors hover:border-white/20 hover:text-snow [&.active]:text-yellow"
+              className={`flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-void/70 text-muted shadow-lg backdrop-blur-md transition-colors hover:border-white/20 hover:text-snow [&.active]:text-yellow ${ACTIVE_BOLD}`}
             >
               <Search size={16} strokeWidth={1.5} />
             </Link>
@@ -260,7 +289,7 @@ const AppHeader = memo(function AppHeader({ profileHandle }: { profileHandle: st
               params={{ handle: profileHandle }}
               aria-label={t("app.nav.profile")}
               title={t("app.nav.profile")}
-              className="flex h-11 w-11 items-center justify-center text-muted transition-colors hover:text-snow [&.active]:text-yellow"
+              className={`flex h-11 w-11 items-center justify-center text-muted transition-colors hover:text-snow [&.active]:text-yellow ${ACTIVE_FILL}`}
             >
               <User size={18} strokeWidth={1.5} />
             </Link>
@@ -281,31 +310,31 @@ const AppTabBar = memo(function AppTabBar({ profileHandle }: { profileHandle: st
       className="fixed inset-x-0 bottom-0 flex border-t border-white/5 bg-void pb-[env(safe-area-inset-bottom)] sm:hidden"
       style={{ viewTransitionName: "app-tabbar", zIndex: Z.chrome }}
     >
-      {NAV_ITEMS.map(({ to, key, Icon, browse }) => {
+      {NAV_ITEMS.map(({ to, key, Icon, browse, activeClass }) => {
         const forceActive = browse && browseActive;
         return (
           <Link
             key={key}
             to={browse ? watchTo : to}
             {...(to === "/calendar" ? { activeOptions: { exact: false as const } } : {})}
-            className={`flex flex-1 flex-col items-center gap-1 py-3 text-muted transition-colors hover:text-snow [&.active]:text-yellow${
-              forceActive ? " text-yellow" : ""
+            aria-label={t(key)}
+            title={t(key)}
+            className={`flex flex-1 items-center justify-center py-3 text-muted transition-colors hover:text-snow [&.active]:text-yellow ${activeClass}${
+              forceActive ? ` text-yellow ${FORCE_FILL}` : ""
             }`}
           >
             <Icon size={20} strokeWidth={1.5} />
-            <span className="font-mono text-[9px] tracking-widest uppercase">{t(key)}</span>
           </Link>
         );
       })}
       <Link
         to="/user/$handle"
         params={{ handle: profileHandle }}
-        className="flex flex-1 flex-col items-center gap-1 py-3 text-muted hover:text-snow transition-colors [&.active]:text-yellow"
+        aria-label={t("app.nav.profile")}
+        title={t("app.nav.profile")}
+        className={`flex flex-1 items-center justify-center py-3 text-muted hover:text-snow transition-colors [&.active]:text-yellow ${ACTIVE_FILL}`}
       >
         <User size={20} strokeWidth={1.5} />
-        <span className="font-mono text-[9px] tracking-widest uppercase">
-          {t("app.nav.profile")}
-        </span>
       </Link>
     </nav>
   );
