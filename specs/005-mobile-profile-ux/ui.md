@@ -44,6 +44,11 @@ Kütüphane · İzle · Takvim · Ara · Profil
 
 Self-only in 005 (resolution matrix in data-model 005). Layout top-down:
 
+<!-- DECISION: superseded by 011 E153 / ui.md — banner → identity → stats
+tiles → favorites rail → all-series rail; no Detailed stats / Settings link
+rows; Refresh all lives in Settings → Data. Historical 005 layout kept below
+for archaeology. -->
+
 1. **Identity row** — owl-mark avatar placeholder; `@handle` (multi) or
    `profile.title` (single); settings gear icon-link on the right.
 2. **Favorites rail** — horizontal scroll of SeriesCard-derived tiles
