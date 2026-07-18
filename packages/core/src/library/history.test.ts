@@ -83,6 +83,27 @@ describe("getWatchHistory", () => {
     ]);
   });
 
+  it("order=oldest returns the earliest watches, not a reverse of the newest window", () => {
+    const { db } = openLibraryDb(":memory:");
+    const itemId = insertItem(db, "Test Show");
+    const ep = insertEpisode(db, itemId, 1, 1);
+    for (let i = 1; i <= 5; i++) {
+      addWatch(db, ep, itemId, `2026-01-0${i}T10:00:00Z`);
+    }
+
+    const newest = getWatchHistory(db, 2, "newest");
+    expect(newest.map((r) => r.watchedAt)).toEqual([
+      "2026-01-05T10:00:00Z",
+      "2026-01-04T10:00:00Z",
+    ]);
+
+    const oldest = getWatchHistory(db, 2, "oldest");
+    expect(oldest.map((r) => r.watchedAt)).toEqual([
+      "2026-01-01T10:00:00Z",
+      "2026-01-02T10:00:00Z",
+    ]);
+  });
+
   it("respects the limit", () => {
     const { db } = openLibraryDb(":memory:");
     const itemId = insertItem(db, "Test Show");

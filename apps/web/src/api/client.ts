@@ -304,8 +304,15 @@ export function getCalendar(
   return request<CalendarResponse>(`/calendar${qs ? `?${qs}` : ""}`);
 }
 
-export function getWatchHistory(limit?: number): Promise<WatchHistoryResponse> {
-  return request<WatchHistoryResponse>(`/watches/history${limit ? `?limit=${limit}` : ""}`);
+export function getWatchHistory(params?: {
+  limit?: number;
+  order?: "newest" | "oldest";
+}): Promise<WatchHistoryResponse> {
+  const query = new URLSearchParams();
+  if (params?.limit) query.set("limit", String(params.limit));
+  if (params?.order && params.order !== "newest") query.set("order", params.order);
+  const qs = query.toString();
+  return request<WatchHistoryResponse>(`/watches/history${qs ? `?${qs}` : ""}`);
 }
 
 export function exportZipUrl(includeSecrets = false): string {

@@ -8,6 +8,7 @@ const addWatchBodySchema = z.object({ watchedAt: z.string().optional() }).strict
 const historyQuerySchema = z
   .object({
     limit: z.coerce.number().int().min(1).max(100).optional(),
+    order: z.enum(["newest", "oldest"]).optional(),
   })
   .strict();
 
@@ -90,7 +91,7 @@ export function createWatchRoutes(library: Library): Hono {
 
   app.get("/api/watches/history", (c) => {
     const query = historyQuerySchema.parse(Object.fromEntries(new URL(c.req.url).searchParams));
-    const items = library.getWatchHistory(query.limit ?? 30);
+    const items = library.getWatchHistory(query.limit ?? 30, query.order ?? "newest");
     return c.json({ items, total: items.length });
   });
 

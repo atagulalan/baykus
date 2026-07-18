@@ -1,5 +1,5 @@
 import type { EpisodeType, ImageRef } from "@baykus/provider-sdk";
-import { desc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 import type { LibraryDatabase } from "../db/open.ts";
 import type { WatchSource } from "../db/schema.ts";
 import * as schema from "../db/schema.ts";
@@ -20,12 +20,25 @@ export interface WatchHistoryEntry {
   episodeType: EpisodeType | null;
 }
 
+/** E27 default + 011 E159: which end of the watch log to slice. */
+export type WatchHistoryOrder = "newest" | "oldest";
+
 /**
  * contracts/api.md §Watches — GET /api/watches/history. E27: it's a log —
- * newest-first, specials and every source included, no category scope.
- * `limit` is trusted as already-clamped (1-100); the route validates it.
+ * specials and every source included, no category scope. Default `newest`
+ * takes the latest `limit` rows; `oldest` takes the earliest `limit` rows
+ * (011 E159). `limit` is trusted as already-clamped (1-100); the route validates it.
  */
-export function getWatchHistory(db: LibraryDatabase, limit: number): WatchHistoryEntry[] {
+export function getWatchHistory(
+  db: LibraryDatabase,
+  limit: number,
+  order: WatchHistoryOrder = "newest",
+): WatchHistoryEntry[] {
+  const orderBy =
+    order === "oldest"
+      ? [asc(schema.watches.watchedAt), asc(schema.watches.id)]
+      : [desc(schema.watches.watchedAt), desc(schema.watches.id)];
+
   return db
     .select({
       watchId: schema.watches.id,
@@ -44,7 +57,7 @@ export function getWatchHistory(db: LibraryDatabase, limit: number): WatchHistor
     .from(schema.watches)
     .innerJoin(schema.episodes, eq(schema.episodes.id, schema.watches.episodeId))
     .innerJoin(schema.items, eq(schema.items.id, schema.watches.itemId))
-    .orderBy(desc(schema.watches.watchedAt), desc(schema.watches.id))
+    .orderBy(...orderBy)
     .limit(limit)
     .all();
 }

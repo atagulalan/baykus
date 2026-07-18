@@ -284,8 +284,11 @@ export interface Library {
   /** E64: narrows `itemIds` to the stale ones (E63), NULL-`lastRefreshedAt` first then oldest-first. */
   filterStaleItemIds(itemIds: number[], now?: string): number[];
   getCalendar(opts?: { from?: string; to?: string }): CalendarResponse;
-  /** E27: newest-first watch log; `limit` is trusted as already-clamped 1-100 (the route validates). */
-  getWatchHistory(limit: number): WatchHistoryEntry[];
+  /**
+   * E27 / 011 E159: watch log slice; `limit` is trusted as already-clamped 1-100
+   * (the route validates). Default order is newest-first.
+   */
+  getWatchHistory(limit: number, order?: "newest" | "oldest"): WatchHistoryEntry[];
   addPushSubscription(sub: PushSubscriptionRecord): void;
   removePushSubscription(endpoint: string): boolean;
   listPushSubscriptions(): PushSubscriptionRecord[];
@@ -641,8 +644,8 @@ export function createLibrary(db: LibraryDatabase): Library {
       return getCalendar(db, opts);
     },
 
-    getWatchHistory(limit: number): WatchHistoryEntry[] {
-      return getWatchHistory(db, limit);
+    getWatchHistory(limit: number, order: "newest" | "oldest" = "newest"): WatchHistoryEntry[] {
+      return getWatchHistory(db, limit, order);
     },
 
     addPushSubscription(sub: PushSubscriptionRecord): void {

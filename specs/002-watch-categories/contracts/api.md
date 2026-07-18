@@ -72,7 +72,9 @@ Side effect (E19): a `manual`/`bulk` watch clears the item's `manualList`.
 ```
 
 ### GET /api/watches/history?limit=30   (NEW)
-`limit` optional, 1–100, default 30. Newest first.
+`limit` optional, 1–100, default 30. `order` optional: `newest` (default) or
+`oldest` — which end of the log to slice (011 E159). Newest-first / oldest-first
+respectively; not a client reverse of the other window.
 ```json
 ← 200 { "items": [ {
     "watchId": 501, "watchedAt": "2026-07-14T21:30:00Z", "source": "manual",
@@ -82,6 +84,7 @@ Side effect (E19): a `manual`/`bulk` watch clears the item's `manualList`.
 ```
 `total` = number of items returned. Includes specials and every source (E27).
 *(AMENDED by 003 E38: entries gain nullable `airDate` + `episodeType`.)*
+*(AMENDED by 011 E159: optional `order=newest|oldest`.)*
 
 ## Calendar (changed)
 

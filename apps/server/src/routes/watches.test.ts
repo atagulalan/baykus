@@ -226,6 +226,34 @@ describe("GET /api/watches/history", () => {
     expect(body.items.map((i) => i.episodeId)).toEqual([ep2, ep1]);
   });
 
+  it("order=oldest returns the earliest watches", async () => {
+    const { app, ep1, ep2 } = setup();
+    await app.request(`/api/episodes/${ep1}/watches`, {
+      method: "POST",
+      headers: HEADERS,
+      body: JSON.stringify({ watchedAt: "2026-01-01T10:00:00Z" }),
+    });
+    await app.request(`/api/episodes/${ep2}/watches`, {
+      method: "POST",
+      headers: HEADERS,
+      body: JSON.stringify({ watchedAt: "2026-01-02T10:00:00Z" }),
+    });
+
+    const res = await app.request("/api/watches/history?order=oldest");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      items: { episodeId: number; watchedAt: string }[];
+      total: number;
+    };
+    expect(body.items.map((i) => i.episodeId)).toEqual([ep1, ep2]);
+  });
+
+  it("400 VALIDATION_FAILED for unknown order", async () => {
+    const { app } = setup();
+    const res = await app.request("/api/watches/history?order=random");
+    expect(res.status).toBe(400);
+  });
+
   it("respects an explicit limit", async () => {
     const { app, ep1, ep2 } = setup();
     await app.request(`/api/episodes/${ep1}/watches`, {

@@ -20,7 +20,7 @@ export {
   isManualListConflictError,
   ManualListConflictError,
 } from "./library/errors.ts";
-export type { WatchHistoryEntry } from "./library/history.ts";
+export type { WatchHistoryEntry, WatchHistoryOrder } from "./library/history.ts";
 export {
   getSeasonProgress,
   type SeasonProgress,
