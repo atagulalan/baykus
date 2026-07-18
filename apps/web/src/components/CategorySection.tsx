@@ -1,49 +1,59 @@
-import { useTranslation } from "react-i18next";
-import type { SeriesSummary, WatchCategory } from "../api/types.ts";
-import { CATEGORY_ICONS } from "../lib/categoryIcons.ts";
-import { SERIES_GRID_CLASSNAME } from "../lib/grid.ts";
-import type { LibrarySort } from "./FilterPanel.tsx";
-import { SortMenu } from "./FilterPanel.tsx";
-import { SeriesCard } from "./SeriesCard.tsx";
+import { useTranslation } from 'react-i18next'
+import type { SeriesSummary, WatchCategory } from '../api/types.ts'
+import { CATEGORY_ICONS } from '../lib/categoryIcons.ts'
+import { SERIES_GRID_CLASSNAME } from '../lib/grid.ts'
+import { sortSeriesSummaries } from '../lib/sortSeries.ts'
+import { sortsForCategory } from '../lib/uiPrefs.ts'
+import type { LibrarySort } from './FilterPanel.tsx'
+import { SortMenu } from './FilterPanel.tsx'
+import { SectionHeader } from './SectionHeader.tsx'
+import { SeriesCard } from './SeriesCard.tsx'
 
 interface CategorySectionProps {
-  category: WatchCategory;
-  items: SeriesSummary[];
-  /** Spec 010 WP2: page-level sort (Library/AllSeries share one value across all
-   * categories), surfaced per-section to match the Watch page's header pattern. */
-  sort: LibrarySort;
-  onSortChange: (sort: LibrarySort) => void;
+  category: WatchCategory
+  items: SeriesSummary[]
+  /** Spec 010 WP2: per-section sort (shared with Watch via watchSectionSorts). */
+  sort: LibrarySort
+  onSortChange: (sort: LibrarySort) => void
 }
 
 /** One home-page section: category header (label + count + sort) + card grid.
  * Renders nothing when empty. */
-export function CategorySection({ category, items, sort, onSortChange }: CategorySectionProps) {
-  const { t } = useTranslation();
-  if (items.length === 0) return null;
+export function CategorySection({
+  category,
+  items,
+  sort,
+  onSortChange
+}: CategorySectionProps) {
+  const { t } = useTranslation()
+  if (items.length === 0) return null
 
-  const Icon = CATEGORY_ICONS[category];
+  const Icon = CATEGORY_ICONS[category]
+  const sorted = sortSeriesSummaries(items, sort)
+  const sortOptions = sortsForCategory(category)
 
   return (
     <section className="flex flex-col gap-3">
-      <h2
-        style={{
-          top: "var(--app-header-height, 3.5rem)",
-          scrollMarginTop: "var(--app-header-height, 3.5rem)",
-        }}
-        className="sticky z-30 -mx-3 flex items-center gap-2 border-b border-white/5 bg-void/95 px-3 py-2.5 backdrop-blur sm:-mx-6 sm:px-6"
+      <SectionHeader
+        icon={Icon}
+        label={t(`category.${category}`)}
+        count={sorted.length}
+        inset="list"
       >
-        {Icon ? <Icon size={16} strokeWidth={1.75} className="shrink-0 text-muted" /> : null}
-        <span className="font-semibold text-base text-snow">{t(`category.${category}`)}</span>
-        <span className="font-mono text-sm tabular-nums text-muted">({items.length})</span>
-        <div className="ml-auto flex shrink-0 items-center gap-1">
-          <SortMenu sort={sort} onChange={onSortChange} idSuffix={category} />
-        </div>
-      </h2>
-      <div className={SERIES_GRID_CLASSNAME}>
-        {items.map((series) => (
+        {sortOptions.length > 0 ? (
+          <SortMenu
+            sort={sort}
+            onChange={onSortChange}
+            options={sortOptions}
+            idSuffix={category}
+          />
+        ) : null}
+      </SectionHeader>
+      <div className={`${SERIES_GRID_CLASSNAME} content-inset`}>
+        {sorted.map((series) => (
           <SeriesCard key={series.id} series={series} />
         ))}
       </div>
     </section>
-  );
+  )
 }

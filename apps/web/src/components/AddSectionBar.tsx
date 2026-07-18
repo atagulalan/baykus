@@ -10,16 +10,17 @@ interface AddSectionBarProps {
   onAdd: (category: WatchCategory) => void;
 }
 
-/** E141: bottom of /watch — pick a category section that is not already on the page. */
+/** E141 / E156: bottom of /watch — pick a category section that is not already on the page.
+ * `needs_review` is never offered (auto-shown when non-empty). */
 export function AddSectionBar({ present, onAdd }: AddSectionBarProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
-  const available = CATEGORY_ORDER.filter((c) => !present.includes(c));
+  const available = CATEGORY_ORDER.filter((c) => c !== "needs_review" && !present.includes(c));
 
   if (available.length === 0) return null;
 
   return (
-    <div className="pt-2 pb-4">
+    <div className="content-inset pt-2 pb-4">
       <button
         type="button"
         onClick={() => setOpen(true)}

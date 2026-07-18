@@ -69,6 +69,8 @@ function sessionRemove(key: string): void {
   }
 }
 
+/** E141: `watching` is pinned; defaults also include not_watched_recently.
+ * `needs_review` is not a user section — Watch/Library prepend it only when non-empty (E156). */
 export const DEFAULT_WATCH_SECTIONS: WatchCategory[] = ["watching", "not_watched_recently"];
 export const DEFAULT_BROWSE_VIEW: BrowseView = "list";
 
@@ -110,16 +112,22 @@ function defaultPrefs(): UiPrefs {
   };
 }
 
-function ensureWatchingPinned(cats: WatchCategory[]): WatchCategory[] {
-  return cats.includes("watching") ? cats : (["watching", ...cats] as WatchCategory[]);
+/**
+ * E141 / E156: `watching` is always present; `needs_review` is stripped from
+ * stored section prefs (rendered on demand when non-empty, never via “add”).
+ */
+export function ensurePinnedWatchSections(cats: WatchCategory[]): WatchCategory[] {
+  const withoutNeedsReview = cats.filter((c) => c !== "needs_review");
+  return withoutNeedsReview.includes("watching")
+    ? withoutNeedsReview
+    : (["watching", ...withoutNeedsReview] as WatchCategory[]);
 }
 
 function parseSections(raw: unknown): WatchCategory[] {
   if (!Array.isArray(raw)) return [...DEFAULT_WATCH_SECTIONS];
   const cats = raw.filter(isWatchCategory);
   if (cats.length === 0) return [...DEFAULT_WATCH_SECTIONS];
-  // E141: `watching` is pinned — always restore it if a prior prefs write dropped it.
-  return ensureWatchingPinned(cats);
+  return ensurePinnedWatchSections(cats);
 }
 
 function parseSorts(raw: unknown): Partial<Record<WatchCategory, LibrarySort>> {
@@ -269,7 +277,7 @@ export function clearUiPrefsForTests(): void {
 export function updateUiPrefs(patch: Partial<UiPrefs>): UiPrefs {
   const next = { ...readUiPrefs(), ...patch };
   if (patch.watchSections) {
-    next.watchSections = ensureWatchingPinned(patch.watchSections.filter(isWatchCategory));
+    next.watchSections = ensurePinnedWatchSections(patch.watchSections.filter(isWatchCategory));
   }
   writeUiPrefs(next);
   return next;
@@ -311,9 +319,32 @@ const CATEGORY_DEFAULT_SORT: Record<WatchCategory, LibrarySort> = {
   stopped: "lastWatched",
 };
 
+/**
+ * Sort keys that are meaningful for a category section. `not_started` has zero
+ * watches so `lastWatched` is always a no-op; finished/stopped shows rarely have
+ * a next air date so `nextAir` is dropped there.
+ */
+export function sortsForCategory(category: WatchCategory): LibrarySort[] {
+  switch (category) {
+    case "needs_review":
+      // E141: import-review noise — fixed order (added), no SortMenu.
+      return [];
+    case "not_started":
+      return ["added", "title", "rating", "nextAir"];
+    case "finished":
+    case "stopped":
+      return ["lastWatched", "added", "title", "rating"];
+    default:
+      return ["lastWatched", "added", "title", "rating", "nextAir"];
+  }
+}
+
 export function sectionSort(
   sorts: Partial<Record<WatchCategory, LibrarySort>>,
   category: WatchCategory,
 ): LibrarySort {
-  return sorts[category] ?? CATEGORY_DEFAULT_SORT[category];
+  const preferred = sorts[category] ?? CATEGORY_DEFAULT_SORT[category];
+  const allowed = sortsForCategory(category);
+  if (allowed.length === 0) return CATEGORY_DEFAULT_SORT[category];
+  return allowed.includes(preferred) ? preferred : CATEGORY_DEFAULT_SORT[category];
 }

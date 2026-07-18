@@ -4,40 +4,39 @@ import { listSeries } from "../api/client.ts";
 import { HOME_CATEGORY_ORDER, type WatchCategory } from "../api/types.ts";
 import type { LibrarySort } from "../components/FilterPanel.tsx";
 import { groupByCategory } from "./groupByCategory.ts";
-import { readUiPrefs, updateUiPrefs } from "./uiPrefs.ts";
+import { readUiPrefs, sectionSort, updateUiPrefs } from "./uiPrefs.ts";
 
 /**
  * Sort for Library / AllSeries grid surfaces (E128 / E143). Spec 010 WP2 killed the
- * category-filter FAB — every category in `defaultCategoryOrder` always renders, and sort
- * is a single page-level value surfaced via `SortMenu` in each section's header. Persisted
- * in localStorage via uiPrefs.
+ * category-filter FAB — every category in `defaultCategoryOrder` always renders.
+ * Sort is per-section (same `watchSectionSorts` prefs as Watch), surfaced via
+ * `SortMenu` in each section header and applied client-side.
  */
 export function useLibraryFilter(
   defaultCategoryOrder: readonly WatchCategory[] = HOME_CATEGORY_ORDER,
 ) {
-  const stored = readUiPrefs().libraryBrowse;
-  const [sort, setSortState] = useState<LibrarySort>(stored.sort);
+  const [sectionSorts, setSectionSorts] = useState(() => readUiPrefs().watchSectionSorts);
 
   const query = useQuery({
-    queryKey: ["library", sort],
-    queryFn: () => listSeries({ sort }),
+    queryKey: ["library", "browse"],
+    queryFn: () => listSeries(),
   });
 
   const items = query.data?.items ?? [];
   const byCategory = groupByCategory(items);
   const categoriesToRender: WatchCategory[] = [...defaultCategoryOrder];
 
-  function setSort(next: LibrarySort) {
-    setSortState(next);
-    // Keep the (now inert) stored category around for DTO round-trip — nothing writes to
-    // it anymore, but UiPrefsDto.libraryBrowse.category (api/types.ts) still requires it.
-    updateUiPrefs({ libraryBrowse: { sort: next, category: stored.category } });
+  function setSort(category: WatchCategory, next: LibrarySort) {
+    const updated = { ...sectionSorts, [category]: next };
+    setSectionSorts(updated);
+    updateUiPrefs({ watchSectionSorts: updated });
   }
 
   const hasVisibleItems = categoriesToRender.some((c) => (byCategory.get(c)?.length ?? 0) > 0);
 
   return {
-    sort,
+    sectionSorts,
+    sortFor: (category: WatchCategory) => sectionSort(sectionSorts, category),
     setSort,
     query,
     items,

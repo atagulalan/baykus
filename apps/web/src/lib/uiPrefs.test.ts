@@ -9,6 +9,7 @@ import {
   resetUiSelections,
   resetUiWarnings,
   sectionSort,
+  sortsForCategory,
   updateUiPrefs,
 } from "./uiPrefs.ts";
 
@@ -50,9 +51,14 @@ describe("uiPrefs (E143)", () => {
     expect(resetUiWarnings().skipSectionRemoveConfirm).toBe(false);
   });
 
-  it("always restores pinned watching section", () => {
+  it("always restores pinned watching and strips needs_review from stored sections", () => {
     updateUiPrefs({ watchSections: ["finished", "stopped"] });
     expect(readUiPrefs().watchSections).toEqual(["watching", "finished", "stopped"]);
+  });
+
+  it("drops needs_review from stored sections (auto-rendered when non-empty)", () => {
+    updateUiPrefs({ watchSections: ["watching", "needs_review", "up_to_date"] });
+    expect(readUiPrefs().watchSections).toEqual(["watching", "up_to_date"]);
   });
 
   it("persists showNextUpCarousel (E144)", () => {
@@ -109,5 +115,35 @@ describe("sectionSort per-category defaults (spec 010 WP2)", () => {
   it("an explicit stored sort overrides the category default", () => {
     expect(sectionSort({ not_started: "title" }, "not_started")).toBe("title");
     expect(sectionSort({ watching: "rating" }, "watching")).toBe("rating");
+  });
+
+  it("clamps a stored sort that is meaningless for the category", () => {
+    expect(sectionSort({ not_started: "lastWatched" }, "not_started")).toBe("added");
+    expect(sectionSort({ finished: "nextAir" }, "finished")).toBe("lastWatched");
+  });
+});
+
+describe("sortsForCategory", () => {
+  it("omits all sorts for needs_review (fixed added order, no SortMenu)", () => {
+    expect(sortsForCategory("needs_review")).toEqual([]);
+  });
+
+  it("omits lastWatched for not_started (zero watches)", () => {
+    expect(sortsForCategory("not_started")).toEqual(["added", "title", "rating", "nextAir"]);
+  });
+
+  it("omits nextAir for finished and stopped", () => {
+    expect(sortsForCategory("finished")).toEqual(["lastWatched", "added", "title", "rating"]);
+    expect(sortsForCategory("stopped")).toEqual(["lastWatched", "added", "title", "rating"]);
+  });
+
+  it("keeps the full sort list for active-watch categories", () => {
+    expect(sortsForCategory("watching")).toEqual([
+      "lastWatched",
+      "added",
+      "title",
+      "rating",
+      "nextAir",
+    ]);
   });
 });
