@@ -293,11 +293,13 @@
   "stats": {
     "episodesWatched": "Episodes watched",
     "watchTimeHours": "Total time (hours)",
+    "timeSpent": "Time spent",
     "activeSeries": "Active series",
     "ratingDistribution": "Rating distribution",
     "empty": "No watch history yet",
     "mostRewatched": "Most Rewatched",
     "duration": {
+      "yearsDaysHours": "{{years}}y {{days}}d {{hours}}h",
       "monthsDaysHours": "{{months}}m {{days}}d {{hours}}h",
       "daysHours": "{{days}}d {{hours}}h",
       "hoursMinutes": "{{hours}}h {{minutes}}m"
@@ -419,10 +421,23 @@
   "profile": {
     "title": "My profile",
     "allSeries": "All series",
+    "allSeriesEmpty": "Your library is empty so far.",
     "detailedStats": "Detailed stats",
     "favorites": {
       "title": "Favorites",
       "empty": "Heart a series on its detail page to see it here."
+    },
+    "banner": {
+      "edit": "Change cover photo",
+      "title": "Choose a cover photo",
+      "empty": "Add a series and watch it to pick a cover photo from its backdrops.",
+      "clear": "Remove"
+    },
+    "photo": {
+      "upload": "Change profile photo",
+      "uploading": "Uploading…",
+      "invalidType": "Unsupported file type — pick a jpg, png, webp, or gif.",
+      "tooLarge": "Photo is too large — 3 MB max."
     }
   },
   "notFound": {

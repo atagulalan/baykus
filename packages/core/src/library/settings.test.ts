@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { openLibraryDb } from "../db/open.ts";
-import { getSettings, getTmdbApiKey, updateSettings } from "./settings.ts";
+import {
+  clearAvatar,
+  getAvatar,
+  getSettings,
+  getTmdbApiKey,
+  setAvatar,
+  updateSettings,
+} from "./settings.ts";
 
 describe("getSettings", () => {
   it("returns defaults on a fresh database", () => {
@@ -17,6 +24,8 @@ describe("getSettings", () => {
       defaultStartPage: "home",
       newSeriesDefaultStatus: "watching",
       uiPrefs: null,
+      bannerRef: null,
+      avatarRef: null,
     });
   });
 });
@@ -110,6 +119,8 @@ describe("updateSettings", () => {
       defaultStartPage: "home",
       newSeriesDefaultStatus: "watching",
       uiPrefs: null,
+      bannerRef: null,
+      avatarRef: null,
     });
   });
 
@@ -188,5 +199,65 @@ describe("uiPrefs (E143)", () => {
       watchingWindowDays: 7,
       uiPrefs: sample,
     });
+  });
+});
+
+describe("bannerRef (WP4)", () => {
+  it("defaults to null when absent", () => {
+    const { db } = openLibraryDb(":memory:");
+    expect(getSettings(db).bannerRef).toBeNull();
+  });
+
+  it("round-trips a written ImageRef", () => {
+    const { db } = openLibraryDb(":memory:");
+    const result = updateSettings(db, { bannerRef: "tmdb:/abc123.jpg" });
+    expect(result.bannerRef).toBe("tmdb:/abc123.jpg");
+    expect(getSettings(db).bannerRef).toBe("tmdb:/abc123.jpg");
+  });
+
+  it("null clears the stored key", () => {
+    const { db } = openLibraryDb(":memory:");
+    updateSettings(db, { bannerRef: "tmdb:/abc123.jpg" });
+    const result = updateSettings(db, { bannerRef: null });
+    expect(result.bannerRef).toBeNull();
+  });
+
+  it("patching bannerRef leaves other keys intact", () => {
+    const { db } = openLibraryDb(":memory:");
+    updateSettings(db, { locale: "en" });
+    const result = updateSettings(db, { bannerRef: "tvmaze:/def456.jpg" });
+    expect(result).toMatchObject({ locale: "en", bannerRef: "tvmaze:/def456.jpg" });
+  });
+});
+
+describe("avatar (WP4, 0006_profile_media)", () => {
+  it("getAvatar is undefined and Settings.avatarRef is null when unset", () => {
+    const { db } = openLibraryDb(":memory:");
+    expect(getAvatar(db)).toBeUndefined();
+    expect(getSettings(db).avatarRef).toBeNull();
+  });
+
+  it("setAvatar stores the bytes+mime and sets avatarRef to the given timestamp", () => {
+    const { db } = openLibraryDb(":memory:");
+    const data = Buffer.from("fake-png-bytes");
+    setAvatar(db, "image/png", data, "2026-07-18T12:00:00.000Z");
+    expect(getAvatar(db)).toEqual({ mimeType: "image/png", data });
+    expect(getSettings(db).avatarRef).toBe("2026-07-18T12:00:00.000Z");
+  });
+
+  it("a second setAvatar overwrites the previous photo and ref", () => {
+    const { db } = openLibraryDb(":memory:");
+    setAvatar(db, "image/png", Buffer.from("AAA"), "2026-07-18T12:00:00.000Z");
+    setAvatar(db, "image/webp", Buffer.from("BBB"), "2026-07-18T13:00:00.000Z");
+    expect(getAvatar(db)).toEqual({ mimeType: "image/webp", data: Buffer.from("BBB") });
+    expect(getSettings(db).avatarRef).toBe("2026-07-18T13:00:00.000Z");
+  });
+
+  it("clearAvatar removes the photo and resets avatarRef to null", () => {
+    const { db } = openLibraryDb(":memory:");
+    setAvatar(db, "image/png", Buffer.from("AAA"), "2026-07-18T12:00:00.000Z");
+    clearAvatar(db);
+    expect(getAvatar(db)).toBeUndefined();
+    expect(getSettings(db).avatarRef).toBeNull();
   });
 });

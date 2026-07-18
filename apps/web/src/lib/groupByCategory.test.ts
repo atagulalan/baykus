@@ -8,6 +8,7 @@ function fakeSeries(id: number, category: SeriesSummary["category"]): SeriesSumm
     title: `Show ${id}`,
     tmdbId: null,
     posterRef: null,
+    backdropRef: null,
     year: null,
     category,
     manualList: null,

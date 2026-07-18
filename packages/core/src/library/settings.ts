@@ -44,6 +44,10 @@ export interface Settings {
   newSeriesDefaultStatus: NewSeriesDefaultStatus;
   /** null when the row is absent or unparseable. */
   uiPrefs: UiPrefs | null;
+  /** WP4: chosen profile banner — an `ImageRef` ("provider:path") of a watched series' backdrop, or null. */
+  bannerRef: string | null;
+  /** WP4: opaque cache-busting token (the upload timestamp) for the uploaded profile photo, or null if unset. */
+  avatarRef: string | null;
 }
 
 export interface SettingsPatch {
@@ -60,6 +64,8 @@ export interface SettingsPatch {
   newSeriesDefaultStatus?: NewSeriesDefaultStatus;
   /** null clears the stored key. */
   uiPrefs?: UiPrefs | null;
+  /** null clears the stored banner. avatarRef is not patchable here — it's server-derived by POST /api/settings/avatar. */
+  bannerRef?: string | null;
 }
 
 const DEFAULTS = {
@@ -171,7 +177,7 @@ function remove(db: LibraryDatabase, key: string): void {
   db.delete(schema.settings).where(eq(schema.settings.key, key)).run();
 }
 
-function toSettings(kv: Map<string, string>): Settings {
+function toSettings(kv: Map<string, string>, avatarUpdatedAt: string | null): Settings {
   return {
     locale: (kv.get("locale") ?? DEFAULTS.locale) as Locale,
     region: kv.get("region") ?? DEFAULTS.region,
@@ -184,11 +190,13 @@ function toSettings(kv: Map<string, string>): Settings {
     defaultStartPage: parseStartPage(kv.get("default_start_page")),
     newSeriesDefaultStatus: parseNewSeriesStatus(kv.get("new_series_default_status")),
     uiPrefs: parseUiPrefs(kv.get("ui_prefs")),
+    bannerRef: kv.get("banner_ref") ?? null,
+    avatarRef: avatarUpdatedAt,
   };
 }
 
 export function getSettings(db: LibraryDatabase): Settings {
-  return toSettings(readAll(db));
+  return toSettings(readAll(db), getAvatarUpdatedAt(db));
 }
 
 export function updateSettings(db: LibraryDatabase, patch: SettingsPatch): Settings {
@@ -221,6 +229,10 @@ export function updateSettings(db: LibraryDatabase, patch: SettingsPatch): Setti
     if (patch.uiPrefs === null) remove(db, "ui_prefs");
     else upsert(db, "ui_prefs", JSON.stringify(patch.uiPrefs));
   }
+  if (patch.bannerRef !== undefined) {
+    if (patch.bannerRef === null) remove(db, "banner_ref");
+    else upsert(db, "banner_ref", patch.bannerRef);
+  }
   return getSettings(db);
 }
 
@@ -232,4 +244,51 @@ export function getTmdbApiKey(db: LibraryDatabase): string | undefined {
     .where(eq(schema.settings.key, "tmdb_api_key"))
     .get();
   return row?.value;
+}
+
+export interface AvatarData {
+  mimeType: string;
+  data: Buffer;
+}
+
+/**
+ * WP4 (0006_profile_media migration): the uploaded profile photo's raw
+ * bytes, in the dedicated `profile_media` BLOB table (not base64-in-
+ * `settings` — avoids ~33% text bloat on a binary payload). `updatedAt`
+ * doubles as Settings.avatarRef's cache-busting token. `banner_ref` stays a
+ * plain `settings` key (a small string ImageRef needs no dedicated table).
+ */
+export function setAvatar(
+  db: LibraryDatabase,
+  mimeType: string,
+  data: Buffer,
+  updatedAt: string,
+): void {
+  db.insert(schema.profileMedia)
+    .values({ kind: "avatar", mimeType, data, updatedAt })
+    .onConflictDoUpdate({ target: schema.profileMedia.kind, set: { mimeType, data, updatedAt } })
+    .run();
+}
+
+export function getAvatar(db: LibraryDatabase): AvatarData | undefined {
+  const row = db
+    .select({ mimeType: schema.profileMedia.mimeType, data: schema.profileMedia.data })
+    .from(schema.profileMedia)
+    .where(eq(schema.profileMedia.kind, "avatar"))
+    .get();
+  return row ? { mimeType: row.mimeType, data: row.data as Buffer } : undefined;
+}
+
+function getAvatarUpdatedAt(db: LibraryDatabase): string | null {
+  const row = db
+    .select({ updatedAt: schema.profileMedia.updatedAt })
+    .from(schema.profileMedia)
+    .where(eq(schema.profileMedia.kind, "avatar"))
+    .get();
+  return row?.updatedAt ?? null;
+}
+
+/** Danger zone (resetLibrary) + zip "replace" import — clears the uploaded photo. */
+export function clearAvatar(db: LibraryDatabase): void {
+  db.delete(schema.profileMedia).where(eq(schema.profileMedia.kind, "avatar")).run();
 }

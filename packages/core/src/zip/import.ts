@@ -6,6 +6,7 @@ import type { ManualList, RatingTargetType } from "../db/schema.ts";
 import * as schema from "../db/schema.ts";
 import { computeDynamicCategories } from "../library/category.ts";
 import type {
+  ZipAvatarEntry,
   ZipItemEntry,
   ZipManifest,
   ZipRatingEntry,
@@ -114,6 +115,8 @@ interface ParsedZip {
   watches: ZipWatchEntry[];
   ratings: ZipRatingEntry[];
   settings: ZipSettings;
+  /** WP4: null when the zip carries no `library/avatar.json` (pre-WP4 zips, or no photo set). */
+  avatar: ZipAvatarEntry | null;
 }
 
 async function readZipJsonEntries(buffer: Buffer): Promise<Record<string, string>> {
@@ -183,6 +186,7 @@ async function parseZip(buffer: Buffer): Promise<ParsedZip> {
   const watches = parseJsonEntry<ZipWatchEntry[]>(entries, "library/watches.json", []);
   const ratings = parseJsonEntry<ZipRatingEntry[]>(entries, "library/ratings.json", []);
   const settings = parseJsonEntry<ZipSettings>(entries, "library/settings.json", {});
+  const avatar = parseJsonEntry<ZipAvatarEntry | null>(entries, "library/avatar.json", null);
   if (!Array.isArray(rawItems) || !Array.isArray(watches) || !Array.isArray(ratings)) {
     throw new ZipImportError("BAD_MANIFEST", "library/*.json entries must be arrays");
   }
@@ -198,7 +202,7 @@ async function parseZip(buffer: Buffer): Promise<ParsedZip> {
             ? (rawItems as ZipItemEntryV4[]).map(mapV4ItemEntry)
             : (rawItems as ZipItemEntry[]);
 
-  return { manifest, items, watches, ratings, settings };
+  return { manifest, items, watches, ratings, settings, avatar };
 }
 
 function findItemByExternalIds(db: LibraryDatabase, ids: ExternalIds): number | null {
@@ -457,6 +461,7 @@ function wipeLibrary(db: LibraryDatabase): void {
   db.delete(schema.items).run(); // cascades tracking/seasons/episodes/watches
   db.delete(schema.ratings).run();
   db.delete(schema.settings).run();
+  db.delete(schema.profileMedia).run(); // WP4: the uploaded profile photo
 }
 
 /**
@@ -554,6 +559,21 @@ export async function importLibraryZip(
       tx.insert(schema.settings)
         .values({ key, value })
         .onConflictDoUpdate({ target: schema.settings.key, set: { value } })
+        .run();
+    }
+
+    // WP4: mirrors the settings loop above — only overwrites when the zip
+    // actually carries a photo; absent in the zip never clears an existing
+    // one outside of the "replace" wipe above (same semantics as settings.json).
+    if (parsed.avatar) {
+      const data = Buffer.from(parsed.avatar.data, "base64");
+      const updatedAt = new Date().toISOString();
+      tx.insert(schema.profileMedia)
+        .values({ kind: "avatar", mimeType: parsed.avatar.mimeType, data, updatedAt })
+        .onConflictDoUpdate({
+          target: schema.profileMedia.kind,
+          set: { mimeType: parsed.avatar.mimeType, data, updatedAt },
+        })
         .run();
     }
   });

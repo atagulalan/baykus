@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import type { Stats } from "../../api/types.ts";
-import { formatDurationParts } from "../../lib/date.ts";
+import { formatDurationLabel, formatDurationParts } from "../../lib/date.ts";
 import { MiniBars } from "./MiniBars.tsx";
 import { StatTile } from "./StatTile.tsx";
 
@@ -25,16 +25,7 @@ export function UpcomingSection({ stats }: UpcomingSectionProps) {
 
   const tileValue = (month: { episodes: number; watchTimeMin: number }) => {
     const parts = formatDurationParts(month.watchTimeMin);
-    const sub =
-      parts.mode === "monthsDaysHours"
-        ? t("stats.duration.monthsDaysHours", {
-            months: parts.months,
-            days: parts.days,
-            hours: parts.hours,
-          })
-        : parts.mode === "daysHours"
-          ? t("stats.duration.daysHours", { days: parts.days, hours: parts.hours })
-          : t("stats.duration.hoursMinutes", { hours: parts.hours, minutes: parts.minutes });
+    const sub = formatDurationLabel(parts, t);
     return { value: month.episodes.toLocaleString("tr-TR"), sub };
   };
 

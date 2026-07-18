@@ -44,10 +44,14 @@ import {
 } from "./push.ts";
 import { clearRating, getRating, type Rating, setRating } from "./ratings.ts";
 import {
+  type AvatarData,
+  clearAvatar,
+  getAvatar,
   getSettings,
   getTmdbApiKey,
   type Settings,
   type SettingsPatch,
+  setAvatar,
   updateSettings,
 } from "./settings.ts";
 import { getStats, type Stats } from "./stats/index.ts";
@@ -153,6 +157,7 @@ function buildSummary(
     title: item.title,
     tmdbId: item.tmdbId,
     posterRef: item.posterRef,
+    backdropRef: item.backdropRef,
     year: yearOf(item.firstAirDate),
     category: categoryInfo.category,
     manualList: tracking.manualList,
@@ -265,6 +270,10 @@ export interface Library {
   updateSettings(patch: SettingsPatch): Settings;
   /** Internal use only (provider registry wiring) — never serialize this over the API. */
   getTmdbApiKey(): string | undefined;
+  /** WP4: stores the uploaded profile photo's bytes and returns the refreshed Settings. */
+  setAvatar(mimeType: string, data: Buffer): Settings;
+  /** WP4: the raw bytes+mime backing GET /api/settings/avatar, or undefined if unset. */
+  getAvatar(): AvatarData | undefined;
   refreshItem(provider: MetadataProvider, itemId: number): Promise<RefreshResult>;
   refreshAll(
     provider: MetadataProvider,
@@ -500,13 +509,15 @@ export function createLibrary(db: LibraryDatabase): Library {
 
     /** Danger zone (Settings): irreversibly deletes every row in the library — items
      * (cascades tracking/seasons/episodes/watches), ratings, settings, push
-     * subscriptions, and the refresh log. The caller (route) owns confirmation. */
+     * subscriptions, the refresh log, and (WP4) the uploaded profile photo. The
+     * caller (route) owns confirmation. */
     resetLibrary(): void {
       db.delete(schema.items).run();
       db.delete(schema.ratings).run();
       db.delete(schema.settings).run();
       db.delete(schema.pushSubscriptions).run();
       db.delete(schema.refreshLog).run();
+      clearAvatar(db);
     },
 
     updateTracking(itemId: number, patch: TrackingPatch): SeriesSummary | null {
@@ -598,6 +609,15 @@ export function createLibrary(db: LibraryDatabase): Library {
 
     getTmdbApiKey(): string | undefined {
       return getTmdbApiKey(db);
+    },
+
+    setAvatar(mimeType: string, data: Buffer): Settings {
+      setAvatar(db, mimeType, data, new Date().toISOString());
+      return getSettings(db);
+    },
+
+    getAvatar(): AvatarData | undefined {
+      return getAvatar(db);
     },
 
     refreshItem(provider: MetadataProvider, itemId: number): Promise<RefreshResult> {

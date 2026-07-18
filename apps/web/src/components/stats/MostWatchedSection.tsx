@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import type { Stats } from "../../api/types.ts";
-import { formatDurationParts } from "../../lib/date.ts";
+import { formatDurationLabel, formatDurationParts } from "../../lib/date.ts";
 import { HBarList } from "./HBarList.tsx";
 
 interface MostWatchedSectionProps {
@@ -19,17 +19,7 @@ export function MostWatchedSection({ stats }: MostWatchedSectionProps) {
       </h2>
       <HBarList
         items={stats.mostWatchedByTime.map((item) => {
-          const parts = formatDurationParts(item.watchTimeMin);
-          const displayValue =
-            parts.mode === "monthsDaysHours"
-              ? t("stats.duration.monthsDaysHours", {
-                  months: parts.months,
-                  days: parts.days,
-                  hours: parts.hours,
-                })
-              : parts.mode === "daysHours"
-                ? t("stats.duration.daysHours", { days: parts.days, hours: parts.hours })
-                : t("stats.duration.hoursMinutes", { hours: parts.hours, minutes: parts.minutes });
+          const displayValue = formatDurationLabel(formatDurationParts(item.watchTimeMin), t);
           return {
             key: String(item.itemId),
             label: item.title,

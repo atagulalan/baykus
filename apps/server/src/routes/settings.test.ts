@@ -63,6 +63,8 @@ describe("GET /api/settings", () => {
       defaultStartPage: "home",
       newSeriesDefaultStatus: "watching",
       uiPrefs: null,
+      bannerRef: null,
+      avatarRef: null,
     });
   });
 });
@@ -253,5 +255,130 @@ describe("PATCH /api/settings", () => {
     expect(res.status).toBe(400);
     const body = (await res.json()) as { error: { code: string } };
     expect(body.error.code).toBe("VALIDATION_FAILED");
+  });
+
+  it("updates bannerRef and round-trips it", async () => {
+    const { app } = setup();
+    const res = await app.request("/api/settings", {
+      method: "PATCH",
+      headers: HEADERS,
+      body: JSON.stringify({ bannerRef: "tmdb:/abc123.jpg" }),
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ bannerRef: "tmdb:/abc123.jpg" });
+
+    const getRes = await app.request("/api/settings");
+    expect(await getRes.json()).toMatchObject({ bannerRef: "tmdb:/abc123.jpg" });
+  });
+
+  it("null clears bannerRef", async () => {
+    const { app } = setup();
+    await app.request("/api/settings", {
+      method: "PATCH",
+      headers: HEADERS,
+      body: JSON.stringify({ bannerRef: "tmdb:/abc123.jpg" }),
+    });
+    const res = await app.request("/api/settings", {
+      method: "PATCH",
+      headers: HEADERS,
+      body: JSON.stringify({ bannerRef: null }),
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ bannerRef: null });
+  });
+});
+
+// 1x1 transparent PNG.
+const TINY_PNG_BASE64 =
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
+
+function tinyPngFile(): File {
+  const bytes = Buffer.from(TINY_PNG_BASE64, "base64");
+  return new File([new Uint8Array(bytes)], "avatar.png", { type: "image/png" });
+}
+
+describe("POST /api/settings/avatar (WP4)", () => {
+  it("uploads a photo and sets avatarRef", async () => {
+    const { app } = setup();
+    const formData = new FormData();
+    formData.append("file", tinyPngFile());
+
+    const res = await app.request("/api/settings/avatar", {
+      method: "POST",
+      headers: { "X-Baykus": "1" },
+      body: formData,
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { avatarRef: string | null };
+    expect(body.avatarRef).not.toBeNull();
+
+    const getRes = await app.request("/api/settings");
+    expect(((await getRes.json()) as { avatarRef: string | null }).avatarRef).toBe(body.avatarRef);
+  });
+
+  it("rejects a non-image content type", async () => {
+    const { app } = setup();
+    const formData = new FormData();
+    formData.append(
+      "file",
+      new File([new Uint8Array([1, 2, 3])], "not-a-photo.txt", { type: "text/plain" }),
+    );
+
+    const res = await app.request("/api/settings/avatar", {
+      method: "POST",
+      headers: { "X-Baykus": "1" },
+      body: formData,
+    });
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error: { code: string } };
+    expect(body.error.code).toBe("VALIDATION_FAILED");
+  });
+
+  it("rejects a file over the 3 MB cap", async () => {
+    const { app } = setup();
+    const oversized = new Uint8Array(3 * 1024 * 1024 + 1);
+    const formData = new FormData();
+    formData.append("file", new File([oversized], "huge.png", { type: "image/png" }));
+
+    const res = await app.request("/api/settings/avatar", {
+      method: "POST",
+      headers: { "X-Baykus": "1" },
+      body: formData,
+    });
+    expect(res.status).toBe(413);
+  });
+
+  it("rejects an upload without the X-Baykus header (CSRF guard)", async () => {
+    const { app } = setup();
+    const formData = new FormData();
+    formData.append("file", tinyPngFile());
+
+    const res = await app.request("/api/settings/avatar", { method: "POST", body: formData });
+    expect(res.status).toBe(403);
+  });
+});
+
+describe("GET /api/settings/avatar (WP4)", () => {
+  it("404s when no photo has been uploaded", async () => {
+    const { app } = setup();
+    const res = await app.request("/api/settings/avatar");
+    expect(res.status).toBe(404);
+  });
+
+  it("serves the uploaded photo bytes with a matching content type", async () => {
+    const { app } = setup();
+    const formData = new FormData();
+    formData.append("file", tinyPngFile());
+    await app.request("/api/settings/avatar", {
+      method: "POST",
+      headers: { "X-Baykus": "1" },
+      body: formData,
+    });
+
+    const res = await app.request("/api/settings/avatar");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("image/png");
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    expect(bytes).toEqual(new Uint8Array(Buffer.from(TINY_PNG_BASE64, "base64")));
   });
 });

@@ -8,6 +8,7 @@ function stub(
   return {
     tmdbId: null,
     posterRef: null,
+    backdropRef: null,
     year: null,
     category: "watching",
     manualList: null,

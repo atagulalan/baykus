@@ -1,3 +1,4 @@
+import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { openLibraryDb } from "../db/open.ts";
 import * as schema from "../db/schema.ts";
@@ -244,6 +245,44 @@ describe("round-trip invariant (Article III — NEVER weaken this test)", () => 
       exportLibraryZip(targetDb, { now, includeSecrets: true }),
     );
 
+    expect(secondZip.equals(firstZip)).toBe(true);
+  });
+
+  // WP4: the profile banner (a `settings` key) and uploaded avatar (the new
+  // profile_media BLOB table) must round-trip too — added, not weakening any
+  // existing assertion above.
+  it("round-trips the WP4 banner + avatar (byte-identical, replace mode)", async () => {
+    const { db: sourceDb } = buildPopulatedDb();
+    sourceDb.insert(schema.settings).values({ key: "banner_ref", value: "tmdb:/abc123.jpg" }).run();
+    sourceDb
+      .insert(schema.profileMedia)
+      .values({
+        kind: "avatar",
+        mimeType: "image/png",
+        data: Buffer.from("fake-png-bytes"),
+        updatedAt: "2026-01-20T00:00:00Z",
+      })
+      .run();
+    const now = "2026-02-01T00:00:00Z";
+
+    const firstZip = await streamToBuffer(exportLibraryZip(sourceDb, { now }));
+
+    const { db: targetDb } = openLibraryDb(":memory:");
+    const importResult = await importLibraryZip(targetDb, firstZip, "replace");
+    expect(importResult.warnings).toEqual([]);
+
+    // The photo bytes themselves must have actually made it across (not just
+    // the zip bytes matching) — the exported JSON omits `updatedAt`
+    // (ephemeral cache-bust metadata, not portable data), so this checks the
+    // part that IS meant to be portable.
+    const imported = targetDb
+      .select({ mimeType: schema.profileMedia.mimeType, data: schema.profileMedia.data })
+      .from(schema.profileMedia)
+      .where(eq(schema.profileMedia.kind, "avatar"))
+      .get();
+    expect(imported).toEqual({ mimeType: "image/png", data: Buffer.from("fake-png-bytes") });
+
+    const secondZip = await streamToBuffer(exportLibraryZip(targetDb, { now }));
     expect(secondZip.equals(firstZip)).toBe(true);
   });
 });
