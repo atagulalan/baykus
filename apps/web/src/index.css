@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @theme {
   --color-void: #080808;
@@ -6,14 +6,29 @@
   --color-muted: #666666;
   --color-yellow: #f0e000;
 
-  --font-display: "DM Serif Display", serif;
-  --font-sans: "DM Sans", sans-serif;
-  --font-mono: "JetBrains Mono", monospace;
+  --font-display: 'DM Serif Display', serif;
+  --font-sans: 'DM Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
 }
 
 :root {
   /* Overwritten by Layout when the sticky <header> mounts; ~76px desktop nav. */
   --app-header-height: 4.75rem;
+}
+
+/*
+ * MainShell is intentionally full-bleed. Content that needs breathing room
+ * opts in at the component that owns the pixels; lists can keep their own
+ * tighter row padding without inheriting a second outer inset.
+ */
+.content-inset {
+  padding-inline: 0.75rem;
+}
+
+@media (min-width: 40rem) {
+  .content-inset {
+    padding-inline: 1rem;
+  }
 }
 
 body {
@@ -27,7 +42,7 @@ body {
 
 input,
 textarea,
-[contenteditable="true"] {
+[contenteditable='true'] {
   user-select: auto;
   -webkit-user-select: auto;
   cursor: text;
@@ -35,7 +50,7 @@ textarea,
 
 a,
 button,
-[role="button"],
+[role='button'],
 label,
 select {
   cursor: pointer;
@@ -76,7 +91,7 @@ select {
 }
 
 body::after {
-  content: "";
+  content: '';
   position: fixed;
   top: -25%;
   left: -25%;
@@ -278,7 +293,7 @@ body::after {
   transition: grid-template-rows 200ms ease-out;
   overflow: hidden;
 }
-.season-episodes[data-expanded="true"] {
+.season-episodes[data-expanded='true'] {
   grid-template-rows: 1fr;
 }
 .season-episodes > div {
