@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { buildImageUrl } from "../api/images.ts";
 import type { EpisodeType } from "../api/types.ts";
-import { daysUntilAir, dayUnitLabel, formatAirDateLabel } from "../lib/airDateLabel.ts";
+import { dayUnitLabel, formatAirDateLabel, unairedTrailingState } from "../lib/airDateLabel.ts";
 import { EpisodeLabel } from "./EpisodeLabel.tsx";
 import { EpisodeTags } from "./EpisodeTags.tsx";
 import { MediaImage } from "./MediaImage.tsx";
@@ -81,7 +81,7 @@ export function EpisodeDetailsModal({
 }: EpisodeDetailsModalProps) {
   const { t, i18n } = useTranslation();
   const stillUrl = buildImageUrl(stillRef, "large");
-  const daysLeft = !watched ? daysUntilAir(airDate) : null;
+  const unaired = !watched ? unairedTrailingState(airDate) : { kind: "none" as const };
 
   return (
     <Modal isOpen={open} onClose={onClose} title={t("episode.detailsTitle")} className="p-4">
@@ -190,12 +190,16 @@ export function EpisodeDetailsModal({
         )}
 
         {onToggleWatched &&
-          (daysLeft != null ? (
+          (unaired.kind === "countdown" ? (
             <div className="flex w-full flex-col items-center justify-center border border-white/10 px-4 py-2.5">
-              <span className="font-mono text-base text-snow/80 tabular-nums">{daysLeft}</span>
+              <span className="font-mono text-base text-snow/80 tabular-nums">{unaired.days}</span>
               <span className="mt-0.5 font-mono text-[9px] text-muted">
-                {dayUnitLabel(daysLeft, i18n.language)}
+                {dayUnitLabel(unaired.days, i18n.language)}
               </span>
+            </div>
+          ) : unaired.kind === "tbd" ? (
+            <div className="flex w-full items-center justify-center border border-white/10 px-4 py-2.5 font-mono text-xs uppercase tracking-widest text-muted">
+              {t("episode.tbd")}
             </div>
           ) : (
             <button

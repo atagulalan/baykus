@@ -159,6 +159,7 @@
     "watchedCount": "İzleme: {{count}}",
     "runtimeMin": "{{minutes}} dk",
     "noOverview": "Açıklama bulunmuyor.",
+    "tbd": "TBD",
     "tag": {
       "new": "YENİ",
       "upcoming": "YAKLAŞAN",
@@ -234,8 +235,8 @@
         "watchlist": "Sonra İzlenecekler"
       },
       "newSeriesDefaultStatusHint": "Yeni eklenen dizilerin varsayılan olarak hangi listeye ekleneceği.",
-      "showNextUpCarousel": "Sıradaki carousel",
-      "showNextUpCarouselHint": "Dizi detay sayfasında sıradaki bölüm şeridini gösterir."
+      "showNextUpCarousel": "Sıradaki",
+      "showNextUpCarouselHint": "Dizi detay sayfasında sıradaki bölüm kartını gösterir."
     },
     "providers": {
       "title": "Ekstra Bilgi Kaynakları",

@@ -63,6 +63,26 @@ export function daysUntilAir(airDate: string | null, today: string = todayIso())
   return calendarDaysBetween(today, airDate);
 }
 
+/** Trailing mark for unaired episodes (011 E151). */
+export type UnairedTrailingState =
+  | { kind: "countdown"; days: number }
+  | { kind: "tbd" }
+  | { kind: "none" };
+
+/**
+ * Future airDate → countdown; null airDate → TBD; aired/today → none
+ * (caller shows the checkbox / rewatch control).
+ */
+export function unairedTrailingState(
+  airDate: string | null,
+  today: string = todayIso(),
+): UnairedTrailingState {
+  if (airDate === null) return { kind: "tbd" };
+  const days = daysUntilAir(airDate, today);
+  if (days != null) return { kind: "countdown", days };
+  return { kind: "none" };
+}
+
 /**
  * Localized unit word for a day count ("gün" / "day" / "days") via
  * `Intl.NumberFormat` — no catalog keys.

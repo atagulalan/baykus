@@ -4,6 +4,7 @@ import {
   daysUntilAir,
   dayUnitLabel,
   formatAirDateLabel,
+  unairedTrailingState,
 } from "./airDateLabel.ts";
 
 describe("calendarDaysBetween", () => {
@@ -27,6 +28,23 @@ describe("daysUntilAir", () => {
   it("returns whole days until a future air date", () => {
     expect(daysUntilAir("2026-07-19", today)).toBe(1);
     expect(daysUntilAir("2026-07-27", today)).toBe(9);
+  });
+});
+
+describe("unairedTrailingState", () => {
+  const today = "2026-07-18";
+
+  it("returns tbd for null airDate", () => {
+    expect(unairedTrailingState(null, today)).toEqual({ kind: "tbd" });
+  });
+
+  it("returns countdown for future airDate", () => {
+    expect(unairedTrailingState("2026-07-27", today)).toEqual({ kind: "countdown", days: 9 });
+  });
+
+  it("returns none for today and past airDate", () => {
+    expect(unairedTrailingState("2026-07-18", today)).toEqual({ kind: "none" });
+    expect(unairedTrailingState("2026-07-17", today)).toEqual({ kind: "none" });
   });
 });
 

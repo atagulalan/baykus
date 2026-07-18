@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { getSeriesByParam, getSettings } from "../api/client.ts";
 import { buildImageUrl } from "../api/images.ts";
 import type { EpisodeType } from "../api/types.ts";
-import { daysUntilAir, dayUnitLabel, formatAirDateLabel } from "../lib/airDateLabel.ts";
+import { dayUnitLabel, formatAirDateLabel, unairedTrailingState } from "../lib/airDateLabel.ts";
 import { Checkbox } from "./Checkbox.tsx";
 import { EpisodeDetailsModal } from "./EpisodeDetailsModal.tsx";
 import { EpisodeLabel } from "./EpisodeLabel.tsx";
@@ -225,18 +225,24 @@ export function EpisodeRow({
   }`;
 
   const rewatched = watchCount > 1;
-  const daysLeft = daysUntilAir(airDate);
-  const countdown =
-    daysLeft != null ? (
+  const trailingState = unairedTrailingState(airDate);
+  // Unaired marks only for unwatched rows — watched rows keep rewatch controls.
+  const showUnairedMark = !watched && trailingState.kind !== "none";
+  const unairedMark =
+    showUnairedMark && trailingState.kind === "countdown" ? (
       <div className="flex min-w-5 shrink-0 flex-col items-center justify-center leading-none">
-        <span className="font-mono text-base text-snow/80 tabular-nums">{daysLeft}</span>
+        <span className="font-mono text-base text-snow/80 tabular-nums">{trailingState.days}</span>
         <span className="mt-0.5 font-mono text-[9px] text-muted">
-          {dayUnitLabel(daysLeft, i18n.language)}
+          {dayUnitLabel(trailingState.days, i18n.language)}
         </span>
       </div>
+    ) : showUnairedMark && trailingState.kind === "tbd" ? (
+      <span className="shrink-0 font-mono text-[10px] text-muted uppercase tracking-widest">
+        {t("episode.tbd")}
+      </span>
     ) : null;
   const checkbox =
-    daysLeft != null || hideCheckbox ? null : onToggleWatch ? (
+    showUnairedMark || hideCheckbox ? null : onToggleWatch ? (
       // biome-ignore lint/a11y/useKeyWithClickEvents: stopPropagation only
       // biome-ignore lint/a11y/noStaticElementInteractions: stopPropagation only
       <div
@@ -309,7 +315,7 @@ export function EpisodeRow({
           src={imageUrl}
           alt=""
           wrapperClassName="block h-full w-full"
-          className={`h-full w-full object-cover ${hideSpoilers ? "blur-md" : "opacity-90"}`}
+          className="h-full w-full object-cover opacity-90"
           spinnerSize={12}
           onError={() => setImageFailed(true)}
         />
@@ -465,7 +471,7 @@ export function EpisodeRow({
         {trailing != null && (
           <div className="flex h-5 shrink-0 items-center justify-center">{trailing}</div>
         )}
-        {countdown}
+        {unairedMark}
         {checkbox}
       </div>
 

@@ -27,7 +27,7 @@ import type {
 } from "../api/types.ts";
 import { MediaImage } from "../components/MediaImage.tsx";
 import { Modal } from "../components/Modal.tsx";
-import { NextEpisodeCarousel } from "../components/NextEpisodeCarousel.tsx";
+import { NextUpCard } from "../components/NextUpCard.tsx";
 import { RemoveSeriesDialog } from "../components/RemoveSeriesDialog.tsx";
 import { SeasonSection } from "../components/SeasonSection.tsx";
 import { SegmentedProgress } from "../components/SegmentedProgress.tsx";
@@ -36,6 +36,7 @@ import { WatchDateDialog } from "../components/WatchDateDialog.tsx";
 import { CATEGORY_TEXT_COLORS } from "../lib/categoryColors.ts";
 import { sortSeasonsSpecialsLast } from "../lib/seasons.ts";
 import { seriesParam } from "../lib/seriesPath.ts";
+import { shouldPromptEpisodeRating } from "../lib/shouldPromptEpisodeRating.ts";
 import { isStale } from "../lib/staleSweep.ts";
 import { useToast } from "../lib/toast.tsx";
 import { readUiPrefs } from "../lib/uiPrefs.ts";
@@ -206,7 +207,9 @@ export function SeriesDetailPage() {
       reportError();
     },
     onSuccess: (result, episode) => {
-      if (result) setPromptEpisodeId(episode.id);
+      if (result && shouldPromptEpisodeRating(episode.myRating)) {
+        setPromptEpisodeId(episode.id);
+      }
     },
     onSettled: invalidate,
   });
@@ -214,7 +217,15 @@ export function SeriesDetailPage() {
   const watchAgain = useMutation({
     mutationFn: (episodeId: number) => addEpisodeWatch(episodeId),
     onError: reportError,
-    onSuccess: (_result, episodeId) => setPromptEpisodeId(episodeId),
+    onSuccess: (_result, episodeId) => {
+      const episode = queryClient
+        .getQueryData<SeriesDetail>(queryKey)
+        ?.seasons.flatMap((season) => season.episodes)
+        .find((ep) => ep.id === episodeId);
+      if (shouldPromptEpisodeRating(episode?.myRating)) {
+        setPromptEpisodeId(episodeId);
+      }
+    },
     onSettled: invalidate,
   });
 
@@ -453,9 +464,12 @@ export function SeriesDetailPage() {
   const backdropUrl = buildImageUrl(detail.backdropRef, "large");
   const { watched, aired } = detail.progress;
   const sortedSeasons = sortSeasonsSpecialsLast(detail.seasons);
-  const carouselEpisodes = detail.seasons
-    .filter((season) => season.number !== 0)
-    .flatMap((season) => season.episodes);
+  const nextUpEpisode =
+    detail.nextUnwatched == null
+      ? null
+      : (detail.seasons
+          .flatMap((season) => season.episodes)
+          .find((episode) => episode.id === detail.nextUnwatched?.episodeId) ?? null);
 
   return (
     <div className="flex flex-col gap-6">
@@ -656,23 +670,17 @@ export function SeriesDetailPage() {
         />
       )}
 
-      {detail.nextUnwatched && readUiPrefs().showNextUpCarousel && (
-        <NextEpisodeCarousel
+      {detail.nextUnwatched && nextUpEpisode && readUiPrefs().showNextUpCarousel && (
+        <NextUpCard
           key={detail.id}
-          episodes={carouselEpisodes}
+          episode={nextUpEpisode}
           nextEpisode={detail.nextUnwatched}
           promptEpisodeId={promptEpisodeId}
-          onToggleWatch={(episode, onMarked) => {
-            toggleWatch.mutate(episode, {
-              onSuccess: (result) => {
-                if (result) onMarked();
-              },
-            });
-          }}
-          onWatchAgain={(episodeId) => watchAgain.mutate(episodeId)}
-          onEditDate={(episode) => setDateDialogEpisode(episode)}
-          onBulkUpToHere={(episodeId) => bulkUpToHere.mutate(episodeId)}
-          onRateEpisode={(episodeId, value) => rateEpisode.mutate({ episodeId, value })}
+          onToggleWatch={() => toggleWatch.mutate(nextUpEpisode)}
+          onWatchAgain={() => watchAgain.mutate(nextUpEpisode.id)}
+          onEditDate={() => setDateDialogEpisode(nextUpEpisode)}
+          onBulkUpToHere={() => bulkUpToHere.mutate(nextUpEpisode.id)}
+          onRateEpisode={(value) => rateEpisode.mutate({ episodeId: nextUpEpisode.id, value })}
           onDismissPrompt={() => setPromptEpisodeId(null)}
         />
       )}

@@ -159,6 +159,7 @@
     "watchedCount": "Watch count: {{count}}",
     "runtimeMin": "{{minutes}}m",
     "noOverview": "No overview available.",
+    "tbd": "TBD",
     "tag": {
       "new": "NEW",
       "upcoming": "UPCOMING",
@@ -234,8 +235,8 @@
         "watchlist": "Watchlist"
       },
       "newSeriesDefaultStatusHint": "Where new series should be added by default.",
-      "showNextUpCarousel": "Next up carousel",
-      "showNextUpCarouselHint": "Shows the next-episode rail on series detail pages."
+      "showNextUpCarousel": "Next up",
+      "showNextUpCarouselHint": "Shows the next-episode card on series detail pages."
     },
     "providers": {
       "title": "Extra Information Sources",
