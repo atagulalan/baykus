@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 import { ChevronRight, Settings } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -9,12 +9,6 @@ import { ProfileGuard } from "../components/ProfileGuard.tsx";
 import { ProfilePhotoUpload } from "../components/ProfilePhotoUpload.tsx";
 import { SeriesCard } from "../components/SeriesCard.tsx";
 import { formatDurationLabel, formatDurationParts } from "../lib/date.ts";
-import {
-  startManualSweep,
-  useManualRefreshProgress,
-  useManualRefreshRunning,
-} from "../lib/staleSweep.ts";
-import { useToast } from "../lib/toast.tsx";
 
 /** E79: the rail shows at most this many favorites; beyond it the heading links to the full page. */
 const PROFILE_FAVORITES_LIMIT = 6;
@@ -81,11 +75,6 @@ export function ProfilePage() {
 
 function ProfilePageContent({ handle, session }: { handle: string; session: AuthSession }) {
   const { t } = useTranslation();
-  const toast = useToast();
-  const queryClient = useQueryClient();
-
-  const isManualRefreshRunning = useManualRefreshRunning();
-  const refreshProgress = useManualRefreshProgress();
 
   const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const statsQuery = useQuery({ queryKey: ["stats", tz], queryFn: () => getStats(tz) });
@@ -111,9 +100,25 @@ function ProfilePageContent({ handle, session }: { handle: string; session: Auth
 
       <IdentityRow session={session} handle={handle} avatarRef={settings?.avatarRef ?? null} />
 
+      {/* 011 E153: stats first, then favorites, then all series. */}
+      <Link
+        to="/user/$handle/stats"
+        params={{ handle }}
+        className="grid grid-cols-3 gap-3 transition-opacity hover:opacity-80"
+      >
+        <StatTile label={t("stats.timeSpent")} value={timeSpentValue} />
+        <StatTile
+          label={t("stats.episodesWatched")}
+          value={(stats?.episodesWatched ?? 0).toLocaleString("tr-TR")}
+        />
+        <StatTile
+          label={t("stats.activeSeries")}
+          value={(stats?.itemCount.watching ?? 0).toLocaleString("tr-TR")}
+        />
+      </Link>
+
       <section className="flex flex-col gap-3">
         {favorites.length > PROFILE_FAVORITES_LIMIT ? (
-          // E79: overflow — the whole heading row links to the full favorites page.
           <h2 className="font-mono text-xs uppercase tracking-widest text-yellow">
             <Link
               to="/user/$handle/favorites"
@@ -150,7 +155,6 @@ function ProfilePageContent({ handle, session }: { handle: string; session: Auth
       </section>
 
       <section className="flex flex-col gap-3">
-        {/* WP4 item 1: All-Series as a horizontal rail — same overflow-to-full-page pattern as favorites. */}
         {allSeries.length > PROFILE_ALL_SERIES_LIMIT ? (
           <h2 className="font-mono text-xs uppercase tracking-widest text-yellow">
             <Link
@@ -186,51 +190,6 @@ function ProfilePageContent({ handle, session }: { handle: string; session: Auth
           </div>
         )}
       </section>
-
-      <Link
-        to="/user/$handle/stats"
-        params={{ handle }}
-        className="grid grid-cols-3 gap-3 transition-opacity hover:opacity-80"
-      >
-        <StatTile label={t("stats.timeSpent")} value={timeSpentValue} />
-        <StatTile
-          label={t("stats.episodesWatched")}
-          value={(stats?.episodesWatched ?? 0).toLocaleString("tr-TR")}
-        />
-        <StatTile
-          label={t("stats.activeSeries")}
-          value={(stats?.itemCount.watching ?? 0).toLocaleString("tr-TR")}
-        />
-      </Link>
-
-      <div className="flex flex-col divide-y divide-white/5 border border-white/5">
-        <Link
-          to="/user/$handle/stats"
-          params={{ handle }}
-          className="p-4 text-sm text-snow hover:bg-white/5 transition-colors"
-        >
-          {t("profile.detailedStats")}
-        </Link>
-        <Link to="/settings" className="p-4 text-sm text-snow hover:bg-white/5 transition-colors">
-          {t("app.nav.settings")}
-        </Link>
-      </div>
-
-      <button
-        type="button"
-        onClick={() =>
-          startManualSweep(queryClient, toast, {
-            done: (newEpisodes) => t("library.refreshAllDone", { newEpisodes }),
-            error: t("errors.generic"),
-          })
-        }
-        disabled={isManualRefreshRunning}
-        className="w-full font-mono text-[10px] tracking-widest uppercase border border-white/10 text-muted px-4 py-3 hover:text-snow hover:border-white/20 transition-colors disabled:opacity-50"
-      >
-        {refreshProgress
-          ? `${refreshProgress.done}/${refreshProgress.total}`
-          : t("library.refreshAll")}
-      </button>
     </div>
   );
 }

@@ -24,6 +24,11 @@ import {
   subscribeToPush,
   unsubscribeFromPush,
 } from "../lib/push.ts";
+import {
+  startManualSweep,
+  useManualRefreshProgress,
+  useManualRefreshRunning,
+} from "../lib/staleSweep.ts";
 import { useToast } from "../lib/toast.tsx";
 import { readUiPrefs, resetUiSelections, resetUiWarnings, updateUiPrefs } from "../lib/uiPrefs.ts";
 
@@ -45,6 +50,8 @@ export function SettingsPage() {
   const [showNextUpCarousel, setShowNextUpCarousel] = useState(
     () => readUiPrefs().showNextUpCarousel,
   );
+  const isManualRefreshRunning = useManualRefreshRunning();
+  const refreshProgress = useManualRefreshProgress();
 
   const query = useQuery({ queryKey: ["settings"], queryFn: getSettings });
   const sessionQuery = useQuery({
@@ -585,6 +592,25 @@ export function SettingsPage() {
           >
             {t("settings.data.tvtimeImport")}
           </Link>
+        </div>
+
+        {/* 011 E153: Refresh all moved from profile. */}
+        <div className="flex w-full flex-col border-b border-white/5 px-6 py-4 text-snow transition-colors last:border-b-0">
+          <button
+            type="button"
+            onClick={() =>
+              startManualSweep(queryClient, toast, {
+                done: (newEpisodes) => t("library.refreshAllDone", { newEpisodes }),
+                error: t("errors.generic"),
+              })
+            }
+            disabled={isManualRefreshRunning}
+            className="w-full font-mono text-[10px] tracking-widest uppercase border border-white/10 text-muted px-4 py-3 hover:text-snow hover:border-white/20 transition-colors disabled:opacity-50"
+          >
+            {refreshProgress
+              ? `${refreshProgress.done}/${refreshProgress.total}`
+              : t("library.refreshAll")}
+          </button>
         </div>
       </section>
 
