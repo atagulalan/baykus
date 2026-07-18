@@ -25,7 +25,7 @@ export function HeroSection({ stats }: HeroSectionProps) {
     Math.floor(Math.random() * FUN_ACTIVITIES.length),
   );
 
-  const currentActivity = FUN_ACTIVITIES[activityIndex]!;
+  const currentActivity = FUN_ACTIVITIES[activityIndex] ?? FUN_ACTIVITIES[0];
   const activityTimes = stats.watchTimeMin / currentActivity.minutes;
   const formattedCount = new Intl.NumberFormat(i18n.language || "tr-TR", {
     maximumFractionDigits: activityTimes >= 100 ? 0 : 2,

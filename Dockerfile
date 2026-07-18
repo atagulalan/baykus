@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM node:22-slim AS build
+FROM node:26-slim AS build
 RUN corepack enable
 WORKDIR /app
 
@@ -20,7 +20,7 @@ RUN pnpm --filter @baykus/server build
 RUN rm -rf node_modules apps/*/node_modules packages/*/node_modules
 RUN pnpm install --prod --frozen-lockfile
 
-FROM node:22-slim AS runtime
+FROM node:26-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production \
     BAYKUS_DATA_DIR=/data \

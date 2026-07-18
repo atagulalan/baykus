@@ -12,6 +12,12 @@
     },
     "back": "Back"
   },
+  "modal": {
+    "close": "Close"
+  },
+  "common": {
+    "separator": " · "
+  },
   "search": {
     "placeholder": "Search a series…",
     "loading": "Searching…",
@@ -52,11 +58,15 @@
     },
     "filter": {
       "title": "Filter",
+      "viewTitle": "View",
       "sortTitle": "Sort",
       "progressTitle": "Progress",
       "reset": "RESET",
-      "apply": "APPLY",
-      "close": "Close"
+      "apply": "APPLY"
+    },
+    "view": {
+      "list": "List",
+      "grid": "Grid"
     },
     "sort": {
       "label": "Sort",
@@ -92,7 +102,7 @@
     "specials": "Specials",
     "seasonNumber": "Season {{number}}",
     "markSeasonWatched": "mark all as watched",
-    "nextUp": "Next up: S{{s}}E{{e}}",
+    "nextUp": "Next up:",
     "stoppedBlocked": "A finished series can't be marked as stopped",
     "justwatchAttribution": "Data from JustWatch",
     "refresh": "Refresh",
@@ -108,7 +118,7 @@
     "unwatchSeasonConfirm": "Yes, delete"
   },
   "episode": {
-    "toggleWatched": "Mark as watched",
+    "toggleWatched": "Watched",
     "untitled": "Untitled episode",
     "finale": "FINALE",
     "seasonAndEpisode": "S{{season}} E{{episode}}",
@@ -126,6 +136,14 @@
     "markAsUnwatched": "Mark as unwatched",
     "removeRewatch": "Remove rewatch",
     "save": "Save",
+    "detailsTitle": "Episode Details",
+    "aired": "Aired",
+    "watched": "Watched",
+    "airTime": "Time",
+    "network": "Network",
+    "watchedCount": "Watch count: {{count}}",
+    "runtimeMin": "{{minutes}}m",
+    "noOverview": "No overview available.",
     "tag": {
       "new": "NEW",
       "upcoming": "UPCOMING",
@@ -159,10 +177,29 @@
       "localeHint": "Language for the user interface.",
       "region": "Region",
       "regionHint": "Region for release dates",
+      "regionName": {
+        "TR": "Turkey",
+        "US": "United States",
+        "GB": "United Kingdom",
+        "DE": "Germany",
+        "FR": "France",
+        "ES": "Spain",
+        "IT": "Italy",
+        "NL": "Netherlands"
+      },
       "episodeLabelFormat": "Episode Format",
       "episodeLabelFormatHint": "How episode numbers are displayed across the app.",
       "watchingWindow": "Watching window (days)",
       "watchingWindowHint": "Shows watched, added, or with a new episode within this window stay in Watching.",
+      "watchingWindowOptions": {
+        "7": "7 days",
+        "14": "14 days",
+        "30": "30 days",
+        "60": "60 days",
+        "90": "90 days",
+        "180": "180 days",
+        "365": "365 days"
+      },
       "theme": "Theme",
       "themeDark": "Dark",
       "themeSoon": "coming soon",
@@ -181,7 +218,9 @@
         "watching": "Watching",
         "watchlist": "Watchlist"
       },
-      "newSeriesDefaultStatusHint": "Where new series should be added by default."
+      "newSeriesDefaultStatusHint": "Where new series should be added by default.",
+      "showNextUpCarousel": "Next up carousel",
+      "showNextUpCarouselHint": "Shows the next-episode rail on series detail pages."
     },
     "providers": {
       "title": "Extra Information Sources",
@@ -227,7 +266,13 @@
       "confirmLabel": "Type <phrase>{{phrase}}</phrase> to be sure",
       "confirmPhrase": "DELETE EVERYTHING",
       "confirm": "Permanently delete",
-      "success": "Library deleted"
+      "success": "Library deleted",
+      "resetSelections": "Reset selections",
+      "resetSelectionsDesc": "Restores watch categories, sorts, filters, and the history accordion to defaults.",
+      "resetSelectionsDone": "Selections reset",
+      "resetWarnings": "Reset warnings",
+      "resetWarningsDesc": "Clears “don’t show again” preferences so confirm dialogs appear again.",
+      "resetWarningsDone": "Warnings reset"
     }
   },
   "stats": {
@@ -375,6 +420,15 @@
       "schedule": "Schedule"
     },
     "today": "TODAY {{date}}",
+    "section": {
+      "earlier": "Earlier",
+      "lastWeek": "Last week",
+      "yesterday": "Yesterday",
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "thisWeek": "This week",
+      "later": "Later"
+    },
     "overflow": "+{{count}}",
     "prevMonth": "Previous month",
     "nextMonth": "Next month",
@@ -393,6 +447,15 @@
     "history": "Watch history",
     "next": "Up next",
     "notWatchedRecently": "Haven't watched for a while",
+    "addSection": "Add category",
+    "addSectionTitle": "Add category",
+    "removeSection": "Remove category",
+    "removeSectionTitle": "Remove category",
+    "removeSectionConfirm": "Remove the “{{category}}” category?",
+    "removeSectionHint": "You can add it again anytime with “Add category” below.",
+    "removeSectionDontShow": "Don’t show again",
+    "removeSectionCancel": "Cancel",
+    "removeSectionConfirmBtn": "I’m sure",
     "relativeDay": {
       "todayAt": "Today {{time}}",
       "yesterdayAt": "Yesterday {{time}}"
@@ -400,7 +463,8 @@
     "empty": {
       "history": "No watch history yet",
       "next": "Nothing queued up",
-      "notWatchedRecently": "No series in this category"
+      "notWatchedRecently": "No series in this category",
+      "section": "Nothing to show in this category"
     }
   },
   "auth": {

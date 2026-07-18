@@ -1,5 +1,8 @@
 import { Check } from "lucide-react";
 
+/** Shared hit box — keep every list checkbox at this size. */
+export const CHECKBOX_SIZE_PX = 20;
+
 interface CheckboxProps {
   checked: boolean;
   onChange: (checked: boolean) => void;
@@ -29,7 +32,7 @@ export function Checkbox({
       className={`relative flex h-5 w-5 shrink-0 items-center justify-center border transition-all duration-300 ${
         checked
           ? "border-yellow bg-yellow text-[#080808] shadow-[0_0_10px_rgba(234,179,8,0.3)]"
-          : "border-white/20 bg-void text-transparent hover:border-white/40 hover:bg-white/5"
+          : "border-white/20 bg-void text-snow hover:border-white/40 hover:bg-white/5"
       } ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"} ${className}`}
     >
       <Check

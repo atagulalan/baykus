@@ -220,6 +220,8 @@ export interface SeriesDetail extends SeriesSummary {
   contentRatings: ContentRating[];
   networks: NetworkInfo[];
   originalLanguage: string | null;
+  /** Typical episode runtimes in minutes (provider); UI shows the average. */
+  episodeRunTimes: number[];
   watchProviders: WatchProviderInfo[];
   externalRatings: ExternalRating[];
   backdropRef: string | null;
@@ -263,6 +265,22 @@ export type EpisodeLabelFormat = "SxEy" | "S01E06" | "compact";
 export type DefaultStartPage = "home" | "calendar" | "stats";
 export type NewSeriesDefaultStatus = "watching" | "watchlist";
 
+/** Browse chrome prefs — mirrored from settings.ui_prefs (E143). */
+export type BrowseView = "list" | "grid";
+
+export interface UiPrefsDto {
+  libraryBrowse: {
+    sort: string;
+    category: string[];
+  };
+  watchSections: string[];
+  watchSectionSorts: Record<string, string>;
+  historyCollapsed: boolean;
+  skipSectionRemoveConfirm: boolean;
+  showNextUpCarousel: boolean;
+  browseView: BrowseView;
+}
+
 export interface Settings {
   locale: Locale;
   region: string;
@@ -274,6 +292,7 @@ export interface Settings {
   spoilerProtection: boolean;
   defaultStartPage: DefaultStartPage;
   newSeriesDefaultStatus: NewSeriesDefaultStatus;
+  uiPrefs: UiPrefsDto | null;
 }
 
 export interface SettingsPatch {
@@ -287,6 +306,7 @@ export interface SettingsPatch {
   spoilerProtection?: boolean;
   defaultStartPage?: DefaultStartPage;
   newSeriesDefaultStatus?: NewSeriesDefaultStatus;
+  uiPrefs?: UiPrefsDto | null;
 }
 
 export interface RewatchedEpisode {

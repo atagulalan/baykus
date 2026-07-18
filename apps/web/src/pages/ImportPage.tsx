@@ -364,7 +364,7 @@ export function ImportPage() {
             </summary>
             <p className="mt-2 text-xs text-muted">{t("importWizard.skippedRelicsHint")}</p>
             <p className="mt-2 text-xs text-snow">
-              {report.skippedRelics.map((relic) => relic.name).join(" · ")}
+              {report.skippedRelics.map((relic) => relic.name).join(t("common.separator"))}
             </p>
           </details>
         )}

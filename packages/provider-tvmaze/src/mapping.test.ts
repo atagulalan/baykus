@@ -54,6 +54,12 @@ describe("mapSeriesDetails", () => {
     expect(future?.airDate).toBe("2026-08-09");
   });
 
+  it("maps the wide background image (main first) to backdropRef", () => {
+    expect(details.backdropRef).toBe(
+      "tvmaze:https://static.tvmaze.com/uploads/images/original_untouched/627/1568451.jpg",
+    );
+  });
+
   it("summary HTML stripped", () => {
     expect(details.overview).toBe(
       "Set 200 years before the events of Game of Thrones, House of the Dragon tells the history of House Targaryen as they fight through a civil war.",

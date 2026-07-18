@@ -9,6 +9,7 @@ import { todayIso } from "../lib/date.ts";
 import { CalendarEntryRow } from "./CalendarEntryRow.tsx";
 import { EpisodeLabel } from "./EpisodeLabel.tsx";
 import { EpisodeTags } from "./EpisodeTags.tsx";
+import { MediaImage } from "./MediaImage.tsx";
 
 const MAX_CELL_ENTRIES = 3;
 
@@ -81,10 +82,12 @@ function CompactEntry({ entry }: { entry: CalendarEntry }) {
       }}
     >
       {imageUrl && !imageFailed && (
-        <img
+        <MediaImage
           src={imageUrl}
           alt=""
-          className="aspect-[2/3] w-6 shrink-0 object-cover opacity-90"
+          wrapperClassName="block aspect-[2/3] w-6 shrink-0 bg-[#101010]"
+          className="h-full w-full object-cover opacity-90"
+          spinnerSize={10}
           onError={() => setImageFailed(true)}
         />
       )}

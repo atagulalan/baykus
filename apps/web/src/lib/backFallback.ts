@@ -1,12 +1,11 @@
 /**
- * E72: which routes get the mobile-only back arrow, and — when there's no in-app
- * history to go back through (deep link / fresh tab) — which parent they fall back to.
- * The five tab pages (`/`, `/watch`, `/calendar`, `/search`, `/user/$handle`) never get
- * the arrow; everything with no tab-bar entry of its own does. Shaped to match
- * TanStack Router's typed `navigate({ to, params })` call directly.
+ * E72 / E138 / E142: which routes get the mobile-only back arrow, and — when there's no
+ * in-app history — which parent they fall back to.
+ * Tab / browse surfaces (`/watch`, `/` grid view, `/calendar`…, `/search`, `/user/$handle`)
+ * never get the arrow. `/` is a peer view of Watch (header toggle), not a child page.
  */
 export type BackFallback =
-  | { to: "/" }
+  | { to: "/watch" }
   | { to: "/settings" }
   | { to: "/user/$handle"; params: { handle: string } };
 
@@ -14,7 +13,7 @@ const RULES: {
   test: (pathname: string) => boolean;
   fallback: (selfHandle: string) => BackFallback;
 }[] = [
-  { test: (p) => p.startsWith("/series/"), fallback: () => ({ to: "/" }) },
+  { test: (p) => p.startsWith("/series/"), fallback: () => ({ to: "/watch" }) },
   { test: (p) => p === "/import", fallback: () => ({ to: "/settings" }) },
   {
     test: (p) => p === "/settings",

@@ -10,6 +10,8 @@ export interface EpisodeTagsProps {
   episodeTitle?: string | null;
   seasonName?: string | null;
   excludeTags?: EpisodeTagKind[];
+  /** Dense list rows hide tags on mobile; detail modals pass false. Default true. */
+  hideOnMobile?: boolean;
 }
 
 export type EpisodeTagKind = "new" | "upcoming" | "premiere" | "finale" | "special" | "ova";
@@ -60,11 +62,11 @@ export function computeEpisodeTagKinds(
 
 const TAG_STYLES: Record<EpisodeTagKind, string> = {
   new: "border border-yellow/35 text-yellow",
-  upcoming: "border border-yellow/35 text-yellow",
-  premiere: "border border-white/20 text-snow",
-  finale: "border border-white/20 text-snow",
-  special: "border border-white/20 text-snow",
-  ova: "border border-white/20 text-snow",
+  upcoming: "border border-sky-400/40 text-sky-300",
+  premiere: "border border-purple-400/45 text-purple-300",
+  finale: "border border-red-400/40 text-red-300",
+  special: "border border-white/20 text-muted",
+  ova: "border border-violet-400/40 text-violet-300",
 };
 
 const TAG_LABEL_KEYS: Record<EpisodeTagKind, string> = {
@@ -76,9 +78,10 @@ const TAG_LABEL_KEYS: Record<EpisodeTagKind, string> = {
   ova: "episode.tag.ova",
 };
 
-/** Shared by calendar rows/cells and the watch page. */
+/** Shared by calendar rows/cells and the watch page. Hidden on mobile by default (dense rows). */
 export function EpisodeTags(props: EpisodeTagsProps) {
   const { t } = useTranslation();
+  const hideOnMobile = props.hideOnMobile !== false;
   let kinds = computeEpisodeTagKinds(props);
   if (props.excludeTags) {
     kinds = kinds.filter((k) => !props.excludeTags?.includes(k));
@@ -86,15 +89,21 @@ export function EpisodeTags(props: EpisodeTagsProps) {
   if (kinds.length === 0) return null;
 
   return (
-    <span className="inline-flex flex-wrap items-center gap-2">
-      {kinds.map((kind) => (
-        <span
-          key={kind}
-          className={`font-mono text-[9px] uppercase tracking-widest px-1.5 py-0.5 ${TAG_STYLES[kind]}`}
-        >
-          {t(TAG_LABEL_KEYS[kind])}
-        </span>
-      ))}
+    <span
+      className={`flex-wrap items-center gap-2 ${hideOnMobile ? "hidden sm:inline-flex" : "inline-flex"}`}
+    >
+      {kinds.map((kind) => {
+        const label = t(TAG_LABEL_KEYS[kind]);
+        return (
+          <span
+            key={kind}
+            title={label}
+            className={`inline-flex shrink-0 items-center justify-center font-mono text-[9px] uppercase tracking-widest px-1.5 py-0.5 ${TAG_STYLES[kind]}`}
+          >
+            {label}
+          </span>
+        );
+      })}
     </span>
   );
 }

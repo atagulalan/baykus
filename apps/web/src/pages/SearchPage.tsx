@@ -114,8 +114,10 @@ export function SearchPage() {
                     {result.title}
                   </span>
                   <span className="font-mono text-[10px] tracking-wide text-muted truncate">
-                    {[result.year, result.network].filter(Boolean).join(" · ")}
-                    {result.libraryItemId != null ? ` · ${t("search.inLibrary")}` : ""}
+                    {[result.year, result.network].filter(Boolean).join(t("common.separator"))}
+                    {result.libraryItemId != null
+                      ? `${t("common.separator")}${t("search.inLibrary")}`
+                      : ""}
                   </span>
                 </div>
               </button>

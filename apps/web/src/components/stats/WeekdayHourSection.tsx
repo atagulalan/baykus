@@ -51,7 +51,7 @@ export function WeekdayHourSection({ stats }: WeekdayHourSectionProps) {
             key: String(hour),
             label: String(hour),
             value: count,
-            tooltip: `${hour}:00 — ${count}`,
+            tooltip: `${hour}:00${t("common.separator")}${count}`,
           }))}
         />
       </div>

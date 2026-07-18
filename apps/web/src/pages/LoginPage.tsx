@@ -18,12 +18,12 @@ export function LoginPage() {
       login(sessionQuery.data?.mode === "multi" ? { handle, password } : { password }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["auth-session"] });
-      navigate({ to: "/" });
+      navigate({ to: "/watch" });
     },
   });
 
   if (sessionQuery.isLoading) return null;
-  if (sessionQuery.data?.authenticated) return <Navigate to="/" />;
+  if (sessionQuery.data?.authenticated) return <Navigate to="/watch" />;
 
   const mode = sessionQuery.data?.mode;
 

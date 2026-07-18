@@ -12,6 +12,7 @@ import {
 } from "../api/client.ts";
 import { buildImageUrl } from "../api/images.ts";
 import type { EpisodeSummary, ExternalIds } from "../api/types.ts";
+import { MediaImage } from "../components/MediaImage.tsx";
 import { SeasonSection } from "../components/SeasonSection.tsx";
 import { todayIso } from "../lib/date.ts";
 import { genreKey } from "../lib/genreKey.ts";
@@ -199,11 +200,13 @@ export function SeriesPreviewPage() {
     <div className={`flex flex-col gap-6 ${pending ? "pointer-events-none opacity-60" : ""}`}>
       <div className="flex flex-col gap-4 sm:flex-row">
         {imageUrl ? (
-          <img
+          <MediaImage
             src={imageUrl}
             alt={preview.title}
-            className="w-40 h-auto shrink-0 bg-white/5"
+            wrapperClassName="block aspect-[2/3] w-40 shrink-0 bg-white/5"
+            className="h-full w-full object-cover"
             style={{ viewTransitionName: transitionName }}
+            spinnerSize={24}
           />
         ) : (
           <div
@@ -227,7 +230,7 @@ export function SeriesPreviewPage() {
 
           {(preview.network || preview.releaseStatus) && (
             <p className="font-mono text-[10px] tracking-wide text-muted">
-              {[preview.network, preview.releaseStatus].filter(Boolean).join(" · ")}
+              {[preview.network, preview.releaseStatus].filter(Boolean).join(t("common.separator"))}
             </p>
           )}
 

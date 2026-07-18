@@ -1,4 +1,10 @@
+import type { QueryClient } from "@tanstack/react-query";
 import { describe, expect, it, vi } from "vitest";
+
+// E132: startManualSweep calls the real client import — mock it module-wide.
+// The maybeStartSweep tests below always inject refreshAllSeriesFn, so the
+// mock never interferes with them.
+vi.mock("../api/client.ts", () => ({ refreshAllSeries: vi.fn() }));
 
 function flushPromises(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0));
@@ -107,5 +113,72 @@ describe("maybeStartSweep (E64)", () => {
     maybeStartSweep({ onComplete, refreshAllSeriesFn, nowMs: () => now });
     await flushPromises();
     expect(refreshAllSeriesFn).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("startManualSweep (E132 promise semantics)", () => {
+  async function setup() {
+    const mod = await freshModule();
+    const { refreshAllSeries } = await import("../api/client.ts");
+    // resetModules does not reset the vi.mock instance — clear it per test.
+    vi.mocked(refreshAllSeries).mockReset();
+    return {
+      mod,
+      refreshAllSeries: vi.mocked(refreshAllSeries),
+      queryClient: { invalidateQueries: vi.fn() } as unknown as QueryClient,
+      toast: { show: vi.fn() },
+      messages: { done: (newEpisodes: number) => `done ${newEpisodes}`, error: "err" },
+    };
+  }
+
+  it("resolves after the sweep settles — library invalidated, done toast shown", async () => {
+    const { mod, refreshAllSeries, queryClient, toast, messages } = await setup();
+    refreshAllSeries.mockResolvedValue({ ok: 2, failed: 0, newEpisodes: 3 });
+
+    await mod.startManualSweep(queryClient, toast, messages);
+    expect(queryClient.invalidateQueries).toHaveBeenCalledWith({ queryKey: ["library"] });
+    expect(toast.show).toHaveBeenCalledWith("done 3");
+  });
+
+  it("a concurrent call gets the same in-flight promise, no second request", async () => {
+    const { mod, refreshAllSeries, queryClient, toast, messages } = await setup();
+    let resolveRun: (() => void) | undefined;
+    refreshAllSeries.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveRun = () => resolve({ ok: 1, failed: 0, newEpisodes: 0 });
+        }),
+    );
+
+    const first = mod.startManualSweep(queryClient, toast, messages);
+    const second = mod.startManualSweep(queryClient, toast, messages);
+    expect(refreshAllSeries).toHaveBeenCalledTimes(1);
+    expect(second).toBe(first);
+
+    resolveRun?.();
+    await first;
+    expect(toast.show).toHaveBeenCalledTimes(1);
+  });
+
+  it("resolves immediately while the quiet sweep holds the guard", async () => {
+    const { mod, refreshAllSeries, queryClient, toast, messages } = await setup();
+    mod.maybeStartSweep({
+      onComplete: vi.fn(),
+      refreshAllSeriesFn: () => new Promise(() => {}),
+      nowMs: () => 1,
+    });
+
+    await mod.startManualSweep(queryClient, toast, messages);
+    expect(refreshAllSeries).not.toHaveBeenCalled();
+    expect(toast.show).not.toHaveBeenCalled();
+  });
+
+  it("resolves (not rejects) on failure, showing the error toast", async () => {
+    const { mod, refreshAllSeries, queryClient, toast, messages } = await setup();
+    refreshAllSeries.mockRejectedValue(new Error("boom"));
+
+    await mod.startManualSweep(queryClient, toast, messages);
+    expect(toast.show).toHaveBeenCalledWith("err", "error");
+    expect(queryClient.invalidateQueries).not.toHaveBeenCalled();
   });
 });

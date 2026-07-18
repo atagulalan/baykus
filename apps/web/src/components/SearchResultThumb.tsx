@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { buildImageUrl } from "../api/images.ts";
 import type { SearchResult } from "../api/types.ts";
+import { MediaImage } from "./MediaImage.tsx";
 
 /** Falls back to a plain glyph on a 404/missing poster — used by SearchPage (E77). */
 export function SearchResultThumb({ result, id }: { result: SearchResult; id?: string }) {
@@ -17,11 +18,13 @@ export function SearchResultThumb({ result, id }: { result: SearchResult; id?: s
     );
   }
   return (
-    <img
+    <MediaImage
       id={id}
       src={url}
       alt=""
-      className="h-10 w-7 shrink-0 object-cover"
+      wrapperClassName="block h-10 w-7 shrink-0 bg-white/5"
+      className="h-full w-full object-cover"
+      spinnerSize={12}
       onError={() => setFailed(true)}
     />
   );

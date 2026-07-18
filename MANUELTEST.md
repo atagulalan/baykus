@@ -923,3 +923,251 @@ canlı `/stats` karşılaştırması) — birebir eşleşme zaten **beklenmiyord
 ### Tam gate
 - [x] `pnpm lint && pnpm typecheck && pnpm test && pnpm build` — hepsi
       yeşil (workspace: 576 test, 64 test dosyası).
+
+---
+
+## M59 — Spec 009 CHECKPOINT: UX polish round 2 (E112–E137) ✅ (otomatik tarayıcı taramasıyla doğrulandı 2026-07-18)
+
+Spec 009'un M53–M58 + M60–M61 aralığı (SegmentedButtonGroup/StepperInput/
+EpisodeLabel/YearStrip temel bileşenleri, Checkbox `showHint`, SeasonSection
+hizalama+animasyon, takvim E112–E115/E133/E135/E136/E145, ayarlar iki
+sütun+navbar, arama→detay view-transition, WatchDateDialog, pull-to-refresh,
+quick-mark fly animasyonu) kod-complete ve `pnpm lint && pnpm typecheck &&
+pnpm test` 662 test / 72 dosya ile yeşildi. Bu oturum M59.1'i kapattı: 26
+maddenin (E112–E137) tamamı ad hoc headless Playwright (scratchpad'e kurulan
+`playwright-core` + `~/.cache/ms-playwright` chromium, kalıcı proje skill'i
+değil) ile gerçek çalışan sunucuya (`:5173`→`:4004`) ve mutasyon gerektiren
+adımlar için ayrı bir sandbox sunucusuna karşı yürütüldü.
+
+**Güvenlik / gerçek kütüphane (`apps/server/data/`):** yürüyüş öncesi
+parmak izi `items=247, watches=7321, settings=8`; yürüyüş **tamamen
+salt-okunur** kaldı (navigasyon, overlay aç/kapat, arama, GET istekleri) —
+sonundaki parmak izi **birebir aynı** (`items=247, watches=7321,
+settings=8`), gerçek `settings.locale` de dokunulmadan `"en"` kaldı (bu
+xava'nın kendi tercihi, test artığı değil). Tüm mutasyon gerektiren adımlar
+(dil değişimi, bölüm/sezon işaretleme, WatchDateDialog onayı, "İzlemeye
+başla" ekleme akışı, quick-mark, pull-to-refresh'in gerçek `startManualSweep`
+tetiklemesi) `sqlite3 .backup` ile alınan bir DB kopyası üzerinde,
+`BAYKUS_DATA_DIR` ile ayrı bir sunucu örneğinde (port 4104) yapıldı — bu
+sunucu tek kullanımlıktı, net-zero geri alma gerektirmedi.
+
+**Bulunan ve düzeltilen gerçek bug (E119):** `SettingsPage.tsx` masaüstünde
+iki sütunu CSS `columns-1 sm:columns-2` (multi-column akışı) ile
+uyguluyordu; Danger Zone (`RESET ACCOUNT`) bölümü spec'in "her zaman
+col-span-2 (tam genişlik)" kararına rağmen sıradan bir `break-inside-avoid`
+öğesi olarak akışa bırakılmıştı ve gerçekte **sadece sağ sütunu**
+kaplıyordu (canlı ekran görüntüsüyle doğrulandı: `x=612, width=436`).
+`apps/web/src/pages/SettingsPage.tsx`da Danger Zone `<section>`'ına
+`[column-span:all]` (Tailwind arbitrary property) eklendi — CSS
+multi-column'da "tüm sütunları kapla" karşılığı budur. Düzeltme sonrası
+canlı sunucuya karşı tekrar doğrulandı: bölüm artık `x=152, width=896`
+(içerik genişliğinin tamamı) ile iki sütunun altında tam genişlikte
+render ediyor; mobilde (`columns-1` zaten tek sütun) görsel fark yok. Bu
+adım salt-okunur GET'lerle doğrulandı, gerçek veriye mutasyon yok. Düzeltme
+sonrası `pnpm lint && pnpm typecheck && pnpm test && pnpm build` tekrar
+koşuldu — hepsi yeşil (aşağıdaki "Tam gate" bölümüne bakın).
+
+**2026-07-18 tarihli DEPRECATED kararlar (bug değil — xava'nın ürün
+kararları, `tasks.md` M57.2/M57.3/M57.5'te belgeli):** bu üç alt-görev
+tarayıcıda da gözlemiyle doğrulandı — spec.md'nin E113/E118/E123/E130
+metni hâlâ eski tasarımı (segmented button group, StepperInput,
+detay-sayfası rozeti, bayrak ikonları) tarif ediyor ama gerçek UI
+`SettingsSelect` (masaüstü popover / mobil bottom sheet) idiomunu koruyor:
+- **E113 (a–c):** Dil/Bölge/Tema hâlâ `SettingsSelect` satırı + popover —
+  popover içeriği düz metin listesi (`Türkçe` / `English`, seçili olan
+  `text-yellow` + `✓`), spec'in tarif ettiği segmented pill grubu (aktif
+  `bg-yellow text-void`) **değil**. E113(d) (Stats `YearSelect`→`YearStrip`)
+  ayrı bir görevdi (M56.1) ve **gerçekten** segmented/strip stiliyle
+  uygulandı (bkz. aşağıdaki Takvim/İstatistik bölümü).
+- **E118 (ayarlar kısmı):** "Watching window (days)" satırı hâlâ
+  `SettingsSelect` (önceden tanımlı seçenekler: "30 days" vb.), `StepperInput`
+  bileşeni **var ve birim testli** (`StepperInput.test.ts`, M53.3) ama
+  ayarlar UI'sine **bağlanmamış**.
+- **E123 (detay rozeti kısmı):** filtre paneli (8 kategori ikonu doğrulandı:
+  Play/Clock/CircleDashed/Bookmark/CheckCircle/Trophy/CircleX/AlertCircle)
+  ve `/watch` bölüm başlıkları ikon gösteriyor (canlı doğrulandı), ama
+  detay sayfası hero'sunda kompakt kategori rozeti **yok** — kasıtlı olarak
+  kovulmamış (M57.5: "not pursued").
+- **E130:** Bölge popover'ında (`TR US GB DE FR ES IT NL`) **hiç bayrak
+  emoji yok**, satırın `title` özniteliği boş (`""`) — tooltip de yok.
+
+**Kapsam dışı gözlem (düzeltilmedi — 009'un E112–E137 kapsamı dışında,
+spec 008/E107'den kalma):** `/stats` "Day of the Week" grafiği
+`WeekdayHourSection.tsx`'te `new Intl.DateTimeFormat("tr-TR", {weekday:
+"short"})` ile hard-code edilmiş; locale=en olan canlı sayfada bile
+etiketler hep Türkçe kısaltma (PZT/SAL/ÇAR/PER/CUM/CMT/PAZ) çıkıyor. Gerçek
+bir locale tutarsızlığı ama bu M59.1'in E112–E137 listesinde değil,
+düzeltilmedi.
+
+### Ayarlar sayfası (E113, E116, E118, E119, E130)
+- [x] Masaüstü (1280px) `/settings`: CSS `columns-1 sm:columns-2 gap-6`
+      ile gerçek iki sütun render ediyor (General/Notifications/Extra
+      Info sol, Backup+Reset Account sağ) — ekran görüntüsüyle doğrulandı.
+      Mobilde (390px) tek sütun, değişmedi.
+- [x] "Episode Format" popover'ı 3 seçenek gösteriyor: `S1E6` / `S01E06`
+      / `1×6` (seçili olan `✓`) — E116 ayar anahtarı çalışıyor, format
+      takvim/watch/detay sayfalarında tutarlı uygulanıyor (`1×2`, `4×3`
+      gibi compact biçim canlı veride gözlemlendi, ayar `episode_label_
+      format: "compact"`).
+- [x] "Watching window (days)" ve "Language"/"Region"/"Theme" satırları
+      `SettingsSelect` popover/bottom-sheet — yukarıdaki DEPRECATED
+      notuna bakın, segmented group/StepperInput'a bağlı **değil**.
+- [x] Region popover 8 seçeneği doğru listeliyor (Turkey/United
+      States/…/Netherlands) ama bayraksız, tooltipsiz (E130 uygulanmamış,
+      yukarıya bakın).
+
+### Navbar + scroll anchor (E114, E120, E129, E133)
+- [x] Masaüstü header sayfa başında şeffaf (`bg` yok, arka plandaki hero
+      görünür kalıyor), 600px aşağı scroll sonrası `bg-void/95
+      backdrop-blur` sabit yüzeyine geçiyor — canlı `/watch` ve `/stats`
+      ekran görüntüleriyle doğrulandı.
+- [x] Masaüstü nav: sadece ikon (Watch/Calendar sol, ortada `baykuş`
+      wordmark, Search/Profile sağ), her linkte `aria-label`/`title` var
+      (`"Watch"`, `"Calendar"`, `"Search"`, `"Profile"`) — metin **yok**
+      (bkz. aşağıdaki not, checklist satırının eski metniyle çelişiyor).
+- [x] `/watch` double-RAF scroll anchor: 6 ayrı sayfa yüklemesinde
+      `scrollY` **tam olarak** `161`de sabit kaldı (önceki tek-RAF
+      bug'ının "bazen kaymıyor" davranışı yok).
+- [x] `/calendar` aynı testte 5/5 yüklemede `scrollY=1075`de sabit —
+      BUGÜN her seferinde sticky mode-tabs + app header'ın altına doğru
+      anchor'lanıyor.
+- [x] `/watch` bölüm başlıkları (`h2`: "Watch history", "Watching(7)",
+      "Haven't watched for a while(19)") `position: sticky; top: 76px;
+      z-index: 30` — E129 doğrulandı.
+- [x] `/calendar` mod sekmeleri satırı (`Timeline/Calendar/Schedule`)
+      `position: sticky; top: 76px; z-index: 30; bg-void/95
+      backdrop-blur` — E133 doğrulandı; BUGÜN başlığı sekmelerin hemen
+      altında görünüyor, örtüşme yok.
+
+### Checkbox hint + SeasonSection (E117, E125, E126)
+- [x] `/series/i4300` detay sayfasında işaretsiz bölüm checkbox'larının
+      `Check` ikonu `class="… scale-75 opacity-20"`, işaretli olanlar
+      `scale-100 opacity-100` — `Checkbox.tsx`'in `showHint` mantığı
+      canlı DOM'da birebir doğrulandı.
+- [x] Sezon başlığı checkbox'ı (sağ kenar, `x≈1101`) ile bölüm satırı
+      checkbox'ları aynı x konumunda hizalı — ekran görüntüsüyle
+      doğrulandı.
+- [x] `.season-episodes` CSS: `grid-template-rows: 0fr` → `[data-
+      expanded=true] { grid-template-rows: 1fr }`, `transition:
+      grid-template-rows 200ms ease-out` — kaynak kodda doğrulandı,
+      "Sezon 1" tıklanınca (sandbox) genişleyip bölüm listesini gösterdi.
+
+### Takvim + istatistik heatmap (E112, E115, E133, E135, E136)
+- [x] `/calendar`, `/calendar/month`, `/calendar/schedule` üç ayrı URL
+      olarak yükleniyor (E136); masaüstünde üçü de sekme olarak görünüyor
+      (Timeline/Calendar/Schedule).
+- [x] Mobilde (390px) sadece **Timeline** ve **Schedule** sekmeleri var,
+      Month sekmesi yok (E135); `/calendar/month`e doğrudan gidilince
+      mobilde `/calendar`e redirect ediyor (doğrulandı: `page.url()` →
+      `/calendar`).
+- [x] Takvim satırlarında (mobil + masaüstü, timeline + gelecek günler)
+      "Yaklaşan"/"Upcoming" etiketi **hiç görünmedi** (E115); diğer
+      etiketler (PREMIER/yeni gibi) hâlâ görünüyor.
+- [x] `/stats` "Weekly / Monthly Watch Time" bölümünde yıl şeridi
+      (`flex gap-2 overflow-x-auto`, 2026/2025/…/2015) aktif yıl
+      `text-yellow` + alt çizgi ile render ediyor (E112 YearStrip).
+- [x] "Yearly Activity" heatmap'inin scroll container'ı `overflow-x-auto
+      touch-pan-x select-none cursor-grab active:cursor-grabbing` sınıfı
+      taşıyor (`scrollWidth=8229` vs `clientWidth=976` — gerçekten
+      taşıyor ve pan edilebilir) — E112'nin day-grid drag-pan'i kaynak
+      düzeyinde + CSS'te doğrulandı.
+
+### Arama → detay + oylama (E121, E122, E124, E131)
+- [x] "Breaking Bad" araması: kütüphanedeki sonuç `"in library"`
+      etiketiyle işaretli, kütüphanede olmayanlar değil (`libraryItemId`
+      ayrımı çalışıyor).
+- [x] Kütüphanede olmayan bir sonuca (`"Talking Bad"`) tıklamak
+      `/series/new?tvmazeId=1003&imdbId=…` sayfasına gitti, sayfa tam
+      sezon/bölüm envanteriyle + **"Start watching"** (İzlemeye başla)
+      butonuyla render etti (E131).
+- [x] (Sandbox) "Start watching"a tıklamak diziyi kütüphaneye ekledi
+      (`Talking Bad kütüphanene eklendi` toast'ı göründü) ve
+      `/series/i4306`e (gerçek detay) replace-navigate etti — E131'in
+      ekleme akışı uçtan uca doğrulandı.
+- [x] Arama sonucu + detay poster `img`lerinde `viewTransitionName`
+      ataması kaynak kodda (`SearchPage.tsx`) doğrulandı
+      (`poster-{id}`/`search-poster-{key}` deseni); tıklama sonrası
+      navigasyon hatasız çalıştı. Bir kez selamsız `"Transition was
+      skipped"` konsol hatası görüldü (View Transitions API'nin
+      üst-üste binen geçişlerde attığı zararsız/beklenen bir uyarı,
+      spec'in "fallback: anlık navigasyon" davranışıyla tutarlı) — sayfa
+      yine de doğru şekilde navigate etti, gerçek bug değil. Animasyonun
+      akıcılığı (kare-kare pürüzsüzlük) HANDOVER.md'nin zaten belgelediği
+      gibi insan gözü gerektiren bir kontrol, headless ortamda ölçülemez.
+- [x] (Sandbox) Dil TR'ye alındıktan sonra `/series/i4300` tür etiketleri
+      `Komedi / Macera / Fantastik` gösterdi (EN'de aynı diziler `Comedy /
+      Adventure / Fantasy`) — E124 tür çevirisi doğrulandı.
+- [x] (Sandbox) Sezon 1'de izlenmiş bir bölüğün checkbox'ına tıklamak
+      "tekrar izledim / Tarihi Düzenle / İzlenmedi olarak işaretle" pop-up
+      menüsünü açtı; overflow menüsünde ("⋮") "Add to favorites" +
+      "RATING" (bad/okay/good) bölümü var — favori ve puan artık hero'da
+      değil, overflow menüde (E122).
+- [x] (Sandbox) İzlenmemiş bir bölümü işaretlemek satırın **solunda**
+      (`right-full`, dikey ortalı, `animate-rating-slide-left`) bir puan
+      pop-up'ı açtı (`kötü / normal / iyi / GEÇ`); satır düzeni kaymadı —
+      E122'nin bölüm-oylama pozisyonu birebir doğrulandı.
+
+### WatchDateDialog (E127)
+- [x] (Sandbox) "Tarihi Düzenle" dialog'u: başlık "Tarihi Düzenle" +
+      alt metin "İzleme geçmişi için tarihi ve saati belirleyin.", ayrı
+      `<input type="date">` + `<input type="time">`, preset butonları
+      "ŞİMDİ"/"DÜN", "Kaydet" butonu tarih alanı boşaltılınca `disabled`
+      oldu — E127'nin 4 alt maddesi de canlı DOM + ekran görüntüsüyle
+      doğrulandı.
+
+### Filter FAB + kategori ikonları (E123, E128)
+- [x] `/` (kütüphane) sayfasında filtre FAB'ı hem mobilde (390px, tab
+      bar'ın üstünde) hem masaüstünde (1280px, `fixed bottom-6 right-…`)
+      sarı daire olarak göründü; tıklanınca açılan panelde "Progress"
+      filtrelerinin her biri (Needs review/Watching/Haven't watched for
+      a while/Not started/Watch later/Up to date/Finished/Stopped) bir
+      lucide ikonuyla render etti — E123 + E128 birlikte doğrulandı.
+
+### Quick-mark view-transition (E137)
+- [x] (Sandbox) `/watch`de "İzleniyor" bölümündeki bir satırın
+      checkbox'ına tıklamak öncesi/sonrası `window.scrollY` (`0→0`) ve
+      "İzleniyor" başlığının `getBoundingClientRect().top`u (`237→237`)
+      **birebir sabit** kaldı — viewport atlaması yok. Satır aynı
+      konumda bir sonraki bölüme ilerledi (`4×2 → 4×3`, dizi adı/poster
+      aynı kaldı) — "stacked series ilerlesin" davranışı doğrulandı.
+      Konsol hatası yok.
+- [x] Test, geçmiş akordeonu **kapalı** durumdayken çalıştı (sandbox'ın
+      varsayılan `ui_prefs.historyCollapsed: true`si, gerçek kopyadan
+      geldiği için) — yani M61.2'nin collapsed-history varyantı da bu
+      testte örtük olarak doğrulandı: kapalı başlık şeridine "uçan" satır
+      geçişi sırasında da viewport sabit kaldı, hata yok.
+
+### Pull-to-refresh (E132)
+- [x] (Sandbox, mobil viewport 390×844, `hasTouch:true` + CDP
+      `Input.dispatchTouchEvent`) `/` sayfasında `scrollY=0`dan aşağı
+      touchmove dizisi (8 adım × 25px) uygulandı: `RefreshCw` ikonu
+      pull mesafesiyle döndü (`transform: rotate(240deg)`) ve eşik
+      aşılınca `text-yellow` oldu — ekran görüntüsüyle doğrulandı.
+      `touchEnd` sonrası ikon dönmeye devam edip gerçek
+      `startManualSweep`i tetikledi (sandbox kütüphanesi 247→248 öğeye
+      "Talking Bad" eklenmesinden **ayrı** bir mutasyon; sweep süresi
+      247 dizi için dakikalar sürdüğünden tam bitişi beklenmedi — jest
+      burada mekanik: gövde/eşik/renk/döngü tetiklemesi, ki hepsi
+      doğrulandı).
+- [x] Kaynak kodda 5 sayfanın hepsi `PullToRefresh`/`useLibrarySweep
+      Refresh`e sarılı doğrulandı: `LibraryPage.tsx`, `WatchPage.tsx`,
+      `CalendarPage.tsx`, `AllSeriesPage.tsx`, `FavoritesPage.tsx` (E132
+      DoD'sindeki 5 yüzeyin hepsi).
+
+### MediaImage spinner+fade (E134)
+- [x] `MediaImage.tsx` kaynak kodu spec'le birebir eşleşiyor: yükleme
+      sırasında ortalanmış `Loader2` spinner (`aria-hidden`, shell
+      `aria-busy`), `onLoad`da 300ms opacity fade-in, `img.complete`
+      olan cache'li resimler spinner'ı atlıyor, hata durumunda
+      `onError` çağrılıp hiçbir şey render etmiyor (var olan fallback'ler
+      çalışmaya devam ediyor). Canlı ağ üzerinden anlık spinner karesini
+      yakalamak (CDP `Network.emulateNetworkConditions` ile denendi)
+      localhost'un çok hızlı olması nedeniyle güvenilir olmadı — ~20
+      ekran görüntüsü boyunca hiçbir kırık/stilsiz resim yükleme
+      artefaktı gözlenmedi, bu da kaynak-kodu doğrulamasını destekliyor.
+
+### Tam gate (bug düzeltmesi sonrası)
+- [x] `pnpm lint && pnpm typecheck && pnpm test && pnpm build` — hepsi
+      yeşil (workspace: **662 test, 72 test dosyası**, sıfır hata/uyarı
+      dışında biome'un önceden var olan `recommended` deprecation
+      notu).

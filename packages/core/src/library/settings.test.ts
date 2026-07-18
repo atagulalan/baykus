@@ -16,6 +16,7 @@ describe("getSettings", () => {
       spoilerProtection: false,
       defaultStartPage: "home",
       newSeriesDefaultStatus: "watching",
+      uiPrefs: null,
     });
   });
 });
@@ -108,6 +109,7 @@ describe("updateSettings", () => {
       spoilerProtection: false,
       defaultStartPage: "home",
       newSeriesDefaultStatus: "watching",
+      uiPrefs: null,
     });
   });
 
@@ -132,5 +134,59 @@ describe("updateSettings", () => {
     updateSettings(db, { region: "US" });
     const result = updateSettings(db, { region: "DE" });
     expect(result.region).toBe("DE");
+  });
+});
+
+describe("uiPrefs (E143)", () => {
+  const sample = {
+    libraryBrowse: { sort: "title" as const, category: ["watching"] },
+    watchSections: ["watching", "finished"],
+    watchSectionSorts: { finished: "added" as const },
+    historyCollapsed: true,
+    skipSectionRemoveConfirm: true,
+    showNextUpCarousel: false,
+    browseView: "grid" as const,
+  };
+
+  it("defaults to null when absent", () => {
+    const { db } = openLibraryDb(":memory:");
+    expect(getSettings(db).uiPrefs).toBeNull();
+  });
+
+  it("round-trips a written object", () => {
+    const { db } = openLibraryDb(":memory:");
+    const result = updateSettings(db, { uiPrefs: sample });
+    expect(result.uiPrefs).toEqual(sample);
+    expect(getSettings(db).uiPrefs).toEqual(sample);
+  });
+
+  it("null clears the stored key", () => {
+    const { db } = openLibraryDb(":memory:");
+    updateSettings(db, { uiPrefs: sample });
+    const result = updateSettings(db, { uiPrefs: null });
+    expect(result.uiPrefs).toBeNull();
+  });
+
+  it.each([
+    "not-json",
+    "{",
+    "[]",
+    '"string"',
+    "null",
+  ])("garbage stored value (%s) reads back as null", (raw) => {
+    const { db, sqlite } = openLibraryDb(":memory:");
+    sqlite.prepare("INSERT INTO settings (key, value) VALUES ('ui_prefs', ?)").run(raw);
+    expect(getSettings(db).uiPrefs).toBeNull();
+  });
+
+  it("patching uiPrefs leaves other keys intact", () => {
+    const { db } = openLibraryDb(":memory:");
+    updateSettings(db, { locale: "en", watchingWindowDays: 7 });
+    const result = updateSettings(db, { uiPrefs: sample });
+    expect(result).toMatchObject({
+      locale: "en",
+      watchingWindowDays: 7,
+      uiPrefs: sample,
+    });
   });
 });

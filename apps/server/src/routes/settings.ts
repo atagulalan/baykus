@@ -1,8 +1,34 @@
-import type { Library, SettingsPatch } from "@baykus/core";
+import type { Library, SettingsPatch, UiPrefs } from "@baykus/core";
 import type { MetadataProvider } from "@baykus/provider-sdk";
 import { Hono } from "hono";
 import { z } from "zod";
 import { effectiveScrapersEnabled, refreshProviders } from "../providers/registry.ts";
+
+const librarySortSchema = z.enum(["lastWatched", "added", "title", "rating", "nextAir"]);
+
+const watchCategorySchema = z.enum([
+  "needs_review",
+  "watching",
+  "not_watched_recently",
+  "not_started",
+  "watch_later",
+  "up_to_date",
+  "finished",
+  "stopped",
+]);
+
+const uiPrefsSchema = z.object({
+  libraryBrowse: z.object({
+    sort: librarySortSchema,
+    category: z.array(watchCategorySchema),
+  }),
+  watchSections: z.array(watchCategorySchema),
+  watchSectionSorts: z.partialRecord(watchCategorySchema, librarySortSchema),
+  historyCollapsed: z.boolean(),
+  skipSectionRemoveConfirm: z.boolean(),
+  showNextUpCarousel: z.boolean(),
+  browseView: z.enum(["list", "grid"]).default("list"),
+});
 
 const patchSettingsSchema = z
   .object({
@@ -16,6 +42,7 @@ const patchSettingsSchema = z
     spoilerProtection: z.boolean().optional(),
     defaultStartPage: z.enum(["home", "calendar", "stats"]).optional(),
     newSeriesDefaultStatus: z.enum(["watching", "watchlist"]).optional(),
+    uiPrefs: uiPrefsSchema.nullable().optional(),
   })
   .strict();
 
@@ -40,6 +67,9 @@ function toSettingsPatch(parsed: z.infer<typeof patchSettingsSchema>): SettingsP
   }
   if (parsed.newSeriesDefaultStatus !== undefined) {
     patch.newSeriesDefaultStatus = parsed.newSeriesDefaultStatus;
+  }
+  if (parsed.uiPrefs !== undefined) {
+    patch.uiPrefs = parsed.uiPrefs as UiPrefs | null;
   }
   return patch;
 }

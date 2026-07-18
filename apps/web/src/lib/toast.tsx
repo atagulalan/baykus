@@ -1,4 +1,5 @@
 import { createContext, type ReactNode, useCallback, useContext, useState } from "react";
+import { Z } from "./zIndex.ts";
 
 type ToastVariant = "success" | "error";
 
@@ -31,7 +32,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={{ show }}>
       {children}
-      <div className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 flex-col gap-2">
+      <div
+        className="fixed bottom-4 left-1/2 flex -translate-x-1/2 flex-col gap-2"
+        style={{ zIndex: Z.toast }}
+      >
         {toasts.map((toast) => (
           <div
             key={toast.id}

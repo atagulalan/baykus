@@ -64,7 +64,7 @@ export function ClaimPage() {
           </a>
           <button
             type="button"
-            onClick={() => navigate({ to: "/" })}
+            onClick={() => navigate({ to: "/watch" })}
             className="border border-white/10 px-3 py-2 font-mono text-[10px] text-muted uppercase tracking-widest transition-colors hover:border-white/20 hover:text-snow"
           >
             {t("auth.claim.continue")}

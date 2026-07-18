@@ -1,0 +1,299 @@
+import { updateSettings } from "../api/client.ts";
+import {
+  type BrowseView,
+  CATEGORY_ORDER,
+  type UiPrefsDto,
+  type WatchCategory,
+} from "../api/types.ts";
+import {
+  DEFAULT_LIBRARY_CATEGORY,
+  DEFAULT_LIBRARY_SORT,
+  type LibraryCategoryFilter,
+  type LibrarySort,
+} from "../components/FilterPanel.tsx";
+
+/** E143: durable UI prefs — localStorage cache + server settings (zip via settings.json).
+ * Falls back to an in-memory map when `localStorage` is unavailable (Node tests, private mode). */
+const PREFS_KEY = "baykus.uiPrefs";
+
+/** Legacy session keys — migrated once into PREFS_KEY. */
+const LEGACY = {
+  libraryBrowse: "baykus.libraryBrowse",
+  watchSections: "baykus.watchSections",
+  watchSectionSorts: "baykus.watchSectionSorts",
+} as const;
+
+const memoryStore = new Map<string, string>();
+
+function storageGet(key: string): string | null {
+  try {
+    if (typeof localStorage !== "undefined") return localStorage.getItem(key);
+  } catch {
+    // ignore
+  }
+  return memoryStore.get(key) ?? null;
+}
+
+function storageSet(key: string, value: string): void {
+  memoryStore.set(key, value);
+  try {
+    if (typeof localStorage !== "undefined") localStorage.setItem(key, value);
+  } catch {
+    // ignore
+  }
+}
+
+function storageRemove(key: string): void {
+  memoryStore.delete(key);
+  try {
+    if (typeof localStorage !== "undefined") localStorage.removeItem(key);
+  } catch {
+    // ignore
+  }
+}
+
+function sessionGet(key: string): string | null {
+  try {
+    if (typeof sessionStorage !== "undefined") return sessionStorage.getItem(key);
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+function sessionRemove(key: string): void {
+  try {
+    if (typeof sessionStorage !== "undefined") sessionStorage.removeItem(key);
+  } catch {
+    // ignore
+  }
+}
+
+export const DEFAULT_WATCH_SECTIONS: WatchCategory[] = ["watching", "not_watched_recently"];
+export const DEFAULT_BROWSE_VIEW: BrowseView = "list";
+
+export interface LibraryBrowsePrefs {
+  sort: LibrarySort;
+  category: LibraryCategoryFilter;
+}
+
+export interface UiPrefs {
+  libraryBrowse: LibraryBrowsePrefs;
+  watchSections: WatchCategory[];
+  watchSectionSorts: Partial<Record<WatchCategory, LibrarySort>>;
+  historyCollapsed: boolean;
+  skipSectionRemoveConfirm: boolean;
+  showNextUpCarousel: boolean;
+  browseView: BrowseView;
+}
+
+function isWatchCategory(value: unknown): value is WatchCategory {
+  return typeof value === "string" && (CATEGORY_ORDER as readonly string[]).includes(value);
+}
+
+function parseBrowseView(raw: unknown): BrowseView {
+  return raw === "grid" ? "grid" : "list";
+}
+
+function defaultPrefs(): UiPrefs {
+  return {
+    libraryBrowse: {
+      sort: DEFAULT_LIBRARY_SORT,
+      category: [...DEFAULT_LIBRARY_CATEGORY],
+    },
+    watchSections: [...DEFAULT_WATCH_SECTIONS],
+    watchSectionSorts: {},
+    historyCollapsed: false,
+    skipSectionRemoveConfirm: false,
+    showNextUpCarousel: true,
+    browseView: DEFAULT_BROWSE_VIEW,
+  };
+}
+
+function ensureWatchingPinned(cats: WatchCategory[]): WatchCategory[] {
+  return cats.includes("watching") ? cats : (["watching", ...cats] as WatchCategory[]);
+}
+
+function parseSections(raw: unknown): WatchCategory[] {
+  if (!Array.isArray(raw)) return [...DEFAULT_WATCH_SECTIONS];
+  const cats = raw.filter(isWatchCategory);
+  if (cats.length === 0) return [...DEFAULT_WATCH_SECTIONS];
+  // E141: `watching` is pinned — always restore it if a prior prefs write dropped it.
+  return ensureWatchingPinned(cats);
+}
+
+function parseSorts(raw: unknown): Partial<Record<WatchCategory, LibrarySort>> {
+  if (!raw || typeof raw !== "object") return {};
+  const out: Partial<Record<WatchCategory, LibrarySort>> = {};
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (isWatchCategory(key) && typeof value === "string") {
+      out[key] = value as LibrarySort;
+    }
+  }
+  return out;
+}
+
+function parseBrowse(raw: unknown): LibraryBrowsePrefs {
+  if (!raw || typeof raw !== "object") {
+    return { sort: DEFAULT_LIBRARY_SORT, category: [...DEFAULT_LIBRARY_CATEGORY] };
+  }
+  const obj = raw as Partial<LibraryBrowsePrefs>;
+  return {
+    sort: typeof obj.sort === "string" ? (obj.sort as LibrarySort) : DEFAULT_LIBRARY_SORT,
+    category: Array.isArray(obj.category)
+      ? (obj.category.filter(isWatchCategory) as LibraryCategoryFilter)
+      : [...DEFAULT_LIBRARY_CATEGORY],
+  };
+}
+
+function normalizePrefs(partial: Partial<UiPrefs> | UiPrefsDto): UiPrefs {
+  return {
+    libraryBrowse: parseBrowse(partial.libraryBrowse),
+    watchSections: parseSections(partial.watchSections),
+    watchSectionSorts: parseSorts(partial.watchSectionSorts),
+    historyCollapsed: partial.historyCollapsed === true,
+    skipSectionRemoveConfirm: partial.skipSectionRemoveConfirm === true,
+    showNextUpCarousel: partial.showNextUpCarousel !== false,
+    browseView: parseBrowseView(partial.browseView),
+  };
+}
+
+function toDto(prefs: UiPrefs): UiPrefsDto {
+  return {
+    libraryBrowse: {
+      sort: prefs.libraryBrowse.sort,
+      category: [...prefs.libraryBrowse.category],
+    },
+    watchSections: [...prefs.watchSections],
+    watchSectionSorts: { ...prefs.watchSectionSorts },
+    historyCollapsed: prefs.historyCollapsed,
+    skipSectionRemoveConfirm: prefs.skipSectionRemoveConfirm,
+    showNextUpCarousel: prefs.showNextUpCarousel,
+    browseView: prefs.browseView,
+  };
+}
+
+/** True when local prefs differ from factory defaults (used for local→server migrate). */
+function isNonDefault(prefs: UiPrefs): boolean {
+  const d = defaultPrefs();
+  return (
+    prefs.historyCollapsed !== d.historyCollapsed ||
+    prefs.skipSectionRemoveConfirm !== d.skipSectionRemoveConfirm ||
+    prefs.showNextUpCarousel !== d.showNextUpCarousel ||
+    prefs.browseView !== d.browseView ||
+    prefs.libraryBrowse.sort !== d.libraryBrowse.sort ||
+    prefs.libraryBrowse.category.length !== d.libraryBrowse.category.length ||
+    prefs.watchSections.join(",") !== d.watchSections.join(",") ||
+    Object.keys(prefs.watchSectionSorts).length > 0
+  );
+}
+
+function migrateLegacy(): Partial<UiPrefs> {
+  const partial: Partial<UiPrefs> = {};
+  try {
+    const browse = sessionGet(LEGACY.libraryBrowse);
+    if (browse) partial.libraryBrowse = parseBrowse(JSON.parse(browse));
+    const sections = sessionGet(LEGACY.watchSections);
+    if (sections) partial.watchSections = parseSections(JSON.parse(sections));
+    const sorts = sessionGet(LEGACY.watchSectionSorts);
+    if (sorts) partial.watchSectionSorts = parseSorts(JSON.parse(sorts));
+    for (const key of Object.values(LEGACY)) {
+      sessionRemove(key);
+    }
+  } catch {
+    // ignore
+  }
+  return partial;
+}
+
+export function readUiPrefs(): UiPrefs {
+  const base = defaultPrefs();
+  try {
+    const raw = storageGet(PREFS_KEY);
+    if (!raw) {
+      const migrated = migrateLegacy();
+      const merged = { ...base, ...migrated };
+      if (Object.keys(migrated).length > 0) writeUiPrefs(merged);
+      return merged;
+    }
+    return normalizePrefs(JSON.parse(raw) as Partial<UiPrefs>);
+  } catch {
+    return base;
+  }
+}
+
+/** E142: Watch tab / wordmark target for the last list↔grid choice. */
+export function readBrowsePath(): "/" | "/watch" {
+  return readUiPrefs().browseView === "grid" ? "/" : "/watch";
+}
+
+function persistLocal(prefs: UiPrefs): void {
+  storageSet(PREFS_KEY, JSON.stringify(prefs));
+}
+
+/** Fire-and-forget write-through to settings (zip export source of truth). */
+function syncToServer(prefs: UiPrefs): void {
+  // Vitest has no API server; keep unit tests local-only.
+  if (typeof process !== "undefined" && process.env.VITEST) return;
+  void updateSettings({ uiPrefs: toDto(prefs) }).catch(() => {
+    // offline / unauth — local cache still holds the value
+  });
+}
+
+export function writeUiPrefs(prefs: UiPrefs): void {
+  persistLocal(prefs);
+  syncToServer(prefs);
+}
+
+/**
+ * Apply server settings as source of truth. If server has none but local has
+ * non-default prefs, push local up once (E143 localStorage → settings migrate).
+ */
+export function hydrateUiPrefsFromServer(serverPrefs: UiPrefsDto | null): void {
+  if (serverPrefs) {
+    persistLocal(normalizePrefs(serverPrefs));
+    return;
+  }
+  const local = readUiPrefs();
+  if (isNonDefault(local)) {
+    syncToServer(local);
+  }
+}
+
+/** Test helper — clears durable + in-memory prefs. Does not hit the API. */
+export function clearUiPrefsForTests(): void {
+  memoryStore.clear();
+  storageRemove(PREFS_KEY);
+}
+
+export function updateUiPrefs(patch: Partial<UiPrefs>): UiPrefs {
+  const next = { ...readUiPrefs(), ...patch };
+  if (patch.watchSections) {
+    next.watchSections = ensureWatchingPinned(patch.watchSections.filter(isWatchCategory));
+  }
+  writeUiPrefs(next);
+  return next;
+}
+
+/** Reset sections + library filters (+ history accordion + browse view). Keeps warning dismissals. */
+export function resetUiSelections(): UiPrefs {
+  const current = readUiPrefs();
+  const next: UiPrefs = {
+    ...defaultPrefs(),
+    skipSectionRemoveConfirm: current.skipSectionRemoveConfirm,
+  };
+  writeUiPrefs(next);
+  return next;
+}
+
+/** Reset "don't show again" style warnings only. */
+export function resetUiWarnings(): UiPrefs {
+  return updateUiPrefs({ skipSectionRemoveConfirm: false });
+}
+
+export function sectionSort(
+  sorts: Partial<Record<WatchCategory, LibrarySort>>,
+  category: WatchCategory,
+): LibrarySort {
+  return sorts[category] ?? DEFAULT_LIBRARY_SORT;
+}

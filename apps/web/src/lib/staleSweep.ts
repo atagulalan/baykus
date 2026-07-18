@@ -73,6 +73,9 @@ export function setManualRefreshRunning(running: boolean): void {
   notify();
 }
 
+/** E132: the in-flight manual sweep's settling promise — pull-to-refresh awaits it. */
+let manualSweepPromise: Promise<void> | null = null;
+
 export function startManualSweep(
   queryClient: QueryClient,
   toast: { show: (msg: string, type?: "error" | "success") => void },
@@ -80,14 +83,18 @@ export function startManualSweep(
     done: (newEpisodes: number) => string;
     error: string;
   },
-): void {
-  if (state.running || state.manualRefreshRunning) return;
+): Promise<void> {
+  if (state.running || state.manualRefreshRunning) {
+    // A sweep is already in flight — hand back its settling promise so the
+    // caller can wait it out; the quiet sweep keeps none, so resolve now.
+    return manualSweepPromise ?? Promise.resolve();
+  }
 
   state.manualRefreshRunning = true;
   state.manualProgress = null;
   notify();
 
-  refreshAllSeries((event) => {
+  manualSweepPromise = refreshAllSeries((event) => {
     state.manualProgress = { done: event.done, total: event.total };
     notify();
   })
@@ -101,8 +108,10 @@ export function startManualSweep(
     .finally(() => {
       state.manualRefreshRunning = false;
       state.manualProgress = null;
+      manualSweepPromise = null;
       notify();
     });
+  return manualSweepPromise;
 }
 
 export interface MaybeStartSweepDeps {

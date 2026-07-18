@@ -1,17 +1,46 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import { Link, Navigate } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { addEpisodeWatch, getCalendar, removeLatestEpisodeWatch } from "../api/client.ts";
 import type { CalendarDay, CalendarEntry } from "../api/types.ts";
 import { CalendarEntryRow } from "../components/CalendarEntryRow.tsx";
 import { MonthGrid } from "../components/MonthGrid.tsx";
+import { PullToRefresh, useLibrarySweepRefresh } from "../components/PullToRefresh.tsx";
 import { ScheduleGrid } from "../components/ScheduleGrid.tsx";
+import { bucketNeedsDaySubheaders, groupIntoTimelineSections } from "../lib/calendarBuckets.ts";
 import { getAbsoluteWeek, getIsoWeek, getWeekRange, todayIso } from "../lib/date.ts";
 import { useToast } from "../lib/toast.tsx";
 
+/** E133: sticky mode chrome height, published so BUGÜN scroll-margin clears it. */
+const MODE_CHROME_HEIGHT_VAR = "--calendar-mode-chrome-height";
+/** Combined sticky offset: app header + mode tabs (E133 amends E78's non-sticky row). */
+const TODAY_SCROLL_MARGIN =
+  "calc(var(--app-header-height, 4rem) + var(--calendar-mode-chrome-height, 2.75rem))";
+
 type Mode = "timeline" | "month" | "schedule";
+
+/** E136: mode → path. Timeline stays at `/calendar` so nav + defaultStartPage keep working. */
+const MODE_PATH = {
+  timeline: "/calendar",
+  month: "/calendar/month",
+  schedule: "/calendar/schedule",
+} as const satisfies Record<Mode, string>;
+
+/** Tailwind `sm` — month grid only makes sense at this width and above (E135). */
+const DESKTOP_QUERY = "(min-width: 640px)";
+
+function useIsDesktop(): boolean {
+  const [isDesktop, setIsDesktop] = useState(() => window.matchMedia(DESKTOP_QUERY).matches);
+  useEffect(() => {
+    const mql = window.matchMedia(DESKTOP_QUERY);
+    const onChange = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
+  return isDesktop;
+}
 
 const TODAY_SUGGEST_LIMIT = 3;
 
@@ -23,8 +52,9 @@ function formatDayHeader(dateStr: string): string {
   }).format(new Date(`${dateStr}T00:00:00Z`));
 }
 
-/** Nearest-to-today unwatched past entries first (still visible above the BUGÜN row). */
-function pickUnwatchedPast(
+/** Nearest-to-today unwatched past entries first (still visible above the BUGÜN row).
+ * Deduplicated by series (itemId), showing the earlier-released episode first. */
+export function pickUnwatchedPast(
   days: CalendarDay[],
   today: string,
   justWatched: Set<number>,
@@ -33,7 +63,17 @@ function pickUnwatchedPast(
     .filter((d) => d.date < today)
     .flatMap((d) => d.entries)
     .filter((e) => !e.isWatched && !justWatched.has(e.episodeId));
-  return past.slice(-TODAY_SUGGEST_LIMIT).reverse();
+
+  const uniquePast: CalendarEntry[] = [];
+  const seen = new Set<number>();
+  for (const entry of past) {
+    if (!seen.has(entry.itemId)) {
+      seen.add(entry.itemId);
+      uniquePast.push(entry);
+    }
+  }
+
+  return uniquePast.slice(-TODAY_SUGGEST_LIMIT).reverse();
 }
 
 function pickUpcoming(days: CalendarDay[], today: string): CalendarEntry[] {
@@ -112,23 +152,27 @@ function ensureTodayPresent(days: CalendarDay[], today: string): CalendarDay[] {
   );
 }
 
-function ModeTabs({ mode, onChange }: { mode: Mode; onChange: (mode: Mode) => void }) {
+function ModeTabs({ mode, showMonth }: { mode: Mode; showMonth: boolean }) {
   const { t } = useTranslation();
-  const tabs: Mode[] = ["timeline", "month", "schedule"];
+  // E135: month tab is desktop-only — on mobile the grid already collapses to a
+  // day list that duplicates timeline.
+  const tabs: Mode[] = showMonth ? ["timeline", "month", "schedule"] : ["timeline", "schedule"];
   return (
     <div className="inline-flex border border-white/10">
       {tabs.map((tab) => (
-        <button
+        <Link
           key={tab}
-          type="button"
-          onClick={() => onChange(tab)}
-          aria-pressed={mode === tab}
+          to={MODE_PATH[tab]}
+          // Timeline's `/calendar` would otherwise stay active on `/calendar/*`
+          // (prefix match). Exact keeps only the current mode segment lit (E136).
+          activeOptions={{ exact: true }}
+          aria-current={mode === tab ? "page" : undefined}
           className={`px-3 py-2 font-mono text-[10px] uppercase tracking-widest transition-colors ${
             mode === tab ? "bg-yellow text-[#080808]" : "text-muted hover:text-snow"
           }`}
         >
           {t(`calendar.mode.${tab}`)}
-        </button>
+        </Link>
       ))}
     </div>
   );
@@ -147,8 +191,8 @@ function TimelineView({
   const hasScrolledRef = useRef(false);
 
   // E73: wait two animation frames (past the initial paint/reflow) before the one-shot,
-  // instant anchor scroll — scroll-margin-top on the row uses the Layout-measured header
-  // height (--app-header-height), never a guessed scroll-mt constant.
+  // instant anchor scroll. E133: scroll-margin clears both the app header and the
+  // sticky mode chrome (measured into --calendar-mode-chrome-height).
   useEffect(() => {
     if (query.isLoading || hasScrolledRef.current) return;
     let raf2 = 0;
@@ -186,50 +230,72 @@ function TimelineView({
   const today = todayIso();
   const days = ensureTodayPresent(query.data?.days ?? [], today);
 
+  // E24 gap-tracker: hide past watched rows unless pinned this session (E81).
+  // Today always stays so the Bugün section / empty panel can render (E145).
+  const visibleDays = days
+    .map((day) => {
+      const entries = day.entries.filter(
+        (entry) => entry.airDate > today || !entry.isWatched || justWatched.has(entry.episodeId),
+      );
+      return { ...day, entries };
+    })
+    .filter((day) => day.entries.length > 0 || day.date === today);
+
+  const sections = groupIntoTimelineSections(visibleDays, today);
+
   return (
-    <div className="flex flex-col gap-4">
-      {days.map((day) => {
-        // E24 gap-tracker: hide past watched rows unless pinned this session (E81).
-        const visibleEntries = day.entries.filter(
-          (entry) => entry.airDate > today || !entry.isWatched || justWatched.has(entry.episodeId),
-        );
-        // API still returns fully-watched past days; drop their empty headers.
-        // Today always stays so the BUGÜN row / empty panel can render.
-        if (visibleEntries.length === 0 && day.date !== today) return null;
+    <div className="flex flex-col gap-6">
+      {sections.map((section, sectionIdx) => {
+        const showDayHeaders = bucketNeedsDaySubheaders(section.bucket);
+        const isToday = section.bucket === "today";
         return (
-          <div
-            key={day.date}
-            ref={day.date === today ? todayRef : undefined}
-            className="flex flex-col gap-1"
-            style={{ scrollMarginTop: "var(--app-header-height, 4rem)" }}
+          <section
+            key={`${section.bucket}-${section.days[0]?.date ?? sectionIdx}`}
+            ref={isToday ? todayRef : undefined}
+            className="flex flex-col gap-2"
+            style={isToday ? { scrollMarginTop: TODAY_SCROLL_MARGIN } : undefined}
           >
-            <h3 className="text-xs text-muted uppercase">
-              {day.date === today
-                ? t("calendar.today", { date: formatDayHeader(day.date) })
-                : formatDayHeader(day.date)}
-            </h3>
-            {visibleEntries.length === 0 ? (
-              <TodayEmptyPanel
-                days={days}
-                today={today}
-                justWatched={justWatched}
-                onToggleWatched={onToggleWatched}
-              />
-            ) : (
-              visibleEntries.map((entry) =>
-                entry.airDate <= today ? (
-                  <CalendarEntryRow
-                    key={entry.episodeId}
-                    entry={entry}
-                    watched={justWatched.has(entry.episodeId) || entry.isWatched}
-                    onToggleWatched={() => onToggleWatched(entry.episodeId)}
-                  />
-                ) : (
-                  <CalendarEntryRow key={entry.episodeId} entry={entry} />
-                ),
-              )
-            )}
-          </div>
+            <h2
+              className={`sticky z-20 bg-void/95 py-1.5 text-sm font-semibold backdrop-blur ${
+                isToday ? "text-yellow" : "text-snow"
+              }`}
+              style={{
+                top: "calc(var(--app-header-height, 4rem) + var(--calendar-mode-chrome-height, 2.75rem))",
+              }}
+            >
+              {t(`calendar.section.${section.bucket}`)}
+            </h2>
+            <div className="flex flex-col gap-3">
+              {section.days.map((day) => (
+                <div key={day.date} className="flex flex-col gap-1">
+                  {showDayHeaders ? (
+                    <h3 className="text-xs text-muted">{formatDayHeader(day.date)}</h3>
+                  ) : null}
+                  {day.entries.length === 0 && isToday ? (
+                    <TodayEmptyPanel
+                      days={days}
+                      today={today}
+                      justWatched={justWatched}
+                      onToggleWatched={onToggleWatched}
+                    />
+                  ) : (
+                    day.entries.map((entry) =>
+                      entry.airDate <= today ? (
+                        <CalendarEntryRow
+                          key={entry.episodeId}
+                          entry={entry}
+                          watched={justWatched.has(entry.episodeId) || entry.isWatched}
+                          onToggleWatched={() => onToggleWatched(entry.episodeId)}
+                        />
+                      ) : (
+                        <CalendarEntryRow key={entry.episodeId} entry={entry} />
+                      ),
+                    )
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
         );
       })}
     </div>
@@ -411,15 +477,47 @@ function ScheduleView() {
   );
 }
 
-export function CalendarPage() {
+export function CalendarPage({ mode }: { mode: Mode }) {
   const toast = useToast();
   const { t } = useTranslation();
   const queryClient = useQueryClient();
-  const [mode, setMode] = useState<Mode>("timeline");
+  const isDesktop = useIsDesktop();
   // E81: episode ids checked off during this session. Session-scoped by design —
   // the set resets on unmount, so any natural calendar refetch drops the rows
   // (the timeline stays a gap-tracker, not a history view).
   const [justWatched, setJustWatched] = useState<Set<number>>(new Set());
+  // E132: pulling refetches ["calendar"] too — a natural refetch per E81, so
+  // session-pinned watched rows dropping out afterwards is correct.
+  const pullRefresh = useLibrarySweepRefresh(["calendar"]);
+
+  // E133 / E136: each mode is its own route component — scroll to top on mount
+  // so month/schedule don't inherit the timeline's BUGÜN scroll depth (and vice
+  // versa). Timeline then re-runs the E73 today anchor from scrollY === 0.
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, []);
+
+  // E133: publish sticky mode-chrome height so the BUGÜN anchor clears it.
+  const modeChromeObserverRef = useRef<ResizeObserver | null>(null);
+  const modeChromeRef = useCallback((el: HTMLElement | null) => {
+    modeChromeObserverRef.current?.disconnect();
+    modeChromeObserverRef.current = null;
+    if (!el) {
+      document.documentElement.style.removeProperty(MODE_CHROME_HEIGHT_VAR);
+      return;
+    }
+    const chrome = el;
+    function updateHeight() {
+      document.documentElement.style.setProperty(
+        MODE_CHROME_HEIGHT_VAR,
+        `${chrome.getBoundingClientRect().height}px`,
+      );
+    }
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(chrome);
+    modeChromeObserverRef.current = observer;
+  }, []);
 
   const markWatched = useMutation({
     mutationFn: (episodeId: number) => addEpisodeWatch(episodeId),
@@ -468,21 +566,35 @@ export function CalendarPage() {
     }
   }
 
+  // E135: month URL is desktop-only — replace-redirect to timeline on mobile so
+  // a bookmarked /calendar/month never leaves a hidden tab selected.
+  if (!isDesktop && mode === "month") {
+    return <Navigate to="/calendar" replace />;
+  }
+
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h1 className="font-display italic text-snow text-2xl tracking-tight">
-          {t("app.nav.calendar")}
-        </h1>
-        <ModeTabs mode={mode} onChange={setMode} />
+    <PullToRefresh onRefresh={pullRefresh}>
+      <div className="flex flex-col gap-4">
+        {/* E133: sticky below the app header so mode switching stays reachable
+            after the timeline anchors to BUGÜN (amends 006 E78 non-sticky row). */}
+        <div
+          ref={modeChromeRef}
+          style={{ top: "var(--app-header-height, 3.5rem)" }}
+          className="sticky z-30 -mx-3 flex items-center justify-end border-b border-white/5 bg-void/95 px-3 py-2 backdrop-blur sm:-mx-6 sm:justify-between sm:px-6"
+        >
+          <h1 className="hidden font-display italic text-snow text-2xl tracking-tight sm:block">
+            {t("app.nav.calendar")}
+          </h1>
+          <ModeTabs mode={mode} showMonth={isDesktop} />
+        </div>
+        {mode === "timeline" ? (
+          <TimelineView justWatched={justWatched} onToggleWatched={toggleWatched} />
+        ) : mode === "month" ? (
+          <MonthView />
+        ) : (
+          <ScheduleView />
+        )}
       </div>
-      {mode === "timeline" ? (
-        <TimelineView justWatched={justWatched} onToggleWatched={toggleWatched} />
-      ) : mode === "month" ? (
-        <MonthView />
-      ) : (
-        <ScheduleView />
-      )}
-    </div>
+    </PullToRefresh>
   );
 }

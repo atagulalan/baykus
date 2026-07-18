@@ -61,6 +61,7 @@ describe("GET /api/settings", () => {
       spoilerProtection: false,
       defaultStartPage: "home",
       newSeriesDefaultStatus: "watching",
+      uiPrefs: null,
     });
   });
 });
@@ -178,6 +179,75 @@ describe("PATCH /api/settings", () => {
       method: "PATCH",
       headers: HEADERS,
       body: JSON.stringify({ episodeLabelFormat: "invalid" }),
+    });
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error: { code: string } };
+    expect(body.error.code).toBe("VALIDATION_FAILED");
+  });
+
+  it("updates uiPrefs and round-trips it (E143)", async () => {
+    const { app } = setup();
+    const uiPrefs = {
+      libraryBrowse: { sort: "title", category: ["watching"] },
+      watchSections: ["watching", "finished"],
+      watchSectionSorts: { finished: "added" },
+      historyCollapsed: true,
+      skipSectionRemoveConfirm: false,
+      showNextUpCarousel: true,
+      browseView: "grid",
+    };
+    const res = await app.request("/api/settings", {
+      method: "PATCH",
+      headers: HEADERS,
+      body: JSON.stringify({ uiPrefs }),
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ uiPrefs });
+
+    const getRes = await app.request("/api/settings");
+    expect(await getRes.json()).toMatchObject({ uiPrefs });
+  });
+
+  it("null clears uiPrefs", async () => {
+    const { app } = setup();
+    await app.request("/api/settings", {
+      method: "PATCH",
+      headers: HEADERS,
+      body: JSON.stringify({
+        uiPrefs: {
+          libraryBrowse: { sort: "lastWatched", category: [] },
+          watchSections: ["watching"],
+          watchSectionSorts: {},
+          historyCollapsed: false,
+          skipSectionRemoveConfirm: false,
+          showNextUpCarousel: true,
+        },
+      }),
+    });
+    const res = await app.request("/api/settings", {
+      method: "PATCH",
+      headers: HEADERS,
+      body: JSON.stringify({ uiPrefs: null }),
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ uiPrefs: null });
+  });
+
+  it("400 VALIDATION_FAILED for invalid uiPrefs", async () => {
+    const { app } = setup();
+    const res = await app.request("/api/settings", {
+      method: "PATCH",
+      headers: HEADERS,
+      body: JSON.stringify({
+        uiPrefs: {
+          libraryBrowse: { sort: "nope", category: [] },
+          watchSections: ["watching"],
+          watchSectionSorts: {},
+          historyCollapsed: false,
+          skipSectionRemoveConfirm: false,
+          showNextUpCarousel: true,
+        },
+      }),
     });
     expect(res.status).toBe(400);
     const body = (await res.json()) as { error: { code: string } };

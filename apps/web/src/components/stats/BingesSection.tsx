@@ -19,7 +19,7 @@ export function BingesSection({ stats }: BingesSectionProps) {
       <HBarList
         items={stats.binges.map((b) => ({
           key: `${b.itemId}-${b.date}`,
-          label: `${b.title} — ${b.date}`,
+          label: `${b.title}${t("common.separator")}${b.date}`,
           value: b.episodes,
           displayValue: t("stats.binges.episodesShort", { count: b.episodes }),
         }))}

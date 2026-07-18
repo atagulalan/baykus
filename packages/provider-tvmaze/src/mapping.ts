@@ -23,6 +23,16 @@ export interface TvmazeImage {
   original?: string | null;
 }
 
+/** Entry from the show's `images` collection (embed[]=images) — carries the wide `background` art. */
+export interface TvmazeImageEntry {
+  type?: string | null;
+  main?: boolean;
+  resolutions?: {
+    original?: { url?: string | null } | null;
+    medium?: { url?: string | null } | null;
+  } | null;
+}
+
 export interface TvmazeEpisode {
   season: number;
   number: number;
@@ -47,7 +57,7 @@ export interface TvmazeShow {
   image?: TvmazeImage | null;
   averageRuntime?: number | null;
   externals?: { imdb?: string | null; thetvdb?: number | null } | null;
-  _embedded?: { episodes?: TvmazeEpisode[] };
+  _embedded?: { episodes?: TvmazeEpisode[]; images?: TvmazeImageEntry[] };
 }
 
 export interface TvmazeSearchEntry {
@@ -70,6 +80,16 @@ const TVMAZE_MEDIUM_SEGMENT = /medium_(portrait|landscape)/;
 function toImageRef(image?: TvmazeImage | null): ImageRef | undefined {
   const path = image?.medium ?? image?.original;
   return path ? `tvmaze:${path}` : undefined;
+}
+
+/** Picks the wide `background` art from the show's images collection (main first). */
+function toBackdropRef(images?: TvmazeImageEntry[]): ImageRef | undefined {
+  if (!images) return undefined;
+  const backgrounds = images.filter((img) => img.type === "background");
+  if (backgrounds.length === 0) return undefined;
+  const chosen = backgrounds.find((img) => img.main) ?? backgrounds[0];
+  const url = chosen?.resolutions?.original?.url ?? chosen?.resolutions?.medium?.url;
+  return url ? `tvmaze:${url}` : undefined;
 }
 
 /** `medium` requests return the stored path as-is; every other size falls back to `original`. */
@@ -168,6 +188,8 @@ export function mapSeriesDetails(show: TvmazeShow): SeriesDetails {
   if (overview) details.overview = overview;
   const posterRef = toImageRef(show.image);
   if (posterRef) details.posterRef = posterRef;
+  const backdropRef = toBackdropRef(show._embedded?.images);
+  if (backdropRef) details.backdropRef = backdropRef;
   const releaseStatus = show.status ? RELEASE_STATUS[show.status] : undefined;
   if (releaseStatus) details.releaseStatus = releaseStatus;
   if (show.premiered) details.firstAirDate = show.premiered;

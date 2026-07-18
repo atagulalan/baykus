@@ -12,6 +12,12 @@
     },
     "back": "Geri"
   },
+  "modal": {
+    "close": "Kapat"
+  },
+  "common": {
+    "separator": " · "
+  },
   "search": {
     "placeholder": "Dizi ara…",
     "loading": "Aranıyor…",
@@ -52,11 +58,15 @@
     },
     "filter": {
       "title": "Filtrele",
+      "viewTitle": "Görünüm",
       "sortTitle": "Sıralama",
       "progressTitle": "İlerleme",
       "reset": "SIFIRLA",
-      "apply": "UYGULA",
-      "close": "Kapat"
+      "apply": "UYGULA"
+    },
+    "view": {
+      "list": "Liste",
+      "grid": "Izgara"
     },
     "sort": {
       "label": "Sırala",
@@ -92,7 +102,7 @@
     "specials": "Özel Bölümler",
     "seasonNumber": "Sezon {{number}}",
     "markSeasonWatched": "tümünü izledim",
-    "nextUp": "Sıradaki: S{{s}}E{{e}}",
+    "nextUp": "Sıradaki:",
     "stoppedBlocked": "Bitirilmiş bir dizi bırakıldı olarak işaretlenemez",
     "justwatchAttribution": "JustWatch verisi",
     "refresh": "Yenile",
@@ -108,7 +118,7 @@
     "unwatchSeasonConfirm": "Evet, sil"
   },
   "episode": {
-    "toggleWatched": "İzlendi olarak işaretle",
+    "toggleWatched": "İzledim",
     "untitled": "İsimsiz bölüm",
     "finale": "FİNAL",
     "seasonAndEpisode": "S{{season}} B{{episode}}",
@@ -126,6 +136,14 @@
     "markAsUnwatched": "İzlenmedi olarak işaretle",
     "removeRewatch": "Tekrar izlemeyi kaldır",
     "save": "Kaydet",
+    "detailsTitle": "Bölüm Detayları",
+    "aired": "Yayın",
+    "watched": "İzlendi",
+    "airTime": "Saat",
+    "network": "Platform",
+    "watchedCount": "İzleme: {{count}}",
+    "runtimeMin": "{{minutes}} dk",
+    "noOverview": "Açıklama bulunmuyor.",
     "tag": {
       "new": "YENİ",
       "upcoming": "YAKLAŞAN",
@@ -159,10 +177,29 @@
       "localeHint": "Arayüz için kullanılacak dil.",
       "region": "Bölge",
       "regionHint": "Çıkış tarihleri için bölge",
+      "regionName": {
+        "TR": "Türkiye",
+        "US": "Amerika Birleşik Devletleri",
+        "GB": "Birleşik Krallık",
+        "DE": "Almanya",
+        "FR": "Fransa",
+        "ES": "İspanya",
+        "IT": "İtalya",
+        "NL": "Hollanda"
+      },
       "episodeLabelFormat": "Bölüm Gösterimi",
       "episodeLabelFormatHint": "Bölüm numaralarının uygulama genelinde nasıl görüneceği.",
       "watchingWindow": "İzleniyor penceresi (gün)",
       "watchingWindowHint": "Bu süre içinde izlenen/eklenen/yeni bölümü çıkan diziler İzleniyor'da kalır.",
+      "watchingWindowOptions": {
+        "7": "7 gün",
+        "14": "14 gün",
+        "30": "30 gün",
+        "60": "60 gün",
+        "90": "90 gün",
+        "180": "180 gün",
+        "365": "365 gün"
+      },
       "theme": "Tema",
       "themeDark": "Koyu",
       "themeSoon": "yakında",
@@ -181,7 +218,9 @@
         "watching": "İzleniyor",
         "watchlist": "Sonra İzlenecekler"
       },
-      "newSeriesDefaultStatusHint": "Yeni eklenen dizilerin varsayılan olarak hangi listeye ekleneceği."
+      "newSeriesDefaultStatusHint": "Yeni eklenen dizilerin varsayılan olarak hangi listeye ekleneceği.",
+      "showNextUpCarousel": "Sıradaki carousel",
+      "showNextUpCarouselHint": "Dizi detay sayfasında sıradaki bölüm şeridini gösterir."
     },
     "providers": {
       "title": "Ekstra Bilgi Kaynakları",
@@ -227,7 +266,13 @@
       "confirmLabel": "Emin olmak için <phrase>{{phrase}}</phrase> yaz",
       "confirmPhrase": "HER SEYI SIL",
       "confirm": "Kalıcı olarak sil",
-      "success": "Kütüphane silindi"
+      "success": "Kütüphane silindi",
+      "resetSelections": "Seçimleri sıfırla",
+      "resetSelectionsDesc": "İzleme kategorilerini, sıralamaları, filtreleri ve geçmiş akordeonunu varsayılana döndürür.",
+      "resetSelectionsDone": "Seçimler sıfırlandı",
+      "resetWarnings": "Uyarıları sıfırla",
+      "resetWarningsDesc": "“Bir daha gösterme” tercihlerimi temizler; onay diyalogları yeniden çıkar.",
+      "resetWarningsDone": "Uyarılar sıfırlandı"
     }
   },
   "stats": {
@@ -375,6 +420,15 @@
       "schedule": "Yayın Akışı"
     },
     "today": "BUGÜN {{date}}",
+    "section": {
+      "earlier": "Daha önce",
+      "lastWeek": "Geçen hafta",
+      "yesterday": "Dün",
+      "today": "Bugün",
+      "tomorrow": "Yarın",
+      "thisWeek": "Bu hafta",
+      "later": "Daha sonra"
+    },
     "overflow": "+{{count}}",
     "prevMonth": "Önceki ay",
     "nextMonth": "Sonraki ay",
@@ -393,6 +447,15 @@
     "history": "İzleme geçmişi",
     "next": "Sıradaki bölümler",
     "notWatchedRecently": "Bir süredir izlenmedi",
+    "addSection": "Kategori ekle",
+    "addSectionTitle": "Kategori ekle",
+    "removeSection": "Kategoriyi kaldır",
+    "removeSectionTitle": "Kategoriyi kaldır",
+    "removeSectionConfirm": "“{{category}}” kategorisini kaldırmak istediğine emin misin?",
+    "removeSectionHint": "İstersen aşağıdan “Kategori ekle” ile tekrar ekleyebilirsin.",
+    "removeSectionDontShow": "Bir daha gösterme",
+    "removeSectionCancel": "Vazgeç",
+    "removeSectionConfirmBtn": "Eminim",
     "relativeDay": {
       "todayAt": "Bugün {{time}}",
       "yesterdayAt": "Dün {{time}}"
@@ -400,7 +463,8 @@
     "empty": {
       "history": "Henüz izleme kaydı yok",
       "next": "Sırada bölüm yok",
-      "notWatchedRecently": "Bu kategoride dizi yok"
+      "notWatchedRecently": "Bu kategoride dizi yok",
+      "section": "Bu kategoride gösterilecek dizi yok"
     }
   },
   "auth": {

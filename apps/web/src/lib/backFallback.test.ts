@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { backAffordance } from "./backFallback.ts";
 
-describe("backAffordance (E72)", () => {
-  it("series detail falls back to home", () => {
-    expect(backAffordance("/series/i42", "xava")).toEqual({ to: "/" });
-    expect(backAffordance("/series/94997", "xava")).toEqual({ to: "/" });
+describe("backAffordance (E72 / E138 / E142)", () => {
+  it("library grid has no back arrow (peer of watch)", () => {
+    expect(backAffordance("/", "xava")).toBeNull();
+  });
+
+  it("series detail falls back to watch", () => {
+    expect(backAffordance("/series/i42", "xava")).toEqual({ to: "/watch" });
+    expect(backAffordance("/series/94997", "xava")).toEqual({ to: "/watch" });
   });
 
   it("import falls back to settings", () => {
@@ -16,35 +20,19 @@ describe("backAffordance (E72)", () => {
       to: "/user/$handle",
       params: { handle: "xava" },
     });
-    expect(backAffordance("/settings", "me")).toEqual({
-      to: "/user/$handle",
-      params: { handle: "me" },
-    });
   });
 
-  it("profile subpages (all-series, stats, favorites) fall back to the self profile", () => {
+  it("profile subpages fall back to the self profile", () => {
     expect(backAffordance("/user/xava/all-series", "xava")).toEqual({
       to: "/user/$handle",
       params: { handle: "xava" },
     });
-    expect(backAffordance("/user/xava/stats", "xava")).toEqual({
-      to: "/user/$handle",
-      params: { handle: "xava" },
-    });
-    expect(backAffordance("/user/xava/favorites", "xava")).toEqual({
-      to: "/user/$handle",
-      params: { handle: "xava" },
-    });
-    expect(backAffordance("/user/me/favorites", "me")).toEqual({
-      to: "/user/$handle",
-      params: { handle: "me" },
-    });
   });
 
-  it("the five tab pages get no arrow at all", () => {
-    expect(backAffordance("/", "xava")).toBeNull();
+  it("tab / browse pages get no arrow", () => {
     expect(backAffordance("/watch", "xava")).toBeNull();
     expect(backAffordance("/calendar", "xava")).toBeNull();
+    expect(backAffordance("/calendar/month", "xava")).toBeNull();
     expect(backAffordance("/search", "xava")).toBeNull();
     expect(backAffordance("/user/xava", "xava")).toBeNull();
   });

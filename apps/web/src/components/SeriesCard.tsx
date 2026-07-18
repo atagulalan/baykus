@@ -7,6 +7,7 @@ import { buildImageUrl } from "../api/images.ts";
 import type { SeriesSummary } from "../api/types.ts";
 import { CATEGORY_TEXT_COLORS } from "../lib/categoryColors.ts";
 import { seriesParam } from "../lib/seriesPath.ts";
+import { MediaImage } from "./MediaImage.tsx";
 import { SegmentedProgress } from "./SegmentedProgress.tsx";
 
 interface SeriesCardProps {
@@ -53,10 +54,12 @@ export function SeriesCard({ series }: SeriesCardProps) {
           style={{ viewTransitionName: `poster-${series.id}` }}
         >
           {imageUrl && !imageFailed ? (
-            <img
+            <MediaImage
               src={imageUrl}
               alt={series.title}
-              className="h-full w-full object-cover opacity-90 transition-opacity group-hover:opacity-100"
+              wrapperClassName="block h-full w-full"
+              className="h-full w-full object-cover opacity-90 group-hover:opacity-100"
+              spinnerSize={20}
               onError={() => setImageFailed(true)}
             />
           ) : (

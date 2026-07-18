@@ -5,44 +5,6 @@ import type { CalendarDay, CalendarEntry } from "../api/types.ts";
 import { getAbsoluteWeek, getIsoWeek, getWeekStartIso, todayIso } from "../lib/date.ts";
 import { EpisodeLabel } from "./EpisodeLabel.tsx";
 
-function getMockTimeData(itemId: number) {
-  // Generate a consistent pseudo-random time based on the itemId
-  const seed = (itemId * 13) % 24;
-  const hour = seed.toString().padStart(2, "0");
-  const localTime = `${hour}:00`;
-  // Fake an origin timezone offset (e.g. EST is UTC-5)
-  const _tzOffset = -5;
-  // Let's assume the local timezone is UTC+3 (Istanbul), so difference is 8 hours
-  const diff = -8;
-  const originHour = (seed + diff + 24) % 24;
-  const originTime = `${originHour.toString().padStart(2, "0")}:00 EST`;
-
-  return { localTime, originTime };
-}
-
-function MockReleaseTime({ itemId, isWatched }: { itemId: number; isWatched: boolean }) {
-  const [showOrigin, setShowOrigin] = useState(false);
-  const { localTime, originTime } = getMockTimeData(itemId);
-
-  return (
-    <button
-      type="button"
-      className={`text-[9px] font-medium ml-1 px-1 rounded cursor-pointer transition-colors ${
-        isWatched
-          ? "bg-white/10 text-muted hover:bg-white/20 hover:text-snow"
-          : "bg-white/5 text-muted hover:bg-white/15 hover:text-snow border border-white/5"
-      }`}
-      onClick={(e) => {
-        e.preventDefault();
-        setShowOrigin((p) => !p);
-      }}
-      title={showOrigin ? `Yerel Saat: ${localTime}` : `Orijinal Saat: ${originTime}`}
-    >
-      {showOrigin ? originTime : localTime}
-    </button>
-  );
-}
-
 interface StripEpisode {
   episodeId: number;
   s: number;
@@ -218,7 +180,11 @@ export function ScheduleGrid({
         for (let g = w; g < nextActive; g++) {
           absWeekToColIndex.set(g, renderedColumns.length);
         }
-        renderedColumns.push({ type: "gap", startAbsWeek: w, endAbsWeek: nextActive - 1 });
+        renderedColumns.push({
+          type: "gap",
+          startAbsWeek: w,
+          endAbsWeek: nextActive - 1,
+        });
       } else {
         for (let g = w; g < nextActive; g++) {
           absWeekToColIndex.set(g, renderedColumns.length);
@@ -491,7 +457,7 @@ export function ScheduleGrid({
     // biome-ignore lint/a11y/noStaticElementInteractions: drag-to-pan scroll surface; keyboard uses native overflow scrolling
     <div
       ref={containerRef}
-      className="overflow-x-auto touch-pan-x scrollbar-hide pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] select-none cursor-grab active:cursor-grabbing"
+      className="overflow-x-auto touch-pan-x touch-pan-y scrollbar-hide pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] select-none cursor-grab active:cursor-grabbing"
       style={{
         width: "100vw",
         marginLeft: "calc(50% - 50vw)",
@@ -524,7 +490,9 @@ export function ScheduleGrid({
         <div className="flex bg-void relative">
           <div
             className="flex-1 grid"
-            style={{ gridTemplateColumns: `repeat(${renderedColumns.length}, 1fr)` }}
+            style={{
+              gridTemplateColumns: `repeat(${renderedColumns.length}, 1fr)`,
+            }}
           >
             {renderedColumns.map((col, i) => {
               if (col.type === "gap") {
@@ -581,40 +549,40 @@ export function ScheduleGrid({
             return (
               <div
                 key={dow}
-                className="flex flex-col bg-[#101010] relative border-t border-white/5 min-h-[32px]"
+                className="flex flex-col bg-[#101010] relative border-t border-white/5 min-h-[28px]"
               >
-                <div className="flex flex-col relative z-0 flex-1 min-h-0">
-                  <div
-                    className="absolute inset-0 grid pointer-events-none"
-                    style={{
-                      gridTemplateColumns: `repeat(${renderedColumns.length}, 1fr)`,
-                    }}
-                  >
-                    {renderedColumns.map((col) => (
-                      <div
-                        key={
-                          col.type === "week"
-                            ? `week-${col.absWeek}`
-                            : `gap-${col.startAbsWeek}-${col.endAbsWeek}`
-                        }
-                        className={`border-l border-white/5 ${col.type === "week" && col.absWeek === currentAbsWeek ? "bg-yellow/5" : ""} ${col.type === "gap" ? "bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,rgba(255,255,255,0.02)_10px,rgba(255,255,255,0.02)_20px)]" : ""}`}
-                      />
-                    ))}
-                  </div>
+                <div
+                  className="absolute inset-0 grid pointer-events-none z-0"
+                  style={{
+                    gridTemplateColumns: `repeat(${renderedColumns.length}, 1fr)`,
+                  }}
+                >
+                  {renderedColumns.map((col) => (
+                    <div
+                      key={
+                        col.type === "week"
+                          ? `week-${col.absWeek}`
+                          : `gap-${col.startAbsWeek}-${col.endAbsWeek}`
+                      }
+                      className={`border-l border-white/5 ${col.type === "week" && col.absWeek === currentAbsWeek ? "bg-yellow/5" : ""} ${col.type === "gap" ? "bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,rgba(255,255,255,0.02)_10px,rgba(255,255,255,0.02)_20px)]" : ""}`}
+                    />
+                  ))}
                 </div>
 
-                {/* Sticky Day Label */}
-                <div className="sticky left-2 top-0 z-20 w-max pt-1 pointer-events-none h-0 overflow-visible">
+                {/* Horizontal-only sticky — top sticky + h-0 made labels pile up when
+                    off-viewport strips scale the row to zero (and when the grid pans vertically). */}
+                <div className="sticky left-2 z-20 w-max px-2 pt-1 pb-0.5 pointer-events-none relative">
                   <span className="font-display italic font-bold text-snow text-[14px] drop-shadow-md">
                     {label}
                   </span>
                 </div>
 
                 <div
-                  className="grid transition-all duration-100 ease-out"
+                  className="grid relative z-10 transition-all duration-100 ease-out"
                   style={{
-                    paddingTop: `calc(28px * var(--dow-max-scale-${dow}, ${isEmpty ? 0 : 1}))`,
-                    paddingBottom: `calc(8px * var(--dow-max-scale-${dow}, ${isEmpty ? 0 : 1}))`,
+                    paddingBottom: isEmpty
+                      ? undefined
+                      : `calc(8px * var(--dow-max-scale-${dow}, 1))`,
                   }}
                 >
                   <div className="overflow-visible">
@@ -641,7 +609,7 @@ export function ScheduleGrid({
                             const colSpan = endColIdx - startColIdx + 1;
                             return (
                               <div
-                                key={strip.itemId}
+                                key={strip.stripKey}
                                 className="relative z-10 bg-white/5 hover:bg-white/10 border border-white/10 rounded flex flex-col justify-center min-h-[0px] transition-colors group overflow-hidden"
                                 style={{
                                   gridColumn: `${colStart} / span ${colSpan}`,
@@ -654,7 +622,7 @@ export function ScheduleGrid({
                                 }}
                               >
                                 <div
-                                  className="sticky left-2 z-20 w-max px-2 mb-1"
+                                  className="sticky left-2 z-20 w-max pe-2 mb-1"
                                   style={{
                                     maxWidth: `${Math.min(colSpan * 70 - 8, 160)}px`,
                                   }}
@@ -675,17 +643,24 @@ export function ScheduleGrid({
                                   }}
                                 >
                                   {Array.from({ length: colSpan }).map((_, localIdx) => {
-                                    const weekKey = minAbsWeek + strip.startWeek + localIdx;
+                                    // Map by rendered column (week or gap), not week-offset —
+                                    // gap columns compress empty stretches so weekIndex ≠ localIdx.
+                                    const globalColIdx = startColIdx + localIdx;
+                                    const col = renderedColumns[globalColIdx];
+                                    if (!col || col.type === "gap") {
+                                      return <div key={`${strip.stripKey}-col-${globalColIdx}`} />;
+                                    }
+
                                     const columnEpisodes = strip.episodes.filter(
-                                      (ep) => ep.weekIndex - strip.startWeek === localIdx,
+                                      (ep) => minAbsWeek + ep.weekIndex === col.absWeek,
                                     );
                                     if (columnEpisodes.length === 0) {
-                                      return <div key={`${strip.stripKey}-empty-${weekKey}`} />;
+                                      return <div key={`${strip.stripKey}-empty-${col.absWeek}`} />;
                                     }
 
                                     return (
                                       <div
-                                        key={`${strip.stripKey}-week-${weekKey}`}
+                                        key={`${strip.stripKey}-week-${col.absWeek}`}
                                         className="flex flex-row items-center justify-start pointer-events-auto px-2 pb-1"
                                         style={{ gridColumn: localIdx + 1 }}
                                       >
@@ -703,7 +678,9 @@ export function ScheduleGrid({
                                           return (
                                             <Link
                                               to="/series/$id"
-                                              params={{ id: `i${strip.itemId}` }}
+                                              params={{
+                                                id: `i${strip.itemId}`,
+                                              }}
                                               className={`text-[10px] font-mono transition-colors flex flex-row items-center gap-1 ${
                                                 isToday
                                                   ? "text-yellow hover:text-yellow/80"
@@ -716,10 +693,6 @@ export function ScheduleGrid({
                                                 .join(", ")}
                                             >
                                               <EpisodeLabel s={firstEp.s} e={firstEp.e} />
-                                              <MockReleaseTime
-                                                itemId={strip.itemId}
-                                                isWatched={isWatched}
-                                              />
                                               {extraCount > 0 && (
                                                 <span className="text-yellow text-[9px] font-bold px-1 rounded bg-yellow/10">
                                                   +{extraCount}

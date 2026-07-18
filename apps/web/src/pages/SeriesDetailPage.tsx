@@ -25,33 +25,52 @@ import type {
   SeriesDetail,
   SeriesSummary,
 } from "../api/types.ts";
+import { MediaImage } from "../components/MediaImage.tsx";
+import { Modal } from "../components/Modal.tsx";
+import { NextEpisodeCarousel } from "../components/NextEpisodeCarousel.tsx";
 import { RatingControl } from "../components/RatingControl.tsx";
 import { RemoveSeriesDialog } from "../components/RemoveSeriesDialog.tsx";
 import { SeasonSection } from "../components/SeasonSection.tsx";
 import { SegmentedProgress } from "../components/SegmentedProgress.tsx";
 import { WatchDateDialog } from "../components/WatchDateDialog.tsx";
 import { CATEGORY_TEXT_COLORS } from "../lib/categoryColors.ts";
-import { CATEGORY_ICONS } from "../lib/categoryIcons.ts";
 import { genreKey } from "../lib/genreKey.ts";
 import { sortSeasonsSpecialsLast } from "../lib/seasons.ts";
 import { seriesParam } from "../lib/seriesPath.ts";
 import { isStale } from "../lib/staleSweep.ts";
 import { useToast } from "../lib/toast.tsx";
-
-const RATING_PROMPT_TIMEOUT_MS = 5000;
+import { readUiPrefs } from "../lib/uiPrefs.ts";
 
 /** Falls back to plain text if the logo 404s (e.g. its provider isn't registered right now). */
 function LogoOrText({ src, alt }: { src: string | null; alt: string }) {
   const [failed, setFailed] = useState(false);
   if (!src || failed) return <span>{alt}</span>;
-  return <img src={src} alt={alt} className="h-4 object-contain" onError={() => setFailed(true)} />;
+  return (
+    <MediaImage
+      src={src}
+      alt={alt}
+      wrapperClassName="inline-block h-4 min-w-4 align-middle"
+      className="h-4 object-contain"
+      spinnerSize={10}
+      onError={() => setFailed(true)}
+    />
+  );
 }
 
 /** Decorative icon that just disappears on a 404 instead of showing a broken-image glyph. */
 function DecorativeLogo({ src, className }: { src: string | null; className: string }) {
   const [failed, setFailed] = useState(false);
   if (!src || failed) return null;
-  return <img src={src} alt="" className={className} onError={() => setFailed(true)} />;
+  return (
+    <MediaImage
+      src={src}
+      alt=""
+      wrapperClassName="inline-block"
+      className={className}
+      spinnerSize={10}
+      onError={() => setFailed(true)}
+    />
+  );
 }
 
 function updateEpisodeInDetail(
@@ -74,7 +93,10 @@ function updateEpisodeInDetail(
   return {
     ...detail,
     seasons,
-    progress: { ...detail.progress, watched: detail.progress.watched + watchedDelta },
+    progress: {
+      ...detail.progress,
+      watched: detail.progress.watched + watchedDelta,
+    },
   };
 }
 
@@ -128,12 +150,14 @@ export function SeriesDetailPage() {
   const [promptEpisodeId, setPromptEpisodeId] = useState<number | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
 
   const navigate = useNavigate();
 
   const query = useQuery({ queryKey, queryFn: () => getSeriesByParam(param) });
-  const settingsQuery = useQuery({ queryKey: ["settings"], queryFn: getSettings });
+  const settingsQuery = useQuery({
+    queryKey: ["settings"],
+    queryFn: getSettings,
+  });
   const activeRegion = settingsQuery.data?.region ?? "TR";
 
   /** Mutations always act on the internal id, never the URL param (which may be a tmdbId). */
@@ -142,12 +166,6 @@ export function SeriesDetailPage() {
     if (value === undefined) throw new Error("mutation fired before series detail loaded");
     return value;
   }
-
-  useEffect(() => {
-    if (promptEpisodeId === null) return;
-    const timer = setTimeout(() => setPromptEpisodeId(null), RATING_PROMPT_TIMEOUT_MS);
-    return () => clearTimeout(timer);
-  }, [promptEpisodeId]);
 
   // E52: canonicalize the URL (replace, no history entry) once the item's real
   // identity is known — guarded by param inequality so it never loops.
@@ -158,15 +176,6 @@ export function SeriesDetailPage() {
       navigate({ to: "/series/$id", params: { id: canonical }, replace: true });
     }
   }, [query.data, param, navigate]);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    function onClickOutside(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
-    }
-    document.addEventListener("mousedown", onClickOutside);
-    return () => document.removeEventListener("mousedown", onClickOutside);
-  }, [menuOpen]);
 
   function invalidate() {
     queryClient.invalidateQueries({ queryKey });
@@ -374,7 +383,7 @@ export function SeriesDetailPage() {
     mutationFn: () => removeSeries(requireInternalId()),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["library"] });
-      navigate({ to: "/" });
+      navigate({ to: "/watch" });
     },
     onError: () => toast.show(t("library.removeError"), "error"),
   });
@@ -408,10 +417,35 @@ export function SeriesDetailPage() {
     onSettled: invalidate,
   });
 
-  const rateEpisode = useMutation({
-    mutationFn: ({ episodeId, value }: { episodeId: number; value: 1 | 2 | 3 }) =>
-      setRating("episode", episodeId, value),
-    onError: reportError,
+  const rateEpisode = useMutation<
+    unknown,
+    unknown,
+    { episodeId: number; value: 1 | 2 | 3 | null },
+    { previous: SeriesDetail | undefined }
+  >({
+    mutationFn: ({ episodeId, value }) =>
+      value === null ? clearRating("episode", episodeId) : setRating("episode", episodeId, value),
+    onMutate: async ({ episodeId, value }) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previous = queryClient.getQueryData<SeriesDetail>(queryKey);
+      queryClient.setQueryData<SeriesDetail>(queryKey, (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          seasons: old.seasons.map((season) => ({
+            ...season,
+            episodes: season.episodes.map((ep) =>
+              ep.id === episodeId ? { ...ep, myRating: value } : ep,
+            ),
+          })),
+        };
+      });
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) queryClient.setQueryData(queryKey, context.previous);
+      reportError();
+    },
     onSuccess: () => setPromptEpisodeId(null),
     onSettled: invalidate,
   });
@@ -448,69 +482,69 @@ export function SeriesDetailPage() {
   // <img> src doesn't change across the card->detail view-transition morph —
   // a differing size forces a reload mid-transition instead of a smooth flow.
   const imageUrl = buildImageUrl(detail.posterRef);
+  const backdropUrl = buildImageUrl(detail.backdropRef, "large");
   const { watched, aired } = detail.progress;
   const sortedSeasons = sortSeasonsSpecialsLast(detail.seasons);
+  const carouselEpisodes = detail.seasons
+    .filter((season) => season.number !== 0)
+    .flatMap((season) => season.episodes);
   const contentRating =
     detail.contentRatings.find((r) => r.region === activeRegion) ?? detail.contentRatings[0];
   const regionWatchProviders = detail.watchProviders.filter((wp) => wp.region === activeRegion);
+  const avgRuntimeMin = averageEpisodeRuntimeMin(detail);
 
   return (
     <div className="flex flex-col gap-6">
-      {detail.needsReview && (
-        <NeedsReviewBanner
-          isLoading={fillMissingSeasons.isPending || changeNeedsReview.isPending}
-          onFill={() => fillMissingSeasons.mutate()}
-          onDismiss={() => changeNeedsReview.mutate(false)}
-        />
-      )}
-      <div className="flex flex-col gap-4 sm:flex-row">
-        {imageUrl ? (
-          <img
-            src={imageUrl}
-            alt={detail.title}
-            className="w-40 h-auto shrink-0 bg-white/5"
-            style={{ viewTransitionName: `poster-${detail.id}` }}
-          />
-        ) : (
-          <div
-            className="flex aspect-[2/3] w-40 shrink-0 items-center justify-center overflow-hidden bg-white/5 p-2 text-center text-sm text-muted"
-            style={{ viewTransitionName: `poster-${detail.id}` }}
-          >
-            {detail.title}
-          </div>
-        )}
-        <div className="flex flex-1 flex-col gap-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="font-display italic text-snow text-4xl leading-none tracking-tight">
+      <section className="relative -mx-3 sm:-mx-6">
+        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+          {backdropUrl && (
+            <MediaImage
+              src={backdropUrl}
+              alt=""
+              wrapperClassName="absolute inset-0 block size-full bg-void"
+              className="size-full object-cover object-top"
+              fadeDurationMs={1200}
+              spinnerSize={24}
+              fetchPriority="high"
+            />
+          )}
+          <div className="absolute inset-0 bg-black/45" />
+          <div className="absolute inset-0 hidden bg-gradient-to-r from-void via-transparent to-void sm:block" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-void/20 to-void" />
+        </div>
+
+        <div className="relative z-10 flex min-h-[24rem] items-end gap-4 px-3 pb-6 pt-20 sm:min-h-[30rem] sm:gap-6 sm:px-6 sm:pt-32">
+          {imageUrl ? (
+            <MediaImage
+              src={imageUrl}
+              alt={detail.title}
+              wrapperClassName="block aspect-[2/3] w-28 shrink-0 bg-white/5 shadow-2xl sm:w-40"
+              className="h-full w-full object-cover"
+              style={{ viewTransitionName: `poster-${detail.id}` }}
+              spinnerSize={24}
+              fetchPriority="high"
+            />
+          ) : (
+            <div
+              className="flex aspect-[2/3] w-28 shrink-0 items-center justify-center overflow-hidden bg-white/5 p-2 text-center text-sm text-muted sm:w-40"
+              style={{ viewTransitionName: `poster-${detail.id}` }}
+            >
               {detail.title}
-              {detail.year ? (
-                <span className="font-sans not-italic text-2xl text-muted ml-2">
-                  ({detail.year})
-                </span>
-              ) : (
-                ""
-              )}
-            </h1>
-            <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest bg-white/5 px-2 py-1 text-muted">
-              {(() => {
-                const Icon = CATEGORY_ICONS[detail.category];
-                return <Icon size={12} />;
-              })()}
-              {t(`category.${detail.category}`)}
-            </span>
-            <div className="ml-auto flex shrink-0 items-center gap-1">
-              <button
-                type="button"
-                onClick={() => toggleFavorite.mutate(!detail.favorite)}
-                aria-pressed={detail.favorite}
-                aria-label={t(detail.favorite ? "series.unfavorite" : "series.favorite")}
-                className="flex h-11 w-11 items-center justify-center text-muted transition-colors hover:text-yellow"
-              >
-                <Heart
-                  className={detail.favorite ? "h-5 w-5 fill-yellow text-yellow" : "h-5 w-5"}
-                />
-              </button>
-              <div ref={menuRef} className="relative">
+            </div>
+          )}
+          <div className="flex min-w-0 flex-1 flex-col gap-3">
+            <div className="flex items-start justify-between gap-3">
+              <h1 className="min-w-0 flex-1 font-display italic text-2xl text-snow leading-none tracking-tight sm:text-4xl">
+                {detail.title}
+                {detail.year ? (
+                  <span className="ml-2 font-sans text-base text-snow/60 not-italic sm:text-2xl">
+                    ({detail.year})
+                  </span>
+                ) : (
+                  ""
+                )}
+              </h1>
+              <div className="relative shrink-0">
                 <button
                   type="button"
                   onClick={() => setMenuOpen((v) => !v)}
@@ -519,182 +553,231 @@ export function SeriesDetailPage() {
                 >
                   ⋮
                 </button>
-                {menuOpen && (
-                  <div className="absolute right-0 z-10 mt-1 w-56 overflow-hidden border border-white/10 bg-[#101010] shadow-2xl backdrop-blur-md">
-                    {detail.manualList !== null && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setMenuOpen(false);
-                          changeManualList.mutate(null);
-                        }}
-                        className="block w-full px-4 py-3 text-left text-xs font-mono text-muted hover:text-snow hover:bg-white/5 transition-colors border-b border-white/5"
-                      >
-                        {t("category.watching")}
-                      </button>
-                    )}
-                    {detail.manualList !== "watch_later" && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setMenuOpen(false);
-                          changeManualList.mutate("watch_later");
-                        }}
-                        className="block w-full px-4 py-3 text-left text-xs font-mono text-muted hover:text-snow hover:bg-white/5 transition-colors border-b border-white/5"
-                      >
-                        {t("manualList.watch_later")}
-                      </button>
-                    )}
-                    {detail.manualList !== "stopped" && detail.category !== "finished" && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setMenuOpen(false);
-                          changeManualList.mutate("stopped");
-                        }}
-                        className="block w-full px-4 py-3 text-left text-xs font-mono text-muted hover:text-snow hover:bg-white/5 transition-colors border-b border-white/5"
-                      >
-                        {t("manualList.stopped")}
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMenuOpen(false);
-                        refreshSeriesMutation.mutate();
-                      }}
-                      className="block w-full px-4 py-3 text-left text-xs font-mono text-muted hover:text-snow hover:bg-white/5 transition-colors border-b border-white/5"
-                    >
-                      {t("series.refresh")}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMenuOpen(false);
-                        toggleMute.mutate(!detail.pushMuted);
-                      }}
-                      className="block w-full px-4 py-3 text-left text-xs font-mono text-muted hover:text-snow hover:bg-white/5 transition-colors border-b border-white/5"
-                    >
-                      {detail.pushMuted ? t("series.unmute") : t("series.mute")}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMenuOpen(false);
-                        handleRemove();
-                      }}
-                      className="block w-full px-4 py-3 text-left text-xs font-mono text-red-400 hover:text-red-300 hover:bg-white/5 transition-colors"
-                    >
-                      {t("library.card.remove")}
-                    </button>
+                <Modal
+                  isOpen={menuOpen}
+                  onClose={() => setMenuOpen(false)}
+                  desktop="popover"
+                  popoverClassName="w-56"
+                  title={t("series.menu")}
+                  className="!p-0 !overflow-hidden"
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      toggleFavorite.mutate(!detail.favorite);
+                    }}
+                    aria-pressed={detail.favorite}
+                    className="flex w-full items-center gap-2 border-b border-white/5 px-4 py-3.5 text-left text-xs font-mono text-muted transition-colors hover:bg-white/5 hover:text-snow"
+                  >
+                    <Heart size={16} className={detail.favorite ? "fill-yellow text-yellow" : ""} />
+                    {t(detail.favorite ? "series.unfavorite" : "series.favorite")}
+                  </button>
+                  <div className="border-b border-white/5 px-4 py-3.5">
+                    <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-muted">
+                      {t("rating.label")}
+                    </p>
+                    <RatingControl
+                      value={detail.rating}
+                      onChange={(value) => rateItem.mutate(value)}
+                      size="sm"
+                    />
                   </div>
+                  {detail.manualList !== null && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        changeManualList.mutate(null);
+                      }}
+                      className="block w-full px-4 py-3.5 text-left text-xs font-mono text-muted hover:text-snow hover:bg-white/5 transition-colors border-b border-white/5"
+                    >
+                      {t("category.watching")}
+                    </button>
+                  )}
+                  {detail.manualList !== "watch_later" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        changeManualList.mutate("watch_later");
+                      }}
+                      className="block w-full px-4 py-3.5 text-left text-xs font-mono text-muted hover:text-snow hover:bg-white/5 transition-colors border-b border-white/5"
+                    >
+                      {t("manualList.watch_later")}
+                    </button>
+                  )}
+                  {detail.manualList !== "stopped" && detail.category !== "finished" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        changeManualList.mutate("stopped");
+                      }}
+                      className="block w-full px-4 py-3.5 text-left text-xs font-mono text-muted hover:text-snow hover:bg-white/5 transition-colors border-b border-white/5"
+                    >
+                      {t("manualList.stopped")}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      refreshSeriesMutation.mutate();
+                    }}
+                    className="block w-full px-4 py-3.5 text-left text-xs font-mono text-muted hover:text-snow hover:bg-white/5 transition-colors border-b border-white/5"
+                  >
+                    {t("series.refresh")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      toggleMute.mutate(!detail.pushMuted);
+                    }}
+                    className="block w-full px-4 py-3.5 text-left text-xs font-mono text-muted hover:text-snow hover:bg-white/5 transition-colors border-b border-white/5"
+                  >
+                    {detail.pushMuted ? t("series.unmute") : t("series.mute")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      handleRemove();
+                    }}
+                    className="block w-full px-4 py-3.5 text-left text-xs font-mono text-red-400 hover:text-red-300 hover:bg-white/5 transition-colors"
+                  >
+                    {t("library.card.remove")}
+                  </button>
+                </Modal>
+              </div>
+            </div>
+            {detail.tagline && <p className="text-sm text-muted italic">"{detail.tagline}"</p>}
+
+            {(detail.networks.length > 0 || contentRating || avgRuntimeMin != null) && (
+              <div className="flex flex-wrap items-center gap-2 text-sm text-muted">
+                {detail.networks.map((n) => (
+                  <LogoOrText key={n.name} src={buildImageUrl(n.logoRef, "thumb")} alt={n.name} />
+                ))}
+                {contentRating && (
+                  <span className="border border-white/10 px-1.5 py-0.5 text-xs">
+                    {contentRating.rating}
+                  </span>
+                )}
+                {avgRuntimeMin != null && (
+                  <span className="font-mono text-xs tabular-nums">
+                    {t("episode.runtimeMin", { minutes: avgRuntimeMin })}
+                  </span>
                 )}
               </div>
-            </div>
-          </div>
-          <div className="flex items-center">
-            <RatingControl
-              value={detail.rating}
-              onChange={(value) => rateItem.mutate(value)}
-              size="sm"
-            />
-          </div>
-          {detail.tagline && <p className="text-sm text-muted italic">"{detail.tagline}"</p>}
+            )}
 
-          {(detail.networks.length > 0 || contentRating) && (
-            <div className="flex flex-wrap items-center gap-2 text-sm text-muted">
-              {detail.networks.map((n) => (
-                <LogoOrText key={n.name} src={buildImageUrl(n.logoRef, "thumb")} alt={n.name} />
-              ))}
-              {contentRating && (
-                <span className="border border-white/10 px-1.5 py-0.5 text-xs">
-                  {contentRating.rating}
-                </span>
-              )}
-            </div>
-          )}
-
-          {detail.genres.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {detail.genres.map((g) => (
-                <span key={g.id ?? g.name} className="bg-white/5 px-2 py-0.5 text-xs text-muted">
-                  {t(`genres.${genreKey(g.name)}`, { defaultValue: g.name })}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {detail.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {detail.tags.map((tag) => (
-                <span
-                  key={`${tag.source}-${tag.id ?? tag.name}`}
-                  className="bg-white/5 px-2 py-0.5 text-xs text-yellow"
-                >
-                  {tag.name}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {detail.externalRatings.length > 0 && (
-            <p className="text-sm text-muted">
-              {detail.externalRatings.map((r, i) => (
-                <span key={r.source}>
-                  {i > 0 && " · "}⭐ {r.source.toUpperCase()}{" "}
-                  {(r.scale === 10 ? r.value : (r.value / r.scale) * 10).toFixed(1)}
-                </span>
-              ))}
-            </p>
-          )}
-
-          {regionWatchProviders.length > 0 && (
-            <div className="flex flex-col gap-1">
-              <div className="flex flex-wrap items-center gap-2">
-                {regionWatchProviders.map((wp) => {
-                  return (
-                    <span
-                      key={`${wp.provider}-${wp.type}-${wp.region}`}
-                      className="flex items-center gap-1 bg-white/5 px-2 py-1 text-xs text-snow"
-                    >
-                      <DecorativeLogo
-                        src={buildImageUrl(wp.logoRef, "thumb")}
-                        className="h-4 w-4 object-cover"
-                      />
-                      {wp.provider} ({wp.region})
-                    </span>
-                  );
-                })}
-              </div>
-              <p className="text-xs text-muted">{t("series.justwatchAttribution")}</p>
-            </div>
-          )}
-
-          <div className="mt-2 flex flex-col gap-1">
-            <SegmentedProgress
-              seasonProgress={detail.seasonProgress}
-              watched={watched}
-              aired={aired}
-              category={detail.category}
-              size="md"
-              className="max-w-sm"
-            />
-            <p className={`text-sm ${CATEGORY_TEXT_COLORS[detail.category]}`}>
-              <span className="font-mono tabular-nums">
-                {watched}/{aired}
-              </span>
-              {detail.nextUnwatched && (
-                <>
-                  <span className="text-muted">{" · "}</span>
-                  <span className="text-muted">
-                    {t("series.nextUp", { s: detail.nextUnwatched.s, e: detail.nextUnwatched.e })}
+            {detail.genres.length > 0 && (
+              <div className="flex flex-nowrap gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {detail.genres.map((g) => (
+                  <span
+                    key={g.id ?? g.name}
+                    className="shrink-0 bg-white/5 px-2 py-0.5 text-xs text-muted"
+                  >
+                    {t(`genres.${genreKey(g.name)}`, { defaultValue: g.name })}
                   </span>
-                </>
-              )}
-            </p>
+                ))}
+              </div>
+            )}
+
+            {detail.tags.length > 0 && (
+              <div className="flex flex-nowrap gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {detail.tags.map((tag) => (
+                  <span
+                    key={`${tag.source}-${tag.id ?? tag.name}`}
+                    className="shrink-0 bg-white/5 px-2 py-0.5 text-xs text-yellow"
+                  >
+                    {tag.name}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {detail.externalRatings.length > 0 && (
+              <p className="text-sm text-muted">
+                {detail.externalRatings.map((r, i) => (
+                  <span key={r.source}>
+                    {i > 0 && t("common.separator")}⭐ {r.source.toUpperCase()}{" "}
+                    {(r.scale === 10 ? r.value : (r.value / r.scale) * 10).toFixed(1)}
+                  </span>
+                ))}
+              </p>
+            )}
+
+            {regionWatchProviders.length > 0 && (
+              <div className="flex flex-col gap-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  {regionWatchProviders.map((wp) => {
+                    return (
+                      <span
+                        key={`${wp.provider}-${wp.type}-${wp.region}`}
+                        className="flex items-center gap-1 bg-white/5 px-2 py-1 text-xs text-snow"
+                      >
+                        <DecorativeLogo
+                          src={buildImageUrl(wp.logoRef, "thumb")}
+                          className="h-4 w-4 object-cover"
+                        />
+                        {wp.provider} ({wp.region})
+                      </span>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-muted">{t("series.justwatchAttribution")}</p>
+              </div>
+            )}
+
+            <div className="mt-2 flex flex-col gap-1">
+              <SegmentedProgress
+                seasonProgress={detail.seasonProgress}
+                watched={watched}
+                aired={aired}
+                category={detail.category}
+                size="md"
+                className="max-w-sm"
+              />
+              <p
+                className={`text-sm font-mono tabular-nums ${CATEGORY_TEXT_COLORS[detail.category]}`}
+              >
+                {watched}/{aired}
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
+
+      {detail.needsReview && (
+        <NeedsReviewBanner
+          isLoading={fillMissingSeasons.isPending || changeNeedsReview.isPending}
+          onFill={() => fillMissingSeasons.mutate()}
+          onDismiss={() => changeNeedsReview.mutate(false)}
+        />
+      )}
+
+      {detail.nextUnwatched && readUiPrefs().showNextUpCarousel && (
+        <NextEpisodeCarousel
+          key={detail.id}
+          episodes={carouselEpisodes}
+          nextEpisode={detail.nextUnwatched}
+          promptEpisodeId={promptEpisodeId}
+          onToggleWatch={(episode, onMarked) => {
+            toggleWatch.mutate(episode, {
+              onSuccess: (result) => {
+                if (result) onMarked();
+              },
+            });
+          }}
+          onWatchAgain={(episodeId) => watchAgain.mutate(episodeId)}
+          onEditDate={(episode) => setDateDialogEpisode(episode)}
+          onBulkUpToHere={(episodeId) => bulkUpToHere.mutate(episodeId)}
+          onRateEpisode={(episodeId, value) => rateEpisode.mutate({ episodeId, value })}
+          onDismissPrompt={() => setPromptEpisodeId(null)}
+        />
+      )}
 
       <div className="flex flex-col">
         {sortedSeasons.map((season) => (
@@ -741,4 +824,18 @@ export function SeriesDetailPage() {
       )}
     </div>
   );
+}
+
+/** Prefer provider typical runtimes; else average known per-episode runtimes. */
+function averageEpisodeRuntimeMin(detail: SeriesDetail): number | null {
+  const fromItem = detail.episodeRunTimes ?? [];
+  if (fromItem.length > 0) {
+    return Math.round(fromItem.reduce((a, b) => a + b, 0) / fromItem.length);
+  }
+  const fromEpisodes = detail.seasons
+    .flatMap((season) => season.episodes)
+    .map((ep) => ep.runtimeMin)
+    .filter((m): m is number => m != null);
+  if (fromEpisodes.length === 0) return null;
+  return Math.round(fromEpisodes.reduce((a, b) => a + b, 0) / fromEpisodes.length);
 }

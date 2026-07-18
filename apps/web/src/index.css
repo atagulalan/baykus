@@ -85,8 +85,11 @@ body::after {
   pointer-events: none;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 1024 1024' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.5' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
   opacity: 0.05;
-  z-index: 9999;
+  z-index: 10000000;
   animation: film-grain 4s steps(10) infinite;
+  /* Own VT group so grain rides above chrome/root during route transitions
+     instead of a live overlay fighting the ::view-transition tree. */
+  view-transition-name: film-grain;
 }
 
 /* E51: subtle root cross-fade on route changes; poster morph opts in per-item
@@ -98,7 +101,13 @@ body::after {
   animation-duration: 160ms;
 }
 
-/* Prevent sticky/fixed navs from cross-fading their semi-transparent backdrops */
+/* Chrome must stay a single frozen snapshot — hide old, freeze group+new so
+   they don't stack with the root cross-fade. */
+::view-transition-group(app-header),
+::view-transition-group(app-tabbar) {
+  animation: none;
+  z-index: 1;
+}
 ::view-transition-old(app-header),
 ::view-transition-old(app-tabbar) {
   display: none;
@@ -106,6 +115,43 @@ body::after {
 ::view-transition-new(app-header),
 ::view-transition-new(app-tabbar) {
   animation: none;
+  mix-blend-mode: normal;
+}
+
+/* Grain travels with the transition, stacked above chrome (z-index 1). */
+::view-transition-group(film-grain) {
+  animation: none;
+  z-index: 2;
+}
+::view-transition-old(film-grain) {
+  display: none;
+}
+::view-transition-new(film-grain) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+/* The final EpisodeRow in any list owns the wrapper's visual edge. */
+.episode-row:not(:has(~ .episode-row)) > .episode-row-shell {
+  border-bottom-width: 0;
+}
+
+/* E137: quick-mark row flying from "Sıradaki bölümler" up into the history
+   list. No z-index — it rides above the root snapshot but below the frozen
+   app chrome (z 1) and grain (z 2), so it slides under the header. */
+::view-transition-group(quickmark-fly) {
+  animation-duration: 300ms;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Snapshots stretch with the morphing box — a no-op for the open-history
+   row→row fly; with the accordion collapsed the row squashes into the
+   invisible strip at the header's bottom edge (slide-up-and-fade, E137). */
+::view-transition-old(quickmark-fly),
+::view-transition-new(quickmark-fly) {
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -136,25 +182,14 @@ body::after {
   }
 }
 
-@keyframes rating-pop {
+@keyframes rating-slide-left {
   from {
     opacity: 0;
-    transform: scale(0.7) translateY(-4px);
+    transform: translateX(8px) scale(0.9);
   }
   to {
     opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-@keyframes rating-pop-up {
-  from {
-    opacity: 0;
-    transform: scale(0.7) translateY(4px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
+    transform: translateX(0) scale(1);
   }
 }
 
@@ -164,6 +199,35 @@ body::after {
   }
   to {
     opacity: 1;
+  }
+}
+
+@keyframes sheet-slide-down {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes modal-scale-down {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+@keyframes backdrop-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
   }
 }
 
@@ -179,22 +243,31 @@ body::after {
   animation: backdrop-fade 200ms ease-out forwards;
 }
 
-.animate-rating-pop {
-  transform-origin: top right;
-  animation: rating-pop 180ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+.animate-sheet-out {
+  animation: sheet-slide-down 200ms cubic-bezier(0.7, 0, 0.84, 0) forwards;
 }
 
-.animate-rating-pop-up {
-  transform-origin: bottom right;
-  animation: rating-pop-up 180ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+.animate-modal-out {
+  animation: modal-scale-down 150ms cubic-bezier(0.7, 0, 0.84, 0) forwards;
+}
+
+.animate-backdrop-out {
+  animation: backdrop-fade-out 200ms ease-in forwards;
+}
+
+.animate-rating-slide-left {
+  transform-origin: right center;
+  animation: rating-slide-left 180ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .animate-sheet,
   .animate-modal,
   .animate-backdrop,
-  .animate-rating-pop,
-  .animate-rating-pop-up {
+  .animate-sheet-out,
+  .animate-modal-out,
+  .animate-backdrop-out,
+  .animate-rating-slide-left {
     animation: none;
   }
 }
@@ -209,5 +282,6 @@ body::after {
   grid-template-rows: 1fr;
 }
 .season-episodes > div {
+  min-width: 0;
   min-height: 0;
 }

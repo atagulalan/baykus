@@ -175,9 +175,15 @@ watched:                             [x] tap → sheet:
   from before E47 stays for the common case (no backlog before this one).
 - `SeasonSection`'s header "mark all watched" text button is now a
   `Checkbox` (checked = season complete: `airedCount > 0 && watchedCount
-  >= airedCount`; disabled when already complete or nothing aired yet). A
-  season that's already complete on mount starts collapsed (previously
-  only season 0/Specials started collapsed).
+  >= airedCount`; disabled when already complete or nothing aired yet).
+  <!-- DECISION 2026-07-18: only the season holding the series' `nextUnwatched`
+  cursor opens on mount; completed seasons, not-yet-started later seasons, and
+  Specials all start collapsed. Supersedes the earlier "every incomplete
+  season expands" rule, which opened all future seasons at once (e.g. Silo S1
+  in progress wrongly opened S2 and S3 too). -->
+  Only the season holding the series' `nextUnwatched` cursor starts expanded
+  on mount; every other season (complete, not-yet-started, or Specials/season
+  0) starts collapsed.
 
 ## Watch page `/watch` (reworked, E38)
 

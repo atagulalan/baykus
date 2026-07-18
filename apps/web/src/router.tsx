@@ -71,10 +71,33 @@ const watchRoute = createRoute({
   component: WatchPage,
 });
 
+/** E136: each calendar mode is its own URL (timeline default; month + schedule nested). */
+function CalendarTimelinePage() {
+  return <CalendarPage mode="timeline" />;
+}
+function CalendarMonthPage() {
+  return <CalendarPage mode="month" />;
+}
+function CalendarSchedulePage() {
+  return <CalendarPage mode="schedule" />;
+}
+
 const calendarRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/calendar",
-  component: CalendarPage,
+  component: CalendarTimelinePage,
+});
+
+const calendarMonthRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/calendar/month",
+  component: CalendarMonthPage,
+});
+
+const calendarScheduleRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/calendar/schedule",
+  component: CalendarSchedulePage,
 });
 
 // E57: /stats is a legacy bookmark — replace-redirects into the profile's stats subpage.
@@ -165,6 +188,8 @@ const routeTree = rootRoute.addChildren([
   seriesPreviewRoute,
   watchRoute,
   calendarRoute,
+  calendarMonthRoute,
+  calendarScheduleRoute,
   statsRoute,
   profileRoute,
   allSeriesRoute,

@@ -17,7 +17,7 @@ interface SeasonSectionProps {
   onMarkSeasonWatched: () => void;
   onUnwatchSeason: () => void;
   promptEpisodeId: number | null;
-  onRateEpisode: (episodeId: number, value: 1 | 2 | 3) => void;
+  onRateEpisode: (episodeId: number, value: 1 | 2 | 3 | null) => void;
   onDismissPrompt: () => void;
 }
 
@@ -37,11 +37,19 @@ export function SeasonSection({
   const { t } = useTranslation();
 
   const today = todayIso();
-  const airedCount = season.episodes.filter((e) => e.airDate !== null && e.airDate <= today).length;
+  const airedEpisodes = season.episodes.filter((e) => e.airDate !== null && e.airDate <= today);
+  const airedCount = airedEpisodes.length;
+  const watchedAiredCount = airedEpisodes.filter((e) => e.watchCount > 0).length;
   const watchedCount = season.episodes.filter((e) => e.watchCount > 0).length;
-  const complete = airedCount > 0 && watchedCount >= airedCount;
+  const complete = airedCount > 0 && watchedAiredCount >= airedCount;
+  const progressPct = airedCount === 0 ? 0 : (watchedAiredCount / airedCount) * 100;
 
-  const [expanded, setExpanded] = useState(season.number !== 0 && !complete);
+  // Only the season you're currently on (the one holding the next unwatched
+  // episode) opens by default. Completed seasons, not-yet-started later
+  // seasons, and Specials (season 0) all start collapsed.
+  const isCurrentSeason =
+    season.number !== 0 && nextUnwatched !== null && season.number === nextUnwatched.s;
+  const [expanded, setExpanded] = useState(isCurrentSeason);
   const [showUnwatchDialog, setShowUnwatchDialog] = useState(false);
 
   const label =
@@ -52,39 +60,60 @@ export function SeasonSection({
 
   return (
     <div className="flex flex-col">
-      <div className="flex border-white/5 border-b">
-        <button
-          type="button"
-          onClick={() => setExpanded((v) => !v)}
-          className="flex flex-1 items-center gap-2 text-left text-sm py-5 pl-2 sm:pl-4"
-        >
-          <span className="text-muted">
-            {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-          </span>
-          <span className="font-medium">{label}</span>
-          <span className="ml-auto font-mono text-xs tabular-nums text-muted">
-            {watchedCount}/{season.episodes.length}
-          </span>
-        </button>
-        <div className="flex items-center py-5 pr-2 sm:pr-4 pl-4">
-          <Checkbox
-            checked={complete}
-            showHint
-            disabled={airedCount === 0}
-            onChange={(checked) => {
-              if (checked && !complete) {
-                onMarkSeasonWatched();
-              } else if (!checked && complete) {
-                if (watchedCount > 1) {
-                  setShowUnwatchDialog(true);
-                } else {
-                  onUnwatchSeason();
-                }
-              }
-            }}
-            aria-label={t("series.markSeasonWatched")}
-          />
+      <div className="flex flex-col">
+        <div className="flex">
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            className="flex flex-1 items-center gap-2 text-left text-sm py-5 pl-2 sm:pl-4"
+          >
+            <span className="text-muted">
+              {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+            </span>
+            <span className="font-medium">{label}</span>
+            <span className="ml-auto font-mono text-xs tabular-nums text-muted">
+              {watchedCount}/{season.episodes.length}
+            </span>
+          </button>
+          <div className="flex items-center py-5 pr-2 pl-3 sm:pr-4 sm:pl-4">
+            <div className="flex h-5 w-5 shrink-0 items-center justify-center">
+              <Checkbox
+                checked={complete}
+                showHint
+                disabled={airedCount === 0}
+                onChange={(checked) => {
+                  if (checked && !complete) {
+                    onMarkSeasonWatched();
+                  } else if (!checked && complete) {
+                    if (watchedCount > 1) {
+                      setShowUnwatchDialog(true);
+                    } else {
+                      onUnwatchSeason();
+                    }
+                  }
+                }}
+                aria-label={t("series.markSeasonWatched")}
+              />
+            </div>
+          </div>
         </div>
+        {expanded ? (
+          <div
+            role="progressbar"
+            aria-valuenow={watchedAiredCount}
+            aria-valuemin={0}
+            aria-valuemax={Math.max(airedCount, 1)}
+            aria-label={label}
+            className="h-px w-full bg-white/5"
+          >
+            <div
+              className="h-full bg-yellow transition-[width] duration-300 ease-out"
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+        ) : (
+          <div className="h-px w-full bg-white/5" />
+        )}
       </div>
       {showUnwatchDialog && (
         <UnwatchSeasonDialog
@@ -102,7 +131,20 @@ export function SeasonSection({
             return (
               <EpisodeRow
                 key={episode.id}
-                episode={episode}
+                s={episode.s}
+                e={episode.e}
+                episodeTitle={episode.title}
+                airDate={episode.airDate}
+                episodeType={episode.episodeType}
+                runtimeMin={episode.runtimeMin}
+                watchCount={episode.watchCount}
+                overview={episode.overview}
+                stillRef={episode.stillRef}
+                lastWatchedAt={episode.lastWatchedAt}
+                myRating={episode.myRating}
+                watched={episode.watchCount > 0}
+                muted={episode.airDate === null || episode.airDate > todayIso()}
+                checkboxDisabled={episode.airDate === null || episode.airDate > todayIso()}
                 onToggleWatch={() => onToggleWatch(episode.id)}
                 onWatchAgain={() => onWatchAgain(episode.id)}
                 onEditDate={() => onEditDate(episode.id)}

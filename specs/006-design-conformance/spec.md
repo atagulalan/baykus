@@ -145,6 +145,19 @@ the calendar naturally reloads.
 
 ## Edge-case decisions (normative — do not re-decide these in code)
 
+<!-- DECISION (2026-07-17, post-008 refactor): the overlay idiom E74 describes is now
+implemented by a single generic component, `apps/web/src/components/Modal.tsx`.
+Mobile (<sm) is always the bottom sheet; the desktop presentation is prop-controlled:
+`desktop="modal"` (centered dialog, default), `desktop="popover"` (panel anchored to the
+nearest positioned ancestor, invisible scrim), or `desktop="none"` (mobile-only sheet —
+SettingsPage). The hand-rolled popovers (SettingsSelect, FilterPanel, SeriesDetailPage's
+⋮ menu) were folded into it; as a consequence the series-detail ⋮ menu now opens as a
+bottom sheet on mobile instead of a cramped anchored popover, matching the app-wide
+pattern. Escape-to-close and body scroll-lock (sheet/modal only) are centralized in the
+component. Popover surface unified to `bg-[#101010] border-white/10` per E74.
+EpisodeRow's transient post-watch rating prompt stays a hand-positioned micro-popover on
+both breakpoints by design — it is an ephemeral anchored prompt, not a dialog. -->
+
 | # | Question | Decision |
 |---|---|---|
 | E74 | What exactly does a conformant modal look like? | Reference implementation: FilterPanel's bottom sheet + the profile page (built post-E45). Overlay container: `bg-[#101010] border border-white/10 shadow-2xl backdrop-blur-md`, **no `rounded-*`**; scrim `bg-black/60` (keep each dialog's existing scrim/dismiss wiring — restyle, don't rewrite). Titles: `font-display italic text-snow` (drop plain `font-semibold` headings). Primary action: `bg-yellow text-[#080808] font-mono text-[10px] uppercase tracking-widest px-4 py-2.5` sharp. Destructive confirm (delete account / reset library): same shape with `bg-red-600 text-white` — red stays, it's danger semantics, not palette drift. Cancel/secondary: borderless `font-mono uppercase text-muted hover:text-snow`. Text inputs & selects: `border border-white/10 bg-white/5 px-3 py-2 text-sm text-snow` sharp, `focus:border-yellow focus:outline-none`; ManualListPicker's native `<select>` gets the same class treatment (a fully custom listbox is NOT in scope — native select, restyled shell). All ≥44px touch targets and no-hover operability (E56) preserved. Behavior, props, tests: untouched. |

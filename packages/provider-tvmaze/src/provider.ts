@@ -70,7 +70,7 @@ export function createTvmazeProvider(): MetadataProvider {
 
     async getSeriesDetails(ref: ExternalIds): Promise<SeriesDetails> {
       const showId = await resolveShowId(ref);
-      const show = await get<TvmazeShow>(`/shows/${showId}?embed=episodes`);
+      const show = await get<TvmazeShow>(`/shows/${showId}?embed[]=episodes&embed[]=images`);
       return mapSeriesDetails(show);
     },
 

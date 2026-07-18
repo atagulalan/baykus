@@ -62,7 +62,7 @@ export function RewatchSummarySection({ stats }: RewatchSummarySectionProps) {
                   <span className="font-medium text-snow">{ep.itemTitle}</span>
                   <span className="font-mono text-[10px] uppercase tracking-widest text-muted">
                     S{ep.s.toString().padStart(2, "0")}E{ep.e.toString().padStart(2, "0")}
-                    {ep.episodeTitle ? ` · ${ep.episodeTitle}` : ""}
+                    {ep.episodeTitle ? `${t("common.separator")}${ep.episodeTitle}` : ""}
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 font-mono text-xs text-yellow">
