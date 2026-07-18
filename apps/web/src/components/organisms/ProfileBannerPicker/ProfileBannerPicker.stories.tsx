@@ -1,0 +1,58 @@
+import type { Meta, StoryObj } from "@storybook/react-vite";
+import { useEffect, useRef } from "react";
+import { withAppProviders } from "../../../../.storybook/decorators.tsx";
+import { mockSeriesSummary } from "../../../../.storybook/mocks.ts";
+import { ProfileBannerPicker } from "./ProfileBannerPicker.tsx";
+
+const candidates = [
+  { ...mockSeriesSummary, id: 1, title: "Breaking Bad", backdropRef: "backdrop-1" },
+  { ...mockSeriesSummary, id: 2, title: "The Wire", backdropRef: "backdrop-2" },
+  { ...mockSeriesSummary, id: 3, title: "Severance", backdropRef: "backdrop-3" },
+];
+
+const meta = {
+  title: "Organisms/ProfileBannerPicker",
+  component: ProfileBannerPicker,
+  decorators: [withAppProviders],
+  args: {
+    bannerRef: null,
+    candidates,
+    children: (openPicker: () => void) => (
+      <button
+        type="button"
+        className="rounded border border-white/10 px-4 py-2 text-sm text-snow"
+        onClick={openPicker}
+      >
+        Change banner
+      </button>
+    ),
+  },
+  parameters: { layout: "fullscreen" },
+} satisfies Meta<typeof ProfileBannerPicker>;
+
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+export const Default: Story = {};
+
+export const Selected: Story = {
+  args: { bannerRef: "backdrop-1" },
+};
+
+export const EmptyCandidates: Story = {
+  args: { candidates: [] },
+};
+
+export const ModalOpen: Story = {
+  render: function ModalOpenStory(args) {
+    const rootRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+      rootRef.current?.querySelector("button")?.click();
+    }, []);
+    return (
+      <div ref={rootRef}>
+        <ProfileBannerPicker {...args} />
+      </div>
+    );
+  },
+};
