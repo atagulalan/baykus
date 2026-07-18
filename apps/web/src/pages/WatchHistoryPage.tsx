@@ -1,8 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowUpDown } from "lucide-react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getWatchHistory, removeLatestEpisodeWatch } from "../api/client.ts";
 import type { WatchHistoryEntry } from "../api/types.ts";
 import { EpisodeRow } from "../components/EpisodeRow.tsx";
+import { PageTitle } from "../components/PageTitle.tsx";
 import { PullToRefresh, useLibrarySweepRefresh } from "../components/PullToRefresh.tsx";
 import { todayIso } from "../lib/date.ts";
 import { useToast } from "../lib/toast.tsx";
@@ -59,20 +62,21 @@ function HistoryRow({
 }
 
 /**
- * Spec 010 WP2: Watch History split out of the WatchPage accordion into its own flat,
- * most-recent-first list. GET /api/watches/history already returns newest-first (E27), so
- * no client-side reverse is needed — the old accordion's `.reverse()` actually showed the
- * oldest-of-the-last-30 at the top, which this page corrects as a side effect of the split.
+ * Spec 010 WP2: Watch History on its own route. Default is newest-first (E27);
+ * the sort toggle refetches with `order=oldest` so the window is the earliest
+ * watches, not a client reverse of the latest 30 (011 E159).
  */
 export function WatchHistoryPage() {
   const { t } = useTranslation();
   const toast = useToast();
   const queryClient = useQueryClient();
   const pullRefresh = useLibrarySweepRefresh(["watch-history"]);
+  const [oldestFirst, setOldestFirst] = useState(false);
+  const order = oldestFirst ? "oldest" : "newest";
 
   const query = useQuery({
-    queryKey: ["watch-history"],
-    queryFn: () => getWatchHistory(),
+    queryKey: ["watch-history", order],
+    queryFn: () => getWatchHistory({ order }),
   });
 
   const unwatch = useMutation({
@@ -91,14 +95,30 @@ export function WatchHistoryPage() {
   return (
     <PullToRefresh onRefresh={pullRefresh}>
       <section className="flex flex-col gap-6">
-        <h1 className="hidden font-display italic text-snow text-3xl tracking-tight sm:block">
-          {t("watch.history")}
-        </h1>
+        <div className="content-inset flex items-center">
+          <div className="hidden sm:block">
+            <PageTitle>{t("watch.history")}</PageTitle>
+          </div>
+          <button
+            type="button"
+            onClick={() => setOldestFirst((v) => !v)}
+            aria-label={t("library.filter.sortTitle")}
+            title={t("library.filter.sortTitle")}
+            aria-pressed={oldestFirst}
+            className={`ml-auto flex h-9 w-9 items-center justify-center transition-colors hover:text-snow ${
+              oldestFirst ? "text-yellow" : "text-muted"
+            }`}
+          >
+            <ArrowUpDown size={20} strokeWidth={1.75} />
+          </button>
+        </div>
 
         {query.isLoading ? (
-          <div className="h-48 animate-pulse bg-white/5" />
+          <div className="content-inset">
+            <div className="h-48 animate-pulse bg-white/5" />
+          </div>
         ) : query.isError ? (
-          <div className="flex flex-col items-center gap-2 py-12 text-center">
+          <div className="content-inset flex flex-col items-center gap-2 py-12 text-center">
             <p className="text-muted">{t("errors.generic")}</p>
             <button
               type="button"
@@ -109,7 +129,7 @@ export function WatchHistoryPage() {
             </button>
           </div>
         ) : items.length === 0 ? (
-          <p className="px-2 py-3 text-sm text-muted sm:px-6">{t("watch.empty.history")}</p>
+          <p className="px-2 py-3 text-sm text-muted sm:px-4">{t("watch.empty.history")}</p>
         ) : (
           <div className="flex flex-col">
             {items.map((entry) => (
