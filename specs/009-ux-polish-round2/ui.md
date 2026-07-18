@@ -230,9 +230,11 @@ Opens filter form: bottom sheet `<sm`, centered modal `sm+`.
 
 - **View** (E142): header icon on `/` + `/watch` (current view glyph; tap toggles).
   No back arrow on `/`. Watch tab stays lit on both routes.
-- **Watch list** (E141): user-composed sections (default watching +
-  not_watched_recently). `watching` is pinned (no remove). Per-section sort
-  on the header right; **Kategori ekle** at the bottom. No FilterPanel FAB.
+- **Watch list** (E141 / E156): user-composed sections (default watching +
+  not_watched_recently). `watching` is pinned (no remove). `needs_review`
+  auto-prepends when non-empty (no remove, no sort, never in **Kategori ekle**);
+  hidden when empty. Other sections keep per-section sort; **Kategori ekle**
+  at the bottom. No FilterPanel FAB.
 - **Grid `/` + AllSeries**: FilterPanel FAB = sort + progress (unchanged).
 - `/watch` history stays above sections, unscoped.
 
@@ -255,28 +257,27 @@ line 2: EpisodeLabel + episode title + tags (all text-xs muted)
 ```
 No `<hr>` between sections — sticky header border-b is the only divider.
 
-## Calendar mode chrome (changed — sticky, E133)
+## Calendar mode navbar action (changed — E133)
 
-Amends 006 ui.md §Calendar (E78 non-sticky title row). The title + ModeTabs
-row pins under the app header while scrolling:
+The separate sticky title + ModeTabs row is removed. Calendar mode access
+lives in the sticky app navbar's top-right action slot on mobile and directly
+before the profile avatar on desktop.
 
-```
-sticky top = var(--app-header-height)
-z-30 · bg-void/95 · backdrop-blur · border-b border-white/5
-```
-
-- ResizeObserver on the sticky row → `--calendar-mode-chrome-height`.
-- BUGÜN day's `scroll-margin-top` =
-  `calc(var(--app-header-height) + var(--calendar-mode-chrome-height))`.
+- BUGÜN day's `scroll-margin-top` = `var(--app-header-height)`.
 - Mode change → `window.scrollTo({ top: 0, behavior: "instant" })` so
   month/schedule don't inherit the timeline's BUGÜN scroll depth.
-- Segmented ModeTabs visuals unchanged from E78.
-- **E135:** below `sm` (640px) ModeTabs omits the month segment — only
-  timeline + schedule. Crossing below `sm` while on `/calendar/month`
-  replace-redirects to `/calendar`. Desktop (`sm+`) keeps all three.
+- Mode control is a **destination icon toggle**, same pattern
+  as Watch↔Library (E155): timeline shows `GanttChart` → `/calendar/schedule`;
+  schedule shows `List` → `/calendar`. Labels via `aria-label` / `title`
+  (`calendar.mode.*`). Month stays a desktop route (`/calendar/month`) with
+  the E135 mobile redirect; its navbar action points to schedule.
+  <!-- DECISION: 2026-07-18 — product ask: destination toggle belongs in the
+  app navbar like Watch/Library, not in page chrome. -->
+- **E135:** below `sm` (640px) `/calendar/month` replace-redirects to
+  `/calendar`. Desktop (`sm+`) can still open the month URL directly.
 - **E136:** modes are separate routes — `/calendar` (timeline),
-  `/calendar/month`, `/calendar/schedule`. ModeTabs are Links (exact
-  active match); page title + sticky chrome unchanged.
+  `/calendar/month`, `/calendar/schedule`. Mode toggle is a Link; page
+  title remains normal desktop page content.
 
 ## Calendar timeline relative sections (NEW — E145)
 

@@ -3,6 +3,14 @@
 Conventions inherited from ui.md 001–010. This doc covers only changed
 surfaces.
 
+## Shared page title (E158)
+
+Standard top-level page headings render through `PageTitle`:
+`font-display text-2xl italic tracking-tight text-snow`. Pages continue to
+own title-row layout, `content-inset`, controls, and mobile visibility.
+Series entity titles, authentication headings, and empty-state messages are
+not page-chrome titles and retain their context-specific typography.
+
 ## EpisodeRow — spoiler + trailing marks (E149 / E151)
 
 Series-chrome rows (`itemId` + `seriesTitle` + `posterRef`):
@@ -74,11 +82,35 @@ Combobox pattern — focus stays on the search input while results exist:
 |-----|--------|
 | ↓ | Highlight next row (from none → first; stop at last) |
 | ↑ | Highlight previous row (from first → none; stop at none) |
-| Enter | Open highlighted row in current tab (E131 destinations) |
-| Shift+Enter | Open highlighted row in a new tab |
+| Enter | Open highlighted row, or first row if none highlighted (E131) |
+| Shift+Enter | Same target as Enter, in a new tab |
 | Escape | Clear highlight (query unchanged) |
 
 Visual: highlighted row uses the same lighten as hover (`bg-white/5` or
 stronger active tint). a11y: input `role="combobox"` +
 `aria-activedescendant`; list `role="listbox"`; rows `role="option"` +
 `aria-selected`. No on-screen shortcut legend.
+
+## Browse / contextual header actions (E155 / E160 / E133)
+
+```
+Desktop page heading:
+Watch                              [grid]
+Library                            [list]
+
+Mobile app-header right slot (fixed h-11 w-11):
+/watch, /     → destination browse toggle (grid / list)
+/calendar*    → destination schedule toggle
+/user/$handle → Settings
+other         → empty spacer (wordmark stays centered)
+```
+
+- Desktop: destination-view toggle stays right-aligned in the page heading.
+- Mobile: the same browse toggle lives in the header right slot; page heading
+  omits it (`hidden sm:flex`) so it is not duplicated.
+- Mobile Library (`/`): centered navbar text is the localized Library title
+  instead of the baykuş wordmark; the entire in-page title row is hidden.
+- Watch shows the grid icon; Library shows the list icon.
+- History icon removed — touch pull-to-history on both surfaces opens
+  `/watch/history` (E160). Pull-to-refresh stays on all-series / favorites /
+  calendar / watch-history.

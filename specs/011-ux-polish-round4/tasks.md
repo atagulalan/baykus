@@ -88,7 +88,7 @@ all under Settings → Data.
 
 Checkpoint goal: `/search` results operable via ↓/↑ / Enter / Shift+Enter.
 
-- [ ] M65.1 web: search result path + active-index helpers (E154)
+- [x] M65.1 web: search result path + active-index helpers (E154)
   - **Files:** `apps/web/src/lib/searchResultPath.ts` (new),
     `apps/web/src/lib/searchListKeyboard.ts` (new),
     matching `*.test.ts`
@@ -98,7 +98,7 @@ Checkpoint goal: `/search` results operable via ↓/↑ / Enter / Shift+Enter.
   - **Tests:** library vs preview paths; arrow edges; empty list → −1.
   - **Verify:** `pnpm test apps/web -- searchResultPath searchListKeyboard`
 
-- [ ] M65.2 web: SearchPage combobox wiring (E154)
+- [x] M65.2 web: SearchPage combobox wiring (E154)
   - **Files:** `apps/web/src/pages/SearchPage.tsx`
   - **DoD:** Input is combobox with `aria-activedescendant`; list/options
     roles; ↓/↑/Enter/Shift+Enter/Escape per E154; same-tab open keeps
@@ -106,4 +106,35 @@ Checkpoint goal: `/search` results operable via ↓/↑ / Enter / Shift+Enter.
     "noopener,noreferrer")`; highlight resets when `results` identity
     changes. No new i18n keys.
   - **Tests:** none beyond typecheck (helpers cover key math).
+  - **Verify:** `pnpm typecheck`
+
+---
+
+## M66 — Browse view control placement (E155)
+
+- [x] M66.1 web: move browse controls into both page headings
+  - **Files:** `apps/web/src/components/Layout.tsx`,
+    `apps/web/src/pages/WatchPage.tsx`,
+    `apps/web/src/pages/LibraryPage.tsx`
+  - **DoD:** On `/watch` and `/`, the destination-view toggle sits right-aligned
+    in the page heading (History icon removed — E160). Watch shows grid;
+    Library shows list. The mobile app header keeps a centering spacer instead
+    of rendering a duplicate toggle. Existing persistence and `/watch` ↔ `/`
+    navigation remain unchanged.
+  - **Tests:** none beyond typecheck (presentation).
+  - **Verify:** `pnpm typecheck`
+
+---
+
+## M67 — Pull-to-history on Library / Watch (E160)
+
+- [x] M67.1 web: history variant on browse pulls; keep refresh elsewhere
+  - **Files:** `apps/web/src/components/PullToRefresh.tsx`,
+    `apps/web/src/pages/LibraryPage.tsx`,
+    `apps/web/src/pages/WatchPage.tsx`
+  - **DoD:** `/` and `/watch` use `PullToRefresh variant="history"` → navigate
+    to `/watch/history` past threshold (History indicator). Remove History
+    heading buttons. Calendar / all-series / favorites / watch-history keep
+    default refresh variant + `useLibrarySweepRefresh`.
+  - **Tests:** none beyond typecheck (gesture is touch-only).
   - **Verify:** `pnpm typecheck`
