@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
+import type { WatchCategory } from "../api/types.ts";
 import {
   clearUiPrefsForTests,
   DEFAULT_WATCH_SECTIONS,
@@ -7,6 +8,7 @@ import {
   readUiPrefs,
   resetUiSelections,
   resetUiWarnings,
+  sectionSort,
   updateUiPrefs,
 } from "./uiPrefs.ts";
 
@@ -84,5 +86,28 @@ describe("uiPrefs (E143)", () => {
     expect(readBrowsePath()).toBe("/");
     expect(resetUiSelections().browseView).toBe("list");
     expect(readBrowsePath()).toBe("/watch");
+  });
+});
+
+describe("sectionSort per-category defaults (spec 010 WP2)", () => {
+  it("gives every category a sensible default when no explicit sort is stored", () => {
+    const expected: Record<WatchCategory, ReturnType<typeof sectionSort>> = {
+      needs_review: "added",
+      watching: "lastWatched",
+      not_watched_recently: "lastWatched",
+      not_started: "added",
+      watch_later: "added",
+      up_to_date: "nextAir",
+      finished: "lastWatched",
+      stopped: "lastWatched",
+    };
+    for (const [category, sort] of Object.entries(expected) as [WatchCategory, string][]) {
+      expect(sectionSort({}, category)).toBe(sort);
+    }
+  });
+
+  it("an explicit stored sort overrides the category default", () => {
+    expect(sectionSort({ not_started: "title" }, "not_started")).toBe("title");
+    expect(sectionSort({ watching: "rating" }, "watching")).toBe("rating");
   });
 });

@@ -54,7 +54,9 @@
       "hint": "Bir dizi aramak için yukarıdaki arama kutusunu kullan.",
       "filterTitle": "Sonuç bulunamadı",
       "filterHint": "Seçtiğin filtrelere uyan hiçbir dizi yok.",
-      "resetFilter": "Filtreleri Sıfırla"
+      "resetFilter": "Filtreleri Sıfırla",
+      "allDoneTitle": "Burada gösterilecek bir şey yok",
+      "allDoneHint": "Kütüphanendeki her şey bitmiş ya da bırakılmış görünüyor."
     },
     "filter": {
       "title": "Filtrele",

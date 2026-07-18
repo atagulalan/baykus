@@ -23,6 +23,7 @@ import { SeriesDetailPage } from "./pages/SeriesDetailPage.tsx";
 import { SeriesPreviewPage } from "./pages/SeriesPreviewPage.tsx";
 import { SettingsPage } from "./pages/SettingsPage.tsx";
 import { StatsPage } from "./pages/StatsPage.tsx";
+import { WatchHistoryPage } from "./pages/WatchHistoryPage.tsx";
 import { WatchPage } from "./pages/WatchPage.tsx";
 
 // Layout renders the nav chrome + auth guard for every route except
@@ -69,6 +70,13 @@ const watchRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/watch",
   component: WatchPage,
+});
+
+/** Spec 010 WP2: history split out of the WatchPage accordion into its own page. */
+const watchHistoryRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/watch/history",
+  component: WatchHistoryPage,
 });
 
 /** E136: each calendar mode is its own URL (timeline default; month + schedule nested). */
@@ -187,6 +195,7 @@ const routeTree = rootRoute.addChildren([
   seriesDetailRoute,
   seriesPreviewRoute,
   watchRoute,
+  watchHistoryRoute,
   calendarRoute,
   calendarMonthRoute,
   calendarScheduleRoute,

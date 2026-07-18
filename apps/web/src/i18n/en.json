@@ -54,7 +54,9 @@
       "hint": "Use the search box above to find a series.",
       "filterTitle": "No results found",
       "filterHint": "No series matches the selected filters.",
-      "resetFilter": "Reset Filters"
+      "resetFilter": "Reset Filters",
+      "allDoneTitle": "Nothing to show here",
+      "allDoneHint": "Everything in your library looks finished or stopped."
     },
     "filter": {
       "title": "Filter",

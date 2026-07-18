@@ -275,7 +275,8 @@ export function updateUiPrefs(patch: Partial<UiPrefs>): UiPrefs {
   return next;
 }
 
-/** Reset sections + library filters (+ history accordion + browse view). Keeps warning dismissals. */
+/** Reset sections + library filters (+ historyCollapsed, unused since spec 010 WP2's history
+ * page split, kept for UiPrefsDto round-trip + browse view). Keeps warning dismissals. */
 export function resetUiSelections(): UiPrefs {
   const current = readUiPrefs();
   const next: UiPrefs = {
@@ -291,9 +292,28 @@ export function resetUiWarnings(): UiPrefs {
   return updateUiPrefs({ skipSectionRemoveConfirm: false });
 }
 
+/**
+ * Spec 010 WP2: sensible per-category default sort, used until the user picks one
+ * explicitly for that section. Chosen from `SeriesSummary`'s available proxy fields —
+ * `added` (id desc) and `lastWatched` (lastWatchedAt desc) are exact for their category
+ * semantics here, not approximations: id order is insertion order, and for `finished`
+ * specifically the last watch *is* the completion event, so `lastWatchedAt` desc is
+ * precisely "recently finished first", not a stand-in for a missing `finishedAt`.
+ */
+const CATEGORY_DEFAULT_SORT: Record<WatchCategory, LibrarySort> = {
+  needs_review: "added",
+  watching: "lastWatched",
+  not_watched_recently: "lastWatched",
+  not_started: "added",
+  watch_later: "added",
+  up_to_date: "nextAir",
+  finished: "lastWatched",
+  stopped: "lastWatched",
+};
+
 export function sectionSort(
   sorts: Partial<Record<WatchCategory, LibrarySort>>,
   category: WatchCategory,
 ): LibrarySort {
-  return sorts[category] ?? DEFAULT_LIBRARY_SORT;
+  return sorts[category] ?? CATEGORY_DEFAULT_SORT[category];
 }

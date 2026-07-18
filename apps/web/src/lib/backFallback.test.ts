@@ -11,6 +11,10 @@ describe("backAffordance (E72 / E138 / E142)", () => {
     expect(backAffordance("/series/94997", "xava")).toEqual({ to: "/watch" });
   });
 
+  it("watch history falls back to watch (spec 010 WP2)", () => {
+    expect(backAffordance("/watch/history", "xava")).toEqual({ to: "/watch" });
+  });
+
   it("import falls back to settings", () => {
     expect(backAffordance("/import", "xava")).toEqual({ to: "/settings" });
   });

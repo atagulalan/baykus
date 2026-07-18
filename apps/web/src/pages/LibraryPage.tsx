@@ -1,31 +1,26 @@
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { getAuthSession } from "../api/client.ts";
 import { HOME_CATEGORY_ORDER } from "../api/types.ts";
 import { CategorySection } from "../components/CategorySection.tsx";
-import { FilterPanel } from "../components/FilterPanel.tsx";
 import { PullToRefresh, useLibrarySweepRefresh } from "../components/PullToRefresh.tsx";
 import { SERIES_GRID_CLASSNAME } from "../lib/grid.ts";
+import { selfHandleParam } from "../lib/profilePath.ts";
 import { maybeStartSweep, useSweepProgress } from "../lib/staleSweep.ts";
 import { useLibraryFilter } from "../lib/useLibraryFilter.ts";
 
-/** Grid browse surface (`/`) — FilterPanel sort + progress (E128). View toggle lives in the header (E142). */
+/** Grid browse surface (`/`) — sort lives in each section's header (E128, spec 010 WP2).
+ * View toggle lives in the app header (E142). */
 export function LibraryPage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const sweepProgress = useSweepProgress();
   const pullRefresh = useLibrarySweepRefresh();
-  const {
-    sort,
-    category,
-    apply,
-    resetCategory,
-    query,
-    items,
-    byCategory,
-    categoriesToRender,
-    hasVisibleItems,
-  } = useLibraryFilter(HOME_CATEGORY_ORDER);
+  const sessionQuery = useQuery({ queryKey: ["auth-session"], queryFn: getAuthSession });
+  const { sort, setSort, query, items, byCategory, categoriesToRender, hasVisibleItems } =
+    useLibraryFilter(HOME_CATEGORY_ORDER);
 
   useEffect(() => {
     maybeStartSweep({
@@ -46,8 +41,6 @@ export function LibraryPage() {
             {t("app.nav.library")}
           </h1>
         </div>
-        {items.length > 0 && <FilterPanel sort={sort} category={category} onApply={apply} />}
-
         {query.isLoading ? (
           <div className={SERIES_GRID_CLASSNAME}>
             {["a", "b", "c", "d", "e", "f"].map((key) => (
@@ -80,21 +73,29 @@ export function LibraryPage() {
         ) : !hasVisibleItems ? (
           <div className="flex flex-col items-center gap-4 py-24 text-center border border-white/5 bg-[#101010] p-6 mt-4">
             <h1 className="font-display italic text-snow text-4xl tracking-tight">
-              {t("library.empty.filterTitle")}
+              {t("library.empty.allDoneTitle")}
             </h1>
-            <p className="font-mono text-xs text-muted/70">{t("library.empty.filterHint")}</p>
-            <button
-              type="button"
-              onClick={resetCategory}
-              className="font-mono text-[10px] tracking-widest uppercase bg-yellow text-[#080808] px-4 py-2 mt-4 transition-opacity hover:opacity-90"
-            >
-              {t("library.empty.resetFilter")}
-            </button>
+            <p className="font-mono text-xs text-muted/70">{t("library.empty.allDoneHint")}</p>
+            {sessionQuery.data && (
+              <Link
+                to="/user/$handle/all-series"
+                params={{ handle: selfHandleParam(sessionQuery.data) }}
+                className="font-mono text-[10px] tracking-widest uppercase bg-yellow text-[#080808] px-4 py-2 mt-4 transition-opacity hover:opacity-90"
+              >
+                {t("profile.allSeries")}
+              </Link>
+            )}
           </div>
         ) : (
           <div className="flex flex-col gap-8">
             {categoriesToRender.map((c) => (
-              <CategorySection key={c} category={c} items={byCategory.get(c) ?? []} />
+              <CategorySection
+                key={c}
+                category={c}
+                items={byCategory.get(c) ?? []}
+                sort={sort}
+                onSortChange={setSort}
+              />
             ))}
           </div>
         )}
