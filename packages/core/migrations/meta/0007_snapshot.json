@@ -88,18 +88,12 @@
       "indexes": {
         "episodes_item_s_e_uq": {
           "name": "episodes_item_s_e_uq",
-          "columns": [
-            "item_id",
-            "season_number",
-            "episode_number"
-          ],
+          "columns": ["item_id", "season_number", "episode_number"],
           "isUnique": true
         },
         "episodes_air_date_idx": {
           "name": "episodes_air_date_idx",
-          "columns": [
-            "air_date"
-          ],
+          "columns": ["air_date"],
           "isUnique": false
         }
       },
@@ -108,12 +102,8 @@
           "name": "episodes_item_id_items_id_fk",
           "tableFrom": "episodes",
           "tableTo": "items",
-          "columnsFrom": [
-            "item_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["item_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -333,37 +323,27 @@
       "indexes": {
         "items_tmdb_id_unique": {
           "name": "items_tmdb_id_unique",
-          "columns": [
-            "tmdb_id"
-          ],
+          "columns": ["tmdb_id"],
           "isUnique": true
         },
         "items_tvmaze_id_unique": {
           "name": "items_tvmaze_id_unique",
-          "columns": [
-            "tvmaze_id"
-          ],
+          "columns": ["tvmaze_id"],
           "isUnique": true
         },
         "items_imdb_id_unique": {
           "name": "items_imdb_id_unique",
-          "columns": [
-            "imdb_id"
-          ],
+          "columns": ["imdb_id"],
           "isUnique": true
         },
         "items_tvdb_id_unique": {
           "name": "items_tvdb_id_unique",
-          "columns": [
-            "tvdb_id"
-          ],
+          "columns": ["tvdb_id"],
           "isUnique": true
         },
         "items_media_type_idx": {
           "name": "items_media_type_idx",
-          "columns": [
-            "media_type"
-          ],
+          "columns": ["media_type"],
           "isUnique": false
         }
       },
@@ -484,10 +464,7 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {
         "ratings_target_type_target_id_pk": {
-          "columns": [
-            "target_type",
-            "target_id"
-          ],
+          "columns": ["target_type", "target_id"],
           "name": "ratings_target_type_target_id_pk"
         }
       },
@@ -549,9 +526,7 @@
       "indexes": {
         "refresh_log_item_idx": {
           "name": "refresh_log_item_idx",
-          "columns": [
-            "item_id"
-          ],
+          "columns": ["item_id"],
           "isUnique": false
         }
       },
@@ -560,12 +535,8 @@
           "name": "refresh_log_item_id_items_id_fk",
           "tableFrom": "refresh_log",
           "tableTo": "items",
-          "columnsFrom": [
-            "item_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["item_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -630,10 +601,7 @@
       "indexes": {
         "seasons_item_number_uq": {
           "name": "seasons_item_number_uq",
-          "columns": [
-            "item_id",
-            "number"
-          ],
+          "columns": ["item_id", "number"],
           "isUnique": true
         }
       },
@@ -642,12 +610,8 @@
           "name": "seasons_item_id_items_id_fk",
           "tableFrom": "seasons",
           "tableTo": "items",
-          "columnsFrom": [
-            "item_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["item_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -742,12 +706,8 @@
           "name": "tracking_item_id_items_id_fk",
           "tableFrom": "tracking",
           "tableTo": "items",
-          "columnsFrom": [
-            "item_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["item_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -807,24 +767,17 @@
       "indexes": {
         "watches_episode_idx": {
           "name": "watches_episode_idx",
-          "columns": [
-            "episode_id"
-          ],
+          "columns": ["episode_id"],
           "isUnique": false
         },
         "watches_item_idx": {
           "name": "watches_item_idx",
-          "columns": [
-            "item_id"
-          ],
+          "columns": ["item_id"],
           "isUnique": false
         },
         "watches_dedupe_uq": {
           "name": "watches_dedupe_uq",
-          "columns": [
-            "episode_id",
-            "watched_at"
-          ],
+          "columns": ["episode_id", "watched_at"],
           "isUnique": true
         }
       },
@@ -833,12 +786,8 @@
           "name": "watches_episode_id_episodes_id_fk",
           "tableFrom": "watches",
           "tableTo": "episodes",
-          "columnsFrom": [
-            "episode_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["episode_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -846,12 +795,8 @@
           "name": "watches_item_id_items_id_fk",
           "tableFrom": "watches",
           "tableTo": "items",
-          "columnsFrom": [
-            "item_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["item_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
