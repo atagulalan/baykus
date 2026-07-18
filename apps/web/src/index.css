@@ -20,6 +20,7 @@
  * MainShell is intentionally full-bleed. Content that needs breathing room
  * opts in at the component that owns the pixels; lists can keep their own
  * tighter row padding without inheriting a second outer inset.
+ * E157: content-inset = 12px / 24px at sm+; list-inset = 8px / 16px at sm+.
  */
 .content-inset {
   padding-inline: 0.75rem;
@@ -27,6 +28,17 @@
 
 @media (min-width: 40rem) {
   .content-inset {
+    padding-inline: 1.5rem;
+  }
+}
+
+/* Full-bleed list rows (EpisodeRow, season headers, timeline labels). */
+.list-inset {
+  padding-inline: 0.5rem;
+}
+
+@media (min-width: 40rem) {
+  .list-inset {
     padding-inline: 1rem;
   }
 }
@@ -149,6 +161,18 @@ body::after {
 /* The final EpisodeRow in any list owns the wrapper's visual edge. */
 .episode-row:not(:has(~ .episode-row)) > .episode-row-shell {
   border-bottom-width: 0;
+}
+
+/* The final collapsed SeasonSection owns the season list's visual edge. */
+.season-section:not(:has(~ .season-section)):has(.season-episodes[data-expanded='false'])
+  .season-section-divider {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .season-section-progress-fill {
+    transition: none;
+  }
 }
 
 /* E137: quick-mark row flying from "Sıradaki bölümler" up into the history
@@ -287,16 +311,19 @@ body::after {
   }
 }
 
-.season-episodes {
+.season-episodes,
+.section-collapse {
   display: grid;
   grid-template-rows: 0fr;
   transition: grid-template-rows 200ms ease-out;
   overflow: hidden;
 }
-.season-episodes[data-expanded='true'] {
+.season-episodes[data-expanded='true'],
+.section-collapse[data-expanded='true'] {
   grid-template-rows: 1fr;
 }
-.season-episodes > div {
+.season-episodes > div,
+.section-collapse > div {
   min-width: 0;
   min-height: 0;
 }

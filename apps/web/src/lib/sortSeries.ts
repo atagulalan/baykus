@@ -1,5 +1,5 @@
 import type { SeriesSummary } from "../api/types.ts";
-import type { LibrarySort } from "../components/FilterPanel.tsx";
+import type { LibrarySort } from "./librarySort.ts";
 
 /** Client-side sort for watch section rows (E141). `added` uses id desc as a proxy
  * — SeriesSummary does not carry `addedAt`. */

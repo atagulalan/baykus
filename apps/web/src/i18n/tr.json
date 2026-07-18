@@ -118,6 +118,14 @@
     "unwatchSeasonTitle": "Emin misiniz?",
     "unwatchSeasonWarning": "Bu işlem seçili sezondaki tüm izleme geçmişinizi silecektir. Devam etmek istiyor musunuz?",
     "unwatchSeasonConfirm": "Evet, sil",
+    "releaseStatus": {
+      "returning": "Hâlâ Devam Ediyor",
+      "ended": "Bitti",
+      "canceled": "İptal Edildi",
+      "in_production": "Yapım Aşamasında",
+      "planned": "Planlandı",
+      "pilot": "Pilot"
+    },
     "details": {
       "trigger": "Detayları görüntüle",
       "title": "Detaylar",
@@ -126,7 +134,12 @@
       "production": "Yapım",
       "ratings": "Puanlar",
       "providers": "İzleme Platformları",
-      "yourRating": "Senin Puanın"
+      "yourRating": "Senin Puanın",
+      "library": "Kütüphane",
+      "added": "Eklendi",
+      "refreshed": "Son Yenileme",
+      "neverRefreshed": "Hiç yenilenmedi",
+      "stale": "Bayat"
     },
     "cast": {
       "title": "Oyuncular"
@@ -458,11 +471,13 @@
       "today": "Bugün",
       "tomorrow": "Yarın",
       "thisWeek": "Bu hafta",
+      "laterThisWeek": "Bu haftanın kalanı",
       "later": "Daha sonra"
     },
     "overflow": "+{{count}}",
     "prevMonth": "Önceki ay",
     "nextMonth": "Sonraki ay",
+    "nothingFurther": "Devamı yok",
     "empty": {
       "today": "Bugün yayın yok",
       "suggestUnwatched": "İzlenmeyi bekleyen bölümlerin var",
@@ -476,6 +491,7 @@
   "watch": {
     "title": "İzleme",
     "history": "İzleme geçmişi",
+    "showHistory": "Geçmişi göster",
     "next": "Sıradaki bölümler",
     "notWatchedRecently": "Bir süredir izlenmedi",
     "addSection": "Kategori ekle",
@@ -483,7 +499,7 @@
     "removeSection": "Kategoriyi kaldır",
     "removeSectionTitle": "Kategoriyi kaldır",
     "removeSectionConfirm": "“{{category}}” kategorisini kaldırmak istediğine emin misin?",
-    "removeSectionHint": "İstersen aşağıdan “Kategori ekle” ile tekrar ekleyebilirsin.",
+    "removeSectionHint": "İstersen “Kategorileri yönet”ten tekrar ekleyebilirsin.",
     "removeSectionDontShow": "Bir daha gösterme",
     "removeSectionCancel": "Vazgeç",
     "removeSectionConfirmBtn": "Eminim",
@@ -496,7 +512,13 @@
       "next": "Sırada bölüm yok",
       "notWatchedRecently": "Bu kategoride dizi yok",
       "section": "Bu kategoride gösterilecek dizi yok"
-    }
+    },
+    "manageSections": "Kategorileri yönet",
+    "manageSectionsTitle": "Kategorileri yönet",
+    "manageSectionsAddHeading": "Kategori ekle",
+    "moveSectionUp": "Yukarı taşı",
+    "moveSectionDown": "Aşağı taşı",
+    "reorderSection": "{{category}} — sıralamak için sürükle"
   },
   "auth": {
     "handle": "Kullanıcı adı",

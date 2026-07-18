@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useNavigate, useSearch } from "@tanstack/react-router";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ApiError, addSeries, searchSeries } from "../api/client.ts";
 import type { ManualList, SearchResult } from "../api/types.ts";
@@ -28,8 +29,20 @@ export function useSeriesSearch() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const toast = useToast();
+  const navigate = useNavigate();
+  const { q: query = "" } = useSearch({ from: "/search" });
 
-  const [query, setQuery] = useState("");
+  const setQuery = useCallback(
+    (value: string) => {
+      void navigate({
+        to: "/search",
+        search: { q: value.trim().length > 0 ? value : undefined },
+        replace: true,
+      });
+    },
+    [navigate],
+  );
+
   const [pending, setPending] = useState<SearchResult | null>(null);
   const [manualList, setManualList] = useState<ManualList | null>(null);
 

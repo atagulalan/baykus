@@ -17,72 +17,55 @@ describe("timelineBucketForDate", () => {
   // Friday 2026-07-17 — ISO week Mon 13 → Sun 19
   const friday = "2026-07-17";
 
-  it("pins yesterday / today / tomorrow", () => {
+  it("pins today and folds everything before into earlier", () => {
     expect(timelineBucketForDate("2026-07-17", friday)).toBe("today");
-    expect(timelineBucketForDate("2026-07-16", friday)).toBe("yesterday");
-    expect(timelineBucketForDate("2026-07-18", friday)).toBe("tomorrow");
+    expect(timelineBucketForDate("2026-07-16", friday)).toBe("earlier");
+    expect(timelineBucketForDate("2026-07-13", friday)).toBe("earlier");
+    expect(timelineBucketForDate("2026-07-06", friday)).toBe("earlier");
   });
 
-  it("puts other same-week days in thisWeek", () => {
-    expect(timelineBucketForDate("2026-07-13", friday)).toBe("thisWeek"); // Mon
-    expect(timelineBucketForDate("2026-07-14", friday)).toBe("thisWeek"); // Tue
-    expect(timelineBucketForDate("2026-07-19", friday)).toBe("thisWeek"); // Sun
+  it("puts same-week days after today in laterThisWeek", () => {
+    expect(timelineBucketForDate("2026-07-18", friday)).toBe("laterThisWeek");
+    expect(timelineBucketForDate("2026-07-19", friday)).toBe("laterThisWeek");
   });
 
-  it("puts the previous ISO week in lastWeek (except yesterday)", () => {
-    expect(timelineBucketForDate("2026-07-06", friday)).toBe("lastWeek"); // Mon
-    expect(timelineBucketForDate("2026-07-12", friday)).toBe("lastWeek"); // Sun
-  });
-
-  it("classifies further past / future", () => {
-    expect(timelineBucketForDate("2026-06-30", friday)).toBe("earlier");
+  it("puts future weeks in later", () => {
     expect(timelineBucketForDate("2026-07-20", friday)).toBe("later");
-  });
-
-  it("on Monday, yesterday wins over lastWeek", () => {
-    const monday = "2026-07-13";
-    expect(timelineBucketForDate("2026-07-12", monday)).toBe("yesterday");
-    expect(timelineBucketForDate("2026-07-06", monday)).toBe("lastWeek");
   });
 });
 
 describe("groupIntoTimelineSections", () => {
-  it("coalesces consecutive same-bucket days and may repeat thisWeek", () => {
+  it("coalesces consecutive same-bucket days around today", () => {
     const friday = "2026-07-17";
     const days = [
-      { date: "2026-07-06" }, // lastWeek
-      { date: "2026-07-07" }, // lastWeek
-      { date: "2026-07-13" }, // thisWeek (Mon)
-      { date: "2026-07-14" }, // thisWeek (Tue)
-      { date: "2026-07-16" }, // yesterday
-      { date: "2026-07-17" }, // today
-      { date: "2026-07-18" }, // tomorrow
-      { date: "2026-07-19" }, // thisWeek (Sun)
-      { date: "2026-07-20" }, // later
+      { date: "2026-07-06" },
+      { date: "2026-07-07" },
+      { date: "2026-07-13" },
+      { date: "2026-07-14" },
+      { date: "2026-07-16" },
+      { date: "2026-07-17" },
+      { date: "2026-07-18" },
+      { date: "2026-07-19" },
+      { date: "2026-07-20" },
     ];
 
     const sections = groupIntoTimelineSections(days, friday);
     expect(sections.map((s) => s.bucket)).toEqual([
-      "lastWeek",
-      "thisWeek",
-      "yesterday",
+      "earlier",
       "today",
-      "tomorrow",
-      "thisWeek",
+      "laterThisWeek",
       "later",
     ]);
-    expect(sections[0]?.days).toHaveLength(2);
-    expect(sections[1]?.days.map((d) => d.date)).toEqual(["2026-07-13", "2026-07-14"]);
-    expect(sections[5]?.days.map((d) => d.date)).toEqual(["2026-07-19"]);
+    expect(sections[0]?.days).toHaveLength(5);
+    expect(sections[2]?.days.map((d) => d.date)).toEqual(["2026-07-18", "2026-07-19"]);
   });
 });
 
 describe("bucketNeedsDaySubheaders", () => {
   it("only multi-day relative buckets need subheaders", () => {
     expect(bucketNeedsDaySubheaders("today")).toBe(false);
-    expect(bucketNeedsDaySubheaders("yesterday")).toBe(false);
-    expect(bucketNeedsDaySubheaders("tomorrow")).toBe(false);
-    expect(bucketNeedsDaySubheaders("thisWeek")).toBe(true);
     expect(bucketNeedsDaySubheaders("earlier")).toBe(true);
+    expect(bucketNeedsDaySubheaders("laterThisWeek")).toBe(true);
+    expect(bucketNeedsDaySubheaders("later")).toBe(true);
   });
 });

@@ -1,14 +1,7 @@
 import { getAbsoluteWeek } from "./date.ts";
 
 /** Relative timeline sections (E145). Order follows chronological coalescing. */
-export type TimelineBucketId =
-  | "earlier"
-  | "lastWeek"
-  | "yesterday"
-  | "today"
-  | "tomorrow"
-  | "thisWeek"
-  | "later";
+export type TimelineBucketId = "earlier" | "today" | "laterThisWeek" | "later";
 
 /** Shift a plain YYYY-MM-DD calendar date by `days` (UTC date arithmetic). */
 export function addDaysIso(dateStr: string, days: number): string {
@@ -18,22 +11,16 @@ export function addDaysIso(dateStr: string, days: number): string {
 }
 
 /**
- * Assign a relative bucket. Specific days (yesterday/today/tomorrow) win over
- * week buckets; remaining same-ISO-week days → thisWeek; previous ISO week →
- * lastWeek; everything else → earlier / later.
+ * Assign a relative bucket. Everything before today → earlier; today → today;
+ * same ISO week after today → laterThisWeek; else → later.
  */
 export function timelineBucketForDate(date: string, today: string): TimelineBucketId {
-  const yesterday = addDaysIso(today, -1);
-  const tomorrow = addDaysIso(today, 1);
   if (date === today) return "today";
-  if (date === tomorrow) return "tomorrow";
-  if (date === yesterday) return "yesterday";
+  if (date < today) return "earlier";
 
   const todayWeek = getAbsoluteWeek(today);
   const dateWeek = getAbsoluteWeek(date);
-  if (dateWeek === todayWeek) return "thisWeek";
-  if (dateWeek === todayWeek - 1) return "lastWeek";
-  if (date < today) return "earlier";
+  if (dateWeek === todayWeek) return "laterThisWeek";
   return "later";
 }
 
@@ -42,11 +29,7 @@ export interface TimelineSection<T extends { date: string }> {
   days: T[];
 }
 
-/**
- * Group chronologically ordered days into consecutive same-bucket sections.
- * "Bu hafta" may appear twice (earlier this week + later this week) so scroll
- * order stays chronological.
- */
+/** Group chronologically ordered days into consecutive same-bucket sections. */
 export function groupIntoTimelineSections<T extends { date: string }>(
   days: T[],
   today: string,
@@ -66,7 +49,5 @@ export function groupIntoTimelineSections<T extends { date: string }>(
 
 /** Single-day buckets don't need a weekday subheader under the section title. */
 export function bucketNeedsDaySubheaders(bucket: TimelineBucketId): boolean {
-  return (
-    bucket === "earlier" || bucket === "lastWeek" || bucket === "thisWeek" || bucket === "later"
-  );
+  return bucket === "earlier" || bucket === "laterThisWeek" || bucket === "later";
 }

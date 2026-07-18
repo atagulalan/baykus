@@ -7,24 +7,24 @@ import {
   useParams,
 } from "@tanstack/react-router";
 import { getAuthSession } from "./api/client.ts";
-import { Layout } from "./components/Layout.tsx";
-import { ProfileGuard } from "./components/ProfileGuard.tsx";
+import { Layout } from "./components/layout/Layout/Layout.tsx";
+import { ProfileGuard } from "./components/layout/ProfileGuard/ProfileGuard.tsx";
 import { selfHandleParam } from "./lib/profilePath.ts";
-import { AllSeriesPage } from "./pages/AllSeriesPage.tsx";
-import { CalendarPage } from "./pages/CalendarPage.tsx";
-import { ClaimPage } from "./pages/ClaimPage.tsx";
-import { FavoritesPage } from "./pages/FavoritesPage.tsx";
-import { ImportPage } from "./pages/ImportPage.tsx";
-import { LibraryPage } from "./pages/LibraryPage.tsx";
-import { LoginPage } from "./pages/LoginPage.tsx";
-import { ProfilePage } from "./pages/ProfilePage.tsx";
-import { SearchPage } from "./pages/SearchPage.tsx";
-import { SeriesDetailPage } from "./pages/SeriesDetailPage.tsx";
-import { SeriesPreviewPage } from "./pages/SeriesPreviewPage.tsx";
-import { SettingsPage } from "./pages/SettingsPage.tsx";
-import { StatsPage } from "./pages/StatsPage.tsx";
-import { WatchHistoryPage } from "./pages/WatchHistoryPage.tsx";
-import { WatchPage } from "./pages/WatchPage.tsx";
+import { AllSeriesPage } from "./pages/profile/AllSeriesPage.tsx";
+import { CalendarPage } from "./pages/calendar/CalendarPage.tsx";
+import { ClaimPage } from "./pages/auth/ClaimPage.tsx";
+import { FavoritesPage } from "./pages/profile/FavoritesPage.tsx";
+import { ImportPage } from "./pages/import/ImportPage.tsx";
+import { LibraryPage } from "./pages/library/LibraryPage.tsx";
+import { LoginPage } from "./pages/auth/LoginPage.tsx";
+import { ProfilePage } from "./pages/profile/ProfilePage.tsx";
+import { SearchPage } from "./pages/search/SearchPage.tsx";
+import { SeriesDetailPage } from "./pages/series/SeriesDetailPage.tsx";
+import { SeriesPreviewPage } from "./pages/series/SeriesPreviewPage.tsx";
+import { SettingsPage } from "./pages/settings/SettingsPage.tsx";
+import { StatsPage } from "./pages/profile/stats/StatsPage.tsx";
+import { WatchHistoryPage } from "./pages/watch/WatchHistoryPage.tsx";
+import { WatchPage } from "./pages/watch/WatchPage.tsx";
 
 // Layout renders the nav chrome + auth guard for every route except
 // /login and /claim, which it detects by pathname and renders bare
@@ -77,6 +77,11 @@ const watchHistoryRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/watch/history",
   component: WatchHistoryPage,
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { order?: "newest" | "oldest" | undefined } => {
+    return search.order === "oldest" ? { order: "oldest" } : {};
+  },
 });
 
 /** E136: each calendar mode is its own URL (timeline default; month + schedule nested). */
@@ -170,6 +175,12 @@ const searchRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/search",
   component: SearchPage,
+  validateSearch: (search: Record<string, unknown>): { q?: string | undefined } => {
+    const raw = search.q;
+    if (typeof raw !== "string") return {};
+    const q = raw.trim();
+    return q.length > 0 ? { q } : {};
+  },
 });
 
 const loginRoute = createRoute({
@@ -214,7 +225,21 @@ const routeTree = rootRoute.addChildren([
 // E51: subtle root cross-fade on every route change (CSS tunes duration in
 // index.css); reduced-motion and unsupporting browsers (Firefox <139) both
 // degrade to an instant navigation with no JS feature-detect needed.
-export const router = createRouter({ routeTree, defaultViewTransition: true });
+/** Browse grid/list are one surface — share scroll + accordion state via BrowseOrOutlet. */
+function getScrollRestorationKey(location: { pathname: string; state: unknown }): string {
+  if (location.pathname === "/" || location.pathname === "/watch") {
+    return "browse";
+  }
+  const state = location.state as { __TSR_key?: string } | null;
+  return state?.__TSR_key ?? location.pathname;
+}
+
+export const router = createRouter({
+  routeTree,
+  defaultViewTransition: true,
+  scrollRestoration: true,
+  getScrollRestorationKey,
+});
 
 declare module "@tanstack/react-router" {
   interface Register {

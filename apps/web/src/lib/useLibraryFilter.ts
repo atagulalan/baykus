@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { listSeries } from "../api/client.ts";
 import { HOME_CATEGORY_ORDER, type WatchCategory } from "../api/types.ts";
-import type { LibrarySort } from "../components/FilterPanel.tsx";
+import type { LibrarySort } from "./librarySort.ts";
 import { groupByCategory } from "./groupByCategory.ts";
 import { readUiPrefs, sectionSort, updateUiPrefs } from "./uiPrefs.ts";
 

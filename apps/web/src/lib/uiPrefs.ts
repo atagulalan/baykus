@@ -10,7 +10,7 @@ import {
   DEFAULT_LIBRARY_SORT,
   type LibraryCategoryFilter,
   type LibrarySort,
-} from "../components/FilterPanel.tsx";
+} from "./librarySort.ts";
 
 /** E143: durable UI prefs — localStorage cache + server settings (zip via settings.json).
  * Falls back to an in-memory map when `localStorage` is unavailable (Node tests, private mode). */

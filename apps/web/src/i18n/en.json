@@ -118,6 +118,14 @@
     "unwatchSeasonTitle": "Are you sure?",
     "unwatchSeasonWarning": "This will delete all your watch history for this season. Do you want to continue?",
     "unwatchSeasonConfirm": "Yes, delete",
+    "releaseStatus": {
+      "returning": "Still Ongoing",
+      "ended": "Ended",
+      "canceled": "Canceled",
+      "in_production": "In Production",
+      "planned": "Planned",
+      "pilot": "Pilot"
+    },
     "details": {
       "trigger": "View details",
       "title": "Details",
@@ -126,7 +134,12 @@
       "production": "Production",
       "ratings": "Ratings",
       "providers": "Watch providers",
-      "yourRating": "Your rating"
+      "yourRating": "Your rating",
+      "library": "Library",
+      "added": "Added",
+      "refreshed": "Last refreshed",
+      "neverRefreshed": "Never refreshed",
+      "stale": "Stale"
     },
     "cast": {
       "title": "Cast"
@@ -458,11 +471,13 @@
       "today": "Today",
       "tomorrow": "Tomorrow",
       "thisWeek": "This week",
+      "laterThisWeek": "Later this week",
       "later": "Later"
     },
     "overflow": "+{{count}}",
     "prevMonth": "Previous month",
     "nextMonth": "Next month",
+    "nothingFurther": "Nothing further",
     "empty": {
       "today": "Nothing airing today",
       "suggestUnwatched": "You have unwatched episodes waiting",
@@ -476,6 +491,7 @@
   "watch": {
     "title": "Watch",
     "history": "Watch history",
+    "showHistory": "Show history",
     "next": "Up next",
     "notWatchedRecently": "Haven't watched for a while",
     "addSection": "Add category",
@@ -483,7 +499,7 @@
     "removeSection": "Remove category",
     "removeSectionTitle": "Remove category",
     "removeSectionConfirm": "Remove the “{{category}}” category?",
-    "removeSectionHint": "You can add it again anytime with “Add category” below.",
+    "removeSectionHint": "You can add it again anytime from “Manage categories”.",
     "removeSectionDontShow": "Don’t show again",
     "removeSectionCancel": "Cancel",
     "removeSectionConfirmBtn": "I’m sure",
@@ -496,7 +512,13 @@
       "next": "Nothing queued up",
       "notWatchedRecently": "No series in this category",
       "section": "Nothing to show in this category"
-    }
+    },
+    "manageSections": "Manage categories",
+    "manageSectionsTitle": "Manage categories",
+    "manageSectionsAddHeading": "Add category",
+    "moveSectionUp": "Move up",
+    "moveSectionDown": "Move down",
+    "reorderSection": "Drag {{category}} to reorder"
   },
   "auth": {
     "handle": "Handle",
