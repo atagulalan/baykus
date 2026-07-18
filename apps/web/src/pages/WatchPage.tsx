@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
-import { History } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { LayoutGrid } from "lucide-react";
+import { useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { addEpisodeWatch, listSeries } from "../api/client.ts";
@@ -9,16 +9,22 @@ import type { WatchCategory } from "../api/types.ts";
 import { AddSectionBar } from "../components/AddSectionBar.tsx";
 import { CategoryListSection } from "../components/CategoryListSection.tsx";
 import type { LibrarySort } from "../components/FilterPanel.tsx";
-import { PullToRefresh, useLibrarySweepRefresh } from "../components/PullToRefresh.tsx";
+import { PageTitle } from "../components/PageTitle.tsx";
+import { PullToRefresh } from "../components/PullToRefresh.tsx";
 import { RemoveSectionDialog } from "../components/RemoveSectionDialog.tsx";
 import { groupByCategory } from "../lib/groupByCategory.ts";
 import { useToast } from "../lib/toast.tsx";
-import { readUiPrefs, sectionSort, updateUiPrefs } from "../lib/uiPrefs.ts";
+import {
+  ensurePinnedWatchSections,
+  readUiPrefs,
+  sectionSort,
+  updateUiPrefs,
+} from "../lib/uiPrefs.ts";
 
 function ErrorState({ onRetry }: { onRetry: () => void }) {
   const { t } = useTranslation();
   return (
-    <div className="flex flex-col items-center gap-2 py-12 text-center">
+    <div className="content-inset flex flex-col items-center gap-2 py-12 text-center">
       <p className="text-muted">{t("errors.generic")}</p>
       <button
         type="button"
@@ -34,13 +40,15 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
 const LIBRARY_QUERY_KEY = ["library", "browse"] as const;
 
 /** Spec 010 WP2: Watch History lives at its own route (`/watch/history`) — this page only
- * renders the category sections, with a history icon entry point up top. */
+ * renders the category sections. History opens via pull-to-history (E160). Opens at the
+ * top (no scroll-past-history anchor — history left the page). */
 export function WatchPage() {
   const { t } = useTranslation();
   const toast = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  /** Quick-mark scroll compensation only — not used for initial page positioning. */
   const nextHeadingRef = useRef<HTMLHeadingElement>(null);
-  const hasScrolledRef = useRef(false);
 
   const initial = readUiPrefs();
   const [sections, setSections] = useState<WatchCategory[]>(() => initial.watchSections);
@@ -51,7 +59,6 @@ export function WatchPage() {
     queryKey: LIBRARY_QUERY_KEY,
     queryFn: () => listSeries(),
   });
-  const pullRefresh = useLibrarySweepRefresh(["watch-history"]);
 
   // E137: marking is in-flight state for the row's own checkbox transition — no longer
   // coordinated with a history landing spot since history moved off this page (WP2).
@@ -95,20 +102,9 @@ export function WatchPage() {
     },
   });
 
-  useEffect(() => {
-    if (!libraryQuery.isLoading && !hasScrolledRef.current) {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          nextHeadingRef.current?.scrollIntoView({ block: "start" });
-        });
-      });
-      hasScrolledRef.current = true;
-    }
-  }, [libraryQuery.isLoading]);
-
   function updateSections(next: WatchCategory[]) {
-    // E141: `watching` is always present — pin it at the front if missing.
-    const pinned = next.includes("watching") ? next : (["watching", ...next] as WatchCategory[]);
+    // E141: `watching` is always present; `needs_review` is auto-shown when non-empty (E156).
+    const pinned = ensurePinnedWatchSections(next);
     setSections(pinned);
     updateUiPrefs({ watchSections: pinned });
   }
@@ -120,7 +116,7 @@ export function WatchPage() {
   }
 
   function requestRemove(category: WatchCategory) {
-    if (category === "watching") return;
+    if (category === "watching" || category === "needs_review") return;
     if (readUiPrefs().skipSectionRemoveConfirm) {
       updateSections(sections.filter((x) => x !== category));
       return;
@@ -129,7 +125,13 @@ export function WatchPage() {
   }
 
   function confirmRemove(dontShowAgain: boolean) {
-    if (pendingRemove === null || pendingRemove === "watching") return;
+    if (
+      pendingRemove === null ||
+      pendingRemove === "watching" ||
+      pendingRemove === "needs_review"
+    ) {
+      return;
+    }
     if (dontShowAgain) updateUiPrefs({ skipSectionRemoveConfirm: true });
     updateSections(sections.filter((x) => x !== pendingRemove));
     setPendingRemove(null);
@@ -137,46 +139,65 @@ export function WatchPage() {
 
   const byCategory = groupByCategory(libraryQuery.data?.items ?? []);
   const isMarking = (itemId: number) => flyItemId === itemId;
-  const anchorCategory = sections.find((c) => c === "watching") ?? sections[0] ?? null;
+  // E156: prepend needs_review only when it has next-up rows; never store it in section prefs.
+  const needsReviewItems = byCategory.get("needs_review") ?? [];
+  const showNeedsReview = needsReviewItems.some((s) => s.nextUnwatched != null);
+  const sectionsToRender: WatchCategory[] = showNeedsReview
+    ? ["needs_review", ...sections]
+    : sections;
+  const anchorCategory =
+    sectionsToRender.find((c) => c === "watching") ?? sectionsToRender[0] ?? null;
 
   return (
-    <PullToRefresh onRefresh={pullRefresh}>
+    <PullToRefresh
+      variant="history"
+      onOpen={() => {
+        void navigate({ to: "/watch/history" });
+      }}
+    >
       <div className="flex flex-col gap-6">
-        <div className="flex items-center justify-between">
-          <h1 className="font-display text-2xl italic tracking-tight text-snow">
-            {t("watch.title")}
-          </h1>
-          <Link
-            to="/watch/history"
-            aria-label={t("watch.history")}
-            title={t("watch.history")}
-            className="flex h-9 w-9 items-center justify-center text-muted transition-colors hover:text-snow"
+        <div className="content-inset flex items-center">
+          <PageTitle>{t("watch.title")}</PageTitle>
+          <button
+            type="button"
+            onClick={() => {
+              updateUiPrefs({ browseView: "grid" });
+              void navigate({ to: "/" });
+            }}
+            aria-label={t("library.view.grid")}
+            title={t("library.view.grid")}
+            className="ml-auto hidden h-9 w-9 items-center justify-center text-muted transition-colors hover:text-snow sm:flex"
           >
-            <History size={20} strokeWidth={1.75} />
-          </Link>
+            <LayoutGrid size={20} strokeWidth={1.5} />
+          </button>
         </div>
 
         {libraryQuery.isLoading ? (
-          <div className="h-32 animate-pulse bg-white/5" />
+          <div className="content-inset">
+            <div className="h-32 animate-pulse bg-white/5" />
+          </div>
         ) : libraryQuery.isError ? (
           <ErrorState onRetry={() => libraryQuery.refetch()} />
         ) : (
           <>
-            {sections.map((c) => (
+            {sectionsToRender.map((c) => (
               <CategoryListSection
                 key={c}
                 category={c}
                 items={byCategory.get(c) ?? []}
                 sort={sectionSort(sectionSorts, c)}
                 onSortChange={(sort) => setSortFor(c, sort)}
-                removable={c !== "watching"}
+                removable={c !== "watching" && c !== "needs_review"}
                 onRemove={() => requestRemove(c)}
                 {...(c === anchorCategory ? { headingRef: nextHeadingRef } : {})}
                 isMarking={isMarking}
                 onQuickMark={(episodeId, itemId) => quickMark.mutate({ episodeId, itemId })}
               />
             ))}
-            <AddSectionBar present={sections} onAdd={(c) => updateSections([...sections, c])} />
+            <AddSectionBar
+              present={sectionsToRender}
+              onAdd={(c) => updateSections([...sections, c])}
+            />
           </>
         )}
       </div>

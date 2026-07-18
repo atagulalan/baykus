@@ -1,5 +1,5 @@
 import { type QueryKey, useQueryClient } from "@tanstack/react-query";
-import { RefreshCw } from "lucide-react";
+import { History, RefreshCw } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -19,8 +19,8 @@ const REFRESHING_HOLD_PX = 48;
 const LOCK_SLOP_PX = 10;
 
 /**
- * E132: the pull gesture triggers the same action as the profile's "Tümünü
- * yenile" button, then refetches the calling page — `["library"]` plus the
+ * E132: the pull gesture triggers the same action as Settings → Data
+ * "Refresh all", then refetches the calling page — `["library"]` plus the
  * extra keys the page's non-library queries live under. The invalidation is
  * unconditional because the sweep may have been guard-skipped (quiet sweep or
  * manual refresh already in flight) and a pull must always refetch the page.
@@ -42,41 +42,57 @@ export function useLibrarySweepRefresh(...extraKeys: QueryKey[]): () => Promise<
   };
 }
 
-interface PullToRefreshProps {
-  onRefresh: () => Promise<void>;
-  children: ReactNode;
-}
+type PullToRefreshProps =
+  | {
+      /** Default: library sweep + page invalidate (E132). */
+      variant?: "refresh";
+      onRefresh: () => Promise<void>;
+      children: ReactNode;
+    }
+  | {
+      /** E160: `/` and `/watch` open watch history instead of refreshing. */
+      variant: "history";
+      onOpen: () => void;
+      children: ReactNode;
+    };
 
 /**
- * E132: touch-only pull-to-refresh. Arms only when the touch starts at
- * document top, directional-locks so horizontal pans (rails, ScheduleGrid)
- * stay untouched, and preventDefaults the pull so the browser's native
- * pull-to-reload never races it (overscroll-behavior is contained while
- * mounted for the same reason). No mouse variant — the profile button
- * remains the pointer path.
+ * Touch-only overscroll pull. `variant="refresh"` (default) is E132
+ * pull-to-refresh on calendar / all-series / favorites / watch-history.
+ * `variant="history"` is E160 pull-to-view-history on library + watch —
+ * same gesture mechanics, History icon, navigates on release past threshold.
  *
- * In-flight state is the module-scoped manual sweep (`useManualRefreshRunning`),
- * not local React state alone: navigating between PTR surfaces (or starting
- * from the profile button) keeps the hold indicator + progress, and the
- * gesture stays disarmed until that sweep settles.
+ * Arms only when the touch starts at document top, directional-locks so
+ * horizontal pans stay untouched, and preventDefaults the pull so the
+ * browser's native pull-to-reload never races it. No mouse variant —
+ * Refresh all (Settings → Data) remains the pointer refresh path; history
+ * stays reachable at `/watch/history` (and via this gesture on touch).
  */
-export function PullToRefresh({ onRefresh, children }: PullToRefreshProps) {
+export function PullToRefresh(props: PullToRefreshProps) {
+  const isHistory = props.variant === "history";
+  const onRefresh = !isHistory ? props.onRefresh : undefined;
+  const onOpen = isHistory ? props.onOpen : undefined;
+  const children = props.children;
+
   const rootRef = useRef<HTMLDivElement | null>(null);
   /** Local hold covering post-sweep page invalidation after *this* pull. */
   const [localRefreshing, setLocalRefreshing] = useState(false);
   const manualRunning = useManualRefreshRunning();
   const sweepProgress = useManualRefreshProgress();
-  const busy = localRefreshing || manualRunning;
+  // History variant never holds for a sweep — release navigates immediately.
+  const busy = isHistory ? false : localRefreshing || manualRunning;
 
   const onRefreshRef = useRef(onRefresh);
   onRefreshRef.current = onRefresh;
+  const onOpenRef = useRef(onOpen);
+  onOpenRef.current = onOpen;
   const [pullPx, setPullPx] = useState(busy ? REFRESHING_HOLD_PX : 0);
   const [tracking, setTracking] = useState(false);
   const pullPxRef = useRef(busy ? REFRESHING_HOLD_PX : 0);
   const busyRef = useRef(busy);
   busyRef.current = busy;
 
-  // Mirror a sweep that started elsewhere (profile button / other PTR page)
+  // Mirror a sweep that started elsewhere (Settings / other PTR page)
   // into the hold offset; collapse only when both local and global are idle.
   useEffect(() => {
     if (busy) {
@@ -183,17 +199,27 @@ export function PullToRefresh({ onRefresh, children }: PullToRefreshProps) {
       unlockBodyScroll();
       if (!armed) return;
       armed = false;
-      const shouldRefresh = locked === true && pullPxRef.current >= PULL_THRESHOLD_PX;
+      const shouldTrigger = locked === true && pullPxRef.current >= PULL_THRESHOLD_PX;
       locked = null;
       setTracking(false);
-      if (!shouldRefresh || busyRef.current) {
+      if (!shouldTrigger || busyRef.current) {
         // Busy: keep the hold offset from the busy-sync effect; otherwise collapse.
         if (!busyRef.current) setPull(0);
         return;
       }
+      if (onOpenRef.current) {
+        setPull(0);
+        onOpenRef.current();
+        return;
+      }
       setLocalRefreshing(true);
       setPull(REFRESHING_HOLD_PX);
-      onRefreshRef.current().finally(() => {
+      const refresh = onRefreshRef.current;
+      if (!refresh) {
+        setLocalRefreshing(false);
+        return;
+      }
+      refresh().finally(() => {
         setLocalRefreshing(false);
       });
     }
@@ -227,6 +253,7 @@ export function PullToRefresh({ onRefresh, children }: PullToRefreshProps) {
   const settleClass = tracking ? "" : "transition-[padding] duration-200";
   const indicatorSettleClass = tracking ? "" : "transition-[height] duration-200";
   const past = pullPx >= PULL_THRESHOLD_PX;
+  const iconClass = busy ? "animate-spin text-yellow" : past ? "text-yellow" : "text-muted";
 
   return (
     <div ref={rootRef} className="relative">
@@ -239,13 +266,17 @@ export function PullToRefresh({ onRefresh, children }: PullToRefreshProps) {
         }}
       >
         <div className="flex items-center justify-center gap-2">
-          <RefreshCw
-            size={18}
-            strokeWidth={1.5}
-            className={busy ? "animate-spin text-yellow" : past ? "text-yellow" : "text-muted"}
-            style={busy ? undefined : { transform: `rotate(${pullPx * 3}deg)` }}
-          />
-          {busy && sweepProgress && (
+          {isHistory ? (
+            <History size={18} strokeWidth={1.75} className={past ? "text-yellow" : "text-muted"} />
+          ) : (
+            <RefreshCw
+              size={18}
+              strokeWidth={1.5}
+              className={iconClass}
+              style={busy ? undefined : { transform: `rotate(${pullPx * 3}deg)` }}
+            />
+          )}
+          {!isHistory && busy && sweepProgress && (
             <span className="font-mono text-[10px] tracking-widest text-muted">
               {sweepProgress.done}/{sweepProgress.total}
             </span>
