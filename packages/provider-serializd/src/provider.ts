@@ -56,6 +56,7 @@ export function createSerializdProvider(): MetadataProvider {
       externalRatings: true,
       tags: true,
       images: false,
+      credits: false,
     },
     requiresApiKey: false,
 

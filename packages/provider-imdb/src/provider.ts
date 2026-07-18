@@ -33,6 +33,7 @@ export function createImdbProvider(opts: { dataDir: string }): MetadataProvider 
       externalRatings: true,
       tags: false,
       images: false,
+      credits: false,
     },
     requiresApiKey: false,
 

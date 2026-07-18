@@ -4,6 +4,7 @@
  * leave the zip: items are addressed by ExternalIds, episodes by (s, e).
  */
 import type {
+  CastMember,
   ContentRating,
   EpisodeType,
   ExternalIds,
@@ -73,6 +74,7 @@ export interface ZipItemEntry {
     networks: NetworkInfo[] | null;
     genres: GenreInfo[] | null;
     tags: TagInfo[] | null;
+    cast: CastMember[] | null;
     contentRatings: ContentRating[] | null;
     posterRef: ImageRef | null;
     backdropRef: ImageRef | null;

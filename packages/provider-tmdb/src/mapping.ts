@@ -1,4 +1,5 @@
 import type {
+  CastMember,
   ContentRating,
   EpisodeDetails,
   EpisodeType,
@@ -116,6 +117,18 @@ export interface TmdbWatchProvidersRegion {
 
 export interface TmdbWatchProvidersResponse {
   results: Record<string, TmdbWatchProvidersRegion>;
+}
+
+export interface TmdbCastMember {
+  id: number;
+  name: string;
+  character?: string;
+  profile_path?: string | null;
+  order: number;
+}
+
+export interface TmdbCreditsResponse {
+  cast: TmdbCastMember[];
 }
 
 function toImageRef(path?: string | null): ImageRef | undefined {
@@ -310,4 +323,20 @@ export function mapWatchProviders(
     }
   }
   return out;
+}
+
+/** Top-billed cast only — TMDB's `/credits` cast array is already order-sorted, but sort defensively. */
+const TOP_CAST_LIMIT = 20;
+
+export function mapCredits(response: TmdbCreditsResponse): CastMember[] {
+  return [...response.cast]
+    .sort((a, b) => a.order - b.order)
+    .slice(0, TOP_CAST_LIMIT)
+    .map((member): CastMember => {
+      const out: CastMember = { id: member.id, name: member.name, order: member.order };
+      if (member.character) out.character = member.character;
+      const profileRef = toImageRef(member.profile_path);
+      if (profileRef) out.profileRef = profileRef;
+      return out;
+    });
 }

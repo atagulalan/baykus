@@ -98,6 +98,7 @@ function buildItemEntry(
       networks: item.networks,
       genres: item.genres,
       tags: item.tags,
+      cast: item.cast,
       contentRatings: item.contentRatings,
       posterRef: item.posterRef,
       backdropRef: item.backdropRef,

@@ -100,6 +100,17 @@ export interface WatchProviderInfo {
   presentationType?: string;
 }
 
+/** Top-billed cast member (WP3: series credits). */
+export interface CastMember {
+  /** Provider-scoped person id, e.g. TMDB's person id — stable list key when present. */
+  id?: number;
+  name: string;
+  character?: string;
+  profileRef?: ImageRef;
+  /** Billing order, ascending = higher billing. */
+  order: number;
+}
+
 export interface ExternalRating {
   /** "imdb" | "tmdb" | "serializd" | future sources. */
   source: string;
@@ -188,6 +199,8 @@ export interface ProviderCapabilities {
   /** Curated tags / nanogenres. */
   tags: boolean;
   images: boolean;
+  /** Top-billed cast (WP3). */
+  credits: boolean;
 }
 
 export interface EpisodePosition {
@@ -207,6 +220,8 @@ export interface MetadataProvider {
   getWatchProviders?(ref: ExternalIds, region: string): Promise<WatchProviderInfo[]>;
   getExternalRatings?(ref: ExternalIds): Promise<ExternalRating[]>;
   getTags?(ref: ExternalIds): Promise<TagInfo[]>;
+  /** Top-billed cast (WP3): name, character, profile image ref, billing order. */
+  getCredits?(ref: ExternalIds): Promise<CastMember[]>;
   /**
    * Resolves a bare TheTVDB *episode* id (as opposed to a show id) to its
    * (season, episode) position — TMDB-only (`/find` supports tv_episode

@@ -36,6 +36,7 @@ describe("createImdbProvider", () => {
       externalRatings: true,
       tags: false,
       images: false,
+      credits: false,
     });
   });
 

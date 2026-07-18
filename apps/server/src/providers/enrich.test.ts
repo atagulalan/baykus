@@ -1,11 +1,12 @@
 import type {
+  CastMember,
   ExternalRating,
   MetadataProvider,
   TagInfo,
   WatchProviderInfo,
 } from "@baykus/provider-sdk";
 import { describe, expect, it } from "vitest";
-import { enrichExternalRatings, enrichTags, enrichWatchProviders } from "./enrich.ts";
+import { enrichCast, enrichExternalRatings, enrichTags, enrichWatchProviders } from "./enrich.ts";
 
 function fakeProvider(
   id: string,
@@ -16,6 +17,8 @@ function fakeProvider(
     providers?: WatchProviderInfo[];
     tags?: boolean;
     tagList?: TagInfo[];
+    credits?: boolean;
+    castList?: CastMember[];
     error?: Error;
   } = {},
 ): MetadataProvider {
@@ -30,6 +33,7 @@ function fakeProvider(
       externalRatings: opts.externalRatings ?? false,
       tags: opts.tags ?? false,
       images: true,
+      credits: opts.credits ?? false,
     },
     requiresApiKey: false,
     async search() {
@@ -62,6 +66,14 @@ function fakeProvider(
           async getTags() {
             if (opts.error) throw opts.error;
             return opts.tagList ?? [];
+          },
+        }
+      : {}),
+    ...(opts.credits
+      ? {
+          async getCredits() {
+            if (opts.error) throw opts.error;
+            return opts.castList ?? [];
           },
         }
       : {}),
@@ -153,6 +165,30 @@ describe("enrichTags", () => {
 
   it("returns [] when no provider supports tags", async () => {
     const merged = await enrichTags([fakeProvider("a")], { tmdbId: 1 });
+    expect(merged).toEqual([]);
+  });
+});
+
+describe("enrichCast", () => {
+  it("merges cast from every capable provider", async () => {
+    const a = fakeProvider("a", {
+      credits: true,
+      castList: [{ id: 1, name: "Emma D'Arcy", character: "Rhaenyra", order: 0 }],
+    });
+    const b = fakeProvider("b"); // credits: false — skipped entirely
+
+    const merged = await enrichCast([a, b], { tmdbId: 1 });
+    expect(merged).toEqual([{ id: 1, name: "Emma D'Arcy", character: "Rhaenyra", order: 0 }]);
+  });
+
+  it("a failing provider is skipped, never fatal", async () => {
+    const broken = fakeProvider("broken", { credits: true, error: new Error("boom") });
+    const merged = await enrichCast([broken], { tmdbId: 1 });
+    expect(merged).toEqual([]);
+  });
+
+  it("returns [] when no provider supports credits", async () => {
+    const merged = await enrichCast([fakeProvider("a")], { tmdbId: 1 });
     expect(merged).toEqual([]);
   });
 });

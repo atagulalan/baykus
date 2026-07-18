@@ -258,6 +258,11 @@ function toItemValues(entry: ZipItemEntry, mergedIds: ExternalIds) {
     networks: m.networks,
     genres: m.genres,
     tags: m.tags,
+    // Pre-cast (WP3) zips never carry metadata.cast — undefined reads through
+    // as-is (drizzle treats it as "not provided" == NULL), same as any other
+    // metadata field that predates its own zip version (E.g. tags before it
+    // existed never bumped schemaVersion either).
+    cast: m.cast,
     contentRatings: m.contentRatings,
     watchProviders: m.watchProviders,
     externalRatings: m.externalRatings,

@@ -1,0 +1,59 @@
+{
+  "__fixture_note": "RECONSTRUCTED from TMDB API docs (GET /3/tv/94997/credits). Replace with a real capture in milestone M4.",
+  "id": 94997,
+  "cast": [
+    {
+      "adult": false,
+      "gender": 1,
+      "id": 1223786,
+      "known_for_department": "Acting",
+      "name": "Emma D'Arcy",
+      "original_name": "Emma D'Arcy",
+      "popularity": 24.161,
+      "profile_path": "/wGSHNjHz5at7WLNXR6Xh6ZTsuGb.jpg",
+      "character": "Rhaenyra Targaryen",
+      "credit_id": "62f74781a938c700a3900aca",
+      "order": 0
+    },
+    {
+      "adult": false,
+      "gender": 2,
+      "id": 17419,
+      "known_for_department": "Acting",
+      "name": "Matt Smith",
+      "original_name": "Matt Smith",
+      "popularity": 32.9,
+      "profile_path": "/xkSXlY5uSDX4h5rGx73KFEqxYUR.jpg",
+      "character": "Daemon Targaryen",
+      "credit_id": "62f7478da938c700a3900ad0",
+      "order": 1
+    },
+    {
+      "adult": false,
+      "gender": 1,
+      "id": 108827,
+      "known_for_department": "Acting",
+      "name": "Olivia Cooke",
+      "original_name": "Olivia Cooke",
+      "popularity": 28.4,
+      "profile_path": "/6WdxfBYNhK3xTOex5RVWNS8Nffh.jpg",
+      "character": "Alicent Hightower",
+      "credit_id": "62f74796a938c700a3900ad4",
+      "order": 2
+    },
+    {
+      "adult": false,
+      "gender": 2,
+      "id": 233413,
+      "known_for_department": "Acting",
+      "name": "Actor No Photo",
+      "original_name": "Actor No Photo",
+      "popularity": 3.1,
+      "profile_path": null,
+      "character": "",
+      "credit_id": "62f747a1a938c700a3900ad8",
+      "order": 3
+    }
+  ],
+  "crew": []
+}

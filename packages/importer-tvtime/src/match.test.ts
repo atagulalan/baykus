@@ -39,6 +39,7 @@ function fakeProvider(opts: FakeProviderOpts = {}): MetadataProvider {
       externalRatings: false,
       tags: false,
       images: true,
+      credits: false,
     },
     requiresApiKey: false,
     async search(query: string): Promise<SearchResult[]> {

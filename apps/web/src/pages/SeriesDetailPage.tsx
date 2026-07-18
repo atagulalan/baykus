@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
-import { Heart, TriangleAlert } from "lucide-react";
+import { Heart, Info, TriangleAlert } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -28,50 +28,17 @@ import type {
 import { MediaImage } from "../components/MediaImage.tsx";
 import { Modal } from "../components/Modal.tsx";
 import { NextEpisodeCarousel } from "../components/NextEpisodeCarousel.tsx";
-import { RatingControl } from "../components/RatingControl.tsx";
 import { RemoveSeriesDialog } from "../components/RemoveSeriesDialog.tsx";
 import { SeasonSection } from "../components/SeasonSection.tsx";
 import { SegmentedProgress } from "../components/SegmentedProgress.tsx";
+import { SeriesDetailsSheet } from "../components/SeriesDetailsSheet.tsx";
 import { WatchDateDialog } from "../components/WatchDateDialog.tsx";
 import { CATEGORY_TEXT_COLORS } from "../lib/categoryColors.ts";
-import { genreKey } from "../lib/genreKey.ts";
 import { sortSeasonsSpecialsLast } from "../lib/seasons.ts";
 import { seriesParam } from "../lib/seriesPath.ts";
 import { isStale } from "../lib/staleSweep.ts";
 import { useToast } from "../lib/toast.tsx";
 import { readUiPrefs } from "../lib/uiPrefs.ts";
-
-/** Falls back to plain text if the logo 404s (e.g. its provider isn't registered right now). */
-function LogoOrText({ src, alt }: { src: string | null; alt: string }) {
-  const [failed, setFailed] = useState(false);
-  if (!src || failed) return <span>{alt}</span>;
-  return (
-    <MediaImage
-      src={src}
-      alt={alt}
-      wrapperClassName="inline-block h-4 min-w-4 align-middle"
-      className="h-4 object-contain"
-      spinnerSize={10}
-      onError={() => setFailed(true)}
-    />
-  );
-}
-
-/** Decorative icon that just disappears on a 404 instead of showing a broken-image glyph. */
-function DecorativeLogo({ src, className }: { src: string | null; className: string }) {
-  const [failed, setFailed] = useState(false);
-  if (!src || failed) return null;
-  return (
-    <MediaImage
-      src={src}
-      alt=""
-      wrapperClassName="inline-block"
-      className={className}
-      spinnerSize={10}
-      onError={() => setFailed(true)}
-    />
-  );
-}
 
 function updateEpisodeInDetail(
   detail: SeriesDetail,
@@ -149,6 +116,7 @@ export function SeriesDetailPage() {
   const [dateDialogEpisode, setDateDialogEpisode] = useState<EpisodeSummary | null>(null);
   const [promptEpisodeId, setPromptEpisodeId] = useState<number | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
 
   const navigate = useNavigate();
@@ -488,10 +456,6 @@ export function SeriesDetailPage() {
   const carouselEpisodes = detail.seasons
     .filter((season) => season.number !== 0)
     .flatMap((season) => season.episodes);
-  const contentRating =
-    detail.contentRatings.find((r) => r.region === activeRegion) ?? detail.contentRatings[0];
-  const regionWatchProviders = detail.watchProviders.filter((wp) => wp.region === activeRegion);
-  const avgRuntimeMin = averageEpisodeRuntimeMin(detail);
 
   return (
     <div className="flex flex-col gap-6">
@@ -544,192 +508,126 @@ export function SeriesDetailPage() {
                   ""
                 )}
               </h1>
-              <div className="relative shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setMenuOpen((v) => !v)}
-                  aria-label={t("series.menu")}
-                  className="px-2 py-1 text-muted hover:text-snow transition-colors"
-                >
-                  ⋮
-                </button>
-                <Modal
-                  isOpen={menuOpen}
-                  onClose={() => setMenuOpen(false)}
-                  desktop="popover"
-                  popoverClassName="w-56"
-                  title={t("series.menu")}
-                  className="!p-0 !overflow-hidden"
-                >
+              <div className="flex shrink-0 items-center gap-1">
+                <div className="relative shrink-0">
                   <button
                     type="button"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      toggleFavorite.mutate(!detail.favorite);
-                    }}
-                    aria-pressed={detail.favorite}
-                    className="flex w-full items-center gap-2 border-b border-white/5 px-4 py-3.5 text-left text-xs font-mono text-muted transition-colors hover:bg-white/5 hover:text-snow"
+                    onClick={() => setDetailsOpen((v) => !v)}
+                    aria-label={t("series.details.trigger")}
+                    className="px-2 py-1 text-muted hover:text-snow transition-colors"
                   >
-                    <Heart size={16} className={detail.favorite ? "fill-yellow text-yellow" : ""} />
-                    {t(detail.favorite ? "series.unfavorite" : "series.favorite")}
+                    <Info size={18} strokeWidth={1.5} />
                   </button>
-                  <div className="border-b border-white/5 px-4 py-3.5">
-                    <p className="mb-2 font-mono text-[10px] uppercase tracking-widest text-muted">
-                      {t("rating.label")}
-                    </p>
-                    <RatingControl
-                      value={detail.rating}
-                      onChange={(value) => rateItem.mutate(value)}
-                      size="sm"
-                    />
-                  </div>
-                  {detail.manualList !== null && (
+                  <SeriesDetailsSheet
+                    isOpen={detailsOpen}
+                    onClose={() => setDetailsOpen(false)}
+                    detail={detail}
+                    activeRegion={activeRegion}
+                    onRateChange={(value) => rateItem.mutate(value)}
+                  />
+                </div>
+                <div className="relative shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setMenuOpen((v) => !v)}
+                    aria-label={t("series.menu")}
+                    className="px-2 py-1 text-muted hover:text-snow transition-colors"
+                  >
+                    ⋮
+                  </button>
+                  <Modal
+                    isOpen={menuOpen}
+                    onClose={() => setMenuOpen(false)}
+                    desktop="popover"
+                    popoverClassName="w-56"
+                    title={t("series.menu")}
+                    className="!p-0 !overflow-hidden"
+                  >
                     <button
                       type="button"
                       onClick={() => {
                         setMenuOpen(false);
-                        changeManualList.mutate(null);
+                        toggleFavorite.mutate(!detail.favorite);
                       }}
-                      className="block w-full px-4 py-3.5 text-left text-xs font-mono text-muted hover:text-snow hover:bg-white/5 transition-colors border-b border-white/5"
+                      aria-pressed={detail.favorite}
+                      className="flex w-full items-center gap-2 border-b border-white/5 px-4 py-3.5 text-left text-xs font-mono text-muted transition-colors hover:bg-white/5 hover:text-snow"
                     >
-                      {t("category.watching")}
+                      <Heart
+                        size={16}
+                        className={detail.favorite ? "fill-yellow text-yellow" : ""}
+                      />
+                      {t(detail.favorite ? "series.unfavorite" : "series.favorite")}
                     </button>
-                  )}
-                  {detail.manualList !== "watch_later" && (
+                    {detail.manualList !== null && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          changeManualList.mutate(null);
+                        }}
+                        className="block w-full px-4 py-3.5 text-left text-xs font-mono text-muted hover:text-snow hover:bg-white/5 transition-colors border-b border-white/5"
+                      >
+                        {t("category.watching")}
+                      </button>
+                    )}
+                    {detail.manualList !== "watch_later" && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          changeManualList.mutate("watch_later");
+                        }}
+                        className="block w-full px-4 py-3.5 text-left text-xs font-mono text-muted hover:text-snow hover:bg-white/5 transition-colors border-b border-white/5"
+                      >
+                        {t("manualList.watch_later")}
+                      </button>
+                    )}
+                    {detail.manualList !== "stopped" && detail.category !== "finished" && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          changeManualList.mutate("stopped");
+                        }}
+                        className="block w-full px-4 py-3.5 text-left text-xs font-mono text-muted hover:text-snow hover:bg-white/5 transition-colors border-b border-white/5"
+                      >
+                        {t("manualList.stopped")}
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => {
                         setMenuOpen(false);
-                        changeManualList.mutate("watch_later");
+                        refreshSeriesMutation.mutate();
                       }}
                       className="block w-full px-4 py-3.5 text-left text-xs font-mono text-muted hover:text-snow hover:bg-white/5 transition-colors border-b border-white/5"
                     >
-                      {t("manualList.watch_later")}
+                      {t("series.refresh")}
                     </button>
-                  )}
-                  {detail.manualList !== "stopped" && detail.category !== "finished" && (
                     <button
                       type="button"
                       onClick={() => {
                         setMenuOpen(false);
-                        changeManualList.mutate("stopped");
+                        toggleMute.mutate(!detail.pushMuted);
                       }}
                       className="block w-full px-4 py-3.5 text-left text-xs font-mono text-muted hover:text-snow hover:bg-white/5 transition-colors border-b border-white/5"
                     >
-                      {t("manualList.stopped")}
+                      {detail.pushMuted ? t("series.unmute") : t("series.mute")}
                     </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      refreshSeriesMutation.mutate();
-                    }}
-                    className="block w-full px-4 py-3.5 text-left text-xs font-mono text-muted hover:text-snow hover:bg-white/5 transition-colors border-b border-white/5"
-                  >
-                    {t("series.refresh")}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      toggleMute.mutate(!detail.pushMuted);
-                    }}
-                    className="block w-full px-4 py-3.5 text-left text-xs font-mono text-muted hover:text-snow hover:bg-white/5 transition-colors border-b border-white/5"
-                  >
-                    {detail.pushMuted ? t("series.unmute") : t("series.mute")}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      handleRemove();
-                    }}
-                    className="block w-full px-4 py-3.5 text-left text-xs font-mono text-red-400 hover:text-red-300 hover:bg-white/5 transition-colors"
-                  >
-                    {t("library.card.remove")}
-                  </button>
-                </Modal>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        handleRemove();
+                      }}
+                      className="block w-full px-4 py-3.5 text-left text-xs font-mono text-red-400 hover:text-red-300 hover:bg-white/5 transition-colors"
+                    >
+                      {t("library.card.remove")}
+                    </button>
+                  </Modal>
+                </div>
               </div>
             </div>
-            {detail.tagline && <p className="text-sm text-muted italic">"{detail.tagline}"</p>}
-
-            {(detail.networks.length > 0 || contentRating || avgRuntimeMin != null) && (
-              <div className="flex flex-wrap items-center gap-2 text-sm text-muted">
-                {detail.networks.map((n) => (
-                  <LogoOrText key={n.name} src={buildImageUrl(n.logoRef, "thumb")} alt={n.name} />
-                ))}
-                {contentRating && (
-                  <span className="border border-white/10 px-1.5 py-0.5 text-xs">
-                    {contentRating.rating}
-                  </span>
-                )}
-                {avgRuntimeMin != null && (
-                  <span className="font-mono text-xs tabular-nums">
-                    {t("episode.runtimeMin", { minutes: avgRuntimeMin })}
-                  </span>
-                )}
-              </div>
-            )}
-
-            {detail.genres.length > 0 && (
-              <div className="flex flex-nowrap gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {detail.genres.map((g) => (
-                  <span
-                    key={g.id ?? g.name}
-                    className="shrink-0 bg-white/5 px-2 py-0.5 text-xs text-muted"
-                  >
-                    {t(`genres.${genreKey(g.name)}`, { defaultValue: g.name })}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {detail.tags.length > 0 && (
-              <div className="flex flex-nowrap gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {detail.tags.map((tag) => (
-                  <span
-                    key={`${tag.source}-${tag.id ?? tag.name}`}
-                    className="shrink-0 bg-white/5 px-2 py-0.5 text-xs text-yellow"
-                  >
-                    {tag.name}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {detail.externalRatings.length > 0 && (
-              <p className="text-sm text-muted">
-                {detail.externalRatings.map((r, i) => (
-                  <span key={r.source}>
-                    {i > 0 && t("common.separator")}⭐ {r.source.toUpperCase()}{" "}
-                    {(r.scale === 10 ? r.value : (r.value / r.scale) * 10).toFixed(1)}
-                  </span>
-                ))}
-              </p>
-            )}
-
-            {regionWatchProviders.length > 0 && (
-              <div className="flex flex-col gap-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  {regionWatchProviders.map((wp) => {
-                    return (
-                      <span
-                        key={`${wp.provider}-${wp.type}-${wp.region}`}
-                        className="flex items-center gap-1 bg-white/5 px-2 py-1 text-xs text-snow"
-                      >
-                        <DecorativeLogo
-                          src={buildImageUrl(wp.logoRef, "thumb")}
-                          className="h-4 w-4 object-cover"
-                        />
-                        {wp.provider} ({wp.region})
-                      </span>
-                    );
-                  })}
-                </div>
-                <p className="text-xs text-muted">{t("series.justwatchAttribution")}</p>
-              </div>
-            )}
 
             <div className="mt-2 flex flex-col gap-1">
               <SegmentedProgress
@@ -824,18 +722,4 @@ export function SeriesDetailPage() {
       )}
     </div>
   );
-}
-
-/** Prefer provider typical runtimes; else average known per-episode runtimes. */
-function averageEpisodeRuntimeMin(detail: SeriesDetail): number | null {
-  const fromItem = detail.episodeRunTimes ?? [];
-  if (fromItem.length > 0) {
-    return Math.round(fromItem.reduce((a, b) => a + b, 0) / fromItem.length);
-  }
-  const fromEpisodes = detail.seasons
-    .flatMap((season) => season.episodes)
-    .map((ep) => ep.runtimeMin)
-    .filter((m): m is number => m != null);
-  if (fromEpisodes.length === 0) return null;
-  return Math.round(fromEpisodes.reduce((a, b) => a + b, 0) / fromEpisodes.length);
 }

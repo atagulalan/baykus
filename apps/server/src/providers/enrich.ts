@@ -1,4 +1,5 @@
 import type {
+  CastMember,
   ExternalIds,
   ExternalRating,
   MetadataProvider,
@@ -71,4 +72,26 @@ export async function enrichTags(
     if (result.status === "fulfilled") tags.push(...result.value);
   }
   return tags;
+}
+
+/**
+ * Same shape as enrichExternalRatings but for top-billed cast (WP3). Only
+ * TMDB implements getCredits today, but this stays provider-agnostic like
+ * its siblings — never a hardcoded TMDB call in the route layer.
+ */
+export async function enrichCast(
+  providers: MetadataProvider[],
+  ids: ExternalIds,
+): Promise<CastMember[]> {
+  const capable = providers.filter((p) => p.capabilities.credits && p.getCredits);
+
+  const results = await Promise.allSettled(
+    capable.map((p) => p.getCredits?.(ids) ?? Promise.resolve([])),
+  );
+
+  const cast: CastMember[] = [];
+  for (const result of results) {
+    if (result.status === "fulfilled") cast.push(...result.value);
+  }
+  return cast;
 }

@@ -115,7 +115,20 @@
     "unfavorite": "Favorilerden çıkar",
     "unwatchSeasonTitle": "Emin misiniz?",
     "unwatchSeasonWarning": "Bu işlem seçili sezondaki tüm izleme geçmişinizi silecektir. Devam etmek istiyor musunuz?",
-    "unwatchSeasonConfirm": "Evet, sil"
+    "unwatchSeasonConfirm": "Evet, sil",
+    "details": {
+      "trigger": "Detayları görüntüle",
+      "title": "Detaylar",
+      "genres": "Türler",
+      "tags": "Etiketler",
+      "production": "Yapım",
+      "ratings": "Puanlar",
+      "providers": "İzleme Platformları",
+      "yourRating": "Senin Puanın"
+    },
+    "cast": {
+      "title": "Oyuncular"
+    }
   },
   "episode": {
     "toggleWatched": "İzledim",

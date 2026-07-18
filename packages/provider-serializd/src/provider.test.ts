@@ -34,6 +34,7 @@ describe("createSerializdProvider", () => {
       externalRatings: true,
       tags: true,
       images: false,
+      credits: false,
     });
   });
 
