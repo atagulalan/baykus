@@ -13,8 +13,10 @@
     "test": "vitest run",
     "typecheck": "pnpm -r typecheck",
     "lint": "biome check .",
-    "format": "biome format --write ."
+    "format": "biome format --write .",
+    "storybook": "pnpm --filter @baykus/web storybook"
   },
+
   "devDependencies": {
     "@biomejs/biome": "^2.1.2",
     "typescript": "^5.9.2",

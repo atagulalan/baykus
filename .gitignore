@@ -11,3 +11,6 @@ tmp/
 !.env.example
 **/data-multi/
 *.tsbuildinfo
+
+*storybook.log
+storybook-static
