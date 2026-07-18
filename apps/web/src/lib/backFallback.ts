@@ -1,8 +1,9 @@
 /**
- * E72 / E138 / E142: which routes get the mobile-only back arrow, and — when there's no
- * in-app history — which parent they fall back to.
- * Tab / browse surfaces (`/watch`, `/` grid view, `/calendar`…, `/search`, `/user/$handle`)
- * never get the arrow. `/` is a peer view of Watch (header toggle), not a child page.
+ * E72 / E138 / E142 / E153: which routes get the mobile-only back arrow, and — when
+ * there's no in-app history — which parent they fall back to.
+ * Tab / browse surfaces (`/watch`, `/` grid view, `/calendar`…, `/search`) never get
+ * the arrow. `/` is a peer view of Watch (header toggle), not a child page.
+ * Profile hub (`/user/$handle`) does get the arrow (mobile chrome parity with Settings).
  */
 export type BackFallback =
   | { to: "/watch" }
@@ -25,6 +26,8 @@ const RULES: {
     test: (p) => /^\/user\/[^/]+\/(all-series|stats|favorites)$/.test(p),
     fallback: (h) => ({ to: "/user/$handle", params: { handle: h } }),
   },
+  // E153: profile hub shows a mobile back arrow; no history → Watch.
+  { test: (p) => /^\/user\/[^/]+$/.test(p), fallback: () => ({ to: "/watch" }) },
 ];
 
 export function backAffordance(pathname: string, selfHandle: string): BackFallback | null {

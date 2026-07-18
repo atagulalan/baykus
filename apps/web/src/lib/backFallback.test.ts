@@ -33,11 +33,14 @@ describe("backAffordance (E72 / E138 / E142)", () => {
     });
   });
 
+  it("profile hub falls back to watch (E153)", () => {
+    expect(backAffordance("/user/xava", "xava")).toEqual({ to: "/watch" });
+  });
+
   it("tab / browse pages get no arrow", () => {
     expect(backAffordance("/watch", "xava")).toBeNull();
     expect(backAffordance("/calendar", "xava")).toBeNull();
     expect(backAffordance("/calendar/month", "xava")).toBeNull();
     expect(backAffordance("/search", "xava")).toBeNull();
-    expect(backAffordance("/user/xava", "xava")).toBeNull();
   });
 });

@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
-import { ChevronRight, Settings } from "lucide-react";
+import { Camera, ChevronRight, Settings } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { getSettings, getStats, listSeries } from "../api/client.ts";
 import type { AuthSession } from "../api/types.ts";
+import { PageTitle } from "../components/PageTitle.tsx";
 import { ProfileBannerPicker } from "../components/ProfileBannerPicker.tsx";
 import { ProfileGuard } from "../components/ProfileGuard.tsx";
 import { ProfilePhotoUpload } from "../components/ProfilePhotoUpload.tsx";
@@ -40,22 +41,33 @@ function IdentityRow({
   session,
   handle,
   avatarRef,
+  onEditBanner,
 }: {
   session: AuthSession;
   handle: string;
   avatarRef: string | null;
+  onEditBanner: () => void;
 }) {
   const { t } = useTranslation();
   return (
-    <div className="flex items-center gap-4">
+    <div className="content-inset flex items-center gap-4">
       <ProfilePhotoUpload avatarRef={avatarRef} />
-      <h1 className="flex-1 font-display italic text-snow text-3xl tracking-tight">
-        {session.mode === "single" ? t("profile.title") : `@${handle}`}
-      </h1>
+      <div className="flex-1">
+        <PageTitle>{session.mode === "single" ? t("profile.title") : `@${handle}`}</PageTitle>
+      </div>
+      <button
+        type="button"
+        onClick={onEditBanner}
+        aria-label={t("profile.banner.edit")}
+        title={t("profile.banner.edit")}
+        className="flex h-11 w-11 items-center justify-center text-muted transition-colors hover:text-snow"
+      >
+        <Camera size={20} strokeWidth={1.5} aria-hidden="true" />
+      </button>
       <Link
         to="/settings"
         aria-label={t("app.nav.settings")}
-        className="flex h-11 w-11 items-center justify-center text-muted transition-colors hover:text-snow"
+        className="hidden h-11 w-11 items-center justify-center text-muted transition-colors hover:text-snow sm:flex"
       >
         <Settings size={20} strokeWidth={1.5} />
       </Link>
@@ -95,16 +107,23 @@ function ProfilePageContent({ handle, session }: { handle: string; session: Auth
   const timeSpentValue = formatDurationLabel(formatDurationParts(stats?.watchTimeMin ?? 0), t);
 
   return (
-    <div className="flex flex-col gap-8">
-      <ProfileBannerPicker bannerRef={settings?.bannerRef ?? null} candidates={bannerCandidates} />
-
-      <IdentityRow session={session} handle={handle} avatarRef={settings?.avatarRef ?? null} />
+    <div className="flex flex-col gap-6">
+      <ProfileBannerPicker bannerRef={settings?.bannerRef ?? null} candidates={bannerCandidates}>
+        {(openBannerPicker) => (
+          <IdentityRow
+            session={session}
+            handle={handle}
+            avatarRef={settings?.avatarRef ?? null}
+            onEditBanner={openBannerPicker}
+          />
+        )}
+      </ProfileBannerPicker>
 
       {/* 011 E153: stats first, then favorites, then all series. */}
       <Link
         to="/user/$handle/stats"
         params={{ handle }}
-        className="grid grid-cols-3 gap-3 transition-opacity hover:opacity-80"
+        className="content-inset grid grid-cols-3 gap-3 transition-opacity hover:opacity-80"
       >
         <StatTile label={t("stats.timeSpent")} value={timeSpentValue} />
         <StatTile
@@ -117,7 +136,7 @@ function ProfilePageContent({ handle, session }: { handle: string; session: Auth
         />
       </Link>
 
-      <section className="flex flex-col gap-3">
+      <section className="content-inset flex flex-col gap-3">
         {favorites.length > PROFILE_FAVORITES_LIMIT ? (
           <h2 className="font-mono text-xs uppercase tracking-widest text-yellow">
             <Link
@@ -154,7 +173,7 @@ function ProfilePageContent({ handle, session }: { handle: string; session: Auth
         )}
       </section>
 
-      <section className="flex flex-col gap-3">
+      <section className="content-inset flex flex-col gap-3">
         {allSeries.length > PROFILE_ALL_SERIES_LIMIT ? (
           <h2 className="font-mono text-xs uppercase tracking-widest text-yellow">
             <Link

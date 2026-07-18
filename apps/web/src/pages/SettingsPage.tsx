@@ -16,6 +16,7 @@ import {
 import type { ImportZipResult, Locale, Settings, SettingsPatch } from "../api/types.ts";
 import { Checkbox } from "../components/Checkbox.tsx";
 import { DeleteAccountDialog } from "../components/DeleteAccountDialog.tsx";
+import { PageTitle } from "../components/PageTitle.tsx";
 import { ResetLibraryDialog } from "../components/ResetLibraryDialog.tsx";
 import { SettingsSelect } from "../components/SettingsSelect.tsx";
 import {
@@ -154,7 +155,7 @@ export function SettingsPage() {
 
   if (query.isLoading) {
     return (
-      <div className="flex max-w-lg flex-col gap-4">
+      <div className="content-inset flex max-w-lg flex-col gap-4">
         <div className="h-40 animate-pulse bg-white/5" />
         <div className="h-32 animate-pulse bg-white/5" />
       </div>
@@ -163,7 +164,7 @@ export function SettingsPage() {
 
   if (query.isError) {
     return (
-      <div className="flex flex-col items-center gap-2 py-24 text-center">
+      <div className="content-inset flex flex-col items-center gap-2 py-24 text-center">
         <p className="text-muted">{t("errors.generic")}</p>
         <button
           type="button"
@@ -670,9 +671,9 @@ export function SettingsPage() {
   return (
     <>
       <div className="max-w-4xl">
-        <h1 className="mb-6 hidden font-display text-3xl italic leading-none tracking-tight text-snow sm:block sm:text-4xl">
-          {t("settings.title")}
-        </h1>
+        <div className="content-inset mb-6 hidden sm:block">
+          <PageTitle>{t("settings.title")}</PageTitle>
+        </div>
         <div className="columns-1 gap-6 sm:columns-2">{sections}</div>
       </div>
 

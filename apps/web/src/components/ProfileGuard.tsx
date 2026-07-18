@@ -36,7 +36,7 @@ export function ProfileGuard({
   const resolution = resolveProfileParam(handle, sessionQuery.data);
   if (resolution.kind === "not-found") {
     return (
-      <div className="flex flex-col items-center gap-2 py-24 text-center">
+      <div className="content-inset flex flex-col items-center gap-2 py-24 text-center">
         <p className="text-muted">{t("notFound.profile")}</p>
       </div>
     );
