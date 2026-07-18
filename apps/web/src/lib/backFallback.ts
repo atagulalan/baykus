@@ -14,6 +14,8 @@ const RULES: {
   fallback: (selfHandle: string) => BackFallback;
 }[] = [
   { test: (p) => p.startsWith("/series/"), fallback: () => ({ to: "/watch" }) },
+  // Spec 010 WP2: history is a child page of Watch, not a tab of its own.
+  { test: (p) => p === "/watch/history", fallback: () => ({ to: "/watch" }) },
   { test: (p) => p === "/import", fallback: () => ({ to: "/settings" }) },
   {
     test: (p) => p === "/settings",

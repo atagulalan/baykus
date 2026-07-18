@@ -1,25 +1,22 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { listSeries } from "../api/client.ts";
-import { HOME_CATEGORY_ORDER, type SeriesSummary, type WatchCategory } from "../api/types.ts";
-import type {
-  LibraryBrowsePatch,
-  LibraryCategoryFilter,
-  LibrarySort,
-} from "../components/FilterPanel.tsx";
+import { HOME_CATEGORY_ORDER, type WatchCategory } from "../api/types.ts";
+import type { LibrarySort } from "../components/FilterPanel.tsx";
 import { groupByCategory } from "./groupByCategory.ts";
 import { readUiPrefs, updateUiPrefs } from "./uiPrefs.ts";
 
 /**
- * Sort + category filter for Library / AllSeries grid surfaces (E128 / E143).
- * Persisted in localStorage via uiPrefs.
+ * Sort for Library / AllSeries grid surfaces (E128 / E143). Spec 010 WP2 killed the
+ * category-filter FAB — every category in `defaultCategoryOrder` always renders, and sort
+ * is a single page-level value surfaced via `SortMenu` in each section's header. Persisted
+ * in localStorage via uiPrefs.
  */
 export function useLibraryFilter(
   defaultCategoryOrder: readonly WatchCategory[] = HOME_CATEGORY_ORDER,
 ) {
   const stored = readUiPrefs().libraryBrowse;
-  const [sort, setSort] = useState<LibrarySort>(stored.sort);
-  const [category, setCategory] = useState<LibraryCategoryFilter>(stored.category);
+  const [sort, setSortState] = useState<LibrarySort>(stored.sort);
 
   const query = useQuery({
     queryKey: ["library", sort],
@@ -28,36 +25,24 @@ export function useLibraryFilter(
 
   const items = query.data?.items ?? [];
   const byCategory = groupByCategory(items);
-  const categoriesToRender: WatchCategory[] =
-    category.length === 0 ? [...defaultCategoryOrder] : category;
+  const categoriesToRender: WatchCategory[] = [...defaultCategoryOrder];
 
-  function apply(next: Pick<LibraryBrowsePatch, "sort" | "category">) {
-    setSort(next.sort);
-    setCategory(next.category);
-    updateUiPrefs({ libraryBrowse: { sort: next.sort, category: next.category } });
+  function setSort(next: LibrarySort) {
+    setSortState(next);
+    // Keep the (now inert) stored category around for DTO round-trip — nothing writes to
+    // it anymore, but UiPrefsDto.libraryBrowse.category (api/types.ts) still requires it.
+    updateUiPrefs({ libraryBrowse: { sort: next, category: stored.category } });
   }
 
-  function resetCategory() {
-    setCategory([]);
-    updateUiPrefs({ libraryBrowse: { sort, category: [] } });
-  }
-
-  function hasVisibleIn(
-    predicate: (list: SeriesSummary[]) => SeriesSummary[] = (list) => list,
-  ): boolean {
-    return categoriesToRender.some((c) => predicate(byCategory.get(c) ?? []).length > 0);
-  }
+  const hasVisibleItems = categoriesToRender.some((c) => (byCategory.get(c)?.length ?? 0) > 0);
 
   return {
     sort,
-    category,
-    apply,
-    resetCategory,
+    setSort,
     query,
     items,
     byCategory,
     categoriesToRender,
-    hasVisibleItems: hasVisibleIn(),
-    hasVisibleListItems: hasVisibleIn((list) => list.filter((s) => s.nextUnwatched != null)),
+    hasVisibleItems,
   };
 }

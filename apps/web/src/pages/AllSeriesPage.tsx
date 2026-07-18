@@ -2,14 +2,14 @@ import { useParams } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { CATEGORY_ORDER } from "../api/types.ts";
 import { CategorySection } from "../components/CategorySection.tsx";
-import { FilterPanel } from "../components/FilterPanel.tsx";
 import { ProfileGuard } from "../components/ProfileGuard.tsx";
 import { PullToRefresh, useLibrarySweepRefresh } from "../components/PullToRefresh.tsx";
 import { SERIES_GRID_CLASSNAME } from "../lib/grid.ts";
 import { useLibraryFilter } from "../lib/useLibraryFilter.ts";
 
 /** E60: the full seven-category library, relocated off the home page — no refresh-all button,
- * no auto-sweep; the E132 pull gesture is the one deliberate exception. */
+ * no auto-sweep; the E132 pull gesture is the one deliberate exception. Sort lives in each
+ * section's header (spec 010 WP2); no category add/remove here, every category always renders. */
 export function AllSeriesPage() {
   const { handle } = useParams({ from: "/user/$handle/all-series" });
 
@@ -23,17 +23,8 @@ export function AllSeriesPage() {
 function AllSeriesPageContent() {
   const { t } = useTranslation();
   const pullRefresh = useLibrarySweepRefresh();
-  const {
-    sort,
-    category,
-    apply,
-    resetCategory,
-    query,
-    items,
-    byCategory,
-    categoriesToRender,
-    hasVisibleItems,
-  } = useLibraryFilter(CATEGORY_ORDER);
+  const { sort, setSort, query, items, byCategory, categoriesToRender } =
+    useLibraryFilter(CATEGORY_ORDER);
 
   return (
     <PullToRefresh onRefresh={pullRefresh}>
@@ -48,8 +39,6 @@ function AllSeriesPageContent() {
             )}
           </h1>
         </div>
-        {items.length > 0 && <FilterPanel sort={sort} category={category} onApply={apply} />}
-
         {query.isLoading ? (
           <div className={SERIES_GRID_CLASSNAME}>
             {["a", "b", "c", "d", "e", "f"].map((key) => (
@@ -79,24 +68,16 @@ function AllSeriesPageContent() {
             </h1>
             <p className="font-mono text-xs text-muted/70">{t("library.empty.hint")}</p>
           </div>
-        ) : !hasVisibleItems ? (
-          <div className="flex flex-col items-center gap-4 py-24 text-center border border-white/5 bg-[#101010] p-6 mt-4">
-            <h1 className="font-display italic text-snow text-4xl tracking-tight">
-              {t("library.empty.filterTitle")}
-            </h1>
-            <p className="font-mono text-xs text-muted/70">{t("library.empty.filterHint")}</p>
-            <button
-              type="button"
-              onClick={resetCategory}
-              className="font-mono text-[10px] tracking-widest uppercase bg-yellow text-[#080808] px-4 py-2 mt-4 transition-opacity hover:opacity-90"
-            >
-              {t("library.empty.resetFilter")}
-            </button>
-          </div>
         ) : (
           <div className="flex flex-col gap-8">
             {categoriesToRender.map((c) => (
-              <CategorySection key={c} category={c} items={byCategory.get(c) ?? []} />
+              <CategorySection
+                key={c}
+                category={c}
+                items={byCategory.get(c) ?? []}
+                sort={sort}
+                onSortChange={setSort}
+              />
             ))}
           </div>
         )}

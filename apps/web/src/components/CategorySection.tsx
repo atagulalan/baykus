@@ -2,15 +2,22 @@ import { useTranslation } from "react-i18next";
 import type { SeriesSummary, WatchCategory } from "../api/types.ts";
 import { CATEGORY_ICONS } from "../lib/categoryIcons.ts";
 import { SERIES_GRID_CLASSNAME } from "../lib/grid.ts";
+import type { LibrarySort } from "./FilterPanel.tsx";
+import { SortMenu } from "./FilterPanel.tsx";
 import { SeriesCard } from "./SeriesCard.tsx";
 
 interface CategorySectionProps {
   category: WatchCategory;
   items: SeriesSummary[];
+  /** Spec 010 WP2: page-level sort (Library/AllSeries share one value across all
+   * categories), surfaced per-section to match the Watch page's header pattern. */
+  sort: LibrarySort;
+  onSortChange: (sort: LibrarySort) => void;
 }
 
-/** One home-page section: category header (label + count) + card grid. Renders nothing when empty. */
-export function CategorySection({ category, items }: CategorySectionProps) {
+/** One home-page section: category header (label + count + sort) + card grid.
+ * Renders nothing when empty. */
+export function CategorySection({ category, items, sort, onSortChange }: CategorySectionProps) {
   const { t } = useTranslation();
   if (items.length === 0) return null;
 
@@ -28,6 +35,9 @@ export function CategorySection({ category, items }: CategorySectionProps) {
         {Icon ? <Icon size={16} strokeWidth={1.75} className="shrink-0 text-muted" /> : null}
         <span className="font-semibold text-base text-snow">{t(`category.${category}`)}</span>
         <span className="font-mono text-sm tabular-nums text-muted">({items.length})</span>
+        <div className="ml-auto flex shrink-0 items-center gap-1">
+          <SortMenu sort={sort} onChange={onSortChange} idSuffix={category} />
+        </div>
       </h2>
       <div className={SERIES_GRID_CLASSNAME}>
         {items.map((series) => (
