@@ -430,13 +430,17 @@ export function SeriesDetailPage() {
   });
 
   if (query.isLoading) {
-    return <div className="h-64 animate-pulse bg-white/5" />;
+    return (
+      <div className="content-inset">
+        <div className="h-64 animate-pulse bg-white/5" />
+      </div>
+    );
   }
 
   if (query.isError) {
     const notFound = query.error instanceof ApiError && query.error.code === "NOT_FOUND";
     return (
-      <div className="flex flex-col items-center gap-2 py-24 text-center">
+      <div className="content-inset flex flex-col items-center gap-2 py-24 text-center">
         <p className="text-muted">{notFound ? t("series.notFound") : t("errors.generic")}</p>
         {!notFound && (
           <button
@@ -473,7 +477,7 @@ export function SeriesDetailPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <section className="relative -mx-3 sm:-mx-6">
+      <section className="relative">
         <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
           {backdropUrl && (
             <MediaImage

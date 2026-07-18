@@ -147,7 +147,7 @@ export function SeriesPreviewPage() {
 
   if (externalIds == null) {
     return (
-      <div className="flex flex-col items-center gap-2 py-24 text-center">
+      <div className="content-inset flex flex-col items-center gap-2 py-24 text-center">
         <p className="text-muted">{t("series.previewMissingIds")}</p>
         <Link to="/search" className="text-sm text-muted underline">
           {t("app.nav.search")}
@@ -157,12 +157,16 @@ export function SeriesPreviewPage() {
   }
 
   if (query.isLoading) {
-    return <div className="h-64 animate-pulse bg-white/5" />;
+    return (
+      <div className="content-inset">
+        <div className="h-64 animate-pulse bg-white/5" />
+      </div>
+    );
   }
 
   if (query.isError) {
     return (
-      <div className="flex flex-col items-center gap-2 py-24 text-center">
+      <div className="content-inset flex flex-col items-center gap-2 py-24 text-center">
         <p className="text-muted">{t("errors.generic")}</p>
         <button
           type="button"
@@ -198,7 +202,7 @@ export function SeriesPreviewPage() {
 
   return (
     <div className={`flex flex-col gap-6 ${pending ? "pointer-events-none opacity-60" : ""}`}>
-      <div className="flex flex-col gap-4 sm:flex-row">
+      <div className="content-inset flex flex-col gap-4 sm:flex-row">
         {imageUrl ? (
           <MediaImage
             src={imageUrl}

@@ -39,7 +39,7 @@ export function StatsPage() {
 
   if (query.isLoading) {
     return (
-      <div className="flex flex-col gap-6">
+      <div className="content-inset flex flex-col gap-6">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           {["a", "b", "c"].map((key) => (
             <div key={key} className="h-20 animate-pulse bg-white/5" />
@@ -53,7 +53,7 @@ export function StatsPage() {
 
   if (query.isError) {
     return (
-      <div className="flex flex-col items-center gap-2 py-24 text-center">
+      <div className="content-inset flex flex-col items-center gap-2 py-24 text-center">
         <p className="text-muted">{t("errors.generic")}</p>
         <button
           type="button"
@@ -92,7 +92,7 @@ export function StatsPage() {
       <ActivityHeatmapSection stats={stats} />
       <WeekdayHourSection stats={stats} />
 
-      <section className="flex flex-col gap-4 mt-8">
+      <section className="content-inset mt-8 flex flex-col gap-4">
         <h2 className="font-display italic text-snow text-2xl tracking-tight">
           {t("stats.ratingDistribution")}
         </h2>
@@ -124,7 +124,7 @@ export function StatsPage() {
       </section>
 
       {dated < total && (
-        <p className="text-center font-mono text-xs text-muted/70">
+        <p className="content-inset text-center font-mono text-xs text-muted/70">
           {t("stats.footer.caveat", { dated, total })}
         </p>
       )}

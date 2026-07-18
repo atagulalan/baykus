@@ -1,32 +1,23 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, Navigate } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { addEpisodeWatch, getCalendar, removeLatestEpisodeWatch } from "../api/client.ts";
 import type { CalendarDay, CalendarEntry } from "../api/types.ts";
 import { CalendarEntryRow } from "../components/CalendarEntryRow.tsx";
 import { MonthGrid } from "../components/MonthGrid.tsx";
+import { PageTitle } from "../components/PageTitle.tsx";
 import { PullToRefresh, useLibrarySweepRefresh } from "../components/PullToRefresh.tsx";
 import { ScheduleGrid } from "../components/ScheduleGrid.tsx";
 import { bucketNeedsDaySubheaders, groupIntoTimelineSections } from "../lib/calendarBuckets.ts";
 import { getAbsoluteWeek, getIsoWeek, getWeekRange, todayIso } from "../lib/date.ts";
 import { useToast } from "../lib/toast.tsx";
 
-/** E133: sticky mode chrome height, published so BUGÜN scroll-margin clears it. */
-const MODE_CHROME_HEIGHT_VAR = "--calendar-mode-chrome-height";
-/** Combined sticky offset: app header + mode tabs (E133 amends E78's non-sticky row). */
-const TODAY_SCROLL_MARGIN =
-  "calc(var(--app-header-height, 4rem) + var(--calendar-mode-chrome-height, 2.75rem))";
+/** The mode toggle lives in the sticky app navbar, so BUGÜN clears only that header. */
+const TODAY_SCROLL_MARGIN = "var(--app-header-height, 4rem)";
 
 type Mode = "timeline" | "month" | "schedule";
-
-/** E136: mode → path. Timeline stays at `/calendar` so nav + defaultStartPage keep working. */
-const MODE_PATH = {
-  timeline: "/calendar",
-  month: "/calendar/month",
-  schedule: "/calendar/schedule",
-} as const satisfies Record<Mode, string>;
 
 /** Tailwind `sm` — month grid only makes sense at this width and above (E135). */
 const DESKTOP_QUERY = "(min-width: 640px)";
@@ -152,32 +143,6 @@ function ensureTodayPresent(days: CalendarDay[], today: string): CalendarDay[] {
   );
 }
 
-function ModeTabs({ mode, showMonth }: { mode: Mode; showMonth: boolean }) {
-  const { t } = useTranslation();
-  // E135: month tab is desktop-only — on mobile the grid already collapses to a
-  // day list that duplicates timeline.
-  const tabs: Mode[] = showMonth ? ["timeline", "month", "schedule"] : ["timeline", "schedule"];
-  return (
-    <div className="inline-flex border border-white/10">
-      {tabs.map((tab) => (
-        <Link
-          key={tab}
-          to={MODE_PATH[tab]}
-          // Timeline's `/calendar` would otherwise stay active on `/calendar/*`
-          // (prefix match). Exact keeps only the current mode segment lit (E136).
-          activeOptions={{ exact: true }}
-          aria-current={mode === tab ? "page" : undefined}
-          className={`px-3 py-2 font-mono text-[10px] uppercase tracking-widest transition-colors ${
-            mode === tab ? "bg-yellow text-[#080808]" : "text-muted hover:text-snow"
-          }`}
-        >
-          {t(`calendar.mode.${tab}`)}
-        </Link>
-      ))}
-    </div>
-  );
-}
-
 function TimelineView({
   justWatched,
   onToggleWatched,
@@ -191,8 +156,7 @@ function TimelineView({
   const hasScrolledRef = useRef(false);
 
   // E73: wait two animation frames (past the initial paint/reflow) before the one-shot,
-  // instant anchor scroll. E133: scroll-margin clears both the app header and the
-  // sticky mode chrome (measured into --calendar-mode-chrome-height).
+  // instant anchor scroll. The scroll margin clears the sticky app navbar.
   useEffect(() => {
     if (query.isLoading || hasScrolledRef.current) return;
     let raf2 = 0;
@@ -209,12 +173,16 @@ function TimelineView({
   }, [query.isLoading]);
 
   if (query.isLoading) {
-    return <div className="h-64 animate-pulse bg-white/5" />;
+    return (
+      <div className="content-inset">
+        <div className="h-64 animate-pulse bg-white/5" />
+      </div>
+    );
   }
 
   if (query.isError) {
     return (
-      <div className="flex flex-col items-center gap-2 py-24 text-center">
+      <div className="content-inset flex flex-col items-center gap-2 py-24 text-center">
         <p className="text-muted">{t("errors.generic")}</p>
         <button
           type="button"
@@ -256,11 +224,11 @@ function TimelineView({
             style={isToday ? { scrollMarginTop: TODAY_SCROLL_MARGIN } : undefined}
           >
             <h2
-              className={`sticky z-20 bg-void/95 py-1.5 text-sm font-semibold backdrop-blur ${
+              className={`sticky z-20 bg-void/95 px-2 py-1.5 text-sm font-semibold backdrop-blur sm:px-4 ${
                 isToday ? "text-yellow" : "text-snow"
               }`}
               style={{
-                top: "calc(var(--app-header-height, 4rem) + var(--calendar-mode-chrome-height, 2.75rem))",
+                top: "var(--app-header-height, 4rem)",
               }}
             >
               {t(`calendar.section.${section.bucket}`)}
@@ -269,7 +237,7 @@ function TimelineView({
               {section.days.map((day) => (
                 <div key={day.date} className="flex flex-col gap-1">
                   {showDayHeaders ? (
-                    <h3 className="text-xs text-muted">{formatDayHeader(day.date)}</h3>
+                    <h3 className="px-2 text-xs text-muted sm:px-4">{formatDayHeader(day.date)}</h3>
                   ) : null}
                   {day.entries.length === 0 && isToday ? (
                     <TodayEmptyPanel
@@ -340,7 +308,7 @@ function MonthView() {
   );
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="content-inset flex flex-col gap-3">
       <div className="flex items-center justify-center gap-4">
         <button
           type="button"
@@ -448,9 +416,11 @@ function ScheduleView() {
       </div>
 
       {query.isLoading ? (
-        <div className="h-64 animate-pulse bg-white/5" />
+        <div className="content-inset">
+          <div className="h-64 animate-pulse bg-white/5" />
+        </div>
       ) : query.isError ? (
-        <div className="flex flex-col items-center gap-2 py-24 text-center">
+        <div className="content-inset flex flex-col items-center gap-2 py-24 text-center">
           <p className="text-muted">{t("errors.generic")}</p>
           <button
             type="button"
@@ -495,28 +465,6 @@ export function CalendarPage({ mode }: { mode: Mode }) {
   // versa). Timeline then re-runs the E73 today anchor from scrollY === 0.
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
-  }, []);
-
-  // E133: publish sticky mode-chrome height so the BUGÜN anchor clears it.
-  const modeChromeObserverRef = useRef<ResizeObserver | null>(null);
-  const modeChromeRef = useCallback((el: HTMLElement | null) => {
-    modeChromeObserverRef.current?.disconnect();
-    modeChromeObserverRef.current = null;
-    if (!el) {
-      document.documentElement.style.removeProperty(MODE_CHROME_HEIGHT_VAR);
-      return;
-    }
-    const chrome = el;
-    function updateHeight() {
-      document.documentElement.style.setProperty(
-        MODE_CHROME_HEIGHT_VAR,
-        `${chrome.getBoundingClientRect().height}px`,
-      );
-    }
-    updateHeight();
-    const observer = new ResizeObserver(updateHeight);
-    observer.observe(chrome);
-    modeChromeObserverRef.current = observer;
   }, []);
 
   const markWatched = useMutation({
@@ -575,17 +523,8 @@ export function CalendarPage({ mode }: { mode: Mode }) {
   return (
     <PullToRefresh onRefresh={pullRefresh}>
       <div className="flex flex-col gap-4">
-        {/* E133: sticky below the app header so mode switching stays reachable
-            after the timeline anchors to BUGÜN (amends 006 E78 non-sticky row). */}
-        <div
-          ref={modeChromeRef}
-          style={{ top: "var(--app-header-height, 3.5rem)" }}
-          className="sticky z-30 -mx-3 flex items-center justify-end border-b border-white/5 bg-void/95 px-3 py-2 backdrop-blur sm:-mx-6 sm:justify-between sm:px-6"
-        >
-          <h1 className="hidden font-display italic text-snow text-2xl tracking-tight sm:block">
-            {t("app.nav.calendar")}
-          </h1>
-          <ModeTabs mode={mode} showMonth={isDesktop} />
+        <div className="content-inset hidden sm:block">
+          <PageTitle>{t("app.nav.calendar")}</PageTitle>
         </div>
         {mode === "timeline" ? (
           <TimelineView justWatched={justWatched} onToggleWatched={toggleWatched} />

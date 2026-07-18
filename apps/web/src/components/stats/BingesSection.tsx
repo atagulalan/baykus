@@ -12,7 +12,7 @@ export function BingesSection({ stats }: BingesSectionProps) {
   if (stats.binges.length === 0) return null;
 
   return (
-    <section className="flex flex-col gap-4">
+    <section className="content-inset flex flex-col gap-4">
       <h2 className="font-display italic text-snow text-2xl tracking-tight">
         {t("stats.binges.title")}
       </h2>

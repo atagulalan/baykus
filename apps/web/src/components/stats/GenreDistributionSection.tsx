@@ -30,7 +30,7 @@ export function GenreDistributionSection({ stats }: GenreDistributionSectionProp
   }
 
   return (
-    <section className="flex flex-col gap-4">
+    <section className="content-inset flex flex-col gap-4">
       <h2 className="font-display italic text-snow text-2xl tracking-tight">
         {t("stats.genreDistribution.title")}
       </h2>

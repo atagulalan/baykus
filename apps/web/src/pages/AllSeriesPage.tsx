@@ -2,6 +2,7 @@ import { useParams } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { CATEGORY_ORDER } from "../api/types.ts";
 import { CategorySection } from "../components/CategorySection.tsx";
+import { PageTitle } from "../components/PageTitle.tsx";
 import { ProfileGuard } from "../components/ProfileGuard.tsx";
 import { PullToRefresh, useLibrarySweepRefresh } from "../components/PullToRefresh.tsx";
 import { SERIES_GRID_CLASSNAME } from "../lib/grid.ts";
@@ -23,24 +24,24 @@ export function AllSeriesPage() {
 function AllSeriesPageContent() {
   const { t } = useTranslation();
   const pullRefresh = useLibrarySweepRefresh();
-  const { sort, setSort, query, items, byCategory, categoriesToRender } =
+  const { sortFor, setSort, query, items, byCategory, categoriesToRender } =
     useLibraryFilter(CATEGORY_ORDER);
 
   return (
     <PullToRefresh onRefresh={pullRefresh}>
       <section className="flex flex-col gap-6">
-        <div className="hidden flex-wrap items-center justify-between gap-2 sm:flex">
-          <h1 className="font-display italic text-snow text-3xl tracking-tight">
+        <div className="content-inset hidden flex-wrap items-center justify-between gap-2 sm:flex">
+          <PageTitle>
             {t("profile.allSeries")}
             {query.data && (
-              <span className="font-sans not-italic text-lg text-muted ml-2">
+              <span className="ml-2 font-sans text-lg not-italic text-muted">
                 ({query.data.total})
               </span>
             )}
-          </h1>
+          </PageTitle>
         </div>
         {query.isLoading ? (
-          <div className={SERIES_GRID_CLASSNAME}>
+          <div className={`${SERIES_GRID_CLASSNAME} content-inset`}>
             {["a", "b", "c", "d", "e", "f"].map((key) => (
               <div
                 key={key}
@@ -49,7 +50,7 @@ function AllSeriesPageContent() {
             ))}
           </div>
         ) : query.isError ? (
-          <div className="flex flex-col items-center gap-4 py-24 text-center border border-white/5 bg-[#101010] p-6 mt-4">
+          <div className="content-inset mt-4 flex flex-col items-center gap-4 border border-white/5 bg-[#101010] py-24 text-center">
             <p className="font-mono text-xs text-muted uppercase tracking-widest">
               {t("errors.generic")}
             </p>
@@ -62,7 +63,7 @@ function AllSeriesPageContent() {
             </button>
           </div>
         ) : items.length === 0 ? (
-          <div className="flex flex-col items-center gap-4 py-24 text-center border border-white/5 bg-[#101010] p-6 mt-4">
+          <div className="content-inset mt-4 flex flex-col items-center gap-4 border border-white/5 bg-[#101010] py-24 text-center">
             <h1 className="font-display italic text-snow text-4xl tracking-tight">
               {t("library.empty.title")}
             </h1>
@@ -75,8 +76,8 @@ function AllSeriesPageContent() {
                 key={c}
                 category={c}
                 items={byCategory.get(c) ?? []}
-                sort={sort}
-                onSortChange={setSort}
+                sort={sortFor(c)}
+                onSortChange={(sort) => setSort(c, sort)}
               />
             ))}
           </div>

@@ -27,7 +27,7 @@ export function WeekdayHourSection({ stats }: WeekdayHourSectionProps) {
   const weekdayLabels = weekdayShortLabels();
 
   return (
-    <section className="flex flex-col gap-6 sm:flex-row sm:gap-8">
+    <section className="content-inset flex flex-col gap-6 sm:flex-row sm:gap-8">
       <div className="flex flex-1 flex-col gap-4">
         <h2 className="font-display italic text-snow text-2xl tracking-tight">
           {t("stats.byWeekday.title")}

@@ -25,7 +25,7 @@ export function RecentSection({ stats }: RecentSectionProps) {
   }
 
   return (
-    <section className="flex flex-col gap-4">
+    <section className="content-inset flex flex-col gap-4">
       <h2 className="font-display italic text-snow text-2xl tracking-tight">
         {t("stats.recent.title")}
       </h2>

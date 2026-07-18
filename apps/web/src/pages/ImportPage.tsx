@@ -11,6 +11,7 @@ import type {
   TvTimeImportProgressEvent,
   TvTimeReport,
 } from "../api/types.ts";
+import { PageTitle } from "../components/PageTitle.tsx";
 
 type Step = "upload" | "report" | "confirming" | "summary";
 
@@ -99,7 +100,9 @@ export function ImportPage() {
   if (step === "upload") {
     return (
       <div className="mx-auto flex max-w-lg flex-col gap-4">
-        <h1 className="font-display italic text-snow text-2xl">{t("importWizard.title")}</h1>
+        <div className="content-inset">
+          <PageTitle>{t("importWizard.title")}</PageTitle>
+        </div>
         <label
           onDragOver={(e) => {
             e.preventDefault();
@@ -190,7 +193,7 @@ export function ImportPage() {
 
     return (
       <div className="mx-auto flex max-w-md flex-col gap-4 border border-white/5 p-6">
-        <h1 className="font-display italic text-snow text-xl">{t("importWizard.confirming")}</h1>
+        <PageTitle>{t("importWizard.confirming")}</PageTitle>
 
         <div className="flex flex-col gap-2">
           <div className="h-3 w-full overflow-hidden bg-white/10">
@@ -220,7 +223,9 @@ export function ImportPage() {
   if (step === "report" && report) {
     return (
       <div className="mx-auto flex max-w-3xl flex-col gap-4">
-        <h1 className="font-display italic text-snow text-2xl">{t("importWizard.reportTitle")}</h1>
+        <div className="content-inset">
+          <PageTitle>{t("importWizard.reportTitle")}</PageTitle>
+        </div>
         <div className="flex flex-col gap-4">
           <details
             className="border border-white/5 p-4 bg-[#101010]"
@@ -369,11 +374,13 @@ export function ImportPage() {
           </details>
         )}
 
-        {confirmError && <p className="text-sm text-red-400">{t("importWizard.confirmError")}</p>}
+        {confirmError && (
+          <p className="content-inset text-sm text-red-400">{t("importWizard.confirmError")}</p>
+        )}
         <button
           type="button"
           onClick={handleConfirm}
-          className="self-start bg-yellow px-4 py-2.5 font-mono text-[10px] text-[#080808] uppercase tracking-widest disabled:opacity-50"
+          className="mx-3 self-start bg-yellow px-4 py-2.5 font-mono text-[10px] text-[#080808] uppercase tracking-widest disabled:opacity-50 sm:mx-6"
         >
           {t("importWizard.confirm")}
         </button>
@@ -384,7 +391,7 @@ export function ImportPage() {
   if (step === "summary" && summary) {
     return (
       <div className="mx-auto flex max-w-sm flex-col gap-4 border border-white/5 p-6 text-center">
-        <h1 className="font-display italic text-snow text-xl">{t("importWizard.summaryTitle")}</h1>
+        <PageTitle>{t("importWizard.summaryTitle")}</PageTitle>
         <dl className="flex flex-col gap-2 text-sm">
           <div className="flex justify-between">
             <dt className="text-muted">{t("importWizard.itemsCreated")}</dt>

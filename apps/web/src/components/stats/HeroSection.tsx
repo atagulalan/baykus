@@ -38,7 +38,7 @@ export function HeroSection({ stats }: HeroSectionProps) {
   const durationText = formatDurationLabel(formatDurationParts(stats.watchTimeMin), t);
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="content-inset flex flex-col gap-8">
       <div className="flex flex-col items-center gap-2 py-4 text-center">
         <p className="font-display italic text-snow text-6xl leading-none tracking-tight sm:text-7xl">
           {durationText}

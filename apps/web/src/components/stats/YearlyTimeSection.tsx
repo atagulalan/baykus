@@ -46,7 +46,7 @@ export function YearlyTimeSection({ stats }: YearlyTimeSectionProps) {
   const totalText = formatDurationLabel(formatDurationParts(yearData.totalMin), t);
 
   return (
-    <section className="flex flex-col gap-4">
+    <section className="content-inset flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="font-display italic text-snow text-2xl tracking-tight">
           {t("stats.yearlyTime.title")}

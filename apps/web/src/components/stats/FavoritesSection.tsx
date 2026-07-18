@@ -12,7 +12,7 @@ export function FavoritesSection({ stats }: FavoritesSectionProps) {
   if (stats.favoriteProgress.length === 0) return null;
 
   return (
-    <section className="flex flex-col gap-4">
+    <section className="content-inset flex flex-col gap-4">
       <h2 className="font-display italic text-snow text-2xl tracking-tight">
         {t("stats.favorites.title")}
       </h2>

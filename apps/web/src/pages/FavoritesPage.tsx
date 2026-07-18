@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useParams } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { listSeries } from "../api/client.ts";
+import { PageTitle } from "../components/PageTitle.tsx";
 import { ProfileGuard } from "../components/ProfileGuard.tsx";
 import { PullToRefresh, useLibrarySweepRefresh } from "../components/PullToRefresh.tsx";
 import { SeriesCard } from "../components/SeriesCard.tsx";
@@ -36,17 +37,19 @@ function FavoritesPageContent() {
   return (
     <PullToRefresh onRefresh={pullRefresh}>
       <section className="flex flex-col gap-6">
-        <h1 className="hidden font-display italic text-snow text-3xl tracking-tight sm:block">
-          {t("profile.favorites.title")}
-          {query.data && (
-            <span className="font-sans not-italic text-lg text-muted ml-2">
-              ({favorites.length})
-            </span>
-          )}
-        </h1>
+        <div className="content-inset hidden sm:block">
+          <PageTitle>
+            {t("profile.favorites.title")}
+            {query.data && (
+              <span className="ml-2 font-sans text-lg not-italic text-muted">
+                ({favorites.length})
+              </span>
+            )}
+          </PageTitle>
+        </div>
 
         {query.isLoading ? (
-          <div className={SERIES_GRID_CLASSNAME}>
+          <div className={`${SERIES_GRID_CLASSNAME} content-inset`}>
             {["a", "b", "c", "d", "e", "f"].map((key) => (
               <div
                 key={key}
@@ -55,7 +58,7 @@ function FavoritesPageContent() {
             ))}
           </div>
         ) : query.isError ? (
-          <div className="flex flex-col items-center gap-4 py-24 text-center border border-white/5 bg-[#101010] p-6 mt-4">
+          <div className="content-inset mt-4 flex flex-col items-center gap-4 border border-white/5 bg-[#101010] py-24 text-center">
             <p className="font-mono text-xs text-muted uppercase tracking-widest">
               {t("errors.generic")}
             </p>
@@ -69,11 +72,11 @@ function FavoritesPageContent() {
           </div>
         ) : favorites.length === 0 ? (
           // E79: zero-favorites deep link — the existing hint, no redirect.
-          <div className="flex flex-col items-center gap-4 py-24 text-center border border-white/5 bg-[#101010] p-6 mt-4">
+          <div className="content-inset mt-4 flex flex-col items-center gap-4 border border-white/5 bg-[#101010] py-24 text-center">
             <p className="font-mono text-xs text-muted/70">{t("profile.favorites.empty")}</p>
           </div>
         ) : (
-          <div className={SERIES_GRID_CLASSNAME}>
+          <div className={`${SERIES_GRID_CLASSNAME} content-inset`}>
             {favorites.map((series) => (
               <SeriesCard key={series.id} series={series} />
             ))}
