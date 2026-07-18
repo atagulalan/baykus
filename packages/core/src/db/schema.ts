@@ -11,6 +11,7 @@
  */
 
 import type {
+  CastMember,
   ContentRating,
   EpisodeType,
   ExternalRating,
@@ -60,6 +61,8 @@ export const items = sqliteTable(
     networks: text("networks", { mode: "json" }).$type<NetworkInfo[]>(),
     genres: text("genres", { mode: "json" }).$type<GenreInfo[]>(),
     tags: text("tags", { mode: "json" }).$type<TagInfo[]>(),
+    /** Top-billed cast (WP3) — enrichment-only like tags/watchProviders/externalRatings, never refreshed by refreshItem. */
+    cast: text("cast", { mode: "json" }).$type<CastMember[]>(),
     contentRatings: text("content_ratings", { mode: "json" }).$type<ContentRating[]>(),
     tmdbId: integer("tmdb_id").unique(),
     tvmazeId: integer("tvmaze_id").unique(),

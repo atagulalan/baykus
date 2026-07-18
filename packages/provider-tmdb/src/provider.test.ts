@@ -63,4 +63,24 @@ describe("createTmdbProvider — tvdbId resolution", () => {
     const position = await provider.findEpisodeByTvdbId?.(1);
     expect(position).toBeNull();
   });
+
+  it("getCredits fetches /tv/:id/credits and maps top-billed cast", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      jsonResponse({
+        cast: [
+          { id: 1, name: "Lead Actor", character: "Hero", profile_path: "/a.jpg", order: 0 },
+          { id: 2, name: "Second Actor", character: "Sidekick", profile_path: null, order: 1 },
+        ],
+      }),
+    );
+    const provider = createTmdbProvider({ apiKey: "x".repeat(32) });
+    const cast = await provider.getCredits?.({ tmdbId: 94997 });
+
+    expect(cast).toEqual([
+      { id: 1, name: "Lead Actor", character: "Hero", profileRef: "tmdb:/a.jpg", order: 0 },
+      { id: 2, name: "Second Actor", character: "Sidekick", order: 1 },
+    ]);
+    const url = vi.mocked(fetch).mock.calls[0]?.[0] as string;
+    expect(url).toContain("/tv/94997/credits");
+  });
 });

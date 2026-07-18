@@ -1,4 +1,5 @@
 import type {
+  CastMember,
   ContentRating,
   EpisodeType,
   ExternalRating,
@@ -69,6 +70,7 @@ export interface SeriesDetail extends SeriesSummary {
   overview: string | null;
   genres: GenreInfo[];
   tags: TagInfo[];
+  cast: CastMember[];
   contentRatings: ContentRating[];
   networks: NetworkInfo[];
   originCountry: string[];

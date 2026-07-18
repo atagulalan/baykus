@@ -1,4 +1,5 @@
 import type {
+  CastMember,
   ExternalIds,
   ExternalRating,
   MetadataProvider,
@@ -98,6 +99,7 @@ function toItemInsertValues(
   externalRatings: ExternalRating[] | null,
   watchProviders: WatchProviderInfo[] | null,
   tags: TagInfo[] | null,
+  cast: CastMember[] | null,
 ) {
   return {
     mediaType: details.mediaType,
@@ -120,6 +122,7 @@ function toItemInsertValues(
     networks: details.networks ?? null,
     genres: details.genres ?? null,
     tags: tags && tags.length > 0 ? tags : null,
+    cast: cast && cast.length > 0 ? cast : null,
     contentRatings: details.contentRatings ?? null,
     tmdbId: details.externalIds.tmdbId ?? null,
     tvmazeId: details.externalIds.tvmazeId ?? null,
@@ -226,6 +229,7 @@ export interface AddSeriesOptions {
   externalRatings?: ExternalRating[];
   watchProviders?: WatchProviderInfo[];
   tags?: TagInfo[];
+  cast?: CastMember[];
   /** How the item entered the library (E32). Defaults to "manual". */
   addedVia?: AddedVia;
   needsReview?: boolean;
@@ -303,6 +307,7 @@ export function createLibrary(db: LibraryDatabase): Library {
               opts.externalRatings ?? null,
               opts.watchProviders ?? null,
               opts.tags ?? null,
+              opts.cast ?? null,
             ),
           )
           .returning({ id: schema.items.id })
@@ -471,6 +476,7 @@ export function createLibrary(db: LibraryDatabase): Library {
         overview: item.overview,
         genres: item.genres ?? [],
         tags: item.tags ?? [],
+        cast: item.cast ?? [],
         contentRatings: item.contentRatings ?? [],
         networks: item.networks ?? [],
         originCountry: item.originCountry ? item.originCountry.split(",") : [],

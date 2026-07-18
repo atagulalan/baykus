@@ -3,7 +3,12 @@ import type { ExternalIds, MetadataProvider } from "@baykus/provider-sdk";
 import { Hono } from "hono";
 import { z } from "zod";
 import { ApiError } from "../middleware/errors.ts";
-import { enrichExternalRatings, enrichTags, enrichWatchProviders } from "../providers/enrich.ts";
+import {
+  enrichCast,
+  enrichExternalRatings,
+  enrichTags,
+  enrichWatchProviders,
+} from "../providers/enrich.ts";
 
 const externalIdsSchema = z
   .object({
@@ -100,16 +105,18 @@ export function createLibraryRoutes(library: Library, providers: MetadataProvide
     const externalIds = toExternalIds(body.externalIds);
     const region = library.getSettings().region;
     const details = await provider.getSeriesDetails(externalIds);
-    const [externalRatings, watchProviders, tags] = await Promise.all([
+    const [externalRatings, watchProviders, tags, cast] = await Promise.all([
       enrichExternalRatings(providers, externalIds),
       enrichWatchProviders(providers, externalIds, region),
       enrichTags(providers, externalIds),
+      enrichCast(providers, externalIds),
     ]);
     const summary = library.addSeries(details, {
       ...(body.manualList !== undefined ? { manualList: body.manualList } : {}),
       externalRatings,
       watchProviders,
       tags,
+      cast,
     });
     return c.json(summary, 201);
   });

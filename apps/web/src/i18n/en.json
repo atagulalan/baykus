@@ -115,7 +115,20 @@
     "unfavorite": "Remove from favorites",
     "unwatchSeasonTitle": "Are you sure?",
     "unwatchSeasonWarning": "This will delete all your watch history for this season. Do you want to continue?",
-    "unwatchSeasonConfirm": "Yes, delete"
+    "unwatchSeasonConfirm": "Yes, delete",
+    "details": {
+      "trigger": "View details",
+      "title": "Details",
+      "genres": "Genres",
+      "tags": "Tags",
+      "production": "Production",
+      "ratings": "Ratings",
+      "providers": "Watch providers",
+      "yourRating": "Your rating"
+    },
+    "cast": {
+      "title": "Cast"
+    }
   },
   "episode": {
     "toggleWatched": "Watched",

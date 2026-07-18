@@ -67,6 +67,7 @@ function fakeProvider(
       externalRatings: false,
       tags: false,
       images: true,
+      credits: false,
     },
     requiresApiKey: false,
     async search() {

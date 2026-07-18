@@ -1,4 +1,5 @@
 import {
+  type CastMember,
   createRateLimiter,
   type EpisodePosition,
   type ExternalIds,
@@ -14,10 +15,12 @@ import {
   type WatchProviderInfo,
 } from "@baykus/provider-sdk";
 import {
+  mapCredits,
   mapSearchResults,
   mapSeriesDetails,
   mapWatchProviders,
   resolveTmdbImageUrl,
+  type TmdbCreditsResponse,
   type TmdbSearchResponse,
   type TmdbSeasonDetails,
   type TmdbSeriesDetails,
@@ -86,6 +89,7 @@ export function createTmdbProvider(opts: { apiKey: string }): MetadataProvider {
       externalRatings: true,
       tags: false,
       images: true,
+      credits: true,
     },
     requiresApiKey: true,
 
@@ -128,6 +132,12 @@ export function createTmdbProvider(opts: { apiKey: string }): MetadataProvider {
           fetchedAt: new Date().toISOString(),
         },
       ];
+    },
+
+    async getCredits(ref: ExternalIds): Promise<CastMember[]> {
+      const id = await resolveShowId(ref);
+      const response = await get<TmdbCreditsResponse>(`/tv/${id}/credits`);
+      return mapCredits(response);
     },
 
     async findEpisodeByTvdbId(tvdbEpisodeId: number): Promise<EpisodePosition | null> {

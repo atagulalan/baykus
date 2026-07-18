@@ -53,6 +53,7 @@ function fakeProvider(opts: { detailsError?: Error } = {}): MetadataProvider {
       externalRatings: false,
       tags: false,
       images: true,
+      credits: false,
     },
     requiresApiKey: false,
     async search() {
@@ -232,6 +233,7 @@ describe("POST /api/library/series/:id/refresh — push scoped to the active tri
         externalRatings: false,
         tags: false,
         images: true,
+        credits: false,
       },
       requiresApiKey: false,
       async search() {

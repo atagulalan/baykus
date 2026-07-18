@@ -2,10 +2,12 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
+  mapCredits,
   mapSearchResults,
   mapSeriesDetails,
   mapWatchProviders,
   resolveTmdbImageUrl,
+  type TmdbCreditsResponse,
   type TmdbSearchResponse,
   type TmdbSeasonDetails,
   type TmdbSeriesDetails,
@@ -113,6 +115,51 @@ describe("mapWatchProviders", () => {
 
   it("returns [] for a region with no data", () => {
     expect(mapWatchProviders(fixture, "DE")).toEqual([]);
+  });
+});
+
+describe("mapCredits", () => {
+  const fixture = loadFixture<TmdbCreditsResponse>("tv-credits.json");
+  const cast = mapCredits(fixture);
+
+  it("maps name, character, profileRef, order — sorted by billing order", () => {
+    expect(cast).toEqual([
+      {
+        id: 1223786,
+        name: "Emma D'Arcy",
+        character: "Rhaenyra Targaryen",
+        profileRef: "tmdb:/wGSHNjHz5at7WLNXR6Xh6ZTsuGb.jpg",
+        order: 0,
+      },
+      {
+        id: 17419,
+        name: "Matt Smith",
+        character: "Daemon Targaryen",
+        profileRef: "tmdb:/xkSXlY5uSDX4h5rGx73KFEqxYUR.jpg",
+        order: 1,
+      },
+      {
+        id: 108827,
+        name: "Olivia Cooke",
+        character: "Alicent Hightower",
+        profileRef: "tmdb:/6WdxfBYNhK3xTOex5RVWNS8Nffh.jpg",
+        order: 2,
+      },
+      { id: 233413, name: "Actor No Photo", order: 3 },
+    ]);
+  });
+
+  it("drops a null profile_path and an empty character rather than keeping them", () => {
+    const noPhoto = cast.find((c) => c.name === "Actor No Photo");
+    expect(noPhoto?.profileRef).toBeUndefined();
+    expect(noPhoto?.character).toBeUndefined();
+  });
+
+  it("caps the list at the top-billed 20", () => {
+    const many: TmdbCreditsResponse = {
+      cast: Array.from({ length: 30 }, (_, i) => ({ id: i, name: `Actor ${i}`, order: i })),
+    };
+    expect(mapCredits(many)).toHaveLength(20);
   });
 });
 

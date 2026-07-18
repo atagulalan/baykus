@@ -212,11 +212,21 @@ export interface TagInfo {
   name: string;
 }
 
+/** Top-billed cast member (WP3: series credits — spec 010). */
+export interface CastMember {
+  id?: number;
+  name: string;
+  character?: string;
+  profileRef?: string;
+  order: number;
+}
+
 export interface SeriesDetail extends SeriesSummary {
   tagline: string | null;
   overview: string | null;
   genres: GenreInfo[];
   tags: TagInfo[];
+  cast: CastMember[];
   contentRatings: ContentRating[];
   networks: NetworkInfo[];
   originalLanguage: string | null;
