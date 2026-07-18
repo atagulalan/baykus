@@ -209,6 +209,36 @@ export function updateSettings(patch: SettingsPatch): Promise<Settings> {
   return request<Settings>("/settings", { method: "PATCH", body: JSON.stringify(patch) });
 }
 
+/**
+ * WP4: profile photo upload — multipart, same pattern as importZip() for a
+ * non-JSON request body.
+ */
+export async function uploadAvatar(file: File): Promise<Settings> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch("/api/settings/avatar", {
+    method: "POST",
+    headers: { "X-Baykus": "1" },
+    body: formData,
+  });
+
+  const isJson = res.headers.get("content-type")?.includes("application/json") ?? false;
+  const body: unknown = isJson ? await res.json() : undefined;
+
+  if (!res.ok) {
+    const envelope = body as ApiErrorEnvelope | undefined;
+    throw new ApiError(
+      envelope?.error.code ?? "INTERNAL",
+      envelope?.error.message ?? res.statusText,
+      res.status,
+      envelope?.error.details ?? null,
+    );
+  }
+
+  return body as Settings;
+}
+
 export function refreshSeries(id: number): Promise<RefreshResult> {
   return request<RefreshResult>(`/library/series/${id}/refresh`, { method: "POST" });
 }

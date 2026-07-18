@@ -2,10 +2,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 import { ChevronRight, Settings } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { getStats, listSeries } from "../api/client.ts";
+import { getSettings, getStats, listSeries } from "../api/client.ts";
 import type { AuthSession } from "../api/types.ts";
+import { ProfileBannerPicker } from "../components/ProfileBannerPicker.tsx";
 import { ProfileGuard } from "../components/ProfileGuard.tsx";
+import { ProfilePhotoUpload } from "../components/ProfilePhotoUpload.tsx";
 import { SeriesCard } from "../components/SeriesCard.tsx";
+import { formatDurationLabel, formatDurationParts } from "../lib/date.ts";
 import {
   startManualSweep,
   useManualRefreshProgress,
@@ -15,6 +18,9 @@ import { useToast } from "../lib/toast.tsx";
 
 /** E79: the rail shows at most this many favorites; beyond it the heading links to the full page. */
 const PROFILE_FAVORITES_LIMIT = 6;
+
+/** WP4: same overflow-to-full-page rail pattern for All-Series (item 1). */
+const PROFILE_ALL_SERIES_LIMIT = 6;
 
 /** E58: favorites rail order — most recently watched first, nulls last. Shared with FavoritesPage (E79). */
 export function byLastWatchedDesc(
@@ -36,16 +42,19 @@ function StatTile({ label, value }: { label: string; value: string }) {
   );
 }
 
-function IdentityRow({ session, handle }: { session: AuthSession; handle: string }) {
+function IdentityRow({
+  session,
+  handle,
+  avatarRef,
+}: {
+  session: AuthSession;
+  handle: string;
+  avatarRef: string | null;
+}) {
   const { t } = useTranslation();
   return (
     <div className="flex items-center gap-4">
-      <div
-        className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white/5 text-2xl"
-        aria-hidden="true"
-      >
-        🦉
-      </div>
+      <ProfilePhotoUpload avatarRef={avatarRef} />
       <h1 className="flex-1 font-display italic text-snow text-3xl tracking-tight">
         {session.mode === "single" ? t("profile.title") : `@${handle}`}
       </h1>
@@ -84,15 +93,23 @@ function ProfilePageContent({ handle, session }: { handle: string; session: Auth
     queryKey: ["library", "lastWatched"],
     queryFn: () => listSeries({ sort: "lastWatched" }),
   });
+  const settingsQuery = useQuery({ queryKey: ["settings"], queryFn: getSettings });
 
-  const favorites = (libraryQuery.data?.items ?? [])
-    .filter((series) => series.favorite)
+  const allSeries = libraryQuery.data?.items ?? [];
+  const favorites = allSeries.filter((series) => series.favorite).sort(byLastWatchedDesc);
+  const bannerCandidates = allSeries
+    .filter((series) => series.backdropRef !== null)
     .sort(byLastWatchedDesc);
   const stats = statsQuery.data;
+  const settings = settingsQuery.data;
+
+  const timeSpentValue = formatDurationLabel(formatDurationParts(stats?.watchTimeMin ?? 0), t);
 
   return (
     <div className="flex flex-col gap-8">
-      <IdentityRow session={session} handle={handle} />
+      <ProfileBannerPicker bannerRef={settings?.bannerRef ?? null} candidates={bannerCandidates} />
+
+      <IdentityRow session={session} handle={handle} avatarRef={settings?.avatarRef ?? null} />
 
       <section className="flex flex-col gap-3">
         {favorites.length > PROFILE_FAVORITES_LIMIT ? (
@@ -132,18 +149,53 @@ function ProfilePageContent({ handle, session }: { handle: string; session: Auth
         )}
       </section>
 
+      <section className="flex flex-col gap-3">
+        {/* WP4 item 1: All-Series as a horizontal rail — same overflow-to-full-page pattern as favorites. */}
+        {allSeries.length > PROFILE_ALL_SERIES_LIMIT ? (
+          <h2 className="font-mono text-xs uppercase tracking-widest text-yellow">
+            <Link
+              to="/user/$handle/all-series"
+              params={{ handle }}
+              className="group flex min-h-11 items-center gap-2"
+            >
+              <span>{t("profile.allSeries")}</span>
+              <span className="font-mono text-xs text-muted transition-colors group-hover:text-snow">
+                {libraryQuery.data?.total ?? allSeries.length}
+              </span>
+              <ChevronRight
+                size={14}
+                className="text-muted transition-colors group-hover:text-snow"
+                aria-hidden="true"
+              />
+            </Link>
+          </h2>
+        ) : (
+          <h2 className="font-mono text-xs uppercase tracking-widest text-yellow">
+            {t("profile.allSeries")}
+          </h2>
+        )}
+        {allSeries.length === 0 ? (
+          <p className="font-mono text-xs text-muted/70">{t("profile.allSeriesEmpty")}</p>
+        ) : (
+          <div className="flex gap-3 overflow-x-auto pb-2">
+            {allSeries.slice(0, PROFILE_ALL_SERIES_LIMIT).map((series) => (
+              <div key={series.id} className="w-24 shrink-0 sm:w-28">
+                <SeriesCard series={series} />
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
       <Link
         to="/user/$handle/stats"
         params={{ handle }}
         className="grid grid-cols-3 gap-3 transition-opacity hover:opacity-80"
       >
+        <StatTile label={t("stats.timeSpent")} value={timeSpentValue} />
         <StatTile
           label={t("stats.episodesWatched")}
           value={(stats?.episodesWatched ?? 0).toLocaleString("tr-TR")}
-        />
-        <StatTile
-          label={t("stats.watchTimeHours")}
-          value={Math.round((stats?.watchTimeMin ?? 0) / 60).toLocaleString("tr-TR")}
         />
         <StatTile
           label={t("stats.activeSeries")}
@@ -152,14 +204,6 @@ function ProfilePageContent({ handle, session }: { handle: string; session: Auth
       </Link>
 
       <div className="flex flex-col divide-y divide-white/5 border border-white/5">
-        <Link
-          to="/user/$handle/all-series"
-          params={{ handle }}
-          className="flex items-center justify-between p-4 text-sm text-snow hover:bg-white/5 transition-colors"
-        >
-          <span>{t("profile.allSeries")}</span>
-          <span className="font-mono text-xs text-muted">{libraryQuery.data?.total ?? 0}</span>
-        </Link>
         <Link
           to="/user/$handle/stats"
           params={{ handle }}

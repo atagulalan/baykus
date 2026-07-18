@@ -2,7 +2,12 @@ import type { Library, SettingsPatch, UiPrefs } from "@baykus/core";
 import type { MetadataProvider } from "@baykus/provider-sdk";
 import { Hono } from "hono";
 import { z } from "zod";
+import { ApiError } from "../middleware/errors.ts";
 import { effectiveScrapersEnabled, refreshProviders } from "../providers/registry.ts";
+
+/** WP4: profile photo upload — reasonable caps for a small avatar, not a media library. */
+const MAX_AVATAR_BYTES = 3 * 1024 * 1024;
+const ALLOWED_AVATAR_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 
 const librarySortSchema = z.enum(["lastWatched", "added", "title", "rating", "nextAir"]);
 
@@ -43,6 +48,8 @@ const patchSettingsSchema = z
     defaultStartPage: z.enum(["home", "calendar", "stats"]).optional(),
     newSeriesDefaultStatus: z.enum(["watching", "watchlist"]).optional(),
     uiPrefs: uiPrefsSchema.nullable().optional(),
+    /** WP4: an ImageRef ("provider:path") of a watched series' backdrop, or null to clear. */
+    bannerRef: z.string().min(1).nullable().optional(),
   })
   .strict();
 
@@ -70,6 +77,9 @@ function toSettingsPatch(parsed: z.infer<typeof patchSettingsSchema>): SettingsP
   }
   if (parsed.uiPrefs !== undefined) {
     patch.uiPrefs = parsed.uiPrefs as UiPrefs | null;
+  }
+  if (parsed.bannerRef !== undefined) {
+    patch.bannerRef = parsed.bannerRef;
   }
   return patch;
 }
@@ -107,6 +117,41 @@ export function createSettingsRoutes(
     }
 
     return c.json(settings);
+  });
+
+  /**
+   * WP4: profile photo upload — stored as raw bytes in the `profile_media`
+   * table (0006_profile_media migration), works identically in single and
+   * multi mode (each library, single or per-account, already owns its own
+   * tables). See settings.ts's `setAvatar` doc comment.
+   */
+  app.post("/api/settings/avatar", async (c) => {
+    const body = await c.req.parseBody();
+    const file = body.file;
+    if (!(file instanceof File)) {
+      throw new ApiError("VALIDATION_FAILED", "multipart field 'file' (image) is required");
+    }
+    if (!ALLOWED_AVATAR_MIME_TYPES.has(file.type)) {
+      throw new ApiError("VALIDATION_FAILED", `unsupported image type "${file.type}"`);
+    }
+    if (file.size > MAX_AVATAR_BYTES) {
+      throw new ApiError("PAYLOAD_TOO_LARGE", "avatar image exceeds 3 MB");
+    }
+
+    const bytes = Buffer.from(await file.arrayBuffer());
+    const settings = library.setAvatar(file.type, bytes);
+    return c.json(settings);
+  });
+
+  app.get("/api/settings/avatar", (c) => {
+    const avatar = library.getAvatar();
+    if (!avatar) throw new ApiError("NOT_FOUND", "no profile photo set");
+
+    c.header("Content-Type", avatar.mimeType);
+    // The `v=` query param (the avatarRef token) changes on every re-upload, so an
+    // immutable cache is safe — a stale browser cache never outlives the ref that named it.
+    c.header("Cache-Control", "public, max-age=31536000, immutable");
+    return c.body(new Uint8Array(avatar.data));
   });
 
   return app;

@@ -21,6 +21,8 @@ export interface SeriesSummary {
   /** E52: TMDB-parity URL identity — null until a resolving/refreshing provider supplies one. */
   tmdbId: number | null;
   posterRef: ImageRef | null;
+  /** WP4: sourced for the profile banner picker (backdrops of watched series) — same value as SeriesDetail.backdropRef. */
+  backdropRef: ImageRef | null;
   year: number | null;
   category: WatchCategory;
   manualList: ManualList | null;

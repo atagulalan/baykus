@@ -225,4 +225,32 @@ describe("exportLibraryZip", () => {
 
     expect(entriesA).toEqual(entriesB);
   });
+
+  // WP4
+  it("omits library/avatar.json when no profile photo is set", async () => {
+    const { db } = setupSeries();
+    const buffer = await streamToBuffer(exportLibraryZip(db, { now: "2026-01-03T00:00:00Z" }));
+    const entries = await readZipEntries(buffer);
+
+    expect(entries["library/avatar.json"]).toBeUndefined();
+  });
+
+  it("includes library/avatar.json (base64, no updatedAt) when a photo is set", async () => {
+    const { db } = setupSeries();
+    db.insert(schema.profileMedia)
+      .values({
+        kind: "avatar",
+        mimeType: "image/webp",
+        data: Buffer.from("fake-webp-bytes"),
+        updatedAt: "2026-01-02T00:00:00Z",
+      })
+      .run();
+    const buffer = await streamToBuffer(exportLibraryZip(db, { now: "2026-01-03T00:00:00Z" }));
+    const entries = await readZipEntries(buffer);
+
+    expect(JSON.parse(entries["library/avatar.json"] ?? "null")).toEqual({
+      mimeType: "image/webp",
+      data: Buffer.from("fake-webp-bytes").toString("base64"),
+    });
+  });
 });

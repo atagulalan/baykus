@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import type { Stats } from "../../api/types.ts";
-import { formatDurationParts } from "../../lib/date.ts";
+import { formatDurationLabel, formatDurationParts } from "../../lib/date.ts";
 import { HBarList } from "./HBarList.tsx";
 import { StatTile } from "./StatTile.tsx";
 
@@ -14,17 +14,7 @@ export function BacklogSection({ stats }: BacklogSectionProps) {
   const { episodes, seriesCount, watchTimeMin, topSeries } = stats.backlog;
   if (episodes === 0) return null;
 
-  const parts = formatDurationParts(watchTimeMin);
-  const timeValue =
-    parts.mode === "monthsDaysHours"
-      ? t("stats.duration.monthsDaysHours", {
-          months: parts.months,
-          days: parts.days,
-          hours: parts.hours,
-        })
-      : parts.mode === "daysHours"
-        ? t("stats.duration.daysHours", { days: parts.days, hours: parts.hours })
-        : t("stats.duration.hoursMinutes", { hours: parts.hours, minutes: parts.minutes });
+  const timeValue = formatDurationLabel(formatDurationParts(watchTimeMin), t);
 
   return (
     <section className="flex flex-col gap-4">

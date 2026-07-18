@@ -5,6 +5,7 @@ import type { LibraryDatabase } from "../db/open.ts";
 import * as schema from "../db/schema.ts";
 import { canonicalJson } from "./canonical.ts";
 import type {
+  ZipAvatarEntry,
   ZipItemEntry,
   ZipManifest,
   ZipRatingEntry,
@@ -233,6 +234,23 @@ function buildSettings(db: LibraryDatabase, includeSecrets: boolean): ZipSetting
   return out;
 }
 
+/**
+ * WP4: the uploaded profile photo — omitted entirely (no `library/avatar.json`
+ * entry) when unset, so a library without one exports byte-identical to
+ * before this feature existed (the round-trip test's fixture never sets an
+ * avatar). Purely additive: older importers ignore an unknown zip entry, so
+ * this doesn't need a SCHEMA_VERSION bump.
+ */
+function buildAvatarEntry(db: LibraryDatabase): ZipAvatarEntry | null {
+  const row = db
+    .select({ mimeType: schema.profileMedia.mimeType, data: schema.profileMedia.data })
+    .from(schema.profileMedia)
+    .where(eq(schema.profileMedia.kind, "avatar"))
+    .get();
+  if (!row) return null;
+  return { mimeType: row.mimeType, data: (row.data as Buffer).toString("base64") };
+}
+
 function buildManifest(
   now: string,
   counts: { items: number; watches: number; ratings: number },
@@ -253,13 +271,17 @@ export interface ExportOptions {
   now?: string;
 }
 
-/** Article III: streams manifest.json + library/{items,watches,ratings,settings}.json as a zip. */
+/**
+ * Article III: streams manifest.json + library/{items,watches,ratings,settings}.json,
+ * plus an optional library/avatar.json (WP4 — only when a profile photo is set), as a zip.
+ */
 export function exportLibraryZip(db: LibraryDatabase, opts: ExportOptions = {}): Archiver {
   const now = opts.now ?? new Date().toISOString();
   const items = buildItemEntries(db);
   const watches = buildWatchEntries(db);
   const ratings = buildRatingEntries(db);
   const settings = buildSettings(db, opts.includeSecrets ?? false);
+  const avatar = buildAvatarEntry(db);
   const manifest = buildManifest(now, {
     items: items.length,
     watches: watches.length,
@@ -272,6 +294,7 @@ export function exportLibraryZip(db: LibraryDatabase, opts: ExportOptions = {}):
   archive.append(canonicalJson(watches), { name: "library/watches.json" });
   archive.append(canonicalJson(ratings), { name: "library/ratings.json" });
   archive.append(canonicalJson(settings), { name: "library/settings.json" });
+  if (avatar) archive.append(canonicalJson(avatar), { name: "library/avatar.json" });
   void archive.finalize();
   return archive;
 }

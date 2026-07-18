@@ -2,7 +2,7 @@ import { RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Stats } from "../../api/types.ts";
-import { formatDurationParts } from "../../lib/date.ts";
+import { formatDurationLabel, formatDurationParts } from "../../lib/date.ts";
 import { StatTile } from "./StatTile.tsx";
 
 interface HeroSectionProps {
@@ -35,23 +35,7 @@ export function HeroSection({ stats }: HeroSectionProps) {
     setActivityIndex((prev) => (prev + 1) % FUN_ACTIVITIES.length);
   };
 
-  const parts = formatDurationParts(stats.watchTimeMin);
-  const durationText =
-    parts.mode === "monthsDaysHours"
-      ? t("stats.duration.monthsDaysHours", {
-          months: parts.months,
-          days: parts.days,
-          hours: parts.hours,
-        })
-      : parts.mode === "daysHours"
-        ? t("stats.duration.daysHours", {
-            days: parts.days,
-            hours: parts.hours,
-          })
-        : t("stats.duration.hoursMinutes", {
-            hours: parts.hours,
-            minutes: parts.minutes,
-          });
+  const durationText = formatDurationLabel(formatDurationParts(stats.watchTimeMin), t);
 
   return (
     <div className="flex flex-col gap-8">

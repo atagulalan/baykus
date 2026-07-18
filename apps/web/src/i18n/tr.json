@@ -278,11 +278,13 @@
   "stats": {
     "episodesWatched": "Bölüm sayısı",
     "watchTimeHours": "Toplam süre (saat)",
+    "timeSpent": "İzleme süresi",
     "activeSeries": "Aktif dizi sayısı",
     "ratingDistribution": "Puan dağılımı",
     "empty": "Henüz izleme kaydı yok",
     "mostRewatched": "En Çok Tekrar İzlenenler",
     "duration": {
+      "yearsDaysHours": "{{years}}y {{days}}g {{hours}}s",
       "monthsDaysHours": "{{months}}a {{days}}g {{hours}}s",
       "daysHours": "{{days}}g {{hours}}s",
       "hoursMinutes": "{{hours}}s {{minutes}}dk"
@@ -404,10 +406,23 @@
   "profile": {
     "title": "Profilim",
     "allSeries": "Tüm diziler",
+    "allSeriesEmpty": "Henüz kütüphanende dizi yok.",
     "detailedStats": "Detaylı istatistikler",
     "favorites": {
       "title": "Favoriler",
       "empty": "Dizi detayındaki kalple favorilerini seç."
+    },
+    "banner": {
+      "edit": "Kapak fotoğrafını değiştir",
+      "title": "Kapak fotoğrafı seç",
+      "empty": "İzlediğin dizilerden kapak fotoğrafı seçmek için önce bir dizi ekle.",
+      "clear": "Kaldır"
+    },
+    "photo": {
+      "upload": "Profil fotoğrafını değiştir",
+      "uploading": "Yükleniyor…",
+      "invalidType": "Desteklenmeyen dosya türü — jpg, png, webp veya gif seç.",
+      "tooLarge": "Fotoğraf çok büyük — en fazla 3 MB."
     }
   },
   "notFound": {

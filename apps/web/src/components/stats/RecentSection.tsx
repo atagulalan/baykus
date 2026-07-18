@@ -1,7 +1,7 @@
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import type { Stats } from "../../api/types.ts";
-import { formatDurationParts } from "../../lib/date.ts";
+import { formatDurationLabel, formatDurationParts } from "../../lib/date.ts";
 import { StatTile } from "./StatTile.tsx";
 
 interface RecentSectionProps {
@@ -12,17 +12,7 @@ function windowValue(
   window: { episodes: number; watchTimeMin: number },
   t: TFunction,
 ): { value: string; sub: string } {
-  const parts = formatDurationParts(window.watchTimeMin);
-  const value =
-    parts.mode === "monthsDaysHours"
-      ? t("stats.duration.monthsDaysHours", {
-          months: parts.months,
-          days: parts.days,
-          hours: parts.hours,
-        })
-      : parts.mode === "daysHours"
-        ? t("stats.duration.daysHours", { days: parts.days, hours: parts.hours })
-        : t("stats.duration.hoursMinutes", { hours: parts.hours, minutes: parts.minutes });
+  const value = formatDurationLabel(formatDurationParts(window.watchTimeMin), t);
   return { value, sub: t("stats.recent.episodesSub", { count: window.episodes }) };
 }
 

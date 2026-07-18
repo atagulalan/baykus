@@ -49,6 +49,7 @@ function makeV3MigrationsFolder(): string {
 const ALL_TABLES = [
   "episodes",
   "items",
+  "profile_media",
   "push_subscriptions",
   "ratings",
   "refresh_log",
@@ -66,7 +67,7 @@ describe("openLibraryDb", () => {
     sqlite.close();
   });
 
-  it("creates all 9 library tables", () => {
+  it("creates all 10 library tables", () => {
     const { sqlite } = openLibraryDb(":memory:");
     const rows = sqlite
       .prepare(

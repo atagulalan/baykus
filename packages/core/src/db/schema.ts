@@ -24,6 +24,7 @@ import type {
 } from "@baykus/provider-sdk";
 import { sql } from "drizzle-orm";
 import {
+  blob,
   check,
   index,
   integer,
@@ -177,11 +178,26 @@ export const pushSubscriptions = sqliteTable("push_subscriptions", {
  * only), scrapers_enabled ("0"|"1"), theme ("dark"|"light"|"system"),
  * schema_version (zip schema version this library was created at),
  * watching_window_days (integer days as string, default "30"),
- * ui_prefs (JSON string of browse chrome prefs — E143).
+ * ui_prefs (JSON string of browse chrome prefs — E143), banner_ref (WP4:
+ * chosen profile banner ImageRef — a small string, fits the k/v store as-is).
  */
 export const settings = sqliteTable("settings", {
   key: text("key").primaryKey(),
   value: text("value").notNull(),
+});
+
+/**
+ * WP4 (0006 migration): the uploaded profile photo's raw bytes. A dedicated
+ * BLOB table (not base64-in-`settings`) — avoids ~33% text-encoding bloat on
+ * a binary payload and keeps `settings` a small-scalar k/v store. `kind` is
+ * a single fixed row today ("avatar") but keyed for future profile media.
+ * `updatedAt` doubles as Settings.avatarRef's cache-busting token.
+ */
+export const profileMedia = sqliteTable("profile_media", {
+  kind: text("kind").primaryKey(),
+  mimeType: text("mime_type").notNull(),
+  data: blob("data", { mode: "buffer" }).notNull(),
+  updatedAt: text("updated_at").notNull(),
 });
 
 export const refreshLog = sqliteTable(

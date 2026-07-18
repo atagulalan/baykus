@@ -13,3 +13,14 @@ export function buildImageUrl(
   if (!providerId || !path) return null;
   return `/img/${providerId}/${size}/${encodeURIComponent(path)}`;
 }
+
+/**
+ * WP4: uploaded profile photo — not a provider ref, served from
+ * GET /api/settings/avatar. `avatarRef` (Settings.avatarRef, an upload
+ * timestamp) is appended as a cache-busting query param since the response
+ * carries an `immutable` cache header.
+ */
+export function buildAvatarUrl(avatarRef: string | null | undefined): string | null {
+  if (!avatarRef) return null;
+  return `/api/settings/avatar?v=${encodeURIComponent(avatarRef)}`;
+}

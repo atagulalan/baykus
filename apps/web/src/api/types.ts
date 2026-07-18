@@ -115,6 +115,8 @@ export interface SeriesSummary {
   /** E52: TMDB-parity URL identity — null until a resolving/refreshing provider supplies one. */
   tmdbId: number | null;
   posterRef: string | null;
+  /** WP4: sourced for the profile banner picker (backdrops of watched series). */
+  backdropRef: string | null;
   year: number | null;
   category: WatchCategory;
   manualList: ManualList | null;
@@ -293,6 +295,10 @@ export interface Settings {
   defaultStartPage: DefaultStartPage;
   newSeriesDefaultStatus: NewSeriesDefaultStatus;
   uiPrefs: UiPrefsDto | null;
+  /** WP4: chosen profile banner — an ImageRef of a watched series' backdrop, or null. */
+  bannerRef: string | null;
+  /** WP4: opaque cache-busting token for the uploaded profile photo, or null if unset. */
+  avatarRef: string | null;
 }
 
 export interface SettingsPatch {
@@ -307,6 +313,7 @@ export interface SettingsPatch {
   defaultStartPage?: DefaultStartPage;
   newSeriesDefaultStatus?: NewSeriesDefaultStatus;
   uiPrefs?: UiPrefsDto | null;
+  bannerRef?: string | null;
 }
 
 export interface RewatchedEpisode {

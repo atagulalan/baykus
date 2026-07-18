@@ -108,3 +108,14 @@ export interface ZipRatingEntry {
 
 /** Verbatim key/value mirror of the `settings` table. */
 export type ZipSettings = Record<string, string>;
+
+/**
+ * WP4: the uploaded profile photo — `library/avatar.json`, present only when
+ * one is set (omitted, not `null`, when unset — see export.ts). Purely
+ * additive alongside the existing four files; doesn't bump SCHEMA_VERSION.
+ */
+export interface ZipAvatarEntry {
+  mimeType: string;
+  /** base64-encoded raw bytes. */
+  data: string;
+}
