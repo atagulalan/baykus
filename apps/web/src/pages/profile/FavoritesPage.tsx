@@ -3,8 +3,12 @@ import { useParams } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { listSeries } from "../../api/client.ts";
 import { PageTitle } from "../../components/atoms/PageTitle/PageTitle.tsx";
+import { SkeletonSeriesGrid } from "../../components/atoms/Skeleton/Skeleton.tsx";
 import { ProfileGuard } from "../../components/layout/ProfileGuard/ProfileGuard.tsx";
-import { PullToRefresh, useLibrarySweepRefresh } from "../../components/molecules/PullToRefresh/PullToRefresh.tsx";
+import {
+  PullToRefresh,
+  useLibrarySweepRefresh,
+} from "../../components/molecules/PullToRefresh/PullToRefresh.tsx";
 import { SeriesCard } from "../../components/molecules/SeriesCard/SeriesCard.tsx";
 import { SERIES_GRID_CLASSNAME } from "../../lib/grid.ts";
 import { byLastWatchedDesc } from "./ProfilePage.tsx";
@@ -49,14 +53,7 @@ function FavoritesPageContent() {
         </div>
 
         {query.isLoading ? (
-          <div className={`${SERIES_GRID_CLASSNAME} content-inset`}>
-            {["a", "b", "c", "d", "e", "f"].map((key) => (
-              <div
-                key={key}
-                className="aspect-[2/3] animate-pulse bg-[#101010] border border-white/5"
-              />
-            ))}
-          </div>
+          <SkeletonSeriesGrid count={6} />
         ) : query.isError ? (
           <div className="content-inset mt-4 flex flex-col items-center gap-4 border border-white/5 bg-[#101010] py-24 text-center">
             <p className="font-mono text-xs text-muted uppercase tracking-widest">
@@ -76,7 +73,7 @@ function FavoritesPageContent() {
             <p className="font-mono text-xs text-muted/70">{t("profile.favorites.empty")}</p>
           </div>
         ) : (
-          <div className={`${SERIES_GRID_CLASSNAME} content-inset`}>
+          <div className={SERIES_GRID_CLASSNAME}>
             {favorites.map((series) => (
               <SeriesCard key={series.id} series={series} />
             ))}

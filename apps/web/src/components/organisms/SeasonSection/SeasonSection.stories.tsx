@@ -28,6 +28,7 @@ const specialsSeason: SeasonSummary = {
       title: "Behind the Scenes",
       overview: null,
       airDate: "2010-01-01",
+      airStamp: null,
       runtimeMin: 30,
       stillRef: null,
       episodeType: "standard",

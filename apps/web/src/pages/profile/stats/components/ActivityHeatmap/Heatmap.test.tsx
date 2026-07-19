@@ -11,6 +11,7 @@ describe("Heatmap", () => {
         years={[2025, 2026]}
         days={mockStats.activityByDay}
         tooltipFor={(date, count) => `${date}: ${count}`}
+        ariaLabel="Activity heatmap"
       />,
     );
     expect(screen.getByText("2025")).toBeInTheDocument();
@@ -23,6 +24,7 @@ describe("Heatmap", () => {
         years={[2026]}
         days={[{ date: "2026-07-07", count: 6 }]}
         tooltipFor={(date, count) => `${date}: ${count} bölüm`}
+        ariaLabel="Activity heatmap"
       />,
     );
     expect(screen.getByTitle("2026-07-07: 6 bölüm")).toBeInTheDocument();
@@ -30,7 +32,12 @@ describe("Heatmap", () => {
 
   it("renders year grid when days is empty", () => {
     renderWithProviders(
-      <Heatmap years={[2026]} days={[]} tooltipFor={(date, count) => `${date}: ${count}`} />,
+      <Heatmap
+        years={[2026]}
+        days={[]}
+        tooltipFor={(date, count) => `${date}: ${count}`}
+        ariaLabel="Activity heatmap"
+      />,
     );
     expect(screen.getByText("2026")).toBeInTheDocument();
     expect(screen.getByTitle("2026-01-01: 0")).toBeInTheDocument();

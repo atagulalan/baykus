@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { Stats } from "../../../../../api/types.ts";
 import { formatDurationLabel, formatDurationParts } from "../../../../../lib/date.ts";
 import { MiniBars } from "../MiniBars/MiniBars.tsx";
+import { StatsSectionHeading } from "../StatsSectionHeading/StatsSectionHeading.tsx";
 
 interface YearlyTimeSectionProps {
   stats: Pick<Stats, "timeByYear">;
@@ -76,12 +77,8 @@ export function YearlyTimeSection({ stats }: YearlyTimeSectionProps) {
 
   return (
     <section className="content-inset flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-display italic text-snow text-2xl tracking-tight">
-          {t("stats.yearlyTime.title")}
-        </h2>
-        <YearStrip years={years} value={selectedYear} onChange={setSelectedYear} />
-      </div>
+      <StatsSectionHeading>{t("stats.yearlyTime.title")}</StatsSectionHeading>
+      <YearStrip years={years} value={selectedYear} onChange={setSelectedYear} />
       <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
         <div className="flex flex-col gap-2">
           <p className="font-mono text-xs uppercase tracking-widest text-muted">

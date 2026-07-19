@@ -6,15 +6,20 @@ import { flushSync } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { addEpisodeWatch, getAuthSession, listSeries } from "../../api/client.ts";
 import type { BrowseView, WatchCategory } from "../../api/types.ts";
-import { PageTitle } from "../../components/atoms/PageTitle/PageTitle.tsx";
+import {
+  SkeletonCategoryGrid,
+  SkeletonEpisodeList,
+} from "../../components/atoms/Skeleton/Skeleton.tsx";
 import { PAGE_HEADING_ACTION_CLASS } from "../../components/layout/Layout/layoutShared.ts";
 import { AddSectionBar } from "../../components/molecules/AddSectionBar/AddSectionBar.tsx";
+import { PageTitleRow } from "../../components/molecules/PageTitleRow/PageTitleRow.tsx";
 import { PullToRefresh } from "../../components/molecules/PullToRefresh/PullToRefresh.tsx";
 import { CategoryListSection } from "../../components/organisms/CategoryListSection/CategoryListSection.tsx";
 import { CategorySection } from "../../components/organisms/CategorySection/CategorySection.tsx";
-import { SERIES_GRID_CLASSNAME } from "../../lib/grid.ts";
 import { groupByCategory } from "../../lib/groupByCategory.ts";
 import type { LibrarySort } from "../../lib/librarySort.ts";
+import { pageViewTransition } from "../../lib/pageViewTransition.ts";
+import { clearLastPosterItemId } from "../../lib/posterTransition.ts";
 import { selfHandleParam } from "../../lib/profilePath.ts";
 import { maybeStartSweep, useSweepProgress } from "../../lib/staleSweep.ts";
 import { useToast } from "../../lib/toast.tsx";
@@ -137,6 +142,9 @@ export function BrowsePage({ view }: { view: BrowseView }) {
   const anchorCategory =
     sectionsToRender.find((c) => c === "watching") ?? sectionsToRender[0] ?? null;
   const hasVisibleGridItems = sectionsToRender.some((c) => (byCategory.get(c)?.length ?? 0) > 0);
+  const hasVisibleListItems = sectionsToRender.some((c) =>
+    (byCategory.get(c) ?? []).some((s) => s.nextUnwatched != null),
+  );
   const isGrid = view === "grid";
   const destinationView: BrowseView = isGrid ? "list" : "grid";
   const ViewIcon = isGrid ? List : LayoutGrid;
@@ -146,7 +154,8 @@ export function BrowsePage({ view }: { view: BrowseView }) {
     <PullToRefresh
       variant="history"
       onOpen={() => {
-        void navigate({ to: "/watch/history" });
+        clearLastPosterItemId();
+        void navigate({ to: "/watch/history", viewTransition: pageViewTransition });
       }}
     >
       <section className="flex flex-col gap-3">
@@ -156,32 +165,29 @@ export function BrowsePage({ view }: { view: BrowseView }) {
           </p>
         )}
 
-        <div className="list-inset hidden w-full items-center pr-0 sm:flex">
-          <PageTitle>{t(isGrid ? "app.nav.library" : "watch.title")}</PageTitle>
-          <button
-            type="button"
-            onClick={() => navigateBrowseView(navigate, destinationView)}
-            aria-label={viewLabel}
-            title={viewLabel}
-            className={PAGE_HEADING_ACTION_CLASS}
-          >
-            <ViewIcon size={20} strokeWidth={1.5} />
-          </button>
-        </div>
+        <PageTitleRow
+          action={
+            <button
+              type="button"
+              onClick={() => navigateBrowseView(navigate, destinationView)}
+              aria-label={viewLabel}
+              title={viewLabel}
+              className={PAGE_HEADING_ACTION_CLASS}
+            >
+              <ViewIcon size={20} strokeWidth={1.5} />
+            </button>
+          }
+        >
+          {t(isGrid ? "app.nav.library" : "watch.title")}
+        </PageTitleRow>
 
         {libraryQuery.isLoading ? (
           isGrid ? (
-            <div className={`${SERIES_GRID_CLASSNAME} list-inset`}>
-              {["a", "b", "c", "d", "e", "f"].map((key) => (
-                <div
-                  key={key}
-                  className="aspect-[2/3] animate-pulse bg-[#101010] border border-white/5"
-                />
-              ))}
-            </div>
+            <SkeletonCategoryGrid sections={2} />
           ) : (
-            <div className="content-inset">
-              <div className="h-32 animate-pulse bg-white/5" />
+            <div className="flex flex-col gap-6">
+              <SkeletonEpisodeList rows={5} />
+              <SkeletonEpisodeList rows={3} />
             </div>
           )
         ) : libraryQuery.isError ? (
@@ -193,7 +199,7 @@ export function BrowsePage({ view }: { view: BrowseView }) {
             </h1>
             <p className="font-mono text-xs text-muted/70">{t("library.empty.hint")}</p>
           </div>
-        ) : isGrid && !hasVisibleGridItems ? (
+        ) : (isGrid ? !hasVisibleGridItems : !hasVisibleListItems) ? (
           <div className="list-inset mt-4 flex flex-col items-center gap-4 border border-white/5 bg-[#101010] py-24 text-center">
             <h1 className="font-display italic text-snow text-4xl tracking-tight">
               {t("library.empty.allDoneTitle")}
@@ -203,6 +209,7 @@ export function BrowsePage({ view }: { view: BrowseView }) {
               <Link
                 to="/user/$handle/all-series"
                 params={{ handle: selfHandleParam(sessionQuery.data) }}
+                viewTransition={pageViewTransition}
                 className="font-mono text-[10px] tracking-widest uppercase bg-yellow text-[#080808] px-4 py-2 mt-4 transition-opacity hover:opacity-90"
               >
                 {t("profile.allSeries")}

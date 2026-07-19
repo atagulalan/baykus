@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { renderWithProviders } from "../../../test/renderWithProviders.tsx";
@@ -34,8 +34,8 @@ describe("SettingsSelect", () => {
       />,
     );
     await user.click(screen.getByRole("button", { name: /Episode label format/i }));
-    expect(screen.getByRole("button", { name: /S01E06/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /12×3/ })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /S01E06/ })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /12×3/ })).toBeInTheDocument();
   });
 
   it("calls onChange and closes when selecting an option", async () => {
@@ -50,8 +50,10 @@ describe("SettingsSelect", () => {
       />,
     );
     await user.click(screen.getByRole("button", { name: /Episode label format/i }));
-    await user.click(screen.getByRole("button", { name: "12×3" }));
+    await user.click(screen.getByRole("option", { name: "12×3" }));
     expect(onChange).toHaveBeenCalledWith("compact");
-    expect(screen.queryByRole("button", { name: /S01E06/ })).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByRole("option", { name: /S01E06/ })).not.toBeInTheDocument();
+    });
   });
 });

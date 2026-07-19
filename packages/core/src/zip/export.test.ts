@@ -115,7 +115,7 @@ describe("exportLibraryZip", () => {
 
     expect(manifest).toMatchObject({
       app: "baykus",
-      schemaVersion: 6,
+      schemaVersion: 7,
       exportedAt: "2026-01-03T00:00:00Z",
       mediaTypes: ["series"],
       counts: { items: 1, watches: 1, ratings: 2 },
@@ -149,6 +149,7 @@ describe("exportLibraryZip", () => {
             title: "Pilot",
             overview: null,
             airDate: "2026-01-01",
+            airStamp: null,
             runtimeMin: null,
             type: null,
             stillRef: null,

@@ -134,13 +134,24 @@ Auth required. At least one external id query param. Fetches provider
       "watchCount": 0,
       "lastWatchedAt": null
     }]
-  }]
+  }],
+  "networks": [{ "name": "HBO" }],
+  "originalLanguage": "en",
+  "episodeRunTimes": [60],
+  "contentRatings": [],
+  "tags": [],
+  "cast": [],
+  "watchProviders": [],
+  "externalRatings": []
 }
 ```
 `libraryItemId` is non-null when the ids already match a library item (web
 replace-redirects to `/series/i{id}`). Episode `id`s are **synthetic**
 (`(s+1)*100000+e`) — preview only; real ids appear after add. 400 if no
 external id is supplied. 502 `PROVIDER_ERROR` on upstream failure.
+<!-- DECISION: preview also returns SeriesDetail metadata slices (networks,
+cast, ratings, providers, …) so `/series/new` can reuse the detail hero +
+info sheet without adding the show first. -->
 Items with `libraryItemId` are sorted ahead of the rest (relative order within
 each group preserved).
 

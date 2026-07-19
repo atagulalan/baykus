@@ -8,7 +8,7 @@ routes are allowed when recorded in an edge-case decision (E159). Delta over
 
 ## Summary
 
-Eight product asks from 2026-07-18:
+Nine product asks from 2026-07-18 through 2026-07-19:
 
 1. Spoiler protection must not blur series portrait posters.
 2. Skip the post-watch rating popup when the episode already has a rating
@@ -26,6 +26,9 @@ Eight product asks from 2026-07-18:
    and Library page headings, rather than in the mobile app header.
 8. `needs_review` auto-shows at the top when non-empty (hidden when empty,
    never via Kategori ekle, no sort control).
+9. The mobile bottom navigation mirrors the header edge fade: a bottom→top
+   black gradient scrub with icon tabs on top; progressive backdrop blur
+   (gradualblur) also scrubs both viewport edges under the chrome.
 
 ## User stories
 
@@ -76,6 +79,7 @@ of the page heading (history opens via pull-to-history).
 | E158 | How are standard page titles sized? | Top-level surface headings use one shared `PageTitle` component with `font-display text-2xl italic tracking-tight text-snow`. This covers Library, Watch, Watch History, Calendar, Profile, Favorites, All Series, Settings, and TV Time import states. Entity titles (series detail/preview), auth headings, and empty-state messages keep their context-specific scale. Layout, inset, and responsive visibility remain owned by each page. <!-- DECISION: 2026-07-18 — page headings must not drift between 2xl, 3xl, and 4xl through duplicated class lists. --> |
 | E159 | Watch history reverse = oldest window? | **Amends 002 E27 / contracts `GET /api/watches/history`.** `/watch/history` keeps a 30-row window (default `limit`) but the sort toggle does **not** reverse the current page client-side. Default `order=newest` (or omitted) = latest 30 by `watched_at` desc. `order=oldest` = earliest 30 by `watched_at` asc. Additive query param; unknown values → 400 `VALIDATION_FAILED`. UI: icon toggle on the History page heading refetches with the matching `order`. <!-- DECISION: 2026-07-18 — reverse must surface the start of the log, not the oldest-of-the-latest-30. --> |
 | E160 | Pull-to-history on Library / Watch? | **Amends 009 E132 and 010 WP2 history entry point; amends E155.** On `/` and `/watch` only, the same touch pull gesture opens `/watch/history` instead of running `startManualSweep`. Indicator is a `History` icon (yellow past threshold); release past threshold navigates immediately (no refreshing hold / sweep progress). Remove the History icon button from both page headings. Pull-to-refresh (`PullToRefresh` default variant) is **unchanged** on `/calendar`, `/calendar/*`, `/user/:handle/all-series`, `/user/:handle/favorites`, and `/watch/history`. Flush-top chrome still applies to `/` and `/watch` so the gesture has room. No new i18n keys. <!-- DECISION: 2026-07-18 — browse surfaces use pull for history; inner list surfaces keep refresh. --> |
+| E161 | What is the mobile bottom-navigation treatment? | **Amends 010 WP1 presentation only; routes and active semantics stay unchanged. Amended 2026-07-20.** Below `sm`, Watch, Calendar, Profile, and Search are **icon-only** on a transparent tab bar (`Z.chrome`). Edge scrub lives in `Z.edgeBlur` **under** header/tab bar and **above** page as **two layers**: (1) black→transparent gradient (stop alphas ramp; never CSS `opacity`), (2) masked `backdrop-filter` with radius 1→8px on banner scroll. **VT:** tint and blur each have a `view-transition-name`; `backdrop-filter` is on the named blur node so the UA copies it onto `::view-transition-group` (child filters were dropped → blink). Stack: page → edgeBlur → chrome → overlays → grain. Top: all breakpoints (banner: linear ramp over first 100px); bottom: mobile only. <!-- DECISION: 2026-07-20 — two-layer edge scrub; named-node backdrop-filter for VT. --> |
 
 ## Non-goals
 
@@ -104,5 +108,7 @@ of the page heading (history opens via pull-to-history).
 - [x] `/` and `/watch` pull opens history; all-series / favorites / calendar keep pull-to-refresh (E160).
 - [x] `needs_review` auto-shows first when non-empty; hidden when empty; never in Kategori ekle; no sort (E156).
 - [x] Watch history sort toggle fetches `order=oldest` (earliest window), not a client reverse (E159).
+- [x] Mobile bottom navigation uses a bottom→top gradient scrub with icon tabs;
+      VT-safe progressive edge scrubs on top + mobile bottom (E161).
 - [x] `pnpm lint && pnpm typecheck && pnpm test` green.
 - [x] New/changed UI strings in both `tr.json` and `en.json`.

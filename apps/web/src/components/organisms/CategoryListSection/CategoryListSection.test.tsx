@@ -1,7 +1,7 @@
 import { screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { mockSeriesSummary } from "../../../test/mocks.ts";
-import { renderWithRouter } from "../../../test/renderWithProviders.tsx";
+import { renderWithProviders, renderWithRouter } from "../../../test/renderWithProviders.tsx";
 import { CategoryListSection } from "./CategoryListSection.tsx";
 
 vi.mock("../../../api/client.ts", () => ({
@@ -26,22 +26,18 @@ describe("CategoryListSection", () => {
     expect(screen.getByText("Más")).toBeInTheDocument();
   });
 
-  it("shows empty section message when no rows qualify", async () => {
-    await renderWithRouter(
+  it("renders nothing when no rows qualify", () => {
+    const { container } = renderWithProviders(
       <CategoryListSection
         {...baseProps}
         items={[{ ...mockSeriesSummary, nextUnwatched: null }]}
       />,
-      {},
     );
-    expect(screen.getByText("Bu kategoride gösterilecek dizi yok")).toBeInTheDocument();
+    expect(container).toBeEmptyDOMElement();
   });
 
   it("does not show section remove control in the header", async () => {
-    await renderWithRouter(
-      <CategoryListSection {...baseProps} items={[mockSeriesSummary]} />,
-      {},
-    );
+    await renderWithRouter(<CategoryListSection {...baseProps} items={[mockSeriesSummary]} />, {});
     expect(screen.queryByRole("button", { name: "Kategoriyi kaldır" })).not.toBeInTheDocument();
   });
 });

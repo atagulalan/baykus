@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   calendarDaysBetween,
   daysUntilAir,
-  dayUnitLabel,
   formatAirDateLabel,
   unairedTrailingState,
 } from "./airDateLabel.ts";
@@ -39,21 +38,56 @@ describe("unairedTrailingState", () => {
   });
 
   it("returns countdown for future airDate", () => {
-    expect(unairedTrailingState("2026-07-27", today)).toEqual({ kind: "countdown", days: 9 });
+    expect(
+      unairedTrailingState(
+        "2026-07-27",
+        today,
+        undefined,
+        new Date(`${today}T00:00:00Z`).getTime(),
+      ),
+    ).toEqual({ kind: "countdown", days: 9 });
   });
 
   it("returns none for today and past airDate", () => {
     expect(unairedTrailingState("2026-07-18", today)).toEqual({ kind: "none" });
     expect(unairedTrailingState("2026-07-17", today)).toEqual({ kind: "none" });
   });
-});
 
-describe("dayUnitLabel", () => {
-  it("returns the localized unit word", () => {
-    expect(dayUnitLabel(1, "tr")).toBe("gün");
-    expect(dayUnitLabel(9, "tr")).toBe("gün");
-    expect(dayUnitLabel(1, "en")).toBe("day");
-    expect(dayUnitLabel(9, "en")).toBe("days");
+  it("shows seconds when under one minute remains", () => {
+    const airStamp = "2026-07-19T00:01:00Z";
+    const now = new Date("2026-07-19T00:00:30Z").getTime();
+    expect(unairedTrailingState("2026-07-19", today, airStamp, now)).toEqual({
+      kind: "countdownSeconds",
+      seconds: 30,
+    });
+  });
+
+  it("shows minutes once at least one minute remains", () => {
+    const airStamp = "2026-07-19T00:01:00Z";
+    const now = new Date("2026-07-19T00:00:00Z").getTime();
+    expect(unairedTrailingState("2026-07-19", today, airStamp, now)).toEqual({
+      kind: "countdownMinutes",
+      minutes: 1,
+    });
+  });
+
+  it("rounds the clock bucket up to whole hours (no H:MM)", () => {
+    // 13h38m out → ceil to 14, rendered as a single "14 hrs" mark, not "13:38".
+    const airStamp = "2026-07-19T00:38:00Z";
+    const now = new Date("2026-07-18T11:00:00Z").getTime();
+    expect(unairedTrailingState("2026-07-19", today, airStamp, now)).toEqual({
+      kind: "countdownClock",
+      hours: 14,
+    });
+  });
+
+  it("keeps exact hours exact in the clock bucket", () => {
+    const airStamp = "2026-07-19T00:00:00Z";
+    const now = new Date("2026-07-18T22:00:00Z").getTime();
+    expect(unairedTrailingState("2026-07-19", today, airStamp, now)).toEqual({
+      kind: "countdownClock",
+      hours: 2,
+    });
   });
 });
 

@@ -2,12 +2,14 @@ import type { EpisodeType } from "@baykus/provider-sdk";
 import { and, eq, ne, sql } from "drizzle-orm";
 import type { LibraryDatabase } from "../db/open.ts";
 import * as schema from "../db/schema.ts";
+import {
+  episodeAiredCondition,
+  episodeFutureAirCondition,
+  isEpisodeAired,
+  todayUtc,
+} from "./airing.ts";
 
-/** E3: "aired" = airDate <= today's UTC date, plain-date comparison. */
-export function todayUtc(): string {
-  const iso = new Date().toISOString();
-  return iso.slice(0, 10);
-}
+export { isEpisodeAired, todayUtc } from "./airing.ts";
 
 export interface SeriesProgress {
   watched: number;
@@ -32,15 +34,22 @@ export interface NextUnwatchedEpisode {
   e: number;
   title: string | null;
   airDate: string | null;
+  airStamp: string | null;
   episodeType: EpisodeType | null;
 }
 
 /** E1/E4: progress excludes season 0 (specials); denominator is aired, not announced. */
-export function getSeriesProgress(db: LibraryDatabase, itemId: number): SeriesProgress {
-  const today = todayUtc();
-
+export function getSeriesProgress(
+  db: LibraryDatabase,
+  itemId: number,
+  now = new Date(),
+): SeriesProgress {
   const episodes = db
-    .select({ id: schema.episodes.id, airDate: schema.episodes.airDate })
+    .select({
+      id: schema.episodes.id,
+      airDate: schema.episodes.airDate,
+      airStamp: schema.episodes.airStamp,
+    })
     .from(schema.episodes)
     .where(and(eq(schema.episodes.itemId, itemId), ne(schema.episodes.seasonNumber, 0)))
     .all();
@@ -48,7 +57,7 @@ export function getSeriesProgress(db: LibraryDatabase, itemId: number): SeriesPr
   const total = episodes.length;
   if (total === 0) return { watched: 0, aired: 0, total: 0 };
 
-  const aired = episodes.filter((e) => e.airDate !== null && e.airDate <= today).length;
+  const aired = episodes.filter((e) => isEpisodeAired(e, now)).length;
 
   const watchedRows = db
     .select({ episodeId: schema.watches.episodeId })
@@ -68,55 +77,74 @@ export function getSeriesProgress(db: LibraryDatabase, itemId: number): SeriesPr
  * then a single JS scan; never per-episode. Seasons with zero aired
  * episodes are omitted entirely (E50).
  */
-export function getSeasonProgress(db: LibraryDatabase, itemId: number): SeasonProgress {
-  const today = todayUtc();
-
+export function getSeasonProgress(
+  db: LibraryDatabase,
+  itemId: number,
+  now = new Date(),
+): SeasonProgress {
   const episodes = db
     .select({
       id: schema.episodes.id,
       seasonNumber: schema.episodes.seasonNumber,
+      episodeNumber: schema.episodes.episodeNumber,
       airDate: schema.episodes.airDate,
+      airStamp: schema.episodes.airStamp,
     })
     .from(schema.episodes)
     .where(and(eq(schema.episodes.itemId, itemId), ne(schema.episodes.seasonNumber, 0)))
-    .orderBy(schema.episodes.seasonNumber, schema.episodes.episodeNumber)
     .all()
-    .filter((ep) => ep.airDate !== null && ep.airDate <= today);
+    .filter((ep) => isEpisodeAired(ep, now));
 
-  if (episodes.length === 0) return { seasons: [], sequential: true };
+  const watchedIds = new Set(
+    db
+      .select({ episodeId: schema.watches.episodeId })
+      .from(schema.watches)
+      .innerJoin(schema.episodes, eq(schema.watches.episodeId, schema.episodes.id))
+      .where(and(eq(schema.episodes.itemId, itemId), ne(schema.episodes.seasonNumber, 0)))
+      .groupBy(schema.watches.episodeId)
+      .all()
+      .map((r) => r.episodeId),
+  );
 
-  const watchedRows = db
-    .select({ episodeId: schema.watches.episodeId })
-    .from(schema.watches)
-    .innerJoin(schema.episodes, eq(schema.watches.episodeId, schema.episodes.id))
-    .where(and(eq(schema.episodes.itemId, itemId), ne(schema.episodes.seasonNumber, 0)))
-    .groupBy(schema.watches.episodeId)
-    .all();
-  const watchedEpisodeIds = new Set(watchedRows.map((r) => r.episodeId));
-
-  let sequential = true;
-  let seenUnwatched = false;
-  const seasonsByNumber = new Map<number, SeasonProgressEntry>();
+  const bySeason = new Map<number, typeof episodes>();
   for (const ep of episodes) {
-    const watched = watchedEpisodeIds.has(ep.id);
-    if (watched && seenUnwatched) sequential = false;
-    if (!watched) seenUnwatched = true;
-
-    const entry = seasonsByNumber.get(ep.seasonNumber) ?? {
-      number: ep.seasonNumber,
-      watched: 0,
-      total: 0,
-    };
-    entry.total += 1;
-    if (watched) entry.watched += 1;
-    seasonsByNumber.set(ep.seasonNumber, entry);
+    const list = bySeason.get(ep.seasonNumber) ?? [];
+    list.push(ep);
+    bySeason.set(ep.seasonNumber, list);
   }
 
-  const seasons = [...seasonsByNumber.values()].sort((a, b) => a.number - b.number);
+  const seasons: SeasonProgressEntry[] = [];
+  for (const [number, eps] of [...bySeason.entries()].sort(([a], [b]) => a - b)) {
+    eps.sort((a, b) => a.episodeNumber - b.episodeNumber);
+    seasons.push({
+      number,
+      watched: eps.filter((e) => watchedIds.has(e.id)).length,
+      total: eps.length,
+    });
+  }
+
+  const airedOrdered = episodes.sort((a, b) =>
+    a.seasonNumber !== b.seasonNumber
+      ? a.seasonNumber - b.seasonNumber
+      : a.episodeNumber - b.episodeNumber,
+  );
+  let sequential = true;
+  let seenGap = false;
+  for (const ep of airedOrdered) {
+    if (watchedIds.has(ep.id)) {
+      if (seenGap) {
+        sequential = false;
+        break;
+      }
+    } else {
+      seenGap = true;
+    }
+  }
+
   return { seasons, sequential };
 }
 
-/** First non-special episode (airing order) with no watch event, regardless of airedness. */
+/** First non-special episode (airing order) with no watch event — aired or not. */
 export function getNextUnwatchedEpisode(
   db: LibraryDatabase,
   itemId: number,
@@ -128,6 +156,7 @@ export function getNextUnwatchedEpisode(
       e: schema.episodes.episodeNumber,
       title: schema.episodes.title,
       airDate: schema.episodes.airDate,
+      airStamp: schema.episodes.airStamp,
       episodeType: schema.episodes.episodeType,
     })
     .from(schema.episodes)
@@ -150,25 +179,29 @@ export function getNextUnwatchedEpisode(
     e: row.e,
     title: row.title,
     airDate: row.airDate,
+    airStamp: row.airStamp,
     episodeType: row.episodeType,
   };
 }
 
-/** Earliest strictly-future non-special air date, or null if none scheduled. */
-export function getNextAirDate(db: LibraryDatabase, itemId: number): string | null {
-  const today = todayUtc();
+/** Earliest strictly-future non-special air instant, or null if none scheduled. */
+export function getNextAirDate(
+  db: LibraryDatabase,
+  itemId: number,
+  now = new Date(),
+): string | null {
   const row = db
-    .select({ airDate: schema.episodes.airDate })
+    .select({ airDate: schema.episodes.airDate, airStamp: schema.episodes.airStamp })
     .from(schema.episodes)
     .where(
       and(
         eq(schema.episodes.itemId, itemId),
         ne(schema.episodes.seasonNumber, 0),
-        sql`${schema.episodes.airDate} > ${today}`,
+        episodeFutureAirCondition(now),
       ),
     )
-    .orderBy(schema.episodes.airDate)
+    .orderBy(sql`coalesce(${schema.episodes.airStamp}, ${schema.episodes.airDate})`)
     .limit(1)
     .get();
-  return row?.airDate ?? null;
+  return row?.airStamp?.slice(0, 10) ?? row?.airDate ?? null;
 }

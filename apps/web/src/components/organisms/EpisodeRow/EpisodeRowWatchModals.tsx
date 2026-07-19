@@ -45,7 +45,7 @@ export function EpisodeRowWatchModals({
                 onCloseMarkUpToHereModal();
                 onBulkUpToHere();
               }}
-              className="w-full bg-yellow px-4 py-2 font-mono text-[#080808] text-xs uppercase tracking-widest transition-opacity hover:opacity-90"
+              className="w-full rounded-lg bg-yellow px-4 py-2 font-mono text-[#080808] text-xs uppercase tracking-widest transition-opacity hover:opacity-90"
             >
               {t("episode.watchedUpToHere")}
             </button>
@@ -55,7 +55,7 @@ export function EpisodeRowWatchModals({
                 onCloseMarkUpToHereModal();
                 onToggleWatch();
               }}
-              className="w-full border border-white/10 px-4 py-2 font-mono text-snow text-xs uppercase tracking-widest transition-colors hover:bg-white/5"
+              className="w-full rounded-lg border border-white/10 px-4 py-2 font-mono text-snow text-xs uppercase tracking-widest transition-colors hover:bg-white/5"
             >
               {t("episode.markOnlyThis")}
             </button>
@@ -67,6 +67,7 @@ export function EpisodeRowWatchModals({
         <Modal
           isOpen={showWatchedOptionsModal}
           onClose={onCloseWatchedOptionsModal}
+          title={t("episode.menu")}
           className="!p-0 !overflow-hidden"
         >
           <button

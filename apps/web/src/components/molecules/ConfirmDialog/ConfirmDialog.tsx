@@ -21,8 +21,8 @@ export function ConfirmDialog({
   const { t } = useTranslation();
   const confirmClassName =
     variant === "danger"
-      ? "bg-red-600 text-white font-mono text-[10px] uppercase tracking-widest px-4 py-2.5"
-      : "bg-yellow text-ink font-mono text-[10px] uppercase tracking-widest px-4 py-2.5";
+      ? "rounded-lg bg-red-600 px-4 py-2.5 font-mono text-[10px] text-white uppercase tracking-widest"
+      : "rounded-lg bg-yellow px-4 py-2.5 font-mono text-[10px] text-ink uppercase tracking-widest";
 
   return (
     <Modal isOpen={true} onClose={onClose} className="flex flex-col gap-3 p-4 sm:p-4">

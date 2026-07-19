@@ -4,7 +4,8 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { ApiError, getSeriesByParam, getSettings, refreshSeries } from "../../api/client.ts";
-import type { EpisodeSummary } from "../../api/types.ts";
+import type { EpisodeSummary, SeriesDetail, SeriesListResponse } from "../../api/types.ts";
+import { SkeletonSeriesDetailHero } from "../../components/atoms/Skeleton/Skeleton.tsx";
 import { RemoveSeriesDialog } from "../../components/dialogs/RemoveSeriesDialog/RemoveSeriesDialog.tsx";
 import { WatchDateDialog } from "../../components/dialogs/WatchDateDialog/WatchDateDialog.tsx";
 import { NextUpCard } from "../../components/molecules/NextUpCard/NextUpCard.tsx";
@@ -12,13 +13,35 @@ import { PullToRefresh } from "../../components/molecules/PullToRefresh/PullToRe
 import { SeasonSection } from "../../components/organisms/SeasonSection/SeasonSection.tsx";
 import { SeriesActionsMenu } from "../../components/organisms/SeriesActionsMenu/SeriesActionsMenu.tsx";
 import { SERIES_HEADER_ACTION_SLOT_ID } from "../../lib/headerActionSlot.ts";
+import { pageViewTransition } from "../../lib/pageViewTransition.ts";
+import { posterMorphStyle, getLastPosterItemId } from "../../lib/posterTransition.ts";
 import { sortSeasonsSpecialsLast } from "../../lib/seasons.ts";
-import { seriesParam } from "../../lib/seriesPath.ts";
+import { parseSeriesParam, seriesParam } from "../../lib/seriesPath.ts";
 import { isStale } from "../../lib/staleSweep.ts";
 import { readUiPrefs } from "../../lib/uiPrefs.ts";
 import { NeedsReviewBanner } from "./components/NeedsReviewBanner/NeedsReviewBanner.tsx";
 import { SeriesDetailHero } from "./components/SeriesDetailHero/SeriesDetailHero.tsx";
 import { useSeriesDetailMutations } from "./useSeriesDetailMutations.ts";
+
+/** E51: resolve internal item id so the loading shell can own `poster-${id}` during VT. */
+function posterTransitionItemId(
+  param: string,
+  queryClient: ReturnType<typeof useQueryClient>,
+): number | null {
+  const parsed = parseSeriesParam(param);
+  if (parsed.kind === "internal") return parsed.id;
+  if (parsed.kind !== "tmdb") return null;
+
+  const cached = queryClient.getQueryData<SeriesDetail>(["series", param]);
+  if (cached?.id) return cached.id;
+
+  for (const key of [["library", "browse"], ["library"]] as const) {
+    const list = queryClient.getQueryData<SeriesListResponse>([...key]);
+    const hit = list?.items.find((item) => item.tmdbId === parsed.id);
+    if (hit) return hit.id;
+  }
+  return null;
+}
 
 export function SeriesDetailPage() {
   const { id: param } = useParams({ from: "/series/$id" });
@@ -71,7 +94,13 @@ export function SeriesDetailPage() {
     if (!query.data) return;
     const canonical = seriesParam(query.data);
     if (canonical !== param) {
-      navigate({ to: "/series/$id", params: { id: canonical }, replace: true });
+      // Don't start a second view transition — it cancels the poster morph from the list.
+      navigate({
+        to: "/series/$id",
+        params: { id: canonical },
+        replace: true,
+        viewTransition: false,
+      });
     }
   }, [query.data, param, navigate]);
 
@@ -96,10 +125,12 @@ export function SeriesDetailPage() {
   }
 
   if (query.isLoading) {
+    const posterId = posterTransitionItemId(param, queryClient);
+    const posterActive = posterId != null && posterId === getLastPosterItemId();
     return (
-      <div className="content-inset">
-        <div className="h-64 animate-pulse bg-white/5" />
-      </div>
+      <SkeletonSeriesDetailHero
+        posterStyle={posterId != null ? posterMorphStyle(posterId, posterActive) : undefined}
+      />
     );
   }
 
@@ -117,7 +148,7 @@ export function SeriesDetailPage() {
             {t("errors.retry")}
           </button>
         )}
-        <Link to="/" className="text-sm text-muted underline">
+        <Link to="/" viewTransition={pageViewTransition} className="text-sm text-muted underline">
           {t("app.nav.library")}
         </Link>
       </div>
@@ -136,7 +167,11 @@ export function SeriesDetailPage() {
           .find((episode) => episode.id === detail.nextUnwatched?.episodeId) ?? null);
 
   return (
-    <PullToRefresh onRefresh={async () => { await refreshSeriesMutation.mutateAsync(); }}>
+    <PullToRefresh
+      onRefresh={async () => {
+        await refreshSeriesMutation.mutateAsync();
+      }}
+    >
       <div className="flex flex-col gap-6">
         <SeriesDetailHero
           detail={detail}

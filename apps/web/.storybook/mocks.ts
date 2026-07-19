@@ -246,6 +246,17 @@ export const mockPosterSvg =
 export const mockStillSvg =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='180'%3E%3Crect fill='%23202020' width='320' height='180'/%3E%3Ctext fill='%23666' x='50%25' y='50%25' text-anchor='middle' dy='.3em' font-family='monospace' font-size='12'%3EEpisode%3C/text%3E%3C/svg%3E";
 
+/** Dynamic airing fixture: pinned "now" and airStamp exactly 5s later (today's calendar date). */
+export function countdownIn5Seconds() {
+  const now = new Date();
+  const nowIso = now.toISOString();
+  return {
+    nowIso,
+    airStamp: new Date(now.getTime() + 5_000).toISOString(),
+    airDate: nowIso.slice(0, 10),
+  };
+}
+
 export const mockSeriesSummary: SeriesSummary = {
   id: 1,
   title: "Breaking Bad",
@@ -276,6 +287,7 @@ export const mockSeriesSummary: SeriesSummary = {
     e: 5,
     title: "Más",
     airDate: "2009-04-06",
+    airStamp: null,
     episodeType: "standard",
   },
   nextAirDate: null,
@@ -291,6 +303,7 @@ export const mockEpisode: EpisodeSummary = {
   title: "Más",
   overview: "Walter tries to gain control over his life.",
   airDate: "2009-04-06",
+  airStamp: null,
   runtimeMin: 47,
   stillRef: null,
   episodeType: "standard",
@@ -314,6 +327,7 @@ export const mockSeason: SeasonSummary = {
       title: "Pilot",
       overview: "Walter White learns he has cancer.",
       airDate: "2008-01-20",
+      airStamp: null,
       runtimeMin: 58,
       stillRef: null,
       episodeType: "standard",
@@ -329,6 +343,7 @@ export const mockSeason: SeasonSummary = {
       title: "Cat's in the Bag...",
       overview: null,
       airDate: "2008-01-27",
+      airStamp: null,
       runtimeMin: 48,
       stillRef: null,
       episodeType: "standard",
@@ -344,6 +359,7 @@ export const mockSeason: SeasonSummary = {
       title: "...And the Bag's in the River",
       overview: null,
       airDate: "2008-02-10",
+      airStamp: null,
       runtimeMin: 48,
       stillRef: null,
       episodeType: "finale",
@@ -409,6 +425,7 @@ export const mockCalendarEntry: CalendarEntry = {
   episodeType: "standard",
   seasonName: "Season 3",
   airDate: "2026-07-18",
+  airStamp: null,
   network: "AMC",
   watchProviders: [{ provider: "Netflix", type: "flatrate", region: "US" }],
   isWatched: false,

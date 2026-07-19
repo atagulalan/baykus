@@ -19,11 +19,13 @@ export function CalendarEntryRow({
 
   return (
     <EpisodeRow
-      density="compact"
+      embedded
+      posterStretch
       s={entry.s}
       e={entry.e}
       episodeTitle={entry.episodeTitle}
       airDate={entry.airDate}
+      airStamp={entry.airStamp}
       episodeType={entry.episodeType}
       itemId={entry.itemId}
       seriesTitle={entry.title}

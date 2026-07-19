@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import type { Stats } from "../../../../../api/types.ts";
 import { HBarList } from "../HBarList/HBarList.tsx";
+import { StatsSectionHeading } from "../StatsSectionHeading/StatsSectionHeading.tsx";
 
 interface BingesSectionProps {
   stats: Pick<Stats, "binges">;
@@ -13,9 +14,7 @@ export function BingesSection({ stats }: BingesSectionProps) {
 
   return (
     <section className="content-inset flex flex-col gap-4">
-      <h2 className="font-display italic text-snow text-2xl tracking-tight">
-        {t("stats.binges.title")}
-      </h2>
+      <StatsSectionHeading>{t("stats.binges.title")}</StatsSectionHeading>
       <HBarList
         items={stats.binges.map((b) => ({
           key: `${b.itemId}-${b.date}`,

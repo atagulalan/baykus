@@ -4,9 +4,9 @@ import { mockSearchResult } from "../../../test/mocks.ts";
 import { SearchResultThumb } from "./SearchResultThumb.tsx";
 
 describe("SearchResultThumb", () => {
-  it("shows fallback emoji when poster ref is missing", () => {
-    render(<SearchResultThumb result={mockSearchResult} />);
-    expect(screen.getByText("🎬")).toBeInTheDocument();
+  it("shows fallback icon when poster ref is missing", () => {
+    const { container } = render(<SearchResultThumb result={mockSearchResult} />);
+    expect(container.querySelector("svg")).toBeInTheDocument();
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
   });
 
@@ -16,13 +16,13 @@ describe("SearchResultThumb", () => {
     expect(container.querySelector("img")).toBeInTheDocument();
   });
 
-  it("falls back to emoji after image error", () => {
+  it("falls back to icon after image error", () => {
     const result = { ...mockSearchResult, posterRef: "tmdb:/path/to/poster.jpg" };
     const { container } = render(<SearchResultThumb result={result} />);
     const img = container.querySelector("img");
     expect(img).not.toBeNull();
     fireEvent.error(img!);
-    expect(screen.getByText("🎬")).toBeInTheDocument();
+    expect(container.querySelector("svg")).toBeInTheDocument();
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
   });
 });

@@ -9,6 +9,7 @@ const nextEpisode = mockSeriesSummary.nextUnwatched ?? {
   e: 5,
   title: "Más",
   airDate: "2009-04-06",
+  airStamp: null,
   episodeType: "standard" as const,
 };
 

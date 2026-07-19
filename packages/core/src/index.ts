@@ -4,6 +4,11 @@ export type { AddedVia, ManualList, RatingTargetType, WatchSource } from "./db/s
 export * as schema from "./db/schema.ts";
 export { type CachedImage, getCachedImage } from "./images/cache.ts";
 export {
+  airInstantIso,
+  isEpisodeAired,
+  todayUtc,
+} from "./library/airing.ts";
+export {
   CATEGORY_ORDER,
   type CategoryInfo,
   computeCategories,
@@ -25,7 +30,6 @@ export {
   getSeasonProgress,
   type SeasonProgress,
   type SeasonProgressEntry,
-  todayUtc,
 } from "./library/progress.ts";
 export type { PushSubscriptionRecord } from "./library/push.ts";
 export type { Rating } from "./library/ratings.ts";

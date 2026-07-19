@@ -40,9 +40,7 @@ describe("CategoryStatusSection", () => {
       finished: 10,
       stopped: 0,
     };
-    const { container } = renderWithProviders(
-      <CategoryStatusSection stats={{ itemCount }} />,
-    );
+    const { container } = renderWithProviders(<CategoryStatusSection stats={{ itemCount }} />);
     const barSegments = container.querySelectorAll(".flex.h-3 [title]");
     expect(barSegments.length).toBeGreaterThan(0);
     for (const segment of barSegments) {

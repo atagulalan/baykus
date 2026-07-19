@@ -1,11 +1,13 @@
 import { useTranslation } from "react-i18next";
 import type { EpisodeType } from "../../../api/types.ts";
+import { isEpisodeAired } from "../../../lib/airing.ts";
 import { todayIso } from "../../../lib/date.ts";
 
 export interface EpisodeTagsProps {
   s: number;
   e: number;
   airDate: string | null;
+  airStamp?: string | null;
   episodeType: EpisodeType | null;
   episodeTitle?: string | null;
   seasonName?: string | null;
@@ -42,12 +44,17 @@ export function computeEpisodeTagKinds(
   props: EpisodeTagsProps,
   today: string = todayIso(),
 ): EpisodeTagKind[] {
-  const { s, e, airDate, episodeType, episodeTitle, seasonName } = props;
+  const { s, e, airDate, airStamp, episodeType, episodeTitle, seasonName } = props;
   const isSpecial = s === 0;
   const isOva = isSpecial && (containsOva(episodeTitle) || containsOva(seasonName));
+  const now = new Date(`${today}T00:00:00Z`);
+  const aired = isEpisodeAired({ airDate, airStamp }, now);
   const isNew =
-    airDate !== null && airDate <= today && airDate >= addDaysToDate(today, -NEW_WINDOW_DAYS);
-  const isUpcoming = airDate !== null && airDate > today;
+    aired &&
+    airDate !== null &&
+    airDate <= today &&
+    airDate >= addDaysToDate(today, -NEW_WINDOW_DAYS);
+  const isUpcoming = !aired && airDate !== null;
   const isPremiere = e === 1;
   const isFinale = episodeType === "finale";
 

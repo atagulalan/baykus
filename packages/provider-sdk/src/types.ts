@@ -133,9 +133,12 @@ export interface EpisodeDetails {
   overview?: string;
   /**
    * ISO date "YYYY-MM-DD" — the provider's plain air date, NOT a timestamp.
-   * Airedness rule (spec.md edge cases): aired ⇔ airDate <= today's UTC date.
+   * Airedness rule (spec.md edge cases): when `airStamp` is absent, aired ⇔
+   * airDate <= today's UTC date; when present, aired ⇔ now >= airStamp.
    */
   airDate?: string;
+  /** ISO-8601 UTC datetime — exact air instant (TVMaze `airstamp`). */
+  airStamp?: string;
   runtimeMin?: number;
   stillRef?: ImageRef;
   episodeType?: EpisodeType;

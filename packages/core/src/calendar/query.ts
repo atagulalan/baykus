@@ -2,8 +2,8 @@ import type { EpisodeType, ImageRef, WatchProviderInfo } from "@baykus/provider-
 import { and, eq, gt, gte, inArray, isNotNull, lt, lte } from "drizzle-orm";
 import type { LibraryDatabase } from "../db/open.ts";
 import * as schema from "../db/schema.ts";
+import { todayUtc } from "../library/airing.ts";
 import { computeCategories, type WatchCategory } from "../library/category.ts";
-import { todayUtc } from "../library/progress.ts";
 
 export interface CalendarEntry {
   itemId: number;
@@ -17,6 +17,7 @@ export interface CalendarEntry {
   /** From seasons.name, joined on (itemId, seasonNumber) — feeds the OVA heuristic (E23). */
   seasonName: string | null;
   airDate: string;
+  airStamp: string | null;
   network: string | null;
   watchProviders: WatchProviderInfo[];
   /** True when the episode has at least one watch event (needed by Schedule mode strips). */
@@ -65,6 +66,7 @@ interface EntryRow {
   episodeType: EpisodeType | null;
   seasonName: string | null;
   airDate: string;
+  airStamp: string | null;
 }
 
 function toEntry(row: EntryRow, isWatched: boolean): CalendarEntry {
@@ -79,6 +81,7 @@ function toEntry(row: EntryRow, isWatched: boolean): CalendarEntry {
     episodeType: row.episodeType,
     seasonName: row.seasonName,
     airDate: row.airDate,
+    airStamp: row.airStamp,
     network: row.networks?.[0]?.name ?? null,
     watchProviders: row.watchProviders ?? [],
     isWatched,
@@ -114,6 +117,7 @@ export function getCalendar(
       episodeType: schema.episodes.episodeType,
       seasonName: schema.seasons.name,
       airDate: schema.episodes.airDate,
+      airStamp: schema.episodes.airStamp,
     })
     .from(schema.episodes)
     .innerJoin(schema.items, eq(schema.items.id, schema.episodes.itemId))

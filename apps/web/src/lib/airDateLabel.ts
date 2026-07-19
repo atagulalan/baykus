@@ -1,6 +1,9 @@
+import { type AiringFields, msUntilAir } from "./airing.ts";
 import { todayIso } from "./date.ts";
 
 const MS_PER_DAY = 86_400_000;
+const MS_PER_MINUTE = 60_000;
+const MS_PER_SECOND = 1_000;
 
 /** Whole calendar days from `fromIso` to `toIso` (YYYY-MM-DD), UTC date math. */
 export function calendarDaysBetween(fromIso: string, toIso: string): number {
@@ -63,35 +66,51 @@ export function daysUntilAir(airDate: string | null, today: string = todayIso())
   return calendarDaysBetween(today, airDate);
 }
 
-/** Trailing mark for unaired episodes (011 E151). */
+/** Trailing mark for unaired episodes (011 E151, extended for airStamp precision). */
 export type UnairedTrailingState =
   | { kind: "countdown"; days: number }
+  | { kind: "countdownClock"; hours: number }
+  | { kind: "countdownMinutes"; minutes: number }
+  | { kind: "countdownSeconds"; seconds: number }
   | { kind: "tbd" }
   | { kind: "none" };
 
+function countdownFromMs(ms: number): UnairedTrailingState {
+  if (ms >= MS_PER_DAY) {
+    return { kind: "countdown", days: Math.ceil(ms / MS_PER_DAY) };
+  }
+  const totalMinutes = Math.ceil(ms / MS_PER_MINUTE);
+  if (totalMinutes >= 60) {
+    // Round up to whole hours so the mark matches the day/minute buckets
+    // (a single big number + unit) instead of a clock-time-looking "13:38".
+    return { kind: "countdownClock", hours: Math.ceil(totalMinutes / 60) };
+  }
+  if (ms >= MS_PER_MINUTE) {
+    return { kind: "countdownMinutes", minutes: totalMinutes };
+  }
+  return { kind: "countdownSeconds", seconds: Math.max(Math.ceil(ms / MS_PER_SECOND), 1) };
+}
+
 /**
- * Future airDate → countdown; null airDate → TBD; aired/today → none
- * (caller shows the checkbox / rewatch control).
+ * Future air instant → minute/hour/day countdown; null schedule → TBD; aired → none.
  */
 export function unairedTrailingState(
   airDate: string | null,
   today: string = todayIso(),
+  airStamp?: string | null,
+  now = Date.now(),
 ): UnairedTrailingState {
-  if (airDate === null) return { kind: "tbd" };
-  const days = daysUntilAir(airDate, today);
-  if (days != null) return { kind: "countdown", days };
+  const ms = msUntilAir({ airDate, airStamp }, now);
+  if (ms != null) return countdownFromMs(ms);
+  if (airDate === null && !airStamp) return { kind: "tbd" };
+  if (airDate !== null) {
+    const days = daysUntilAir(airDate, today);
+    if (days != null) return { kind: "countdown", days };
+  }
   return { kind: "none" };
 }
 
-/**
- * Localized unit word for a day count ("gün" / "day" / "days") via
- * `Intl.NumberFormat` — no catalog keys.
- */
-export function dayUnitLabel(days: number, locale: string): string {
-  const parts = new Intl.NumberFormat(locale, {
-    style: "unit",
-    unit: "day",
-    unitDisplay: "long",
-  }).formatToParts(days);
-  return parts.find((part) => part.type === "unit")?.value ?? "days";
+/** @deprecated use unairedTrailingState with AiringFields */
+export function unairedTrailingStateFromEpisode(ep: AiringFields, today?: string, now?: number) {
+  return unairedTrailingState(ep.airDate, today, ep.airStamp, now);
 }

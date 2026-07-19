@@ -49,6 +49,7 @@ export interface EpisodeSummary {
   title: string | null;
   overview: string | null;
   airDate: string | null;
+  airStamp: string | null;
   runtimeMin: number | null;
   stillRef: ImageRef | null;
   episodeType: EpisodeType | null;

@@ -1,18 +1,35 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, Navigate } from "@tanstack/react-router";
+import { Link, Navigate, useRouterState } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { addEpisodeWatch, getCalendar, removeLatestEpisodeWatch } from "../../api/client.ts";
 import type { CalendarDay, CalendarEntry } from "../../api/types.ts";
-import { CalendarEntryRow } from "../../components/molecules/CalendarEntryRow/CalendarEntryRow.tsx";
-import { MonthGrid } from "../../components/organisms/MonthGrid/MonthGrid.tsx";
-import { PageTitle } from "../../components/atoms/PageTitle/PageTitle.tsx";
 import { SectionPill } from "../../components/atoms/SectionPill/SectionPill.tsx";
-import { PullToRefresh, useLibrarySweepRefresh } from "../../components/molecules/PullToRefresh/PullToRefresh.tsx";
+import {
+  SkeletonCalendarTimeline,
+  SkeletonMonthGrid,
+  SkeletonScheduleGrid,
+} from "../../components/atoms/Skeleton/Skeleton.tsx";
+import { CalendarModeToggle } from "../../components/layout/Layout/LayoutToggles.tsx";
+import { PAGE_HEADING_ACTION_CLASS } from "../../components/layout/Layout/layoutShared.ts";
+import { CalendarEntryRow } from "../../components/molecules/CalendarEntryRow/CalendarEntryRow.tsx";
+import { PageTitleRow } from "../../components/molecules/PageTitleRow/PageTitleRow.tsx";
+import {
+  PullToRefresh,
+  useLibrarySweepRefresh,
+} from "../../components/molecules/PullToRefresh/PullToRefresh.tsx";
+import { MonthGrid } from "../../components/organisms/MonthGrid/MonthGrid.tsx";
 import { ScheduleGrid } from "../../components/organisms/ScheduleGrid/ScheduleGrid.tsx";
-import { bucketNeedsDaySubheaders, groupIntoTimelineSections } from "../../lib/calendarBuckets.ts";
+import { isEpisodeAired } from "../../lib/airing.ts";
+import {
+  bucketNeedsDaySubheaders,
+  groupIntoTimelineSections,
+  rebucketCalendarDays,
+} from "../../lib/calendarBuckets.ts";
 import { getAbsoluteWeek, getIsoWeek, getWeekRange, todayIso } from "../../lib/date.ts";
+import { pageViewTransition } from "../../lib/pageViewTransition.ts";
+import { CALENDAR_SCROLL_KEY, clearScrollRestorationKey } from "../../lib/scrollRestoration.ts";
 import { useToast } from "../../lib/toast.tsx";
 
 /** The mode toggle lives in the sticky app navbar, so BUGÜN clears only that header. */
@@ -91,7 +108,7 @@ function TodayEmptyPanel({
   const upcoming = unwatched.length === 0 ? pickUpcoming(days, today) : [];
 
   return (
-    <div className="flex flex-col gap-3 border border-white/5 bg-[#101010] px-4 py-6">
+    <div className="flex flex-col gap-3 py-6">
       <div className="flex flex-col items-center gap-1 text-center">
         <p className="font-display italic text-xl tracking-tight text-snow">
           {t("calendar.empty.today")}
@@ -126,6 +143,7 @@ function TodayEmptyPanel({
         <div className="flex justify-center pt-1">
           <Link
             to="/search"
+            viewTransition={pageViewTransition}
             className="border border-white/10 px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-snow transition-colors hover:bg-white/5"
           >
             {t("calendar.empty.suggestAdd")}
@@ -161,29 +179,48 @@ function TimelineView({
     sectionRefs.current.get(sectionKey)?.scrollIntoView({ block: "start", behavior: "smooth" });
   }
 
-  // E73: wait two animation frames (past the initial paint/reflow) before the one-shot,
-  // instant anchor scroll. The scroll margin clears the sticky app navbar.
+  // E73: wait until any route view-transition finishes, then smooth-scroll to
+  // BUGÜN. Instant scroll mid-VT fights the app-main cross-fade.
   useEffect(() => {
     if (query.isLoading || hasScrolledRef.current) return;
-    let raf2 = 0;
-    const raf1 = requestAnimationFrame(() => {
-      raf2 = requestAnimationFrame(() => {
-        todayRef.current?.scrollIntoView({ block: "start", behavior: "instant" });
-        hasScrolledRef.current = true;
+    let cancelled = false;
+    let raf = 0;
+
+    function isVtActive(): boolean {
+      try {
+        return document.documentElement.matches(":active-view-transition");
+      } catch {
+        return false;
+      }
+    }
+
+    function scrollToToday() {
+      if (cancelled || hasScrolledRef.current) return;
+      todayRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+      hasScrolledRef.current = true;
+    }
+
+    function whenReady() {
+      if (cancelled) return;
+      if (isVtActive()) {
+        raf = requestAnimationFrame(whenReady);
+        return;
+      }
+      // Two frames past VT so layout/scroll-margin settle, then animate.
+      raf = requestAnimationFrame(() => {
+        raf = requestAnimationFrame(scrollToToday);
       });
-    });
+    }
+
+    whenReady();
     return () => {
-      cancelAnimationFrame(raf1);
-      cancelAnimationFrame(raf2);
+      cancelled = true;
+      cancelAnimationFrame(raf);
     };
   }, [query.isLoading]);
 
   if (query.isLoading) {
-    return (
-      <div className="content-inset">
-        <div className="h-64 animate-pulse bg-white/5" />
-      </div>
-    );
+    return <SkeletonCalendarTimeline />;
   }
 
   if (query.isError) {
@@ -202,14 +239,16 @@ function TimelineView({
   }
 
   const today = todayIso();
-  const days = ensureTodayPresent(query.data?.days ?? [], today);
+  // airStamp local day can differ from provider airDate (US network date).
+  const days = ensureTodayPresent(rebucketCalendarDays(query.data?.days ?? []), today);
 
   // E24 gap-tracker: hide past watched rows unless pinned this session (E81).
   // Today always stays so the Bugün section / empty panel can render (E145).
+  // "Past" is airStamp-aware (isEpisodeAired), not plain airDate.
   const visibleDays = days
     .map((day) => {
       const entries = day.entries.filter(
-        (entry) => entry.airDate > today || !entry.isWatched || justWatched.has(entry.episodeId),
+        (entry) => !isEpisodeAired(entry) || !entry.isWatched || justWatched.has(entry.episodeId),
       );
       return { ...day, entries };
     })
@@ -264,7 +303,7 @@ function TimelineView({
                     />
                   ) : (
                     day.entries.map((entry) =>
-                      entry.airDate <= today ? (
+                      isEpisodeAired(entry) ? (
                         <CalendarEntryRow
                           key={entry.episodeId}
                           entry={entry}
@@ -346,7 +385,7 @@ function MonthView() {
       </div>
 
       {query.isLoading ? (
-        <div className="h-64 animate-pulse bg-white/5" />
+        <SkeletonMonthGrid />
       ) : query.isError ? (
         <div className="flex flex-col items-center gap-2 py-24 text-center">
           <p className="text-muted">{t("errors.generic")}</p>
@@ -362,10 +401,10 @@ function MonthView() {
         <MonthGrid
           year={viewYear}
           month={viewMonth}
-          days={(query.data?.days ?? []).map((day) => ({
+          days={rebucketCalendarDays(query.data?.days ?? []).map((day) => ({
             ...day,
             // E24: month grid stays a gap-tracker — drop past watched rows.
-            entries: day.entries.filter((e) => e.airDate > todayIso() || !e.isWatched),
+            entries: day.entries.filter((e) => !isEpisodeAired(e) || !e.isWatched),
           }))}
         />
       )}
@@ -396,7 +435,7 @@ function ScheduleView() {
     },
   });
 
-  const days = query.data?.pages.flatMap((p) => p.data.days) ?? [];
+  const days = rebucketCalendarDays(query.data?.pages.flatMap((p) => p.data.days) ?? []);
 
   const currentAbsWeek = getAbsoluteWeek(today);
   let minFetchedAbsWeek: number | undefined;
@@ -432,9 +471,7 @@ function ScheduleView() {
       </div>
 
       {query.isLoading ? (
-        <div className="content-inset">
-          <div className="h-64 animate-pulse bg-white/5" />
-        </div>
+        <SkeletonScheduleGrid />
       ) : query.isError ? (
         <div className="content-inset flex flex-col items-center gap-2 py-24 text-center">
           <p className="text-muted">{t("errors.generic")}</p>
@@ -466,6 +503,7 @@ function ScheduleView() {
 export function CalendarPage({ mode }: { mode: Mode }) {
   const toast = useToast();
   const { t } = useTranslation();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
   const queryClient = useQueryClient();
   const isDesktop = useIsDesktop();
   // E81: episode ids checked off during this session. Session-scoped by design —
@@ -479,8 +517,41 @@ export function CalendarPage({ mode }: { mode: Mode }) {
   // E133 / E136: each mode is its own route component — scroll to top on mount
   // so month/schedule don't inherit the timeline's BUGÜN scroll depth (and vice
   // versa). Timeline then re-runs the E73 today anchor from scrollY === 0.
+  // Clear saved calendar scroll on leave so tab switches don't restore a stale
+  // depth after TanStack scroll restoration (onBeforeLoad snapshots first).
+  // Defer the reset until any route VT finishes so we don't fight app-main fade.
   useEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    let cancelled = false;
+    let raf = 0;
+
+    function isVtActive(): boolean {
+      try {
+        return document.documentElement.matches(":active-view-transition");
+      } catch {
+        return false;
+      }
+    }
+
+    function resetScroll() {
+      if (cancelled) return;
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    }
+
+    function whenReady() {
+      if (cancelled) return;
+      if (isVtActive()) {
+        raf = requestAnimationFrame(whenReady);
+        return;
+      }
+      resetScroll();
+    }
+
+    whenReady();
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(raf);
+      clearScrollRestorationKey(CALENDAR_SCROLL_KEY);
+    };
   }, []);
 
   const markWatched = useMutation({
@@ -539,9 +610,11 @@ export function CalendarPage({ mode }: { mode: Mode }) {
   return (
     <PullToRefresh onRefresh={pullRefresh}>
       <div className="flex flex-col gap-4">
-        <div className="content-inset hidden sm:block">
-          <PageTitle>{t("app.nav.calendar")}</PageTitle>
-        </div>
+        <PageTitleRow
+          action={<CalendarModeToggle pathname={pathname} className={PAGE_HEADING_ACTION_CLASS} />}
+        >
+          {t("app.nav.calendar")}
+        </PageTitleRow>
         {mode === "timeline" ? (
           <TimelineView justWatched={justWatched} onToggleWatched={toggleWatched} />
         ) : mode === "month" ? (

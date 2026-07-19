@@ -6,10 +6,11 @@ import { getSeriesByParam, getSettings } from "../../../api/client.ts";
 import { buildImageUrl } from "../../../api/images.ts";
 import type { CalendarDay, CalendarEntry, EpisodeLabelFormat } from "../../../api/types.ts";
 import { todayIso } from "../../../lib/date.ts";
-import { CalendarEntryRow } from "../../molecules/CalendarEntryRow/CalendarEntryRow.tsx";
+import { pageViewTransition } from "../../../lib/pageViewTransition.ts";
 import { EpisodeLabel } from "../../atoms/EpisodeLabel/EpisodeLabel.tsx";
-import { EpisodeTags } from "../../molecules/EpisodeTags/EpisodeTags.tsx";
 import { MediaImage } from "../../atoms/MediaImage/MediaImage.tsx";
+import { CalendarEntryRow } from "../../molecules/CalendarEntryRow/CalendarEntryRow.tsx";
+import { EpisodeTags } from "../../molecules/EpisodeTags/EpisodeTags.tsx";
 
 const MAX_CELL_ENTRIES = 3;
 
@@ -70,6 +71,7 @@ function CompactEntry({
     <Link
       to="/series/$id"
       params={{ id: `i${entry.itemId}` }}
+      viewTransition={pageViewTransition}
       className="flex items-start gap-2 px-1.5 py-1 text-[11px] leading-tight hover:bg-white/5 transition-colors"
       onMouseEnter={() => {
         queryClient.prefetchQuery({
@@ -158,10 +160,13 @@ export function MonthGrid({ year, month, days }: MonthGridProps) {
               <div
                 key={date}
                 className={`flex min-h-24 flex-col gap-1 bg-[#101010] p-1.5 ${
-                  inMonth ? "" : "opacity-30"
+                  inMonth ? "" : "bg-void/80"
                 } ${isToday ? "ring-1 ring-inset ring-yellow/50 bg-yellow/5" : "hover:bg-white/5 transition-colors"}`}
               >
-                <span className={`px-1 text-[10px] ${isToday ? "text-yellow" : "text-muted/50"}`}>
+                <span
+                  className={`px-1 text-[10px] ${isToday ? "text-yellow" : inMonth ? "text-muted-dim" : "text-muted-dim"}`}
+                  aria-hidden={!inMonth}
+                >
                   {Number(date.slice(8, 10))}
                 </span>
                 {entries.slice(0, MAX_CELL_ENTRIES).map((entry) => (
@@ -172,7 +177,7 @@ export function MonthGrid({ year, month, days }: MonthGridProps) {
                   />
                 ))}
                 {overflow > 0 && (
-                  <span className="px-1 text-[9px] text-muted/70">
+                  <span className="px-1 text-[9px] text-muted-dim">
                     {t("calendar.overflow", { count: overflow })}
                   </span>
                 )}

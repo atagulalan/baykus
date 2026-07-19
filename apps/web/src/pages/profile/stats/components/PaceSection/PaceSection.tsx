@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import type { Stats } from "../../../../../api/types.ts";
+import { StatsSectionHeading } from "../StatsSectionHeading/StatsSectionHeading.tsx";
 import { StatTile } from "../StatTile/StatTile.tsx";
 
 interface PaceSectionProps {
@@ -26,9 +27,7 @@ export function PaceSection({ stats }: PaceSectionProps) {
 
   return (
     <section className="content-inset flex flex-col gap-4">
-      <h2 className="font-display italic text-snow text-2xl tracking-tight">
-        {t("stats.pace.title")}
-      </h2>
+      <StatsSectionHeading>{t("stats.pace.title")}</StatsSectionHeading>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <StatTile
           label={t("stats.pace.projectionLabel")}

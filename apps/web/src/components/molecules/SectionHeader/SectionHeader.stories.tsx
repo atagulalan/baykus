@@ -18,16 +18,6 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
 
-export const WithControls: Story = {
-  args: {
-    children: (
-      <button type="button" className="font-mono text-[10px] uppercase tracking-widest text-muted">
-        Sort
-      </button>
-    ),
-  },
-};
-
 export const ListInset: Story = { args: { inset: "list" } };
 
 export const Collapsible: Story = {

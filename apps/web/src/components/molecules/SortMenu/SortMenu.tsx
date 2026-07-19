@@ -5,11 +5,9 @@ import { type LibrarySort, SORTS } from "../../../lib/librarySort.ts";
 import { Modal } from "../Modal/Modal.tsx";
 
 /**
- * Spec 010 WP2: the reusable in-header sort control. Used per-category on Watch
- * (`CategoryListSection`) and grid sections (`CategorySection`) alike, replacing the old
- * floating filter FAB. Pass `options` from `sortsForCategory` so no-op keys (e.g.
- * `lastWatched` under `not_started`) never appear. Self-contained `relative`
- * wrapper — drop it anywhere, no anchor markup required.
+ * Spec 010 WP2: reusable per-category sort popover (standalone Storybook surface).
+ * Production sort uses AddSectionBar (`manage` on Browse, `sortOnly` on All Series).
+ * Pass `options` from `sortsForCategory` so no-op keys never appear.
  */
 export function SortMenu({
   sort,
@@ -72,6 +70,6 @@ export type { LibrarySort } from "../../../lib/librarySort.ts";
 export {
   DEFAULT_LIBRARY_CATEGORY,
   DEFAULT_LIBRARY_SORT,
-  SORTS,
   type LibraryCategoryFilter,
+  SORTS,
 } from "../../../lib/librarySort.ts";

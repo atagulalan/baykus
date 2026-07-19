@@ -1,8 +1,15 @@
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
+import { configureAxe } from "vitest-axe";
 import { renderWithProviders } from "../../../test/renderWithProviders.tsx";
 import { SeriesActionsMenu } from "./SeriesActionsMenu.tsx";
+
+const axe = configureAxe({
+  rules: {
+    "color-contrast": { enabled: false },
+  },
+});
 
 vi.mock("../../../api/client.ts", () => ({
   getSettings: vi.fn(),
@@ -40,5 +47,13 @@ describe("SeriesActionsMenu", () => {
     await user.click(screen.getByRole("button", { name: "Dizi menüsü" }));
     await user.click(screen.getByText("Favorilere ekle"));
     expect(onToggleFavorite).toHaveBeenCalledOnce();
+  });
+
+  it("names the popover dialog via aria-label", async () => {
+    const user = userEvent.setup();
+    const { container } = await renderWithProviders(<SeriesActionsMenu {...baseProps} />);
+    await user.click(screen.getByRole("button", { name: "Dizi menüsü" }));
+    expect(screen.getByRole("dialog", { name: "Dizi menüsü" })).toBeInTheDocument();
+    expect(await axe(container)).toHaveNoViolations();
   });
 });

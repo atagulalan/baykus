@@ -1,10 +1,12 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { withCountdownIn5Seconds, withQueryClient } from "../../../../.storybook/decorators.tsx";
 import { mockLongOverview, mockStillSvg, noop } from "../../../../.storybook/mocks.ts";
 import { EpisodeDetailsModal } from "./EpisodeDetailsModal.tsx";
 
 const meta = {
   title: "Dialogs/EpisodeDetailsModal",
   component: EpisodeDetailsModal,
+  decorators: [withQueryClient],
   args: {
     open: true,
     onClose: noop,
@@ -18,7 +20,7 @@ const meta = {
     watchCount: 0,
     stillRef: mockStillSvg,
     seriesTitle: "Breaking Bad",
-    itemId: 1,
+    airStamp: null,
     watched: false,
     onToggleWatched: noop,
     onRate: noop,
@@ -64,6 +66,15 @@ export const Unaired: Story = {
     airDate: "2099-12-31",
     watched: false,
     overview: null,
+  },
+};
+
+export const FiveSecondsRemaining: Story = {
+  decorators: [withCountdownIn5Seconds()],
+  args: {
+    watched: false,
+    overview: null,
+    onToggleWatched: noop,
   },
 };
 

@@ -19,6 +19,10 @@ export const Default: Story = {};
 
 export const RatedGood: Story = { args: { value: 3 } };
 
+export const RatedOkay: Story = { args: { value: 2 } };
+
+export const RatedBad: Story = { args: { value: 1 } };
+
 export const Small: Story = { args: { size: "sm", value: 2 } };
 
 export const Interactive: Story = {

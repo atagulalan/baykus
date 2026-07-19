@@ -3,10 +3,12 @@ import { useSearch } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { getWatchHistory, removeLatestEpisodeWatch } from "../../api/client.ts";
 import type { WatchHistoryEntry } from "../../api/types.ts";
-import { EpisodeRow } from "../../components/organisms/EpisodeRow/EpisodeRow.tsx";
-import { PageTitle } from "../../components/atoms/PageTitle/PageTitle.tsx";
+import { SectionPill } from "../../components/atoms/SectionPill/SectionPill.tsx";
+import { SkeletonEpisodeList } from "../../components/atoms/Skeleton/Skeleton.tsx";
 import { HistorySortToggle } from "../../components/layout/Layout/LayoutToggles.tsx";
 import { PAGE_HEADING_ACTION_CLASS } from "../../components/layout/Layout/layoutShared.ts";
+import { PageTitleRow } from "../../components/molecules/PageTitleRow/PageTitleRow.tsx";
+import { EpisodeRow } from "../../components/organisms/EpisodeRow/EpisodeRow.tsx";
 import { todayIso } from "../../lib/date.ts";
 import { useToast } from "../../lib/toast.tsx";
 
@@ -58,6 +60,8 @@ function HistoryRow({
 
   return (
     <EpisodeRow
+      embedded
+      posterStretch
       itemId={entry.itemId}
       seriesTitle={entry.title}
       posterRef={entry.posterRef}
@@ -108,15 +112,12 @@ export function WatchHistoryPage() {
 
   return (
     <section className="flex flex-col gap-3">
-      <div className="list-inset hidden w-full items-center pr-0 sm:flex">
-        <PageTitle>{t("watch.history")}</PageTitle>
-        <HistorySortToggle className={PAGE_HEADING_ACTION_CLASS} />
-      </div>
+      <PageTitleRow action={<HistorySortToggle className={PAGE_HEADING_ACTION_CLASS} />}>
+        {t("watch.history")}
+      </PageTitleRow>
 
       {query.isLoading ? (
-        <div className="content-inset">
-          <div className="h-48 animate-pulse bg-white/5" />
-        </div>
+        <SkeletonEpisodeList rows={6} />
       ) : query.isError ? (
         <div className="content-inset flex flex-col items-center gap-2 py-12 text-center">
           <p className="text-muted">{t("errors.generic")}</p>
@@ -131,15 +132,25 @@ export function WatchHistoryPage() {
       ) : items.length === 0 ? (
         <p className="list-inset py-3 text-sm text-muted">{t("watch.empty.history")}</p>
       ) : (
-        <div className="flex flex-col">
-          {items.map((entry) => (
-            <HistoryRow
-              key={entry.watchId}
-              entry={entry}
-              onUnwatch={(episodeId) => unwatch.mutate(episodeId)}
-              unwatching={unwatchingEpisodeId === entry.episodeId}
-            />
-          ))}
+        <div className="flex flex-col gap-0">
+          <div
+            className="sticky z-30 flex justify-center py-1 list-inset"
+            style={{ top: "var(--app-header-height, 4rem)" }}
+          >
+            <SectionPill className="text-sm font-semibold text-snow">
+              {t("watch.history")}
+            </SectionPill>
+          </div>
+          <div className="flex flex-col">
+            {items.map((entry) => (
+              <HistoryRow
+                key={entry.watchId}
+                entry={entry}
+                onUnwatch={(episodeId) => unwatch.mutate(episodeId)}
+                unwatching={unwatchingEpisodeId === entry.episodeId}
+              />
+            ))}
+          </div>
         </div>
       )}
     </section>

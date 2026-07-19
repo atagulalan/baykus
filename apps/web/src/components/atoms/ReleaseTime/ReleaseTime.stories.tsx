@@ -4,7 +4,7 @@ import { ReleaseTime } from "./ReleaseTime.tsx";
 const meta = {
   title: "Atoms/ReleaseTime",
   component: ReleaseTime,
-  args: { itemId: 1 },
+  args: { airStamp: "2026-07-20T03:00:00Z" },
 } satisfies Meta<typeof ReleaseTime>;
 
 export default meta;

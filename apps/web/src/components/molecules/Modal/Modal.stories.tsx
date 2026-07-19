@@ -9,7 +9,12 @@ const meta = {
   args: {
     isOpen: true,
     onClose: noop,
-    children: <p className="p-4 text-sm text-snow">Modal body content</p>,
+    children: (
+      <>
+        <h2 className="font-display italic text-lg text-snow">Dialog title</h2>
+        <p className="p-4 text-sm text-snow">Modal body content</p>
+      </>
+    ),
   },
 } satisfies Meta<typeof Modal>;
 
@@ -22,7 +27,11 @@ export const WithTitle: Story = {
   args: {
     title: "Sheet title",
     className: "p-4",
-    children: <p className="text-sm text-snow">Bottom sheet content on mobile.</p>,
+    children: (
+      <p className="text-sm text-snow">
+        Soft iOS-like bottom sheet with drag handle (mobile viewport).
+      </p>
+    ),
   },
 };
 
@@ -44,6 +53,7 @@ export const Popover: Story = {
           onClose={() => setOpen(false)}
           desktop="popover"
           popoverClassName="w-56 p-3"
+          title="Popover menu"
         >
           <p className="text-sm text-snow">Popover panel</p>
         </Modal>

@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "test:storybook": "vitest run --project storybook"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.83.0",
@@ -23,6 +24,7 @@
   "devDependencies": {
     "@storybook/addon-a11y": "^10.5.2",
     "@storybook/addon-docs": "^10.5.2",
+    "@storybook/addon-vitest": "^10.5.2",
     "@storybook/react-vite": "^10.5.2",
     "@tailwindcss/vite": "^4.1.11",
     "@testing-library/jest-dom": "^6.9.1",
@@ -31,7 +33,9 @@
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.7.0",
+    "@vitest/browser": "^3.2.7",
     "jsdom": "^26.1.0",
+    "playwright": "^1.61.1",
     "storybook": "^10.5.2",
     "tailwindcss": "^4.1.11",
     "typescript": "^5.9.2",

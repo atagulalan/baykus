@@ -2,10 +2,13 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { ArrowDown, ArrowUp, Minus } from "lucide-react";
 import { useState } from "react";
+import { flushSync } from "react-dom";
 import { getSeriesByParam } from "../../../api/client.ts";
 import { buildImageUrl } from "../../../api/images.ts";
 import type { SeriesSummary } from "../../../api/types.ts";
-import { CATEGORY_TEXT_COLORS } from "../../../lib/categoryColors.ts";
+import { progressTextColor } from "../../../lib/categoryColors.ts";
+import { pageViewTransition } from "../../../lib/pageViewTransition.ts";
+import { posterMorphStyle, setLastPosterItemId, useLastPosterItemId } from "../../../lib/posterTransition.ts";
 import { seriesParam } from "../../../lib/seriesPath.ts";
 import { MediaImage } from "../../atoms/MediaImage/MediaImage.tsx";
 import { SegmentedProgress } from "../../atoms/SegmentedProgress/SegmentedProgress.tsx";
@@ -22,9 +25,13 @@ const RATING_ICONS: Record<1 | 2 | 3, { Icon: React.ElementType; colorClass: str
 
 export function SeriesCard({ series }: SeriesCardProps) {
   const [imageFailed, setImageFailed] = useState(false);
+  // Shared last-id keeps reverse morph (detail → grid) paired; flushSync so Link's
+  // own isTransitioning re-render doesn't clear the name before VT captures.
+  const lastPosterId = useLastPosterItemId();
+  const posterActive = lastPosterId === series.id;
   const imageUrl = buildImageUrl(series.posterRef);
   const { watched, aired } = series.progress;
-  const textColor = CATEGORY_TEXT_COLORS[series.category] || CATEGORY_TEXT_COLORS.default;
+  const textColor = progressTextColor(series.category, watched);
   const queryClient = useQueryClient();
   const param = seriesParam(series);
 
@@ -40,25 +47,29 @@ export function SeriesCard({ series }: SeriesCardProps) {
   }
 
   return (
-    <div className="group relative flex flex-col overflow-hidden bg-void border border-white/5 transition-colors hover:border-white/10">
+    <div className="group relative flex flex-col rounded-md px-1.5 py-1.5 transition-colors hover:bg-white/[0.04] sm:px-3 sm:py-3">
       <Link
         to="/series/$id"
         params={{ id: param }}
+        viewTransition={pageViewTransition}
         className="contents"
         onMouseEnter={prefetchDetail}
         onFocus={prefetchDetail}
         onTouchStart={prefetchDetail}
+        onClick={() => {
+          flushSync(() => setLastPosterItemId(series.id));
+        }}
       >
         <div
-          className="relative aspect-[2/3] w-full bg-[#101010]"
-          style={{ viewTransitionName: `poster-${series.id}` }}
+          className="relative aspect-[2/3] w-full overflow-hidden rounded-md bg-white/5"
+          style={posterMorphStyle(series.id, posterActive)}
         >
           {imageUrl && !imageFailed ? (
             <MediaImage
               src={imageUrl}
               alt={series.title}
               wrapperClassName="block h-full w-full"
-              className="h-full w-full object-cover opacity-90 group-hover:opacity-100"
+              className="h-full w-full object-cover opacity-90"
               spinnerSize={20}
               onError={() => setImageFailed(true)}
             />
@@ -67,12 +78,20 @@ export function SeriesCard({ series }: SeriesCardProps) {
               {series.title}
             </div>
           )}
+          {series.rating !== null && (
+            <span className="absolute top-1 left-1 bg-void/80 p-1">
+              {(() => {
+                const { Icon, colorClass } = RATING_ICONS[series.rating];
+                return <Icon size={14} className={colorClass} />;
+              })()}
+            </span>
+          )}
         </div>
-        <div className="flex flex-col gap-2 p-3 border-t border-white/5">
-          <p className="truncate font-display italic text-snow text-xs leading-tight sm:text-lg">
+        <div className="flex w-full flex-col items-start gap-1 pt-2">
+          <p className="w-full truncate text-left font-display italic text-snow text-xs leading-tight sm:text-lg">
             {series.title}
           </p>
-          <div className="flex items-center justify-between font-mono text-[10px] tabular-nums text-muted tracking-wide">
+          <div className="flex w-full items-center justify-between font-mono text-[10px] tabular-nums text-muted tracking-wide">
             <span>{series.year ?? "—"}</span>
             <span className={textColor}>
               {watched} / {aired}
@@ -87,14 +106,6 @@ export function SeriesCard({ series }: SeriesCardProps) {
           />
         </div>
       </Link>
-      {series.rating !== null && (
-        <span className="absolute top-1 left-1 bg-void/80 p-1">
-          {(() => {
-            const { Icon, colorClass } = RATING_ICONS[series.rating];
-            return <Icon size={14} className={colorClass} />;
-          })()}
-        </span>
-      )}
     </div>
   );
 }

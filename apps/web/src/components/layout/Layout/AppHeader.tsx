@@ -1,40 +1,42 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link, useCanGoBack, useNavigate, useRouterState } from "@tanstack/react-router";
+import { Link, useCanGoBack, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, User } from "lucide-react";
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useRef } from "react";
+import { flushSync } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { getSettings } from "../../../api/client.ts";
 import { buildAvatarUrl } from "../../../api/images.ts";
 import { backAffordance } from "../../../lib/backFallback.ts";
+import { pageViewTransition } from "../../../lib/pageViewTransition.ts";
+import { clearLastPosterItemId } from "../../../lib/posterTransition.ts";
 import { Z } from "../../../lib/zIndex.ts";
 import { MediaImage } from "../../atoms/MediaImage/MediaImage.tsx";
+import { MobileHeaderAction } from "./LayoutToggles.tsx";
 import {
   ACTIVE_FILL,
+  APP_HEADER_HOOK,
   FORCE_FILL,
   isBrowsePath,
-  isCalendarPath,
   isProfileHeroPath,
   isSeriesHeroPath,
   NAV_ITEMS,
   NAV_REVEAL_DELAYS,
+  useCommittedPathname,
   useWatchBrowsePath,
 } from "./layoutShared.ts";
-import { CalendarModeToggle, MobileHeaderAction } from "./LayoutToggles.tsx";
 
-/** Header bg ramps from top fade to scrolled gradient over this scroll distance. */
-const HEADER_SCROLL_FADE_PX = 100;
-
-function headerScrollGradient(scrollY: number): string {
-  const t = Math.min(Math.max(scrollY / HEADER_SCROLL_FADE_PX, 0), 1);
-  if (t === 0) return "linear-gradient(to bottom, #000 0%, transparent 100%)";
-  const midAlpha = 0.45 * t;
-  const midStop = 100 - 35 * t;
-  return `linear-gradient(to bottom, #000 0%, rgb(0 0 0 / ${midAlpha}) ${midStop}%, transparent 100%)`;
+function disarmPosterMorph() {
+  flushSync(() => clearLastPosterItemId());
 }
 
-function MobileBackButton({ profileHandle }: { profileHandle: string }) {
+function MobileBackButton({
+  profileHandle,
+  pathname,
+}: {
+  profileHandle: string;
+  pathname: string;
+}) {
   const { t } = useTranslation();
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
   const canGoBack = useCanGoBack();
   const navigate = useNavigate();
   const back = backAffordance(pathname, profileHandle);
@@ -45,8 +47,12 @@ function MobileBackButton({ profileHandle }: { profileHandle: string }) {
         <button
           type="button"
           onClick={() => {
+            // Back from series → browse keeps the armed poster for reverse morph.
+            if (!(pathname.startsWith("/series/") && back.to === "/watch")) {
+              disarmPosterMorph();
+            }
             if (canGoBack) window.history.back();
-            else navigate(back);
+            else void navigate({ ...back, viewTransition: pageViewTransition });
           }}
           aria-label={t("app.back")}
           className="flex h-11 w-11 items-center justify-center text-muted transition-colors hover:text-snow"
@@ -61,24 +67,18 @@ function MobileBackButton({ profileHandle }: { profileHandle: string }) {
 export const AppHeader = memo(function AppHeader({ profileHandle }: { profileHandle: string }) {
   const { t } = useTranslation();
   const headerObserverRef = useRef<ResizeObserver | null>(null);
-  const [headerScrollY, setHeaderScrollY] = useState(0);
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  // Committed match path — not location — so banner/nav chrome doesn't snap
+  // before the view-transition old snapshot is taken (E51).
+  const pathname = useCommittedPathname();
   const browseActive = isBrowsePath(pathname);
   /** Dock-hide only on banner/hero pages (series detail + profile hub). */
   const isBannerPage = isSeriesHeroPath(pathname) || isProfileHeroPath(pathname);
   const watchTo = useWatchBrowsePath();
-  const settingsQuery = useQuery({ queryKey: ["settings"], queryFn: getSettings });
+  const settingsQuery = useQuery({
+    queryKey: ["settings"],
+    queryFn: getSettings,
+  });
   const avatarUrl = buildAvatarUrl(settingsQuery.data?.avatarRef);
-
-  useEffect(() => {
-    function updateHeaderScroll() {
-      setHeaderScrollY(window.scrollY);
-    }
-
-    updateHeaderScroll();
-    window.addEventListener("scroll", updateHeaderScroll, { passive: true });
-    return () => window.removeEventListener("scroll", updateHeaderScroll);
-  }, [pathname]);
 
   const headerRef = useCallback((el: HTMLElement | null) => {
     headerObserverRef.current?.disconnect();
@@ -100,19 +100,20 @@ export const AppHeader = memo(function AppHeader({ profileHandle }: { profileHan
   return (
     <header
       ref={headerRef}
-      className="group sticky top-0"
+      {...{ [APP_HEADER_HOOK]: "" }}
+      className={`group sticky top-0 bg-transparent${isBannerPage ? " overflow-hidden" : ""}`}
       style={{
         viewTransitionName: "app-header",
         zIndex: Z.chrome,
-        backgroundImage: headerScrollGradient(headerScrollY),
       }}
     >
-      <nav className="mx-auto max-w-5xl px-4 pt-6 pb-4">
+      <nav className="mx-auto max-w-5xl px-3 pt-6 pb-4 sm:px-6 lg:px-3">
         {/* Mobile: back | centered wordmark | contextual right action (E155 / E133). */}
         <div className="relative flex items-center justify-between sm:hidden">
-          <MobileBackButton profileHandle={profileHandle} />
+          <MobileBackButton profileHandle={profileHandle} pathname={pathname} />
           <Link
             to={watchTo}
+            viewTransition={pageViewTransition}
             className="-translate-x-1/2 absolute left-1/2 font-display italic text-snow text-2xl leading-none tracking-tight"
           >
             baykuş
@@ -124,6 +125,7 @@ export const AppHeader = memo(function AppHeader({ profileHandle }: { profileHan
         <div className="hidden grid-cols-[1fr_auto_1fr] items-center gap-4 sm:grid">
           <Link
             to={watchTo}
+            viewTransition={pageViewTransition}
             className="justify-self-start font-display italic text-snow text-2xl tracking-tight leading-none"
           >
             baykuş
@@ -137,10 +139,12 @@ export const AppHeader = memo(function AppHeader({ profileHandle }: { profileHan
               <Link
                 key={item.key}
                 to={item.browse ? watchTo : item.to}
+                viewTransition={pageViewTransition}
                 {...(item.to === "/calendar" ? { activeOptions: { exact: false as const } } : {})}
                 aria-label={t(item.key)}
                 title={t(item.key)}
-                className={`flex h-11 items-center justify-center gap-2 rounded-full border border-white/10 bg-void/70 px-4 font-medium text-muted text-sm shadow-lg backdrop-blur-md transition-[transform,border-color,color] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform hover:border-white/20 hover:text-snow [&.active]:text-yellow ${
+                onClick={item.browse ? undefined : disarmPosterMorph}
+                className={`flex h-11 items-center justify-center gap-2 rounded-full bg-transparent px-4 font-medium text-muted text-sm transition-[translate,border-color,color] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-[translate] hover:text-snow [&.active]:text-yellow ${
                   item.activeClass
                 }${item.browse && browseActive ? ` text-yellow ${FORCE_FILL}` : ""}${
                   isBannerPage
@@ -154,13 +158,14 @@ export const AppHeader = memo(function AppHeader({ profileHandle }: { profileHan
             ))}
           </div>
           <div className="flex items-center justify-self-end">
-            {isCalendarPath(pathname) && <CalendarModeToggle pathname={pathname} />}
             <Link
               to="/user/$handle"
               params={{ handle: profileHandle }}
+              viewTransition={pageViewTransition}
               aria-label={t("app.nav.profile")}
               title={t("app.nav.profile")}
-              className={`flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-white/10 bg-void/70 text-muted transition-[transform,border-color,color] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform hover:border-white/20 hover:text-snow [&.active]:text-yellow ${ACTIVE_FILL}${
+              onClick={disarmPosterMorph}
+              className={`flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-void/70 text-muted transition-[translate,color] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-[translate] hover:text-snow [&.active]:text-yellow ${ACTIVE_FILL}${
                 isBannerPage
                   ? " pointer-events-none -translate-y-20 delay-0 group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:delay-[120ms]"
                   : ""

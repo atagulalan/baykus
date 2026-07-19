@@ -3,6 +3,7 @@ import type { ExternalIds, MetadataProvider } from "@baykus/provider-sdk";
 import { Hono } from "hono";
 import { z } from "zod";
 import { ApiError } from "../middleware/errors.ts";
+import { createDetailsProvider } from "../providers/airStamps.ts";
 import {
   enrichCast,
   enrichExternalRatings,
@@ -99,7 +100,7 @@ export function createLibraryRoutes(library: Library, providers: MetadataProvide
 
   app.post("/series", async (c) => {
     const body = addSeriesSchema.parse(await c.req.json());
-    const provider = providers[0];
+    const provider = createDetailsProvider(providers);
     if (!provider) throw new ApiError("INTERNAL", "no metadata providers registered");
 
     const externalIds = toExternalIds(body.externalIds);

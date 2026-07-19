@@ -40,6 +40,20 @@ export const ShowHint: Story = {
   },
 };
 
+export const Rounded: Story = {
+  args: {
+    checked: false,
+    variant: "rounded",
+  },
+};
+
+export const RoundedChecked: Story = {
+  args: {
+    checked: true,
+    variant: "rounded",
+  },
+};
+
 /** Interactive controlled checkbox for local click testing. */
 export const Interactive: Story = {
   args: {

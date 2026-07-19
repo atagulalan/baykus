@@ -1,17 +1,18 @@
 import type { Decorator } from "@storybook/react-vite";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
+  createMemoryHistory,
   createRootRoute,
   createRoute,
   createRouter,
   Outlet,
   RouterProvider,
 } from "@tanstack/react-router";
-import { type ComponentType, useEffect } from "react";
+import { type ComponentType, useEffect, useState } from "react";
 import type { AuthSession, Settings } from "../src/api/types.ts";
 import i18n from "../src/i18n/index.ts";
 import { ToastProvider } from "../src/lib/toast.tsx";
-import { mockAuthSession, mockSeriesDetail, mockSettings } from "./mocks.ts";
+import { countdownIn5Seconds, mockAuthSession, mockSeriesDetail, mockSettings } from "./mocks.ts";
 
 let StoryComponent: ComponentType = () => null;
 
@@ -44,7 +45,22 @@ const watchRoute = createRoute({
 });
 
 const routeTree = rootRoute.addChildren([indexRoute, seriesRoute, watchRoute]);
-const storyRouter = createRouter({ routeTree });
+
+function StoryRouterProvider() {
+  const [router] = useState(() =>
+    createRouter({
+      routeTree,
+      history: createMemoryHistory({ initialEntries: ["/"] }),
+      defaultPendingMinMs: 0,
+    }),
+  );
+
+  useEffect(() => {
+    void router.load();
+  }, [router]);
+
+  return <RouterProvider router={router} />;
+}
 
 export interface StoryQueryClientOptions {
   settings?: Partial<Settings>;
@@ -67,7 +83,7 @@ export function createStoryQueryClient(options: StoryQueryClientOptions = {}): Q
 /** TanStack Router shell for components using Link. */
 export const withRouter: Decorator = (Story) => {
   StoryComponent = Story;
-  return <RouterProvider router={storyRouter} />;
+  return <StoryRouterProvider />;
 };
 
 /** React Query for settings/auth-aware components. */
@@ -97,7 +113,7 @@ export const withAppProviders: Decorator = (Story, context) => {
   return (
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
-        <RouterProvider router={storyRouter} />
+        <StoryRouterProvider />
       </ToastProvider>
     </QueryClientProvider>
   );
@@ -128,6 +144,81 @@ export function withLocale(locale: "tr" | "en"): Decorator {
     }
 
     return <LocaleShell activeLocale={locale} />;
+  };
+}
+
+/** Pin "now" and set airDate/airStamp to now + 5s for countdown-second stories. */
+export function withCountdownIn5Seconds(
+  mapArgs?: (
+    fixture: ReturnType<typeof countdownIn5Seconds>,
+    args: Record<string, unknown>,
+  ) => Record<string, unknown>,
+): Decorator {
+  return (Story, context) => {
+    const fixture = countdownIn5Seconds();
+    const storyArgs = mapArgs
+      ? mapArgs(fixture, context.args as Record<string, unknown>)
+      : {
+          ...(context.args as Record<string, unknown>),
+          airDate: fixture.airDate,
+          airStamp: fixture.airStamp,
+        };
+
+    function CountdownShell() {
+      useEffect(() => {
+        const fixedMs = Date.parse(fixture.nowIso);
+        const RealDate = globalThis.Date;
+        class MockDate extends RealDate {
+          constructor(...params: ConstructorParameters<typeof Date>) {
+            if (params.length === 0) {
+              super(fixedMs);
+            } else {
+              super(...params);
+            }
+          }
+          static now() {
+            return fixedMs;
+          }
+        }
+        globalThis.Date = MockDate as typeof Date;
+        return () => {
+          globalThis.Date = RealDate;
+        };
+      }, []);
+      return <Story args={storyArgs} />;
+    }
+
+    return <CountdownShell />;
+  };
+}
+
+/** Pin Date/Date.now so airStamp countdown stories stay stable in Storybook. */
+export function withFixedNow(iso: string): Decorator {
+  return (Story) => {
+    function FixedNowShell() {
+      useEffect(() => {
+        const fixedMs = Date.parse(iso);
+        const RealDate = globalThis.Date;
+        class MockDate extends RealDate {
+          constructor(...params: ConstructorParameters<typeof Date>) {
+            if (params.length === 0) {
+              super(fixedMs);
+            } else {
+              super(...params);
+            }
+          }
+          static now() {
+            return fixedMs;
+          }
+        }
+        globalThis.Date = MockDate as typeof Date;
+        return () => {
+          globalThis.Date = RealDate;
+        };
+      }, []);
+      return <Story />;
+    }
+    return <FixedNowShell />;
   };
 }
 

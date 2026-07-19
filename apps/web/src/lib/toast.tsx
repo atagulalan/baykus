@@ -35,10 +35,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       <div
         className="fixed bottom-4 left-1/2 flex -translate-x-1/2 flex-col gap-2"
         style={{ zIndex: Z.toast }}
+        aria-live="polite"
+        aria-relevant="additions"
       >
         {toasts.map((toast) => (
           <div
             key={toast.id}
+            role={toast.variant === "error" ? "alert" : "status"}
+            aria-live={toast.variant === "error" ? "assertive" : "polite"}
             className={`border bg-[#101010] px-4 py-2 text-sm shadow-2xl ${
               toast.variant === "error"
                 ? "border-red-500/50 text-red-400"

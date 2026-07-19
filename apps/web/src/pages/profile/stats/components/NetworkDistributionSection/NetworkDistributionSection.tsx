@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import type { Stats } from "../../../../../api/types.ts";
 import { HBarList, type HBarListItem } from "../HBarList/HBarList.tsx";
+import { StatsSectionHeading } from "../StatsSectionHeading/StatsSectionHeading.tsx";
 import { StatTile } from "../StatTile/StatTile.tsx";
 
 interface NetworkDistributionSectionProps {
@@ -31,9 +32,7 @@ export function NetworkDistributionSection({ stats }: NetworkDistributionSection
 
   return (
     <section className="content-inset flex flex-col gap-4">
-      <h2 className="font-display italic text-snow text-2xl tracking-tight">
-        {t("stats.networkDistribution.title")}
-      </h2>
+      <StatsSectionHeading>{t("stats.networkDistribution.title")}</StatsSectionHeading>
       <StatTile
         label={t("stats.networkDistribution.networkCount")}
         value={networkCount.toLocaleString("tr-TR")}

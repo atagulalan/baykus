@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import type { Stats } from "../../../../../api/types.ts";
 import { formatDurationLabel, formatDurationParts } from "../../../../../lib/date.ts";
 import { HBarList } from "../HBarList/HBarList.tsx";
+import { StatsSectionHeading } from "../StatsSectionHeading/StatsSectionHeading.tsx";
 import { StatTile } from "../StatTile/StatTile.tsx";
 
 interface BacklogSectionProps {
@@ -18,9 +19,7 @@ export function BacklogSection({ stats }: BacklogSectionProps) {
 
   return (
     <section className="content-inset flex flex-col gap-4">
-      <h2 className="font-display italic text-snow text-2xl tracking-tight">
-        {t("stats.backlog.title")}
-      </h2>
+      <StatsSectionHeading>{t("stats.backlog.title")}</StatsSectionHeading>
       <div className="grid grid-cols-2 gap-4">
         <StatTile
           label={t("stats.backlog.episodes")}

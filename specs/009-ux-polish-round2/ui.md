@@ -313,8 +313,11 @@ Daha sonra
 - Gate behind `document.startViewTransition` support check.
 - On unsupported browsers: instant navigation, no break.
 - **E131:** every result row is clickable. In-library → detail. New →
-  `/series/new` preview page with yellow **"İzlemeye başla"** (add CTA is
-  not on the search list).
+  `/series/new` preview page that reuses the series detail hero + info
+  sheet (poster / backdrop / ⓘ) with yellow **"İzlemeye başla"** in the
+  hero. Episode checks still add + watch.
+  <!-- DECISION: preview shares SeriesDetailHero so info/poster are reachable
+       without starting to watch; CTA restyled to soft-idiom rounded-lg. -->
 
 ## MediaImage (NEW — E134)
 

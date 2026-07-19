@@ -16,21 +16,20 @@ describe("computeOverflowBadge (E28)", () => {
 });
 
 describe("shouldShowQuickMarkCheckbox (E29)", () => {
-  const today = "2026-07-15";
-
-  it("shows the checkbox when airDate is today", () => {
-    expect(shouldShowQuickMarkCheckbox(today, today)).toBe(true);
+  it("shows the checkbox when the episode has aired", () => {
+    expect(shouldShowQuickMarkCheckbox({ airDate: "2026-07-15", airStamp: null })).toBe(true);
   });
 
-  it("shows the checkbox when airDate is in the past", () => {
-    expect(shouldShowQuickMarkCheckbox("2026-07-10", today)).toBe(true);
+  it("hides the checkbox before airStamp instant even when airDate is today", () => {
+    expect(
+      shouldShowQuickMarkCheckbox({
+        airDate: "2026-07-19",
+        airStamp: "2026-07-20T03:00:00Z",
+      }),
+    ).toBe(false);
   });
 
-  it("hides the checkbox when airDate is in the future", () => {
-    expect(shouldShowQuickMarkCheckbox("2026-07-16", today)).toBe(false);
-  });
-
-  it("hides the checkbox when airDate is null (provider data anomaly)", () => {
-    expect(shouldShowQuickMarkCheckbox(null, today)).toBe(false);
+  it("hides the checkbox when schedule is unknown", () => {
+    expect(shouldShowQuickMarkCheckbox({ airDate: null, airStamp: null })).toBe(false);
   });
 });

@@ -21,7 +21,7 @@ import type { AddedVia, ManualList, RatingTargetType, WatchSource } from "../db/
 
 export interface ZipManifest {
   app: "baykus";
-  schemaVersion: 6;
+  schemaVersion: 7;
   exportedAt: string;
   appVersion: string;
   mediaTypes: MediaType[];
@@ -34,6 +34,7 @@ export interface ZipEpisodeEntry {
   title: string | null;
   overview: string | null;
   airDate: string | null;
+  airStamp: string | null;
   runtimeMin: number | null;
   type: EpisodeType | null;
   stillRef: ImageRef | null;

@@ -2,8 +2,9 @@
  * App-wide stacking scale. Use these instead of one-off z-* / z-[N] values so
  * overlays, chrome, and sticky headers stay ordered.
  *
- * Low → high:
- *   content < sticky < chrome < overlay < overlayPanel < toast
+ * Low → high (product stack):
+ *   page/content < sticky < edgeBlur < chrome < overlay < overlayPanel < toast
+ *   < grain (body::after, CSS z-index 1e7 — above everything)
  *
  * Prefer `style={{ zIndex: Z.* }}` for portals/overlays (always applied).
  * Tailwind `z-*` utilities are fine for in-flow content when they match this table.
@@ -11,9 +12,11 @@
 export const Z = {
   /** In-hero content above backdrop; rating micro-prompts. */
   content: 10,
-  /** Sticky section headers, calendar mode chrome, filter FAB. */
+  /** Sticky section headers, calendar mode chrome, filter FAB — page layer. */
   sticky: 30,
-  /** App header + mobile tab bar. */
+  /** Viewport edge scrubs (under header/tab bar, above page). */
+  edgeBlur: 35,
+  /** App header + mobile tab bar (icons only — no edge fade painted here). */
   chrome: 40,
   /** Modal / popover / sheet backdrop (portaled to body). */
   overlay: 100,

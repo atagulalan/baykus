@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Camera, Loader2 } from "lucide-react";
+import { Bird, Camera, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ApiError, uploadAvatar } from "../../../api/client.ts";
 import { buildAvatarUrl } from "../../../api/images.ts";
@@ -11,7 +11,7 @@ interface ProfilePhotoUploadProps {
   avatarRef: string | null;
 }
 
-/** WP4: uploadable profile photo — works identically in single and multi mode; replaces the 🦉 placeholder once set. */
+/** WP4: uploadable profile photo — works identically in single and multi mode; replaces the bird placeholder once set. */
 export function ProfilePhotoUpload({ avatarRef }: ProfilePhotoUploadProps) {
   const { t } = useTranslation();
   const toast = useToast();
@@ -39,7 +39,7 @@ export function ProfilePhotoUpload({ avatarRef }: ProfilePhotoUploadProps) {
     <label
       aria-label={t("profile.photo.upload")}
       title={t("profile.photo.upload")}
-      className="group relative flex h-14 w-14 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-white/5 text-2xl"
+      className="group relative flex h-14 w-14 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-white/5 text-muted"
     >
       {photoUrl ? (
         <MediaImage
@@ -49,7 +49,7 @@ export function ProfilePhotoUpload({ avatarRef }: ProfilePhotoUploadProps) {
           className="h-full w-full object-cover"
         />
       ) : (
-        <span aria-hidden="true">🦉</span>
+        <Bird size={22} strokeWidth={1.5} aria-hidden />
       )}
       <span
         className={`absolute inset-0 flex items-center justify-center bg-black/50 transition-opacity ${

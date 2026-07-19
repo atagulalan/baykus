@@ -6,6 +6,8 @@ interface HeatmapProps {
   /** Non-zero days only (E106) — the client renders the full year grid. */
   days: { date: string; count: number }[];
   tooltipFor: (date: string, count: number) => string;
+  /** Accessible name for the scrollable activity grid. */
+  ariaLabel: string;
 }
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -24,7 +26,7 @@ function mondayFirstWeekday(date: Date): number {
 }
 
 /** ui.md primitive: GitHub-style day grid, week columns × 7 rows, Monday-first. Pure CSS, no JS beyond layout math. */
-export function Heatmap({ years, days, tooltipFor }: HeatmapProps) {
+export function Heatmap({ years, days, tooltipFor, ariaLabel }: HeatmapProps) {
   const countByDate = new Map(days.map((d) => [d.date, d.count]));
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -64,6 +66,9 @@ export function Heatmap({ years, days, tooltipFor }: HeatmapProps) {
     // biome-ignore lint/a11y/noStaticElementInteractions: drag-to-pan scroll surface
     <div
       ref={containerRef}
+      role="region"
+      tabIndex={0}
+      aria-label={ariaLabel}
       className="overflow-x-auto touch-pan-x select-none cursor-grab active:cursor-grabbing scrollbar-hide pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
       onMouseDown={handleMouseDown}
       onMouseLeave={handleMouseLeave}

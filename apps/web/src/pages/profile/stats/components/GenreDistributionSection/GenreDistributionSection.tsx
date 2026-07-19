@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import type { Stats } from "../../../../../api/types.ts";
 import { genreKey } from "../../../../../lib/genreKey.ts";
 import { HBarList, type HBarListItem } from "../HBarList/HBarList.tsx";
+import { StatsSectionHeading } from "../StatsSectionHeading/StatsSectionHeading.tsx";
 
 interface GenreDistributionSectionProps {
   stats: Pick<Stats, "genreDistribution">;
@@ -31,9 +32,7 @@ export function GenreDistributionSection({ stats }: GenreDistributionSectionProp
 
   return (
     <section className="content-inset flex flex-col gap-4">
-      <h2 className="font-display italic text-snow text-2xl tracking-tight">
-        {t("stats.genreDistribution.title")}
-      </h2>
+      <StatsSectionHeading>{t("stats.genreDistribution.title")}</StatsSectionHeading>
       <HBarList items={items} />
     </section>
   );

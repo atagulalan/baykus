@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { getStats } from "../../../api/client.ts";
+import { SkeletonStatsPage } from "../../../components/atoms/Skeleton/Skeleton.tsx";
 import { ActivityHeatmapSection } from "./components/ActivityHeatmap/ActivityHeatmapSection.tsx";
 import { BacklogSection } from "./components/BacklogSection/BacklogSection.tsx";
 import { BingesSection } from "./components/BingesSection/BingesSection.tsx";
@@ -26,17 +27,7 @@ export function StatsPage() {
   const query = useQuery({ queryKey: ["stats", tz], queryFn: () => getStats(tz) });
 
   if (query.isLoading) {
-    return (
-      <div className="content-inset flex flex-col gap-6">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {["a", "b", "c"].map((key) => (
-            <div key={key} className="h-20 animate-pulse bg-white/5" />
-          ))}
-        </div>
-        <div className="h-48 animate-pulse bg-white/5" />
-        <div className="h-48 animate-pulse bg-white/5" />
-      </div>
-    );
+    return <SkeletonStatsPage />;
   }
 
   if (query.isError) {
@@ -46,7 +37,7 @@ export function StatsPage() {
         <button
           type="button"
           onClick={() => query.refetch()}
-          className="border border-white/10 font-mono text-[10px] uppercase tracking-widest text-muted hover:text-snow px-3 py-1.5 transition-colors"
+          className="rounded-md border border-white/10 font-mono text-[10px] uppercase tracking-widest text-muted hover:text-snow px-3 py-1.5 transition-colors"
         >
           {t("errors.retry")}
         </button>

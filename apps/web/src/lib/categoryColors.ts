@@ -26,6 +26,16 @@ export const CATEGORY_TEXT_COLORS: Record<WatchCategory | "default", string> = {
 };
 
 /**
+ * Watched/aired counter accent. A series with nothing watched yet has no
+ * progress to accent — it stays muted whatever its category, so the colored
+ * counters read as "there is progress here".
+ */
+export function progressTextColor(category: WatchCategory, watched: number): string {
+  if (watched === 0) return "text-muted";
+  return CATEGORY_TEXT_COLORS[category] || CATEGORY_TEXT_COLORS.default;
+}
+
+/**
  * Stats İzleme Durumu palette — one distinct hue per category.
  * E55's shared yellow is fine for single-series accents, but adjacent
  * yellow segments are unreadable; chart colors diverge only for the

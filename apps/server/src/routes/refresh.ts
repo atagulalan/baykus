@@ -4,6 +4,7 @@ import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { z } from "zod";
 import { ApiError } from "../middleware/errors.ts";
+import { createDetailsProvider } from "../providers/airStamps.ts";
 import { notifyNewEpisodes } from "../push/notify.ts";
 import type { VapidKeys } from "../push/vapid.ts";
 
@@ -56,7 +57,7 @@ export function createRefreshRoutes(
     const id = parseId(c.req.param("id"));
     const before = library.getSeries(id);
     if (!before) throw new ApiError("NOT_FOUND", `series ${id} not in library`);
-    const provider = providers[0];
+    const provider = createDetailsProvider(providers);
     if (!provider) throw new ApiError("INTERNAL", "no metadata providers registered");
 
     const result = await library.refreshItem(provider, id);
@@ -72,7 +73,7 @@ export function createRefreshRoutes(
   });
 
   app.post("/api/library/refresh", async (c) => {
-    const provider = providers[0];
+    const provider = createDetailsProvider(providers);
     if (!provider) throw new ApiError("INTERNAL", "no metadata providers registered");
 
     const staleOnly = staleOnlyQuerySchema.parse(c.req.query("staleOnly")) !== undefined;

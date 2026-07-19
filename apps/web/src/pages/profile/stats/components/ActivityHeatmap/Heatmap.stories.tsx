@@ -9,6 +9,7 @@ const meta = {
     years: [2025, 2026],
     days: mockStats.activityByDay,
     tooltipFor: (date, count) => `${date}: ${count} episodes`,
+    ariaLabel: "Activity heatmap",
   },
   parameters: { layout: "padded" },
 } satisfies Meta<typeof Heatmap>;

@@ -30,24 +30,37 @@ export function useSeriesSearch() {
   const queryClient = useQueryClient();
   const toast = useToast();
   const navigate = useNavigate();
-  const { q: query = "" } = useSearch({ from: "/search" });
+  const { q: urlQuery = "" } = useSearch({ from: "/search" });
+  const [query, setQueryState] = useState(urlQuery);
 
-  const setQuery = useCallback(
-    (value: string) => {
-      void navigate({
-        to: "/search",
-        search: { q: value.trim().length > 0 ? value : undefined },
-        replace: true,
-      });
-    },
-    [navigate],
-  );
+  // Keep the draft in sync when the URL changes externally (back/forward, deep link).
+  useEffect(() => {
+    setQueryState(urlQuery);
+  }, [urlQuery]);
 
-  const [pending, setPending] = useState<SearchResult | null>(null);
-  const [manualList, setManualList] = useState<ManualList | null>(null);
+  const setQuery = useCallback((value: string) => {
+    setQueryState(value);
+  }, []);
 
   const debouncedQuery = useDebouncedValue(query, DEBOUNCE_MS);
   const enabled = debouncedQuery.trim().length >= MIN_QUERY_LENGTH;
+
+  // Debounced URL sync — same-route search-param updates must not run the global
+  // view transition on every keystroke (router defaultViewTransition, E51).
+  useEffect(() => {
+    const nextQ = debouncedQuery.length > 0 ? debouncedQuery : undefined;
+    const currentQ = urlQuery.length > 0 ? urlQuery : undefined;
+    if (nextQ === currentQ) return;
+    void navigate({
+      to: "/search",
+      search: { q: nextQ },
+      replace: true,
+      viewTransition: false,
+    });
+  }, [debouncedQuery, navigate, urlQuery]);
+
+  const [pending, setPending] = useState<SearchResult | null>(null);
+  const [manualList, setManualList] = useState<ManualList | null>(null);
 
   const searchQuery = useQuery({
     queryKey: ["search", debouncedQuery],

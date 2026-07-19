@@ -10,19 +10,24 @@ import { getAuthSession } from "./api/client.ts";
 import { Layout } from "./components/layout/Layout/Layout.tsx";
 import { ProfileGuard } from "./components/layout/ProfileGuard/ProfileGuard.tsx";
 import { selfHandleParam } from "./lib/profilePath.ts";
-import { AllSeriesPage } from "./pages/profile/AllSeriesPage.tsx";
-import { CalendarPage } from "./pages/calendar/CalendarPage.tsx";
+import {
+  getScrollRestorationKey,
+  installCalendarWatchScrollIsolation,
+} from "./lib/scrollRestoration.ts";
+import { installPosterMorphCleanup } from "./lib/posterTransition.ts";
 import { ClaimPage } from "./pages/auth/ClaimPage.tsx";
-import { FavoritesPage } from "./pages/profile/FavoritesPage.tsx";
+import { LoginPage } from "./pages/auth/LoginPage.tsx";
+import { CalendarPage } from "./pages/calendar/CalendarPage.tsx";
 import { ImportPage } from "./pages/import/ImportPage.tsx";
 import { LibraryPage } from "./pages/library/LibraryPage.tsx";
-import { LoginPage } from "./pages/auth/LoginPage.tsx";
+import { AllSeriesPage } from "./pages/profile/AllSeriesPage.tsx";
+import { FavoritesPage } from "./pages/profile/FavoritesPage.tsx";
 import { ProfilePage } from "./pages/profile/ProfilePage.tsx";
+import { StatsPage } from "./pages/profile/stats/StatsPage.tsx";
 import { SearchPage } from "./pages/search/SearchPage.tsx";
 import { SeriesDetailPage } from "./pages/series/SeriesDetailPage.tsx";
 import { SeriesPreviewPage } from "./pages/series/SeriesPreviewPage.tsx";
 import { SettingsPage } from "./pages/settings/SettingsPage.tsx";
-import { StatsPage } from "./pages/profile/stats/StatsPage.tsx";
 import { WatchHistoryPage } from "./pages/watch/WatchHistoryPage.tsx";
 import { WatchPage } from "./pages/watch/WatchPage.tsx";
 
@@ -178,8 +183,7 @@ const searchRoute = createRoute({
   validateSearch: (search: Record<string, unknown>): { q?: string | undefined } => {
     const raw = search.q;
     if (typeof raw !== "string") return {};
-    const q = raw.trim();
-    return q.length > 0 ? { q } : {};
+    return raw.length > 0 ? { q: raw } : {};
   },
 });
 
@@ -222,24 +226,18 @@ const routeTree = rootRoute.addChildren([
   importRoute,
 ]);
 
-// E51: subtle root cross-fade on every route change (CSS tunes duration in
-// index.css); reduced-motion and unsupporting browsers (Firefox <139) both
-// degrade to an instant navigation with no JS feature-detect needed.
-/** Browse grid/list are one surface — share scroll + accordion state via BrowseOrOutlet. */
-function getScrollRestorationKey(location: { pathname: string; state: unknown }): string {
-  if (location.pathname === "/" || location.pathname === "/watch") {
-    return "browse";
-  }
-  const state = location.state as { __TSR_key?: string } | null;
-  return state?.__TSR_key ?? location.pathname;
-}
-
+// E51: defaultViewTransition stays false. Page fades / morphs opt in via
+// `pageViewTransition` on Link/navigate (and manual startViewTransition).
+// Root fade killed in CSS; app-main owns the cross-fade. Firefox <139 → instant.
 export const router = createRouter({
   routeTree,
-  defaultViewTransition: true,
+  defaultViewTransition: false,
   scrollRestoration: true,
   getScrollRestorationKey,
 });
+
+installCalendarWatchScrollIsolation(router);
+installPosterMorphCleanup(router);
 
 declare module "@tanstack/react-router" {
   interface Register {

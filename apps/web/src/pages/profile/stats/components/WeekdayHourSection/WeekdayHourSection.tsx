@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import type { Stats } from "../../../../../api/types.ts";
 import { MiniBars } from "../MiniBars/MiniBars.tsx";
+import { StatsSectionHeading } from "../StatsSectionHeading/StatsSectionHeading.tsx";
 
 interface WeekdayHourSectionProps {
   stats: Pick<Stats, "byWeekday" | "byHour">;
@@ -29,9 +30,7 @@ export function WeekdayHourSection({ stats }: WeekdayHourSectionProps) {
   return (
     <section className="content-inset flex flex-col gap-6 sm:flex-row sm:gap-8">
       <div className="flex flex-1 flex-col gap-4">
-        <h2 className="font-display italic text-snow text-2xl tracking-tight">
-          {t("stats.byWeekday.title")}
-        </h2>
+        <StatsSectionHeading>{t("stats.byWeekday.title")}</StatsSectionHeading>
         <MiniBars
           items={stats.byWeekday.map((count, i) => ({
             key: String(i),
@@ -42,9 +41,7 @@ export function WeekdayHourSection({ stats }: WeekdayHourSectionProps) {
         />
       </div>
       <div className="flex flex-1 flex-col gap-4">
-        <h2 className="font-display italic text-snow text-2xl tracking-tight">
-          {t("stats.byHour.title")}
-        </h2>
+        <StatsSectionHeading>{t("stats.byHour.title")}</StatsSectionHeading>
         <MiniBars
           labelEvery={3}
           items={stats.byHour.map((count, hour) => ({

@@ -32,7 +32,7 @@ const OPTIONS: {
     value: 3,
     Icon: ArrowUp,
     key: "good",
-    activeBg: "bg-green-500 text-white",
+    activeBg: "bg-green-500 text-[#080808]",
     iconColor: "text-green-500",
   },
 ];
@@ -40,11 +40,16 @@ const OPTIONS: {
 /** One-tap set/clear: clicking the already-active option clears the rating. */
 export function RatingControl({ value, onChange, size = "md" }: RatingControlProps) {
   const { t } = useTranslation();
-  const padding = size === "sm" ? "px-1.5 py-0.5 text-xs" : "px-2 py-1 text-sm";
-  const iconSize = size === "sm" ? 14 : 16;
+  const compact = size === "sm";
+  const padding = compact ? "gap-1 px-2.5 py-1.5" : "gap-1.5 px-3.5 py-2";
+  const labelClass = compact ? "text-[10px]" : "text-[11px]";
+  const iconSize = compact ? 14 : 16;
 
   return (
-    <fieldset aria-label={t("rating.label")} className="m-0 flex gap-1 border-0 p-0">
+    <fieldset
+      aria-label={t("rating.label")}
+      className="m-0 inline-flex items-center gap-0.5 rounded-full border border-white/10 bg-void/95 p-0.5 backdrop-blur-md"
+    >
       {OPTIONS.map((opt) => {
         const active = value === opt.value;
         return (
@@ -53,11 +58,18 @@ export function RatingControl({ value, onChange, size = "md" }: RatingControlPro
             type="button"
             aria-pressed={active}
             onClick={() => onChange(active ? null : opt.value)}
-            className={`flex items-center gap-1.5 ${padding} ${
-              active ? opt.activeBg : "bg-white/5 text-muted hover:bg-white/10"
+            className={`flex items-center rounded-full font-mono ${labelClass} uppercase tracking-widest transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-yellow ${padding} ${
+              active
+                ? opt.activeBg
+                : "bg-transparent text-muted hover:bg-white/[0.04] hover:text-snow"
             }`}
           >
-            <opt.Icon size={iconSize} className={active ? "" : opt.iconColor} />{" "}
+            <opt.Icon
+              size={iconSize}
+              strokeWidth={active ? 2.5 : 2}
+              className={active ? "shrink-0" : `shrink-0 ${opt.iconColor}`}
+              aria-hidden
+            />
             <span>{t(`rating.${opt.key}`)}</span>
           </button>
         );

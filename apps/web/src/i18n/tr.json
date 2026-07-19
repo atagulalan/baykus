@@ -16,7 +16,8 @@
     "close": "Kapat"
   },
   "common": {
-    "separator": " · "
+    "separator": " · ",
+    "skipToMain": "Ana içeriğe geç"
   },
   "search": {
     "placeholder": "Dizi ara…",
@@ -24,6 +25,7 @@
     "noResults": "Sonuç bulunamadı",
     "providerError": "Arama sağlayıcısında bir sorun oluştu",
     "retry": "Tekrar dene",
+    "clear": "Temizle",
     "add": "Ekle",
     "cancel": "İptal",
     "inLibrary": "kütüphanede",
@@ -103,7 +105,9 @@
     "needsReviewDismiss": "Yoksay",
     "specials": "Özel Bölümler",
     "seasonNumber": "Sezon {{number}}",
-    "markSeasonWatched": "tümünü izledim",
+    "markSeasonWatched": "Sezonu izledim",
+    "unwatchSeason": "Sezonu geri al",
+    "seasonMenu": "Sezon menüsü",
     "nextUp": "Sıradaki:",
     "stoppedBlocked": "Bitirilmiş bir dizi bırakıldı olarak işaretlenemez",
     "justwatchAttribution": "JustWatch verisi",
@@ -131,11 +135,14 @@
       "title": "Detaylar",
       "genres": "Türler",
       "tags": "Etiketler",
+      "info": "Künye",
+      "runtime": "Süre",
+      "contentRating": "Yaş Sınırı",
+      "language": "Orijinal Dil",
       "production": "Yapım",
       "ratings": "Puanlar",
       "providers": "İzleme Platformları",
       "yourRating": "Senin Puanın",
-      "library": "Kütüphane",
       "added": "Eklendi",
       "refreshed": "Son Yenileme",
       "neverRefreshed": "Hiç yenilenmedi",
@@ -150,6 +157,7 @@
     "untitled": "İsimsiz bölüm",
     "finale": "FİNAL",
     "seasonAndEpisode": "S{{season}} B{{episode}}",
+    "menu": "Bölüm menüsü",
     "watchAgain": "tekrar izledim",
     "editDate": "Tarihi Düzenle",
     "editDateHint": "İzleme geçmişi için tarihi ve saati belirleyin.",
@@ -165,6 +173,7 @@
     "removeRewatch": "Tekrar izlemeyi kaldır",
     "save": "Kaydet",
     "detailsTitle": "Bölüm Detayları",
+    "openDetails": "{{title}} bölüm detaylarını aç",
     "aired": "Yayın",
     "watched": "İzlendi",
     "airTime": "Saat",
@@ -173,6 +182,14 @@
     "runtimeMin": "{{minutes}} dk",
     "noOverview": "Açıklama bulunmuyor.",
     "tbd": "TBD",
+    "countdownUnit": {
+      "day_one": "gün",
+      "day_other": "gün",
+      "hour_one": "sa",
+      "hour_other": "sa",
+      "minute": "dk",
+      "second": "sn"
+    },
     "tag": {
       "new": "YENİ",
       "upcoming": "YAKLAŞAN",
@@ -516,6 +533,9 @@
     "manageSections": "Kategorileri yönet",
     "manageSectionsTitle": "Kategorileri yönet",
     "manageSectionsAddHeading": "Kategori ekle",
+    "manageSectionsHint": "Sürükleyerek sırala, + ile ekle",
+    "addSectionNamed": "{{category}} ekle",
+    "sectionPinned": "Sabit kategori — kaldırılamaz",
     "moveSectionUp": "Yukarı taşı",
     "moveSectionDown": "Aşağı taşı",
     "reorderSection": "{{category}} — sıralamak için sürükle"

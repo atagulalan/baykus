@@ -2,6 +2,7 @@ import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import type { Stats } from "../../../../../api/types.ts";
 import { formatDurationLabel, formatDurationParts } from "../../../../../lib/date.ts";
+import { StatsSectionHeading } from "../StatsSectionHeading/StatsSectionHeading.tsx";
 import { StatTile } from "../StatTile/StatTile.tsx";
 
 interface RecentSectionProps {
@@ -26,9 +27,7 @@ export function RecentSection({ stats }: RecentSectionProps) {
 
   return (
     <section className="content-inset flex flex-col gap-4">
-      <h2 className="font-display italic text-snow text-2xl tracking-tight">
-        {t("stats.recent.title")}
-      </h2>
+      <StatsSectionHeading>{t("stats.recent.title")}</StatsSectionHeading>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatTile label={t("stats.recent.last7Days")} {...windowValue(last7Days, t)} />
         <StatTile label={t("stats.recent.last30Days")} {...windowValue(last30Days, t)} />

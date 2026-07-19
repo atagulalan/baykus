@@ -1,7 +1,10 @@
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { ArrowUpDown, Settings } from "lucide-react";
+import { flushSync } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { SERIES_HEADER_ACTION_SLOT_ID } from "../../../lib/headerActionSlot.ts";
+import { pageViewTransition } from "../../../lib/pageViewTransition.ts";
+import { clearLastPosterItemId } from "../../../lib/posterTransition.ts";
 import { navigateBrowseView } from "../../../pages/browse/navigateBrowseView.ts";
 import {
   GanttChart,
@@ -13,8 +16,12 @@ import {
   isWatchHistoryPath,
   LayoutGrid,
   List,
+  RIGHT_RAIL_SLOT_CLASS,
 } from "./layoutShared.ts";
 
+function disarmPosterMorph() {
+  flushSync(() => clearLastPosterItemId());
+}
 /** Destination toggle: timeline ↔ schedule. Show the view the action opens. */
 export function CalendarModeToggle({
   pathname,
@@ -30,7 +37,14 @@ export function CalendarModeToggle({
   const Icon = scheduleActive ? List : GanttChart;
 
   return (
-    <Link to={destination} aria-label={label} title={label} className={className}>
+    <Link
+      to={destination}
+      viewTransition={pageViewTransition}
+      aria-label={label}
+      title={label}
+      onClick={disarmPosterMorph}
+      className={className}
+    >
       <Icon size={20} strokeWidth={1.5} />
     </Link>
   );
@@ -40,8 +54,11 @@ export function CalendarModeToggle({
 export function HistorySortToggle({ className = HEADER_ACTION_CLASS }: { className?: string }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { order } = useSearch({ from: "/watch/history" });
-  const oldestFirst = order === "oldest";
+  // `shouldThrow: false` — the header renders this off `location.pathname`, which
+  // flips to `/watch/history` while the navigation is still pending, i.e. before
+  // the match exists (E160's pull-to-history release hits exactly that window).
+  const search = useSearch({ from: "/watch/history", shouldThrow: false });
+  const oldestFirst = search?.order === "oldest";
 
   return (
     <button
@@ -105,24 +122,40 @@ export function MobileHeaderAction({ pathname }: { pathname: string }) {
   const { t } = useTranslation();
 
   if (isBrowsePath(pathname)) {
-    return <BrowseViewToggle pathname={pathname} />;
+    return (
+      <div className={RIGHT_RAIL_SLOT_CLASS}>
+        <BrowseViewToggle pathname={pathname} />
+      </div>
+    );
   }
   if (isCalendarPath(pathname)) {
-    return <CalendarModeToggle pathname={pathname} />;
+    return (
+      <div className={RIGHT_RAIL_SLOT_CLASS}>
+        <CalendarModeToggle pathname={pathname} />
+      </div>
+    );
   }
   if (isWatchHistoryPath(pathname)) {
-    return <HistorySortToggle />;
+    return (
+      <div className={RIGHT_RAIL_SLOT_CLASS}>
+        <HistorySortToggle />
+      </div>
+    );
   }
   if (isProfileHeroPath(pathname)) {
     return (
-      <Link
-        to="/settings"
-        aria-label={t("app.nav.settings")}
-        title={t("app.nav.settings")}
-        className={HEADER_ACTION_CLASS}
-      >
-        <Settings size={20} strokeWidth={1.5} />
-      </Link>
+      <div className={RIGHT_RAIL_SLOT_CLASS}>
+        <Link
+          to="/settings"
+          viewTransition={pageViewTransition}
+          aria-label={t("app.nav.settings")}
+          title={t("app.nav.settings")}
+          onClick={disarmPosterMorph}
+          className={HEADER_ACTION_CLASS}
+        >
+          <Settings size={20} strokeWidth={1.5} />
+        </Link>
+      </div>
     );
   }
   if (isSeriesHeroPath(pathname)) {

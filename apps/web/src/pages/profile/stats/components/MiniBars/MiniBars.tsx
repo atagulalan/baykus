@@ -21,7 +21,7 @@ export function MiniBars({ items, labelEvery = 1 }: MiniBarsProps) {
           <div key={item.key} title={item.tooltip} className="flex h-full flex-1 items-end">
             <div
               aria-hidden
-              className="w-full bg-yellow transition-all duration-500"
+              className="w-full rounded-t-sm bg-yellow transition-all duration-500"
               style={{ height: item.value > 0 ? `${Math.max(2, (item.value / max) * 100)}%` : 0 }}
             />
           </div>

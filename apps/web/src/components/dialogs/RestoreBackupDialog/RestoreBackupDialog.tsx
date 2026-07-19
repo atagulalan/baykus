@@ -73,19 +73,23 @@ export function RestoreBackupDialog({
       </div>
 
       <div className="mt-2">
+        <label className="sr-only" htmlFor="restore-backup-file">
+          {t("settings.data.importTitle")}
+        </label>
         <input
+          id="restore-backup-file"
           type="file"
           accept=".zip,application/zip"
           onChange={(e) => {
             setImportFile(e.target.files?.[0] ?? null);
             setImportResult(null);
           }}
-          className="w-full font-mono text-xs text-muted file:bg-[#101010] file:border file:border-white/10 file:px-3 file:py-1.5 file:text-muted file:font-mono file:text-[10px] file:uppercase file:tracking-widest file:mr-4 hover:file:text-snow transition-colors"
+          className="w-full font-mono text-xs text-muted transition-colors file:mr-4 file:rounded-lg file:border file:border-white/10 file:bg-[#101010] file:px-3 file:py-1.5 file:font-mono file:text-[10px] file:text-muted file:uppercase file:tracking-widest hover:file:text-snow"
         />
       </div>
 
       {importResult && (
-        <div className="flex flex-col gap-2 border border-white/5 bg-white/5 p-4 text-sm mt-2">
+        <div className="mt-2 flex flex-col gap-2 rounded-lg border border-white/5 bg-white/5 p-4 text-sm">
           <p className="text-yellow font-mono text-xs">
             {t("settings.data.success", {
               items: importResult.items,
@@ -94,7 +98,7 @@ export function RestoreBackupDialog({
             })}
           </p>
           {importResult.warnings.length > 0 && (
-            <div className="flex flex-col gap-1 text-[10px] font-mono text-muted/70">
+            <div className="flex flex-col gap-1 text-[10px] font-mono text-muted-dim">
               <span className="text-muted tracking-widest uppercase">
                 {t("settings.data.warnings")}
               </span>
@@ -120,7 +124,7 @@ export function RestoreBackupDialog({
           type="button"
           onClick={() => importMutation.mutate()}
           disabled={!importFile || importMutation.isPending}
-          className="bg-yellow text-[#080808] font-mono text-[10px] uppercase tracking-widest px-4 py-2.5 disabled:opacity-50 transition-opacity hover:opacity-90"
+          className="rounded-lg bg-yellow px-4 py-2.5 font-mono text-[10px] uppercase tracking-widest text-[#080808] transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           {importMutation.isPending
             ? t("settings.data.importing")

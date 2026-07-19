@@ -55,8 +55,15 @@ vi.mock("@tanstack/react-router", async (importOriginal) => {
     useRouterState: ({
       select,
     }: {
-      select: (state: { location: { pathname: string } }) => unknown;
-    }) => select({ location: { pathname: mockPathname.value } }),
+      select: (state: {
+        location: { pathname: string };
+        matches: { pathname: string }[];
+      }) => unknown;
+    }) =>
+      select({
+        location: { pathname: mockPathname.value },
+        matches: [{ pathname: mockPathname.value }],
+      }),
     useNavigate: () => mockNavigate,
     useCanGoBack: () => false,
   };

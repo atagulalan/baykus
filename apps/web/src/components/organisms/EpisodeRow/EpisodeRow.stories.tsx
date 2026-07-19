@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
-import { withAppProviders } from "../../../../.storybook/decorators.tsx";
+import { withAppProviders, withCountdownIn5Seconds } from "../../../../.storybook/decorators.tsx";
 import {
   mockBrokenImageUrl,
   mockLongOverview,
@@ -55,6 +55,25 @@ export const Compact: Story = {
 
 export const Unaired: Story = {
   args: { airDate: "2099-01-01", watched: false },
+};
+
+/** Trailing rail: 5 sn / secs — airStamp is always now + 5s (pinned clock). */
+export const FiveSecondsRemaining: Story = {
+  decorators: [withCountdownIn5Seconds()],
+  args: {
+    itemId: 1,
+    seriesTitle: "Rick and Morty",
+    watched: false,
+    onToggleWatch: undefined,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Pins the clock at story load and sets airStamp to 5 seconds later so the trailing countdown stays at 5 seconds (sn / secs).",
+      },
+    },
+  },
 };
 
 export const Centered: Story = {

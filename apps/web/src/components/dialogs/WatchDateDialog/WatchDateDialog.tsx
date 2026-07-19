@@ -49,31 +49,39 @@ export function WatchDateDialog({ initialValue, onConfirm, onClose }: WatchDateD
         <button
           type="button"
           onClick={setNow}
-          className="flex-1 border border-white/10 bg-white/5 py-1.5 font-mono text-[10px] uppercase tracking-widest text-muted transition-colors hover:text-snow"
+          className="flex-1 rounded-lg border border-white/10 bg-white/5 py-1.5 font-mono text-[10px] uppercase tracking-widest text-muted transition-colors hover:text-snow"
         >
           {t("episode.datePreset.now")}
         </button>
         <button
           type="button"
           onClick={setYesterday}
-          className="flex-1 border border-white/10 bg-white/5 py-1.5 font-mono text-[10px] uppercase tracking-widest text-muted transition-colors hover:text-snow"
+          className="flex-1 rounded-lg border border-white/10 bg-white/5 py-1.5 font-mono text-[10px] uppercase tracking-widest text-muted transition-colors hover:text-snow"
         >
           {t("episode.datePreset.yesterday")}
         </button>
       </div>
 
       <div className="flex gap-2">
+        <label className="sr-only" htmlFor="watch-date-input">
+          {t("episode.editDate")}
+        </label>
         <input
+          id="watch-date-input"
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          className="w-full flex-[2] border border-white/10 bg-white/5 px-3 py-2 text-sm text-snow focus:border-yellow focus:outline-none"
+          className="w-full flex-[2] rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-snow focus:border-yellow focus:outline-none"
         />
+        <label className="sr-only" htmlFor="watch-time-input">
+          {t("episode.editDateHint")}
+        </label>
         <input
+          id="watch-time-input"
           type="time"
           value={time}
           onChange={(e) => setTime(e.target.value)}
-          className="w-full flex-1 border border-white/10 bg-white/5 px-3 py-2 text-sm text-snow focus:border-yellow focus:outline-none"
+          className="w-full flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-snow focus:border-yellow focus:outline-none"
         />
       </div>
       <div className="mt-4 flex justify-end gap-2">
@@ -88,7 +96,7 @@ export function WatchDateDialog({ initialValue, onConfirm, onClose }: WatchDateD
           type="button"
           onClick={handleConfirm}
           disabled={!date}
-          className="bg-yellow px-4 py-2.5 font-mono text-[10px] uppercase tracking-widest text-[#080808] disabled:opacity-50"
+          className="rounded-lg bg-yellow px-4 py-2.5 font-mono text-[10px] uppercase tracking-widest text-[#080808] disabled:opacity-50"
         >
           {t("episode.save")}
         </button>

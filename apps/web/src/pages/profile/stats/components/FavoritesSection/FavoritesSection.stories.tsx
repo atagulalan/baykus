@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { withRouter } from "../../../../../../.storybook/decorators.tsx";
 import { mockEmptyStats, mockStats } from "../../../../../../.storybook/mocks.ts";
 import { hiddenWhenEmptyParameters } from "../../../../../../.storybook/storyHelpers.ts";
 import { FavoritesSection } from "./FavoritesSection.tsx";
@@ -6,6 +7,7 @@ import { FavoritesSection } from "./FavoritesSection.tsx";
 const meta = {
   title: "Stats/FavoritesSection",
   component: FavoritesSection,
+  decorators: [withRouter],
   args: { stats: mockStats },
   parameters: { layout: "padded" },
 } satisfies Meta<typeof FavoritesSection>;

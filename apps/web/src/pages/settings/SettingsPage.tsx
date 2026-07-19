@@ -14,20 +14,23 @@ import {
 } from "../../api/client.ts";
 import type { ImportZipResult, Locale, Settings, SettingsPatch } from "../../api/types.ts";
 import { Checkbox } from "../../components/atoms/Checkbox/Checkbox.tsx";
-import { PageTitle } from "../../components/atoms/PageTitle/PageTitle.tsx";
+import { SkeletonSettingsSections } from "../../components/atoms/Skeleton/Skeleton.tsx";
 import { DeleteAccountDialog } from "../../components/dialogs/DeleteAccountDialog/DeleteAccountDialog.tsx";
 import { ResetLibraryDialog } from "../../components/dialogs/ResetLibraryDialog/ResetLibraryDialog.tsx";
+import { PageTitleRow } from "../../components/molecules/PageTitleRow/PageTitleRow.tsx";
 import {
   getCurrentPushSubscription,
   isPushSupported,
   subscribeToPush,
   unsubscribeFromPush,
 } from "../../lib/push.ts";
+import { SETTINGS_BLOCK, SETTINGS_ROW } from "../../lib/settingsChrome.ts";
 import { useManualRefreshProgress, useManualRefreshRunning } from "../../lib/staleSweep.ts";
 import { useToast } from "../../lib/toast.tsx";
 import { readUiPrefs, resetUiSelections, resetUiWarnings } from "../../lib/uiPrefs.ts";
 import { SettingsDataSection } from "./components/SettingsDataSection/SettingsDataSection.tsx";
 import { SettingsGeneralSection } from "./components/SettingsGeneralSection/SettingsGeneralSection.tsx";
+import { SettingsSection } from "./components/SettingsSection/SettingsSection.tsx";
 
 export function SettingsPage() {
   const { t, i18n } = useTranslation();
@@ -147,12 +150,7 @@ export function SettingsPage() {
   });
 
   if (query.isLoading) {
-    return (
-      <div className="content-inset flex max-w-lg flex-col gap-4">
-        <div className="h-40 animate-pulse bg-white/5" />
-        <div className="h-32 animate-pulse bg-white/5" />
-      </div>
-    );
+    return <SkeletonSettingsSections sections={3} />;
   }
 
   if (query.isError) {
@@ -162,7 +160,7 @@ export function SettingsPage() {
         <button
           type="button"
           onClick={() => query.refetch()}
-          className="border border-white/10 font-mono text-[10px] uppercase tracking-widest text-muted hover:text-snow px-3 py-1.5 transition-colors"
+          className="rounded-full border border-white/10 px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest text-muted transition-colors hover:text-snow"
         >
           {t("errors.retry")}
         </button>
@@ -184,24 +182,19 @@ export function SettingsPage() {
         onSaved={() => toast.show(t("settings.saved"))}
       />
 
-      {/* Notifications */}
-      <section className="break-inside-avoid mb-6 flex flex-col border border-white/5 bg-transparent">
-        <h2 className="font-mono text-xs text-yellow tracking-widest uppercase px-6 pt-6 pb-2 border-b border-white/5 bg-transparent">
-          {t("settings.notifications.title")}
-        </h2>
-
-        <div className="flex w-full flex-col border-b border-white/5 px-6 py-4 text-snow transition-colors last:border-b-0">
+      <SettingsSection title={t("settings.notifications.title")}>
+        <div className={SETTINGS_BLOCK}>
           {!pushSupported ? (
             <p className="font-mono text-[10px] text-muted">
               {t("settings.notifications.unsupported")}
             </p>
           ) : pushStatusQuery.data ? (
-            <div className="flex gap-4">
+            <div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={() => unsubscribeMutation.mutate()}
                 disabled={unsubscribeMutation.isPending}
-                className="font-mono text-[10px] tracking-widest uppercase border border-white/10 text-muted px-4 py-2 hover:text-snow hover:border-white/20 transition-colors disabled:opacity-50"
+                className="rounded-full border border-white/10 px-3.5 py-2 font-mono text-[10px] uppercase tracking-widest text-muted transition-colors hover:border-white/20 hover:text-snow disabled:opacity-50"
               >
                 {t("settings.notifications.disable")}
               </button>
@@ -209,7 +202,7 @@ export function SettingsPage() {
                 type="button"
                 onClick={() => testPushMutation.mutate()}
                 disabled={testPushMutation.isPending}
-                className="font-mono text-[10px] tracking-widest uppercase border border-white/10 text-snow px-4 py-2 hover:bg-white/5 transition-colors disabled:opacity-50"
+                className="rounded-full border border-white/10 px-3.5 py-2 font-mono text-[10px] uppercase tracking-widest text-snow transition-colors hover:bg-white/[0.04] disabled:opacity-50"
               >
                 {t("settings.notifications.test")}
               </button>
@@ -219,56 +212,46 @@ export function SettingsPage() {
               type="button"
               onClick={() => subscribeMutation.mutate()}
               disabled={subscribeMutation.isPending}
-              className="self-start font-mono text-[10px] tracking-widest uppercase bg-yellow text-[#080808] px-4 py-2 transition-opacity disabled:opacity-50 hover:opacity-90"
+              className="self-start rounded-full bg-yellow px-3.5 py-2 font-mono text-[10px] uppercase tracking-widest text-[#080808] transition-opacity hover:opacity-90 disabled:opacity-50"
             >
               {t("settings.notifications.enable")}
             </button>
           )}
         </div>
-      </section>
+      </SettingsSection>
 
-      {/* Account (multi mode only) */}
       {sessionQuery.data?.mode === "multi" && (
-        <section className="break-inside-avoid mb-6 flex flex-col border border-white/5 bg-transparent">
-          <h2 className="font-mono text-xs text-yellow tracking-widest uppercase px-6 pt-6 pb-2 border-b border-white/5 bg-transparent">
-            {t("auth.account.title")}
-          </h2>
-          <div className="flex w-full flex-col border-b border-white/5 px-6 py-4 text-snow transition-colors last:border-b-0">
+        <SettingsSection title={t("auth.account.title")}>
+          <div className={SETTINGS_BLOCK}>
             <p className="font-sans text-sm text-snow">
               {t("auth.account.handle", {
                 handle: sessionQuery.data.handle ?? "",
               })}
             </p>
-            <div className="flex gap-4 mt-2">
+            <div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={() => logoutMutation.mutate()}
                 disabled={logoutMutation.isPending}
-                className="font-mono text-[10px] tracking-widest uppercase border border-white/10 text-muted px-4 py-2 hover:text-snow hover:border-white/20 transition-colors disabled:opacity-50"
+                className="rounded-full border border-white/10 px-3.5 py-2 font-mono text-[10px] uppercase tracking-widest text-muted transition-colors hover:border-white/20 hover:text-snow disabled:opacity-50"
               >
                 {t("auth.account.logout")}
               </button>
               <button
                 type="button"
                 onClick={() => setDeleteDialogOpen(true)}
-                className="font-mono text-[10px] tracking-widest uppercase border border-red-900/50 text-red-400 px-4 py-2 hover:bg-red-900/20 transition-colors"
+                className="rounded-full border border-red-900/50 px-3.5 py-2 font-mono text-[10px] uppercase tracking-widest text-red-400 transition-colors hover:bg-red-900/20"
               >
                 {t("auth.account.delete")}
               </button>
             </div>
           </div>
-        </section>
+        </SettingsSection>
       )}
 
-      {/* Providers */}
-      <section className="break-inside-avoid mb-6 flex flex-col border border-white/5 bg-transparent">
-        <h2 className="font-mono text-xs text-yellow tracking-widest uppercase px-6 pt-6 pb-2 border-b border-white/5 bg-transparent">
-          {t("settings.providers.title")}
-        </h2>
-
-        {/* TMDB Key */}
-        <div className="flex w-full flex-col border-b border-white/5 px-6 py-4 text-snow last:border-b-0">
-          <div className="flex items-center justify-between mb-3">
+      <SettingsSection title={t("settings.providers.title")}>
+        <div className={SETTINGS_BLOCK}>
+          <div className="flex items-center justify-between">
             <span className="font-sans text-sm">{t("settings.providers.tmdbKey")}</span>
             {settings.tmdbApiKeySet && (
               <button
@@ -279,7 +262,7 @@ export function SettingsPage() {
                   setIsEditingTmdbKey(false);
                   setTmdbKeyInput("");
                 }}
-                className="font-mono text-[10px] tracking-widest uppercase text-muted hover:text-red-400 transition-colors"
+                className="font-mono text-[10px] uppercase tracking-widest text-muted transition-colors hover:text-red-400"
               >
                 {t("settings.providers.clear")}
               </button>
@@ -303,7 +286,7 @@ export function SettingsPage() {
               onChange={(e) => setTmdbKeyInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSaveTmdbKey()}
               placeholder={t("settings.providers.tmdbKeyPlaceholder")}
-              className="flex-1 border-b border-white/20 bg-transparent px-2 py-2 text-snow focus:outline-none focus:border-yellow transition-colors font-mono text-xs"
+              className="flex-1 rounded-lg bg-white/[0.04] px-3 py-2 font-mono text-xs text-snow transition-colors placeholder:text-muted/50 focus:bg-white/[0.06] focus:outline-none focus:ring-1 focus:ring-yellow/60"
               autoComplete="off"
               autoCorrect="off"
               spellCheck={false}
@@ -312,16 +295,15 @@ export function SettingsPage() {
               type="button"
               onClick={handleSaveTmdbKey}
               disabled={!tmdbKeyInput.trim()}
-              className="font-mono text-[10px] tracking-widest uppercase bg-yellow text-[#080808] px-4 py-2 transition-opacity disabled:opacity-30 hover:opacity-90 shrink-0"
+              className="shrink-0 rounded-full bg-yellow px-3.5 py-2 font-mono text-[10px] uppercase tracking-widest text-[#080808] transition-opacity hover:opacity-90 disabled:opacity-30"
             >
               {t("settings.save")}
             </button>
           </div>
         </div>
 
-        {/* Scrapers toggle */}
         {/* biome-ignore lint/a11y/noLabelWithoutControl: wraps Checkbox */}
-        <label className="flex w-full cursor-pointer items-center justify-between border-b border-white/5 px-6 py-4 text-snow hover:bg-white/5 transition-colors last:border-b-0">
+        <label className={`cursor-pointer ${SETTINGS_ROW}`}>
           <div className="flex flex-col gap-0.5">
             <span className="font-sans text-sm">{t("settings.providers.scrapers")}</span>
             <span className="font-mono text-[10px] text-muted">
@@ -333,7 +315,7 @@ export function SettingsPage() {
             onChange={(checked) => patch.mutate({ scrapersEnabled: checked })}
           />
         </label>
-      </section>
+      </SettingsSection>
 
       <SettingsDataSection
         importFile={importFile}
@@ -347,14 +329,10 @@ export function SettingsPage() {
         toast={toast}
       />
 
-      {/* Danger Zone — spans both CSS columns on desktop (E119) instead of
-          landing in whichever column it happens to flow into. */}
-      <section className="mb-6 flex flex-col border border-red-900/20 bg-transparent [column-span:all] break-inside-avoid">
-        <h2 className="font-mono text-xs text-red-400 tracking-widest uppercase px-6 pt-6 pb-2 border-b border-red-900/20 bg-transparent">
-          {t("settings.dangerZone.title")}
-        </h2>
-        <div className="flex w-full flex-col border-b border-white/5 px-6 py-4 text-snow transition-colors">
-          <p className="font-mono text-[10px] text-muted mb-2">
+      {/* Danger Zone — spans both CSS columns on desktop (E119). */}
+      <SettingsSection title={t("settings.dangerZone.title")} danger fullWidth>
+        <div className={SETTINGS_BLOCK}>
+          <p className="font-mono text-[10px] text-muted">
             {t("settings.dangerZone.resetSelectionsDesc")}
           </p>
           <button
@@ -364,13 +342,13 @@ export function SettingsPage() {
               setShowNextUpCarousel(true);
               toast.show(t("settings.dangerZone.resetSelectionsDone"));
             }}
-            className="self-start font-mono text-[10px] tracking-widest uppercase border border-yellow/50 text-yellow px-4 py-2 hover:bg-yellow/10 transition-colors mt-2"
+            className="self-start rounded-full border border-yellow/50 px-3.5 py-2 font-mono text-[10px] uppercase tracking-widest text-yellow transition-colors hover:bg-yellow/10"
           >
             {t("settings.dangerZone.resetSelections")}
           </button>
         </div>
-        <div className="flex w-full flex-col border-b border-white/5 px-6 py-4 text-snow transition-colors">
-          <p className="font-mono text-[10px] text-muted mb-2">
+        <div className={SETTINGS_BLOCK}>
+          <p className="font-mono text-[10px] text-muted">
             {t("settings.dangerZone.resetWarningsDesc")}
           </p>
           <button
@@ -379,32 +357,30 @@ export function SettingsPage() {
               resetUiWarnings();
               toast.show(t("settings.dangerZone.resetWarningsDone"));
             }}
-            className="self-start font-mono text-[10px] tracking-widest uppercase border border-yellow/50 text-yellow px-4 py-2 hover:bg-yellow/10 transition-colors mt-2"
+            className="self-start rounded-full border border-yellow/50 px-3.5 py-2 font-mono text-[10px] uppercase tracking-widest text-yellow transition-colors hover:bg-yellow/10"
           >
             {t("settings.dangerZone.resetWarnings")}
           </button>
         </div>
-        <div className="flex w-full flex-col border-b border-white/5 px-6 py-4 text-snow transition-colors last:border-b-0">
-          <p className="font-mono text-[10px] text-muted mb-2">
-            {t("settings.dangerZone.description")}
-          </p>
+        <div className={SETTINGS_BLOCK}>
+          <p className="font-mono text-[10px] text-muted">{t("settings.dangerZone.description")}</p>
           <button
             type="button"
             onClick={() => setResetDialogOpen(true)}
-            className="self-start font-mono text-[10px] tracking-widest uppercase border border-red-900/50 text-red-400 px-4 py-2 hover:bg-red-900/20 transition-colors mt-2"
+            className="self-start rounded-full border border-red-900/50 px-3.5 py-2 font-mono text-[10px] uppercase tracking-widest text-red-400 transition-colors hover:bg-red-900/20"
           >
             {t("settings.dangerZone.button")}
           </button>
         </div>
-      </section>
+      </SettingsSection>
     </>
   );
 
   return (
     <>
-      <div className="max-w-4xl">
-        <div className="content-inset mb-6 hidden sm:block">
-          <PageTitle>{t("settings.title")}</PageTitle>
+      <div className="mx-auto max-w-4xl">
+        <div className="mb-4">
+          <PageTitleRow>{t("settings.title")}</PageTitleRow>
         </div>
         <div className="columns-1 gap-6 sm:columns-2">{sections}</div>
       </div>

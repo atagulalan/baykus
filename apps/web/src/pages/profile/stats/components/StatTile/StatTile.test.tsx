@@ -18,4 +18,12 @@ describe("StatTile", () => {
     const { container } = render(<StatTile label="Series" value="47" />);
     expect(container.querySelectorAll("p")).toHaveLength(2);
   });
+
+  it("applies compact size classes for the profile hub", () => {
+    const { container } = render(<StatTile size="compact" label="Time" value="7m" />);
+    expect(container.firstElementChild?.className).toContain("p-4");
+    expect(container.firstElementChild?.className).toContain("rounded-md");
+    expect(container.firstElementChild?.className).toContain("bg-white/10");
+    expect(container.firstElementChild?.className).not.toContain("border");
+  });
 });

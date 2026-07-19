@@ -2,7 +2,9 @@ import { Link } from "@tanstack/react-router";
 import { RotateCw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { Stats } from "../../../../../api/types.ts";
+import { pageViewTransition } from "../../../../../lib/pageViewTransition.ts";
 import { HBarList } from "../HBarList/HBarList.tsx";
+import { StatsSectionHeading } from "../StatsSectionHeading/StatsSectionHeading.tsx";
 import { StatTile } from "../StatTile/StatTile.tsx";
 
 interface RewatchSummarySectionProps {
@@ -18,9 +20,7 @@ export function RewatchSummarySection({ stats }: RewatchSummarySectionProps) {
   return (
     <section className="content-inset flex flex-col gap-6">
       <div className="flex flex-col gap-4">
-        <h2 className="font-display italic text-snow text-2xl tracking-tight">
-          {t("stats.rewatchSummary.title")}
-        </h2>
+        <StatsSectionHeading>{t("stats.rewatchSummary.title")}</StatsSectionHeading>
         {totalRewatches > 0 && (
           <>
             <div className="grid grid-cols-2 gap-4">
@@ -56,7 +56,8 @@ export function RewatchSummarySection({ stats }: RewatchSummarySectionProps) {
                 key={ep.episodeId}
                 to="/series/$id"
                 params={{ id: String(ep.itemId) }}
-                className="flex items-center justify-between border border-white/5 bg-[#101010] p-4 transition-colors hover:border-white/20"
+                viewTransition={pageViewTransition}
+                className="flex items-center justify-between rounded-md border border-white/10 bg-white/5 p-4 transition-colors hover:border-white/20"
               >
                 <div className="flex flex-col">
                   <span className="font-medium text-snow">{ep.itemTitle}</span>

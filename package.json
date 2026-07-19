@@ -10,16 +10,18 @@
     "dev": "pnpm --parallel --filter @baykus/server --filter @baykus/web dev",
     "dev:multi": "bash scripts/dev-multi.sh",
     "build": "pnpm -r build",
-    "test": "vitest run",
+    "test": "vitest run --project unit",
+    "test:storybook": "vitest run --project storybook",
+    "test:all": "vitest run",
     "typecheck": "pnpm -r typecheck",
     "lint": "biome check .",
     "format": "biome format --write .",
     "storybook": "pnpm --filter @baykus/web storybook"
   },
-
   "devDependencies": {
     "@biomejs/biome": "^2.1.2",
     "typescript": "^5.9.2",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "vitest-axe": "^0.1.0"
   }
 }

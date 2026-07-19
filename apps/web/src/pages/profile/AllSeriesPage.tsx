@@ -1,16 +1,18 @@
 import { useParams } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { CATEGORY_ORDER } from "../../api/types.ts";
-import { CategorySection } from "../../components/organisms/CategorySection/CategorySection.tsx";
 import { PageTitle } from "../../components/atoms/PageTitle/PageTitle.tsx";
+import { SkeletonCategoryGrid } from "../../components/atoms/Skeleton/Skeleton.tsx";
 import { ProfileGuard } from "../../components/layout/ProfileGuard/ProfileGuard.tsx";
-import { PullToRefresh, useLibrarySweepRefresh } from "../../components/molecules/PullToRefresh/PullToRefresh.tsx";
-import { SERIES_GRID_CLASSNAME } from "../../lib/grid.ts";
+import { AddSectionBar } from "../../components/molecules/AddSectionBar/AddSectionBar.tsx";
+import {
+  PullToRefresh,
+  useLibrarySweepRefresh,
+} from "../../components/molecules/PullToRefresh/PullToRefresh.tsx";
+import { CategorySection } from "../../components/organisms/CategorySection/CategorySection.tsx";
 import { useLibraryFilter } from "../../lib/useLibraryFilter.ts";
 
-/** E60: the full seven-category library, relocated off the home page — no refresh-all button,
- * no auto-sweep; the E132 pull gesture is the one deliberate exception. Sort lives in each
- * section's header (spec 010 WP2); no category add/remove here, every category always renders. */
+/** E60: full seven-category library grid. Per-section sort via header dialog (sortOnly AddSectionBar). */
 export function AllSeriesPage() {
   const { handle } = useParams({ from: "/user/$handle/all-series" });
 
@@ -24,8 +26,10 @@ export function AllSeriesPage() {
 function AllSeriesPageContent() {
   const { t } = useTranslation();
   const pullRefresh = useLibrarySweepRefresh();
-  const { sortFor, setSort, query, items, byCategory, categoriesToRender } =
+  const { sortFor, setSort, sectionSorts, query, items, byCategory, categoriesToRender } =
     useLibraryFilter(CATEGORY_ORDER);
+
+  const showContent = !query.isLoading && !query.isError && items.length > 0;
 
   return (
     <PullToRefresh onRefresh={pullRefresh}>
@@ -39,16 +43,17 @@ function AllSeriesPageContent() {
               </span>
             )}
           </PageTitle>
+          {showContent ? (
+            <AddSectionBar
+              mode="sortOnly"
+              sections={categoriesToRender}
+              sectionSorts={sectionSorts}
+              onSortChange={setSort}
+            />
+          ) : null}
         </div>
         {query.isLoading ? (
-          <div className={`${SERIES_GRID_CLASSNAME} content-inset`}>
-            {["a", "b", "c", "d", "e", "f"].map((key) => (
-              <div
-                key={key}
-                className="aspect-[2/3] animate-pulse bg-[#101010] border border-white/5"
-              />
-            ))}
-          </div>
+          <SkeletonCategoryGrid sections={2} />
         ) : query.isError ? (
           <div className="content-inset mt-4 flex flex-col items-center gap-4 border border-white/5 bg-[#101010] py-24 text-center">
             <p className="font-mono text-xs text-muted uppercase tracking-widest">
@@ -77,7 +82,6 @@ function AllSeriesPageContent() {
                 category={c}
                 items={byCategory.get(c) ?? []}
                 sort={sortFor(c)}
-                onSortChange={(sort) => setSort(c, sort)}
               />
             ))}
           </div>

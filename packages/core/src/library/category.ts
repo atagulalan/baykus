@@ -1,8 +1,9 @@
 import type { ReleaseStatus } from "@baykus/provider-sdk";
-import { and, eq, inArray, isNotNull, lte, ne, sql } from "drizzle-orm";
+import { and, eq, inArray, ne, sql } from "drizzle-orm";
 import type { LibraryDatabase } from "../db/open.ts";
 import type { AddedVia, ManualList } from "../db/schema.ts";
 import * as schema from "../db/schema.ts";
+import { episodeAiredCondition } from "./airing.ts";
 import { getSettings } from "./settings.ts";
 
 export type WatchCategory =
@@ -120,9 +121,8 @@ function computeCategoriesInternal(
   // Read once per batch, never per item (plan.md §Risks 5).
   const windowDays = getSettings(db).watchingWindowDays;
 
-  const today = isoNow(now).slice(0, 10);
   const nonSpecial = ne(schema.episodes.seasonNumber, 0);
-  const aired = and(isNotNull(schema.episodes.airDate), lte(schema.episodes.airDate, today));
+  const aired = and(nonSpecial, episodeAiredCondition(now));
 
   const base = db
     .select({

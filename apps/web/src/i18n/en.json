@@ -16,7 +16,8 @@
     "close": "Close"
   },
   "common": {
-    "separator": " · "
+    "separator": " · ",
+    "skipToMain": "Skip to main content"
   },
   "search": {
     "placeholder": "Search a series…",
@@ -24,6 +25,7 @@
     "noResults": "No results found",
     "providerError": "Search provider ran into a problem",
     "retry": "Retry",
+    "clear": "Clear",
     "add": "Add",
     "cancel": "Cancel",
     "inLibrary": "in library",
@@ -103,7 +105,9 @@
     "needsReviewDismiss": "Dismiss",
     "specials": "Specials",
     "seasonNumber": "Season {{number}}",
-    "markSeasonWatched": "mark all as watched",
+    "markSeasonWatched": "Mark season watched",
+    "unwatchSeason": "Unwatch season",
+    "seasonMenu": "Season menu",
     "nextUp": "Next up:",
     "stoppedBlocked": "A finished series can't be marked as stopped",
     "justwatchAttribution": "Data from JustWatch",
@@ -131,11 +135,14 @@
       "title": "Details",
       "genres": "Genres",
       "tags": "Tags",
+      "info": "Info",
+      "runtime": "Runtime",
+      "contentRating": "Age rating",
+      "language": "Original language",
       "production": "Production",
       "ratings": "Ratings",
       "providers": "Watch providers",
       "yourRating": "Your rating",
-      "library": "Library",
       "added": "Added",
       "refreshed": "Last refreshed",
       "neverRefreshed": "Never refreshed",
@@ -150,7 +157,8 @@
     "untitled": "Untitled episode",
     "finale": "FINALE",
     "seasonAndEpisode": "S{{season}} E{{episode}}",
-    "watchAgain": "watch again",
+    "menu": "Episode menu",
+    "watchAgain": "Watch Again",
     "editDate": "Edit Date",
     "editDateHint": "Set the date and time for your watch history.",
     "datePreset": {
@@ -165,6 +173,7 @@
     "removeRewatch": "Remove rewatch",
     "save": "Save",
     "detailsTitle": "Episode Details",
+    "openDetails": "Open details for {{title}}",
     "aired": "Aired",
     "watched": "Watched",
     "airTime": "Time",
@@ -173,6 +182,14 @@
     "runtimeMin": "{{minutes}}m",
     "noOverview": "No overview available.",
     "tbd": "TBD",
+    "countdownUnit": {
+      "day_one": "day",
+      "day_other": "days",
+      "hour_one": "hr",
+      "hour_other": "hrs",
+      "minute": "mins",
+      "second": "secs"
+    },
     "tag": {
       "new": "NEW",
       "upcoming": "UPCOMING",
@@ -516,6 +533,9 @@
     "manageSections": "Manage categories",
     "manageSectionsTitle": "Manage categories",
     "manageSectionsAddHeading": "Add category",
+    "manageSectionsHint": "Drag to reorder, + to add",
+    "addSectionNamed": "Add {{category}}",
+    "sectionPinned": "Pinned category — can’t be removed",
     "moveSectionUp": "Move up",
     "moveSectionDown": "Move down",
     "reorderSection": "Drag {{category}} to reorder"

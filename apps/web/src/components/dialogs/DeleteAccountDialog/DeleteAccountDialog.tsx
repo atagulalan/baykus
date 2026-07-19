@@ -26,7 +26,7 @@ export function DeleteAccountDialog({
       <a
         href={exportZipUrl()}
         download
-        className="border border-white/10 px-4 py-2 text-center font-mono text-[10px] uppercase tracking-widest text-muted hover:text-snow hover:border-white/20 transition-colors"
+        className="rounded-lg border border-white/10 px-4 py-2 text-center font-mono text-[10px] uppercase tracking-widest text-muted transition-colors hover:border-white/20 hover:text-snow"
       >
         {t("settings.data.export")}
       </a>
@@ -38,7 +38,7 @@ export function DeleteAccountDialog({
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="current-password"
-          className="border border-white/10 bg-white/5 px-3 py-2 text-sm text-snow focus:border-yellow focus:outline-none"
+          className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-snow focus:border-yellow focus:outline-none"
         />
       </label>
 
@@ -56,7 +56,7 @@ export function DeleteAccountDialog({
           type="button"
           disabled={pending || !password}
           onClick={() => onConfirm(password)}
-          className="bg-red-600 text-white font-mono text-[10px] uppercase tracking-widest px-4 py-2.5 disabled:opacity-50"
+          className="rounded-lg bg-red-600 px-4 py-2.5 font-mono text-[10px] text-white uppercase tracking-widest disabled:opacity-50"
         >
           {t("auth.deleteAccount.confirm")}
         </button>

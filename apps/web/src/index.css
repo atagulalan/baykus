@@ -1,14 +1,15 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
 @theme {
   --color-void: #080808;
   --color-snow: #ebebeb;
-  --color-muted: #666666;
+  --color-muted: #888888;
+  --color-muted-dim: #848484;
   --color-yellow: #f0e000;
 
-  --font-display: 'DM Serif Display', serif;
-  --font-sans: 'DM Sans', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --font-display: "DM Serif Display", serif;
+  --font-sans: "DM Sans", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
 }
 
 :root {
@@ -43,6 +44,37 @@
   }
 }
 
+.skip-link {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.skip-link:focus {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  z-index: 9999;
+  width: auto;
+  height: auto;
+  padding: 0.75rem 1rem;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  background-color: transparent;
+  color: var(--color-snow);
+  font-size: 0.875rem;
+  text-decoration: none;
+}
+
 body {
   background-color: var(--color-void);
   color: var(--color-snow);
@@ -54,7 +86,7 @@ body {
 
 input,
 textarea,
-[contenteditable='true'] {
+[contenteditable="true"] {
   user-select: auto;
   -webkit-user-select: auto;
   cursor: text;
@@ -62,7 +94,7 @@ textarea,
 
 a,
 button,
-[role='button'],
+[role="button"],
 label,
 select {
   cursor: pointer;
@@ -103,7 +135,7 @@ select {
 }
 
 body::after {
-  content: '';
+  content: "";
   position: fixed;
   top: -25%;
   left: -25%;
@@ -111,7 +143,7 @@ body::after {
   height: 150%;
   pointer-events: none;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 1024 1024' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.5' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-  opacity: 0.05;
+  opacity: 0.07;
   z-index: 10000000;
   animation: film-grain 4s steps(10) infinite;
   /* Own VT group so grain rides above chrome/root during route transitions
@@ -119,36 +151,90 @@ body::after {
   view-transition-name: film-grain;
 }
 
-/* E51: subtle root cross-fade on route changes; poster morph opts in per-item
-   via view-transition-name="poster-${id}" on SeriesCard/detail containers.
-   The app-header/app-tabbar names are set inline (Layout.tsx) so the chrome
-   renders as its own unchanged group instead of cross-fading with the root. */
-::view-transition-old(root),
+/* E51: kill the UA root cross-fade (always built; opacity under edge
+ * backdrop-filter = milky frost). Page fade is on app-main instead. */
+::view-transition-group(root) {
+  animation: none;
+}
+::view-transition-old(root) {
+  display: none;
+}
 ::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+  opacity: 1;
+}
+
+/* Page content cross-fade — #main-content (view-transition-name: app-main). */
+::view-transition-group(app-main) {
+  z-index: 1;
+}
+::view-transition-old(app-main),
+::view-transition-new(app-main) {
   animation-duration: 160ms;
 }
 
-/* Chrome must stay a single frozen snapshot — hide old, freeze group+new so
-   they don't stack with the root cross-fade. */
+/* Poster card → detail morph (view-transition-class: poster-morph).
+ * Above app-main (or the morph paints under the fading page and vanishes). */
+::view-transition-group(.poster-morph) {
+  z-index: 4;
+  animation-duration: 420ms;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+::view-transition-old(.poster-morph),
+::view-transition-new(.poster-morph) {
+  animation-duration: 420ms;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Stacking inside the VT tree mirrors live Z:
+ *   app-main < edge tint/blur < chrome < poster-morph < grain
+ *
+ * Edge scrubs never use CSS opacity (kills backdrop-filter; alphas live in
+ * the gradient stops). While app-main opacity-fades, disable the blur group's
+ * backdrop-filter so it doesn't sample the ghost composite; hide flattened
+ * blur snapshot images. Tint keeps ::view-transition-new (paint only). */
+::view-transition-group(app-edge-top-tint),
+::view-transition-group(app-edge-bottom-tint) {
+  animation: none;
+  z-index: 2;
+}
+::view-transition-group(app-edge-top-blur),
+::view-transition-group(app-edge-bottom-blur) {
+  animation: none;
+  z-index: 2;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
 ::view-transition-group(app-header),
 ::view-transition-group(app-tabbar) {
   animation: none;
-  z-index: 1;
+  z-index: 3;
 }
 ::view-transition-old(app-header),
-::view-transition-old(app-tabbar) {
+::view-transition-old(app-tabbar),
+::view-transition-old(app-edge-top-tint),
+::view-transition-old(app-edge-top-blur),
+::view-transition-old(app-edge-bottom-tint),
+::view-transition-old(app-edge-bottom-blur),
+::view-transition-new(app-edge-top-blur),
+::view-transition-new(app-edge-bottom-blur) {
   display: none;
 }
 ::view-transition-new(app-header),
-::view-transition-new(app-tabbar) {
+::view-transition-new(app-tabbar),
+::view-transition-new(app-edge-top-tint),
+::view-transition-new(app-edge-bottom-tint) {
   animation: none;
   mix-blend-mode: normal;
 }
 
-/* Grain travels with the transition, stacked above chrome (z-index 1). */
+/* Grain travels with the transition, stacked above chrome + overlays. */
 ::view-transition-group(film-grain) {
   animation: none;
-  z-index: 2;
+  z-index: 5;
 }
 ::view-transition-old(film-grain) {
   display: none;
@@ -161,18 +247,6 @@ body::after {
 /* The final EpisodeRow in any list owns the wrapper's visual edge. */
 .episode-row:not(:has(~ .episode-row)) > .episode-row-shell {
   border-bottom-width: 0;
-}
-
-/* The final collapsed SeasonSection owns the season list's visual edge. */
-.season-section:not(:has(~ .season-section)):has(.season-episodes[data-expanded='false'])
-  .season-section-divider {
-  display: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .season-section-progress-fill {
-    transition: none;
-  }
 }
 
 /* E137: quick-mark row flying from "Sıradaki bölümler" up into the history
@@ -271,7 +345,7 @@ body::after {
 }
 
 .animate-sheet {
-  animation: sheet-slide-up 200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: sheet-slide-up 280ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .animate-modal {
@@ -283,11 +357,11 @@ body::after {
 }
 
 .animate-sheet-out {
-  animation: sheet-slide-down 200ms cubic-bezier(0.7, 0, 0.84, 0) forwards;
+  animation: sheet-slide-down 280ms cubic-bezier(0.7, 0, 0.84, 0) forwards;
 }
 
 .animate-modal-out {
-  animation: modal-scale-down 150ms cubic-bezier(0.7, 0, 0.84, 0) forwards;
+  animation: modal-scale-down 200ms cubic-bezier(0.7, 0, 0.84, 0) forwards;
 }
 
 .animate-backdrop-out {
@@ -311,18 +385,18 @@ body::after {
   }
 }
 
-.season-episodes,
 .section-collapse {
   display: grid;
   grid-template-rows: 0fr;
   transition: grid-template-rows 200ms ease-out;
   overflow: hidden;
 }
-.season-episodes[data-expanded='true'],
-.section-collapse[data-expanded='true'] {
+.section-collapse[data-expanded="true"] {
   grid-template-rows: 1fr;
+  /* Visible when open so poster view-transition morphs aren't clipped
+     (library grid lives inside these wrappers; profile grids do not). */
+  overflow: visible;
 }
-.season-episodes > div,
 .section-collapse > div {
   min-width: 0;
   min-height: 0;

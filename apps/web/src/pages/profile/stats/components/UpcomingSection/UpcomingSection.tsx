@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import type { Stats } from "../../../../../api/types.ts";
 import { formatDurationLabel, formatDurationParts } from "../../../../../lib/date.ts";
 import { MiniBars } from "../MiniBars/MiniBars.tsx";
+import { StatsSectionHeading } from "../StatsSectionHeading/StatsSectionHeading.tsx";
 import { StatTile } from "../StatTile/StatTile.tsx";
 
 interface UpcomingSectionProps {
@@ -31,9 +32,7 @@ export function UpcomingSection({ stats }: UpcomingSectionProps) {
 
   return (
     <section className="content-inset flex flex-col gap-4">
-      <h2 className="font-display italic text-snow text-2xl tracking-tight">
-        {t("stats.upcoming.title")}
-      </h2>
+      <StatsSectionHeading>{t("stats.upcoming.title")}</StatsSectionHeading>
       <div className="grid grid-cols-2 gap-4">
         <StatTile label={t("stats.recent.thisMonth")} {...tileValue(current)} />
         <StatTile label={t("stats.upcoming.nextMonth")} {...tileValue(next)} />
@@ -46,7 +45,7 @@ export function UpcomingSection({ stats }: UpcomingSectionProps) {
           tooltip: `${monthShortLabel(m.month)}: ${m.episodes}`,
         }))}
       />
-      <p className="text-center font-mono text-xs text-muted/70">{t("stats.upcoming.caveat")}</p>
+      <p className="text-center font-mono text-xs text-muted-dim">{t("stats.upcoming.caveat")}</p>
     </section>
   );
 }

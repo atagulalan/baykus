@@ -13,9 +13,11 @@ vi.mock("../../../api/client.ts", () => ({
 }));
 
 describe("ProfilePhotoUpload", () => {
-  it("shows owl placeholder when avatarRef is null", async () => {
-    await renderWithProviders(<ProfilePhotoUpload avatarRef={null} />, { withToast: true });
-    expect(screen.getByText("🦉")).toBeInTheDocument();
+  it("shows bird placeholder when avatarRef is null", async () => {
+    const { container } = await renderWithProviders(<ProfilePhotoUpload avatarRef={null} />, {
+      withToast: true,
+    });
+    expect(container.querySelector("svg")).toBeInTheDocument();
     expect(screen.getByLabelText("Profil fotoğrafını değiştir")).toBeInTheDocument();
   });
 

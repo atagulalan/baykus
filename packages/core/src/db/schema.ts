@@ -119,6 +119,8 @@ export const episodes = sqliteTable(
     title: text("title"),
     overview: text("overview"),
     airDate: text("air_date"),
+    /** ISO-8601 UTC datetime — exact air instant when known (TVMaze airstamp). */
+    airStamp: text("air_stamp"),
     runtimeMin: integer("runtime_min"),
     stillRef: text("still_ref").$type<ImageRef>(),
     episodeType: text("episode_type").$type<EpisodeType>(),

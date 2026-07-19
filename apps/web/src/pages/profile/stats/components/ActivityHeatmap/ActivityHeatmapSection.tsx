@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import type { Stats } from "../../../../../api/types.ts";
+import { StatsSectionHeading } from "../StatsSectionHeading/StatsSectionHeading.tsx";
 import { Heatmap } from "./Heatmap.tsx";
 
 interface ActivityHeatmapSectionProps {
@@ -17,13 +18,9 @@ export function ActivityHeatmapSection({ stats }: ActivityHeatmapSectionProps) {
 
   return (
     <section className="content-inset flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-display italic text-snow text-2xl tracking-tight">
-          {t("stats.activityHeatmap.title")}
-        </h2>
-      </div>
+      <StatsSectionHeading>{t("stats.activityHeatmap.title")}</StatsSectionHeading>
       {stats.activityByDay.length === 0 ? (
-        <div className="flex h-32 items-center justify-center border border-white/5 bg-white/5">
+        <div className="flex h-32 items-center justify-center rounded-md border border-white/10 bg-white/5">
           <p className="font-mono text-[10px] uppercase tracking-widest text-muted">
             {t("stats.empty", { defaultValue: "No activity" })}
           </p>
@@ -33,6 +30,7 @@ export function ActivityHeatmapSection({ stats }: ActivityHeatmapSectionProps) {
           years={years}
           days={stats.activityByDay}
           tooltipFor={(date, count) => t("stats.activityHeatmap.tooltip", { date, count })}
+          ariaLabel={t("stats.activityHeatmap.title")}
         />
       )}
       <div className="flex items-center justify-end gap-1.5 font-mono text-[10px] uppercase tracking-widest text-muted">

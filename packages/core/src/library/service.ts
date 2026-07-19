@@ -22,6 +22,7 @@ import {
 } from "../refresh/engine.ts";
 import { type ExportOptions, exportLibraryZip } from "../zip/export.ts";
 import { type ImportMode, type ImportResult, importLibraryZip } from "../zip/import.ts";
+import { normalizeAirStamp } from "./airing.ts";
 import {
   type CategoryInfo,
   computeCategoryInfo,
@@ -360,6 +361,7 @@ export function createLibrary(db: LibraryDatabase): Library {
                 title: ep.title ?? null,
                 overview: ep.overview ?? null,
                 airDate: ep.airDate ?? null,
+                airStamp: ep.airStamp ? normalizeAirStamp(ep.airStamp) : null,
                 runtimeMin: ep.runtimeMin ?? null,
                 stillRef: ep.stillRef ?? null,
                 episodeType: ep.episodeType ?? null,
@@ -462,6 +464,7 @@ export function createLibrary(db: LibraryDatabase): Library {
           title: ep.title,
           overview: ep.overview,
           airDate: ep.airDate,
+          airStamp: ep.airStamp,
           runtimeMin: ep.runtimeMin,
           stillRef: ep.stillRef,
           episodeType: ep.episodeType,

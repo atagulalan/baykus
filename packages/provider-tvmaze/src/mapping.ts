@@ -39,6 +39,7 @@ export interface TvmazeEpisode {
   name?: string | null;
   type?: string | null;
   airdate?: string | null;
+  airstamp?: string | null;
   runtime?: number | null;
   summary?: string | null;
   image?: TvmazeImage | null;
@@ -156,6 +157,7 @@ function mapEpisode(ep: TvmazeEpisode): EpisodeDetails {
   const overview = stripHtml(ep.summary);
   if (overview) episode.overview = overview;
   if (ep.airdate) episode.airDate = ep.airdate;
+  if (ep.airstamp) episode.airStamp = ep.airstamp;
   if (typeof ep.runtime === "number") episode.runtimeMin = ep.runtime;
   const stillRef = toImageRef(ep.image);
   if (stillRef) episode.stillRef = stillRef;

@@ -108,6 +108,7 @@ describe("getNextUnwatchedEpisode", () => {
       e: 2,
       title: null,
       airDate: addDays(-5),
+      airStamp: null,
       episodeType: null,
     });
   });
@@ -142,6 +143,23 @@ describe("getNextUnwatchedEpisode", () => {
       .run();
 
     expect(getNextUnwatchedEpisode(db, itemId)).toBeNull();
+  });
+
+  it("returns the next unwatched episode even when it has not aired yet", () => {
+    const { db } = openLibraryDb(":memory:");
+    const itemId = insertItem(db);
+    const e1 = insertEpisode(db, itemId, 1, 1, addDays(-10));
+    const e2 = insertEpisode(db, itemId, 1, 2, addDays(96));
+    db.insert(schema.watches)
+      .values({ episodeId: e1, itemId, watchedAt: "2026-01-01T00:00:00Z", source: "manual" })
+      .run();
+
+    expect(getNextUnwatchedEpisode(db, itemId)).toMatchObject({
+      episodeId: e2,
+      s: 1,
+      e: 2,
+      airDate: addDays(96),
+    });
   });
 });
 

@@ -76,6 +76,15 @@ export interface SeriesPreview {
   libraryItemId: number | null;
   /** Full inventory; episode ids are synthetic (s/e encoded) until the show is added. */
   seasons: SeasonSummary[];
+  /** Additive metadata so /series/new can share the detail sheet UI. */
+  networks: NetworkInfo[];
+  originalLanguage: string | null;
+  episodeRunTimes: number[];
+  contentRatings: ContentRating[];
+  tags: TagInfo[];
+  cast: CastMember[];
+  watchProviders: WatchProviderInfo[];
+  externalRatings: ExternalRating[];
 }
 
 export interface SearchResponse {
@@ -106,6 +115,7 @@ export interface NextUnwatchedEpisode {
   e: number;
   title: string | null;
   airDate: string | null;
+  airStamp: string | null;
   episodeType: EpisodeType | null;
 }
 
@@ -154,6 +164,7 @@ export interface EpisodeSummary {
   title: string | null;
   overview: string | null;
   airDate: string | null;
+  airStamp: string | null;
   runtimeMin: number | null;
   stillRef: string | null;
   episodeType: EpisodeType | null;
@@ -438,6 +449,7 @@ export interface CalendarEntry {
   /** From seasons.name — feeds the OVA heuristic (E23). */
   seasonName: string | null;
   airDate: string;
+  airStamp: string | null;
   network: string | null;
   watchProviders: WatchProviderInfo[];
   isWatched: boolean;
@@ -466,6 +478,7 @@ export interface WatchHistoryEntry {
   e: number;
   episodeTitle: string | null;
   airDate: string | null;
+  airStamp: string | null;
   episodeType: EpisodeType | null;
 }
 

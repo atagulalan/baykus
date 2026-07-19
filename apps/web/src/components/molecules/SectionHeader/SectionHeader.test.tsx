@@ -22,13 +22,16 @@ describe("SectionHeader", () => {
     expect(container.querySelector("svg")).toBeInTheDocument();
   });
 
-  it("renders trailing children", () => {
+  it("prefers leading over icon", () => {
     render(
-      <SectionHeader label="Watch later" count={2}>
-        <button type="button">Sort</button>
-      </SectionHeader>,
+      <SectionHeader
+        icon={Play}
+        leading={<span data-testid="leading">ring</span>}
+        label="Season 1"
+        count={2}
+      />,
     );
-    expect(screen.getByRole("button", { name: "Sort" })).toBeInTheDocument();
+    expect(screen.getByTestId("leading")).toBeInTheDocument();
   });
 
   it("calls onClick when the label area is clicked", async () => {
@@ -39,15 +42,34 @@ describe("SectionHeader", () => {
     expect(onClick).toHaveBeenCalledOnce();
   });
 
-  it("does not call onClick when trailing controls are clicked", async () => {
+  it("renders a ratio count", () => {
+    render(<SectionHeader label="Season 1" count="3/10" />);
+    expect(screen.getByText("3/10")).toBeInTheDocument();
+  });
+
+  it("renders the action beside the pill, outside the toggle", async () => {
     const user = userEvent.setup();
     const onClick = vi.fn();
+    const onAction = vi.fn();
     render(
-      <SectionHeader label="Watching" count={12} onClick={onClick} expanded>
-        <button type="button">Sort</button>
-      </SectionHeader>,
+      <SectionHeader
+        label="Season 1"
+        count="3/10"
+        onClick={onClick}
+        expanded
+        action={
+          <button type="button" onClick={onAction}>
+            menu
+          </button>
+        }
+      />,
     );
-    await user.click(screen.getByRole("button", { name: "Sort" }));
+
+    const action = screen.getByRole("button", { name: "menu" });
+    expect(screen.getByRole("heading", { level: 2 })).not.toContainElement(action);
+
+    await user.click(action);
+    expect(onAction).toHaveBeenCalledOnce();
     expect(onClick).not.toHaveBeenCalled();
   });
 });

@@ -1,5 +1,6 @@
-import { ChevronDown } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
 import { useState } from "react";
+import { SETTINGS_ROW } from "../../../lib/settingsChrome.ts";
 import { Modal } from "../../molecules/Modal/Modal.tsx";
 
 interface SettingsSelectOption<T extends string> {
@@ -27,23 +28,27 @@ export function SettingsSelect<T extends string>({
   const selectedOption = options.find((o) => o.value === value);
 
   return (
-    <div className="border-b border-white/5 last:border-b-0">
+    <div>
       <button
         type="button"
+        aria-label={label}
+        id="settings-select-trigger"
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        aria-controls="settings-select-listbox"
         onClick={() => setIsOpen((o) => !o)}
-        className={`flex w-full items-center justify-between px-6 py-4 text-snow transition-colors hover:bg-white/5 ${
-          isOpen ? "bg-white/5" : ""
-        }`}
+        className={`${SETTINGS_ROW} ${isOpen ? "bg-white/[0.04]" : ""}`}
       >
-        <div className="flex flex-col text-left max-w-[70%]">
+        <div className="flex max-w-[70%] flex-col text-left">
           <span className="font-sans text-sm">{label}</span>
-          {hint && <span className="mt-1 font-mono text-[10px] text-muted">{hint}</span>}
+          {hint && <span className="mt-0.5 font-mono text-[10px] text-muted">{hint}</span>}
         </div>
         <div className="flex items-center gap-2">
-          <span className="font-mono text-xs text-muted/80">{selectedOption?.label ?? value}</span>
+          <span className="font-mono text-xs text-muted-dim">{selectedOption?.label ?? value}</span>
           <ChevronDown
             size={14}
-            className={`text-muted/50 transition-transform duration-150 ${isOpen ? "rotate-180" : ""}`}
+            aria-hidden
+            className={`text-muted-dim transition-transform duration-150 ${isOpen ? "rotate-180" : ""}`}
           />
         </div>
       </button>
@@ -56,13 +61,20 @@ export function SettingsSelect<T extends string>({
           desktop="popover"
           popoverClassName="w-56"
           title={label}
-          className="!p-0 !overflow-hidden"
+          className="!overflow-hidden !p-0"
         >
-          <div className="flex flex-col">
+          <div
+            id="settings-select-listbox"
+            role="listbox"
+            aria-label={label}
+            className="flex flex-col gap-0.5 p-1.5"
+          >
             {options.map((opt) => (
               <button
                 key={opt.value}
                 type="button"
+                role="option"
+                aria-selected={opt.value === value}
                 disabled={opt.disabled}
                 onClick={() => {
                   if (!opt.disabled) {
@@ -70,7 +82,7 @@ export function SettingsSelect<T extends string>({
                     setIsOpen(false);
                   }
                 }}
-                className={`flex w-full items-center justify-between border-b border-white/5 px-4 py-3.5 text-left font-mono text-xs transition-colors last:border-0 ${
+                className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left font-mono text-xs transition-colors ${
                   opt.value === value
                     ? "bg-white/5 text-yellow"
                     : opt.disabled
@@ -79,7 +91,9 @@ export function SettingsSelect<T extends string>({
                 }`}
               >
                 {opt.label}
-                {opt.value === value && <span className="text-yellow">✓</span>}
+                {opt.value === value && (
+                  <Check size={14} className="shrink-0 text-yellow" aria-hidden />
+                )}
               </button>
             ))}
           </div>

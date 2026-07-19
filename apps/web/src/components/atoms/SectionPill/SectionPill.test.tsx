@@ -11,13 +11,15 @@ describe("SectionPill", () => {
     expect(heading).toHaveClass("min-h-7");
   });
 
-  it("applies split padding when trailing controls are present", () => {
+  it("applies splitLabel padding for collapsible headers", () => {
     render(
-      <SectionPill padding="split">
+      <SectionPill padding="splitLabel">
         <span>Watching</span>
       </SectionPill>,
     );
-    expect(screen.getByRole("heading", { level: 2 })).toHaveClass("py-0");
+    const heading = screen.getByRole("heading", { level: 2 });
+    expect(heading).toHaveClass("py-0");
+    expect(heading).toHaveClass("px-2.5");
   });
 
   it("calls onClick when the label button is pressed", async () => {
@@ -27,5 +29,18 @@ describe("SectionPill", () => {
 
     await user.click(screen.getByRole("button", { name: "Earlier" }));
     expect(onClick).toHaveBeenCalledOnce();
+  });
+
+  it("insets the splitLabel button horizontally so hover fills the pill", () => {
+    render(
+      <SectionPill padding="splitLabel" onClick={() => {}}>
+        Earlier
+      </SectionPill>,
+    );
+    const button = screen.getByRole("button", { name: "Earlier" });
+    const heading = screen.getByRole("heading", { level: 2 });
+    expect(button).toHaveClass("-mx-2.5");
+    expect(button).toHaveClass("px-2.5");
+    expect(heading).toHaveClass("px-2.5");
   });
 });

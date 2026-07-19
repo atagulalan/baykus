@@ -24,6 +24,7 @@ function stub(
       e: 1,
       title: null,
       airDate: "2026-01-01",
+      airStamp: null,
       episodeType: null,
     },
     nextAirDate: null,

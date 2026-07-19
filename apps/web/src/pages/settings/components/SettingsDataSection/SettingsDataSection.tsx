@@ -3,8 +3,11 @@ import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { exportZipUrl } from "../../../../api/client.ts";
 import type { ImportZipResult } from "../../../../api/types.ts";
+import { pageViewTransition } from "../../../../lib/pageViewTransition.ts";
+import { SETTINGS_BLOCK } from "../../../../lib/settingsChrome.ts";
 import { startManualSweep } from "../../../../lib/staleSweep.ts";
 import type { useToast } from "../../../../lib/toast.tsx";
+import { SettingsSection } from "../SettingsSection/SettingsSection.tsx";
 
 interface SettingsDataSectionProps {
   importFile: File | null;
@@ -32,26 +35,22 @@ export function SettingsDataSection({
   const { t } = useTranslation();
 
   return (
-    <section className="break-inside-avoid mb-6 flex flex-col border border-white/5 bg-transparent">
-      <h2 className="font-mono text-xs text-yellow tracking-widest uppercase px-6 pt-6 pb-2 border-b border-white/5 bg-transparent">
-        {t("settings.data.title")}
-      </h2>
-
-      <div className="flex w-full flex-col border-b border-white/5 px-6 py-4 text-snow transition-colors last:border-b-0">
+    <SettingsSection title={t("settings.data.title")}>
+      <div className={SETTINGS_BLOCK}>
         <a
           href={exportZipUrl()}
           download
-          className="self-start font-mono text-[10px] tracking-widest uppercase border border-white/10 text-muted px-4 py-2 hover:text-snow hover:border-white/20 transition-colors"
+          className="self-start rounded-full border border-white/10 px-3.5 py-2 font-mono text-[10px] uppercase tracking-widest text-muted transition-colors hover:border-white/20 hover:text-snow"
         >
           {t("settings.data.export")}
         </a>
       </div>
 
-      <div className="flex w-full flex-col border-b border-white/5 px-6 py-5 text-snow last:border-b-0">
-        <span className="text-sm font-sans text-snow mb-4">{t("settings.data.importTitle")}</span>
+      <div className={SETTINGS_BLOCK}>
+        <span className="font-sans text-sm text-snow">{t("settings.data.importTitle")}</span>
 
         <label
-          className={`flex flex-col items-center justify-center gap-2 border border-dashed py-8 cursor-pointer transition-colors ${
+          className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed py-7 transition-colors ${
             importFile
               ? "border-yellow/40 bg-yellow/5"
               : "border-white/10 hover:border-white/20 hover:bg-white/[0.02]"
@@ -68,15 +67,15 @@ export function SettingsDataSection({
           />
           {importFile ? (
             <>
-              <span className="font-mono text-xs text-yellow">📦 {importFile.name}</span>
+              <span className="font-mono text-xs text-yellow">{importFile.name}</span>
               <span className="font-mono text-[10px] text-muted">
                 {(importFile.size / 1024).toFixed(1)} KB
               </span>
             </>
           ) : (
             <>
-              <span className="font-mono text-[10px] text-muted tracking-widest uppercase">
-                Zip dosyası seç
+              <span className="font-mono text-[10px] uppercase tracking-widest text-muted">
+                {t("settings.data.chooseFile")}
               </span>
               <span className="font-mono text-[10px] text-muted/50">.zip</span>
             </>
@@ -87,7 +86,7 @@ export function SettingsDataSection({
           type="button"
           onClick={() => importMutation.mutate()}
           disabled={!importFile || importMutation.isPending}
-          className="mt-3 w-full font-mono text-[10px] tracking-widest uppercase bg-yellow text-[#080808] px-4 py-3 transition-opacity disabled:opacity-30 hover:opacity-90"
+          className="w-full rounded-full bg-yellow px-4 py-2.5 font-mono text-[10px] uppercase tracking-widest text-[#080808] transition-opacity hover:opacity-90 disabled:opacity-30"
         >
           {importMutation.isPending
             ? t("settings.data.importing")
@@ -95,8 +94,8 @@ export function SettingsDataSection({
         </button>
 
         {importResult && (
-          <div className="flex flex-col gap-2 border border-white/5 bg-white/5 p-4 text-sm mt-3">
-            <p className="text-yellow font-mono text-xs">
+          <div className="flex flex-col gap-2 rounded-xl bg-white/[0.03] p-4 text-sm">
+            <p className="font-mono text-xs text-yellow">
               {t("settings.data.success", {
                 items: importResult.items,
                 watches: importResult.watches,
@@ -104,8 +103,8 @@ export function SettingsDataSection({
               })}
             </p>
             {importResult.warnings.length > 0 && (
-              <div className="flex flex-col gap-1 text-[10px] font-mono text-muted/70">
-                <span className="text-muted tracking-widest uppercase">
+              <div className="flex flex-col gap-1 font-mono text-[10px] text-muted/70">
+                <span className="uppercase tracking-widest text-muted">
                   {t("settings.data.warnings")}
                 </span>
                 <ul className="list-inside list-disc">
@@ -119,16 +118,17 @@ export function SettingsDataSection({
         )}
       </div>
 
-      <div className="flex w-full flex-col border-b border-white/5 px-6 py-4 text-snow transition-colors last:border-b-0">
+      <div className={SETTINGS_BLOCK}>
         <Link
           to="/import"
-          className="self-start font-mono text-[10px] tracking-widest uppercase border border-white/10 text-muted px-4 py-2 hover:text-snow hover:border-white/20 transition-colors"
+          viewTransition={pageViewTransition}
+          className="self-start rounded-full border border-white/10 px-3.5 py-2 font-mono text-[10px] uppercase tracking-widest text-muted transition-colors hover:border-white/20 hover:text-snow"
         >
           {t("settings.data.tvtimeImport")}
         </Link>
       </div>
 
-      <div className="flex w-full flex-col border-b border-white/5 px-6 py-4 text-snow transition-colors last:border-b-0">
+      <div className={SETTINGS_BLOCK}>
         <button
           type="button"
           onClick={() =>
@@ -138,13 +138,13 @@ export function SettingsDataSection({
             })
           }
           disabled={isManualRefreshRunning}
-          className="w-full font-mono text-[10px] tracking-widest uppercase border border-white/10 text-muted px-4 py-3 hover:text-snow hover:border-white/20 transition-colors disabled:opacity-50"
+          className="w-full rounded-full border border-white/10 px-4 py-2.5 font-mono text-[10px] uppercase tracking-widest text-muted transition-colors hover:border-white/20 hover:text-snow disabled:opacity-50"
         >
           {refreshProgress
             ? `${refreshProgress.done}/${refreshProgress.total}`
             : t("library.refreshAll")}
         </button>
       </div>
-    </section>
+    </SettingsSection>
   );
 }

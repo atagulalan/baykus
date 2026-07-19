@@ -1,11 +1,12 @@
-import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getSettings } from "../../../api/client.ts";
 import type { CalendarDay, CalendarEntry } from "../../../api/types.ts";
 import { getAbsoluteWeek, getIsoWeek, getWeekStartIso, todayIso } from "../../../lib/date.ts";
+import { pageViewTransition } from "../../../lib/pageViewTransition.ts";
 import { EpisodeLabel } from "../../atoms/EpisodeLabel/EpisodeLabel.tsx";
 
 interface StripEpisode {
@@ -637,6 +638,7 @@ export function ScheduleGrid({
                                   <Link
                                     to="/series/$id"
                                     params={{ id: `i${strip.itemId}` }}
+                                    viewTransition={pageViewTransition}
                                     className="font-display italic text-snow hover:text-yellow transition-colors text-[11px] drop-shadow-md block truncate"
                                   >
                                     {strip.title}
@@ -688,6 +690,7 @@ export function ScheduleGrid({
                                               params={{
                                                 id: `i${strip.itemId}`,
                                               }}
+                                              viewTransition={pageViewTransition}
                                               className={`text-[10px] font-mono transition-colors flex flex-row items-center gap-1 ${
                                                 isToday
                                                   ? "text-yellow hover:text-yellow/80"
@@ -699,7 +702,11 @@ export function ScheduleGrid({
                                                 .map((ep) => `S${ep.s}E${ep.e}`)
                                                 .join(", ")}
                                             >
-                                              <EpisodeLabel s={firstEp.s} e={firstEp.e} format={episodeLabelFormat} />
+                                              <EpisodeLabel
+                                                s={firstEp.s}
+                                                e={firstEp.e}
+                                                format={episodeLabelFormat}
+                                              />
                                               {extraCount > 0 && (
                                                 <span className="text-yellow text-[9px] font-bold px-1 rounded bg-yellow/10">
                                                   +{extraCount}

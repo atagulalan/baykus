@@ -155,12 +155,14 @@ unwatched, earlier episode pending:  [ ] tap → "Mark previous episodes?"
                                             │ buraya kadar izledim  │ (yellow, primary)
                                             │ sadece bu bölüm       │
                                             └───────────────────────┘
+                                     [ ] Shift+click → mark only this (skip sheet)
 watched:                             [x] tap → sheet:
                                             ┌───────────────────────┐
                                             │ tekrar izledim        │
                                             │ tarihi düzenle        │
                                             │ izlenmedi işaretle    │ (red)
                                             └───────────────────────┘
+                                     [x] Shift+click → unwatch / remove latest rewatch
 ```
 
 - Replaces the old "⋮" dropdown (watch again / edit date / mark up to
@@ -168,6 +170,8 @@ watched:                             [x] tap → sheet:
   (`onToggleWatch`/`onBulkUpToHere`/`onWatchAgain`/`onEditDate`), different
   entry point: the row's own `Checkbox` (E45), gated on click by watch
   state and `hasUnwatchedBefore`.
+- **Shift+click** skips both confirm sheets and calls `onToggleWatch`
+  immediately (E47). Pointer/desktop only; touch stays on the modal path.
 - `hasUnwatchedBefore` (computed in `SeasonSection` from the series-level
   `nextUnwatched` cursor: any episode whose (s,e) is after the cursor has
   something unwatched before it) decides whether marking an unwatched

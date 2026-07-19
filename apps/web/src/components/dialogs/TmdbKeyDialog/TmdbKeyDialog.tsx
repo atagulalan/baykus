@@ -48,7 +48,7 @@ export function TmdbKeyDialog({ onClose, onSave, onClear, pending, isSet }: Tmdb
         value={input}
         onChange={(e) => setInput(e.target.value)}
         placeholder={t("settings.providers.tmdbKeyPlaceholder")}
-        className="border border-white/10 bg-white/5 px-3 py-2 text-sm text-snow focus:border-yellow focus:outline-none transition-colors w-full"
+        className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-snow transition-colors focus:border-yellow focus:outline-none"
         autoComplete="off"
       />
 
@@ -58,7 +58,7 @@ export function TmdbKeyDialog({ onClose, onSave, onClear, pending, isSet }: Tmdb
             type="button"
             onClick={onClear}
             disabled={pending}
-            className="font-mono text-[10px] uppercase tracking-widest text-muted hover:text-red-400 mr-auto transition-colors disabled:opacity-50"
+            className="mr-auto font-mono text-[10px] uppercase tracking-widest text-muted transition-colors hover:text-red-400 disabled:opacity-50"
           >
             {t("settings.providers.clear")}
           </button>
@@ -66,7 +66,7 @@ export function TmdbKeyDialog({ onClose, onSave, onClear, pending, isSet }: Tmdb
         <button
           type="button"
           onClick={onClose}
-          className="font-mono text-[10px] uppercase tracking-widest text-muted hover:text-snow transition-colors"
+          className="font-mono text-[10px] uppercase tracking-widest text-muted transition-colors hover:text-snow"
         >
           {t("search.cancel")}
         </button>
@@ -74,7 +74,7 @@ export function TmdbKeyDialog({ onClose, onSave, onClear, pending, isSet }: Tmdb
           type="button"
           disabled={pending || !input.trim()}
           onClick={handleSave}
-          className="bg-yellow text-[#080808] font-mono text-[10px] uppercase tracking-widest px-4 py-2.5 disabled:opacity-50 transition-opacity hover:opacity-90"
+          className="rounded-lg bg-yellow px-4 py-2.5 font-mono text-[10px] uppercase tracking-widest text-[#080808] transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           {t("settings.save")}
         </button>

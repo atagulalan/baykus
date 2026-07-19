@@ -20,6 +20,7 @@ function createEntry(
     episodeType: "standard",
     seasonName: "Season 1",
     airDate,
+    airStamp: null,
     network: null,
     watchProviders: [],
     isWatched,

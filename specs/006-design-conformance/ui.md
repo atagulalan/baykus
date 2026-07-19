@@ -7,7 +7,11 @@ Where a class string is given, it is the target idiom — match it exactly
 unless the surrounding file already has an identical post-E45 sibling to
 copy from (then match the sibling).
 
-## E45 overlay idiom (E74 — normative reference for every dialog/sheet)
+## E45 overlay idiom (E74 — SUPERSEDED by 012 for overlay shells)
+
+> **SUPERSEDED (2026-07-20):** Soft iOS-like overlay chrome lives in
+> `specs/012-overlay-soft-idiom/ui.md` (E160–E163). Keep this block only as
+> historical reference for the sharp E74 pass.
 
 ```
 scrim:      fixed inset-0 bg-black/60           (keep existing z/dismiss wiring)

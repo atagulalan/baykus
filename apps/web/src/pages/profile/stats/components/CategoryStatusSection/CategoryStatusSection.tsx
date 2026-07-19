@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import type { Stats } from "../../../../../api/types.ts";
 import { CATEGORY_CHART_COLORS, CHART_CATEGORY_ORDER } from "../../../../../lib/categoryColors.ts";
+import { StatsSectionHeading } from "../StatsSectionHeading/StatsSectionHeading.tsx";
 
 interface CategoryStatusSectionProps {
   stats: Pick<Stats, "itemCount">;
@@ -53,9 +54,7 @@ export function CategoryStatusSection({ stats }: CategoryStatusSectionProps) {
 
   return (
     <section className="content-inset flex flex-col gap-4">
-      <h2 className="font-display italic text-snow text-2xl tracking-tight">
-        {t("stats.categoryStatus.title")}
-      </h2>
+      <StatsSectionHeading>{t("stats.categoryStatus.title")}</StatsSectionHeading>
       <StackedBar
         segments={CHART_CATEGORY_ORDER.map((category) => ({
           key: category,

@@ -6,6 +6,7 @@ const meta = {
   title: "Molecules/AddSectionBar",
   component: AddSectionBar,
   args: {
+    mode: "manage",
     sections: ["watching", "not_watched_recently", "up_to_date"],
     sectionSorts: { watching: "lastWatched", up_to_date: "nextAir" },
     onSectionsChange: noop,
@@ -21,6 +22,22 @@ export const Default: Story = {};
 export const AllPresent: Story = {
   args: {
     sections: [
+      "watching",
+      "not_watched_recently",
+      "not_started",
+      "watch_later",
+      "up_to_date",
+      "finished",
+      "stopped",
+    ],
+  },
+};
+
+export const SortOnly: Story = {
+  args: {
+    mode: "sortOnly",
+    sections: [
+      "needs_review",
       "watching",
       "not_watched_recently",
       "not_started",

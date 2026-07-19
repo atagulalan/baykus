@@ -39,7 +39,7 @@ export function ResetLibraryDialog({
       <a
         href={exportZipUrl()}
         download
-        className="border border-white/10 px-4 py-2 text-center font-mono text-[10px] uppercase tracking-widest text-muted hover:text-snow hover:border-white/20 transition-colors"
+        className="rounded-lg border border-white/10 px-4 py-2 text-center font-mono text-[10px] uppercase tracking-widest text-muted transition-colors hover:border-white/20 hover:text-snow"
       >
         {t("settings.data.export")}
       </a>
@@ -79,7 +79,7 @@ export function ResetLibraryDialog({
           onChange={(e) => setInput(e.target.value)}
           autoComplete="off"
           spellCheck={false}
-          className="border border-white/10 bg-white/5 px-3 py-2 text-sm text-snow focus:border-red-500 focus:outline-none transition-colors"
+          className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-snow transition-colors focus:border-red-500 focus:outline-none"
         />
       </label>
 
@@ -97,7 +97,7 @@ export function ResetLibraryDialog({
           type="button"
           disabled={pending || !canConfirm}
           onClick={onConfirm}
-          className="bg-red-600 text-white font-mono text-[10px] uppercase tracking-widest px-4 py-2.5 disabled:opacity-50"
+          className="rounded-lg bg-red-600 px-4 py-2.5 font-mono text-[10px] text-white uppercase tracking-widest disabled:opacity-50"
         >
           {t("settings.dangerZone.confirm")}
         </button>

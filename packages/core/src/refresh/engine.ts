@@ -2,6 +2,7 @@ import type { ExternalIds, MetadataProvider } from "@baykus/provider-sdk";
 import { and, eq, inArray, ne, sql } from "drizzle-orm";
 import type { LibraryDatabase } from "../db/open.ts";
 import * as schema from "../db/schema.ts";
+import { episodeNewlyAiredSince, normalizeAirStamp } from "../library/airing.ts";
 
 /** E63: deliberately a constant, not a settings key (see spec 005 §Non-goals). */
 export const STALE_REFRESH_HOURS = 24;
@@ -126,8 +127,8 @@ export async function refreshItem(
     throw cause;
   }
 
-  const previousRefreshDate = item.lastRefreshedAt?.slice(0, 10) ?? "";
-  const today = now.slice(0, 10);
+  const previousRefreshAt = item.lastRefreshedAt ?? "";
+  const nowDate = new Date(now);
   let newEpisodes = 0;
 
   db.transaction((tx) => {
@@ -202,6 +203,7 @@ export async function refreshItem(
         title: ep.title ?? null,
         overview: ep.overview ?? null,
         airDate: ep.airDate ?? null,
+        airStamp: ep.airStamp ? normalizeAirStamp(ep.airStamp) : (existing?.airStamp ?? null),
         runtimeMin: ep.runtimeMin ?? null,
         stillRef: ep.stillRef ?? null,
         episodeType: ep.episodeType ?? null,
@@ -219,7 +221,15 @@ export async function refreshItem(
           })
           .run();
       }
-      if (ep.airDate && ep.airDate > previousRefreshDate && ep.airDate <= today) newEpisodes++;
+      if (
+        episodeNewlyAiredSince(
+          { airDate: ep.airDate ?? null, airStamp: ep.airStamp ?? null },
+          previousRefreshAt,
+          nowDate,
+        )
+      ) {
+        newEpisodes++;
+      }
     }
 
     for (const [key, existing] of existingByKey) {

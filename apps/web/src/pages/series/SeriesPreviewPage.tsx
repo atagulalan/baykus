@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ApiError,
@@ -9,16 +9,17 @@ import {
   bulkWatch,
   getSeriesByParam,
   getSeriesPreview,
+  getSettings,
 } from "../../api/client.ts";
-import { buildImageUrl } from "../../api/images.ts";
 import type { EpisodeSummary, ExternalIds } from "../../api/types.ts";
-import { MediaImage } from "../../components/atoms/MediaImage/MediaImage.tsx";
+import { SkeletonSeriesDetailHero } from "../../components/atoms/Skeleton/Skeleton.tsx";
 import { SeasonSection } from "../../components/organisms/SeasonSection/SeasonSection.tsx";
-import { todayIso } from "../../lib/date.ts";
-import { genreKey } from "../../lib/genreKey.ts";
-import { releaseStatusLabel } from "../../lib/releaseStatusLabel.ts";
+import { isEpisodeAired } from "../../lib/airing.ts";
+import { pageViewTransition } from "../../lib/pageViewTransition.ts";
 import { sortSeasonsSpecialsLast } from "../../lib/seasons.ts";
+import { seriesPreviewAsDetail } from "../../lib/seriesPreviewAsDetail.ts";
 import { useToast } from "../../lib/toast.tsx";
+import { SeriesDetailHero } from "./components/SeriesDetailHero/SeriesDetailHero.tsx";
 
 function idsFromSearch(search: {
   tmdbId?: number | undefined;
@@ -49,10 +50,9 @@ function findEpisodeBySlot(
 function previewNextUnwatched(
   seasons: { number: number; episodes: EpisodeSummary[] }[],
 ): { s: number; e: number } | null {
-  const today = todayIso();
   for (const season of sortSeasonsSpecialsLast(seasons)) {
     for (const ep of season.episodes) {
-      if (ep.airDate !== null && ep.airDate <= today) return { s: ep.s, e: ep.e };
+      if (isEpisodeAired(ep)) return { s: ep.s, e: ep.e };
     }
   }
   return null;
@@ -65,8 +65,9 @@ type StartAction =
   | { kind: "season"; seasonNumber: number };
 
 /**
- * E131: not-in-library series page from search. Shows full provider inventory;
- * marking an episode (or İzlemeye başla) adds the show and starts watching.
+ * E131: not-in-library series page from search. Shares SeriesDetailHero /
+ * season list with the library detail page; marking an episode (or
+ * İzlemeye başla) adds the show and starts watching.
  */
 export function SeriesPreviewPage() {
   const search = useSearch({ from: "/series/new" });
@@ -75,12 +76,18 @@ export function SeriesPreviewPage() {
   const toast = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   const query = useQuery({
     queryKey: ["series-preview", search],
     queryFn: () => getSeriesPreview(externalIds as ExternalIds),
     enabled: externalIds != null,
   });
+  const settingsQuery = useQuery({
+    queryKey: ["settings"],
+    queryFn: getSettings,
+  });
+  const activeRegion = settingsQuery.data?.region ?? "TR";
 
   useEffect(() => {
     if (query.data?.libraryItemId != null) {
@@ -88,6 +95,7 @@ export function SeriesPreviewPage() {
         to: "/series/$id",
         params: { id: `i${query.data.libraryItemId}` },
         replace: true,
+        viewTransition: pageViewTransition,
       });
     }
   }, [query.data?.libraryItemId, navigate]);
@@ -139,7 +147,12 @@ export function SeriesPreviewPage() {
         toast.show(t("search.added", { title: result.title }));
       }
       queryClient.invalidateQueries({ queryKey: ["library"] });
-      navigate({ to: "/series/$id", params: { id: `i${result.itemId}` }, replace: true });
+      navigate({
+        to: "/series/$id",
+        params: { id: `i${result.itemId}` },
+        replace: true,
+        viewTransition: pageViewTransition,
+      });
     },
     onError: () => {
       toast.show(t("search.addError"), "error");
@@ -150,7 +163,7 @@ export function SeriesPreviewPage() {
     return (
       <div className="content-inset flex flex-col items-center gap-2 py-24 text-center">
         <p className="text-muted">{t("series.previewMissingIds")}</p>
-        <Link to="/search" className="text-sm text-muted underline">
+        <Link to="/search" viewTransition={pageViewTransition} className="text-sm text-muted underline">
           {t("app.nav.search")}
         </Link>
       </div>
@@ -158,11 +171,7 @@ export function SeriesPreviewPage() {
   }
 
   if (query.isLoading) {
-    return (
-      <div className="content-inset">
-        <div className="h-64 animate-pulse bg-white/5" />
-      </div>
-    );
+    return <SkeletonSeriesDetailHero />;
   }
 
   if (query.isError) {
@@ -172,11 +181,11 @@ export function SeriesPreviewPage() {
         <button
           type="button"
           onClick={() => query.refetch()}
-          className="border border-white/10 font-mono text-[10px] uppercase tracking-widest text-muted hover:text-snow px-3 py-1.5 transition-colors"
+          className="border border-white/10 px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest text-muted transition-colors hover:text-snow"
         >
           {t("errors.retry")}
         </button>
-        <Link to="/search" className="text-sm text-muted underline">
+        <Link to="/search" viewTransition={pageViewTransition} className="text-sm text-muted underline">
           {t("app.nav.search")}
         </Link>
       </div>
@@ -186,16 +195,14 @@ export function SeriesPreviewPage() {
   const preview = query.data;
   if (!preview || preview.libraryItemId != null) return null;
 
-  const { seasons } = preview;
-  const imageUrl = buildImageUrl(preview.posterRef);
-  const transitionName = `poster-preview-${preview.externalIds.tmdbId ?? preview.externalIds.tvmazeId ?? preview.externalIds.tvdbId ?? preview.title}`;
-  const sortedSeasons = sortSeasonsSpecialsLast(seasons);
-  const nextUnwatched = previewNextUnwatched(seasons);
+  const detail = seriesPreviewAsDetail(preview);
+  const sortedSeasons = sortSeasonsSpecialsLast(preview.seasons);
+  const nextUnwatched = previewNextUnwatched(preview.seasons);
   const pending = startMutation.isPending;
-  const statusLabel = releaseStatusLabel(t, preview.releaseStatus);
+  const transitionName = `poster-preview-${preview.externalIds.tmdbId ?? preview.externalIds.tvmazeId ?? preview.externalIds.tvdbId ?? preview.title}`;
 
   function episodeBySyntheticId(id: number): EpisodeSummary | undefined {
-    for (const season of seasons) {
+    for (const season of preview.seasons) {
       const ep = season.episodes.find((e) => e.id === id);
       if (ep) return ep;
     }
@@ -204,68 +211,21 @@ export function SeriesPreviewPage() {
 
   return (
     <div className={`flex flex-col gap-6 ${pending ? "pointer-events-none opacity-60" : ""}`}>
-      <div className="content-inset flex flex-col gap-4 sm:flex-row">
-        {imageUrl ? (
-          <MediaImage
-            src={imageUrl}
-            alt={preview.title}
-            wrapperClassName="block aspect-[2/3] w-40 shrink-0 bg-white/5"
-            className="h-full w-full object-cover"
-            style={{ viewTransitionName: transitionName }}
-            spinnerSize={24}
-          />
-        ) : (
-          <div
-            className="flex aspect-[2/3] w-40 shrink-0 items-center justify-center overflow-hidden bg-white/5 p-2 text-center text-sm text-muted"
-            style={{ viewTransitionName: transitionName }}
-          >
-            {preview.title}
-          </div>
-        )}
-        <div className="flex flex-1 flex-col gap-3">
-          <h1 className="font-display italic text-snow text-4xl leading-none tracking-tight">
-            {preview.title}
-            {preview.year ? (
-              <span className="font-sans not-italic text-2xl text-muted ml-2">
-                ({preview.year})
-              </span>
-            ) : null}
-          </h1>
-
-          {preview.tagline && <p className="text-sm text-muted italic">"{preview.tagline}"</p>}
-
-          {(preview.network || statusLabel) && (
-            <p className="font-mono text-[10px] tracking-wide text-muted">
-              {[preview.network, statusLabel].filter(Boolean).join(t("common.separator"))}
-            </p>
-          )}
-
-          {preview.genres.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {preview.genres.map((g) => (
-                <span key={g.id ?? g.name} className="bg-white/5 px-2 py-0.5 text-xs text-muted">
-                  {t(`genres.${genreKey(g.name)}`, { defaultValue: g.name })}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {preview.overview && (
-            <p className="max-w-prose text-sm leading-relaxed text-snow/80">{preview.overview}</p>
-          )}
-
-          <div className="mt-2">
-            <button
-              type="button"
-              disabled={pending}
-              onClick={() => startMutation.mutate({ kind: "add" })}
-              className="bg-yellow px-4 py-2.5 font-mono text-[10px] uppercase tracking-widest text-[#080808] hover:opacity-90 disabled:opacity-50"
-            >
-              {pending ? t("search.loading") : t("series.startWatching")}
-            </button>
-          </div>
-        </div>
-      </div>
+      <SeriesDetailHero
+        detail={detail}
+        activeRegion={activeRegion}
+        detailsOpen={detailsOpen}
+        onDetailsOpenChange={setDetailsOpen}
+        onRateChange={() => {}}
+        onToggleFavorite={() => {}}
+        onChangeManualList={() => {}}
+        onToggleMute={() => {}}
+        onRemove={() => {}}
+        preview
+        posterStyle={{ viewTransitionName: transitionName }}
+        onStartWatching={() => startMutation.mutate({ kind: "add" })}
+        startWatchingPending={pending}
+      />
 
       <div className="flex flex-col">
         {sortedSeasons.map((season) => (

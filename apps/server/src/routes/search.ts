@@ -3,6 +3,13 @@ import type { ExternalIds, MetadataProvider } from "@baykus/provider-sdk";
 import { Hono } from "hono";
 import { z } from "zod";
 import { ApiError } from "../middleware/errors.ts";
+import { createDetailsProvider } from "../providers/airStamps.ts";
+import {
+  enrichCast,
+  enrichExternalRatings,
+  enrichTags,
+  enrichWatchProviders,
+} from "../providers/enrich.ts";
 
 const querySchema = z
   .object({
@@ -65,7 +72,7 @@ export function createSearchRoute(providers: MetadataProvider[], library: Librar
   /** E131: provider details for a search hit not yet in the library. */
   app.get("/preview", async (c) => {
     const parsed = previewQuerySchema.parse(Object.fromEntries(new URL(c.req.url).searchParams));
-    const provider = providers[0];
+    const provider = createDetailsProvider(providers);
     if (!provider) throw new ApiError("INTERNAL", "no metadata providers registered");
 
     const externalIds = toExternalIds(parsed);
@@ -73,6 +80,14 @@ export function createSearchRoute(providers: MetadataProvider[], library: Librar
 
     const details = await provider.getSeriesDetails(externalIds);
     const year = details.firstAirDate ? Number(details.firstAirDate.slice(0, 4)) : null;
+    const region = library.getSettings().region;
+
+    const [externalRatings, watchProviders, tags, cast] = await Promise.all([
+      enrichExternalRatings(providers, externalIds),
+      enrichWatchProviders(providers, externalIds, region),
+      enrichTags(providers, externalIds),
+      enrichCast(providers, externalIds),
+    ]);
 
     // Synthetic episode ids: encode (s,e) so the preview UI can reuse SeasonSection
     // without library rows. Real ids are assigned only after addSeries.
@@ -89,6 +104,7 @@ export function createSearchRoute(providers: MetadataProvider[], library: Librar
         title: ep.title ?? null,
         overview: ep.overview ?? null,
         airDate: ep.airDate ?? null,
+        airStamp: ep.airStamp ?? null,
         runtimeMin: ep.runtimeMin ?? null,
         stillRef: ep.stillRef ?? null,
         episodeType: ep.episodeType ?? null,
@@ -99,6 +115,13 @@ export function createSearchRoute(providers: MetadataProvider[], library: Librar
       })),
     }));
 
+    const networks = (details.networks ?? []).map((n) => ({
+      ...(n.id !== undefined ? { id: n.id } : {}),
+      name: n.name,
+      ...(n.logoRef !== undefined ? { logoRef: n.logoRef } : {}),
+      ...(n.originCountry !== undefined ? { originCountry: n.originCountry } : {}),
+    }));
+
     return c.json({
       externalIds: details.externalIds,
       title: details.title,
@@ -107,7 +130,7 @@ export function createSearchRoute(providers: MetadataProvider[], library: Librar
       posterRef: details.posterRef ?? null,
       backdropRef: details.backdropRef ?? null,
       tagline: details.tagline ?? null,
-      network: details.networks?.[0]?.name ?? null,
+      network: networks[0]?.name ?? null,
       genres: (details.genres ?? []).map((g) => ({
         ...(g.id !== undefined ? { id: g.id } : {}),
         name: g.name,
@@ -115,6 +138,15 @@ export function createSearchRoute(providers: MetadataProvider[], library: Librar
       releaseStatus: details.releaseStatus ?? null,
       libraryItemId,
       seasons,
+      // Additive: same metadata slices as SeriesDetail so /series/new shares the sheet.
+      networks,
+      originalLanguage: details.originalLanguage ?? null,
+      episodeRunTimes: details.episodeRunTimes ?? [],
+      contentRatings: details.contentRatings ?? [],
+      tags,
+      cast,
+      watchProviders,
+      externalRatings,
     });
   });
 

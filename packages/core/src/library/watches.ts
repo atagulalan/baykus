@@ -1,8 +1,8 @@
-import { and, eq, inArray, isNotNull, lte, ne } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, ne } from "drizzle-orm";
 import type { LibraryDatabase } from "../db/open.ts";
 import type { WatchSource } from "../db/schema.ts";
 import * as schema from "../db/schema.ts";
-import { todayUtc } from "./progress.ts";
+import { episodeAiredCondition } from "./airing.ts";
 
 type WatchRow = typeof schema.watches.$inferSelect;
 
@@ -119,8 +119,8 @@ export function bulkWatch(
     .get();
   if (!item) return null;
 
-  const today = todayUtc();
-  const aired = and(isNotNull(schema.episodes.airDate), lte(schema.episodes.airDate, today));
+  const asOf = new Date();
+  const aired = episodeAiredCondition(asOf);
 
   let candidates: { id: number }[];
 
@@ -156,7 +156,7 @@ export function bulkWatch(
       .all();
   }
 
-  const now = new Date().toISOString();
+  const watchedAt = new Date().toISOString();
   let created = 0;
   let skippedAlreadyWatched = 0;
 
@@ -173,7 +173,7 @@ export function bulkWatch(
         continue;
       }
       tx.insert(schema.watches)
-        .values({ episodeId: ep.id, itemId, watchedAt: now, source: "bulk" })
+        .values({ episodeId: ep.id, itemId, watchedAt, source: "bulk" })
         .run();
       created++;
     }
@@ -204,8 +204,8 @@ export function bulkUnwatch(
     .get();
   if (!item) return null;
 
-  const today = todayUtc();
-  const aired = and(isNotNull(schema.episodes.airDate), lte(schema.episodes.airDate, today));
+  const asOf = new Date();
+  const aired = episodeAiredCondition(asOf);
 
   let candidates: { id: number }[];
 

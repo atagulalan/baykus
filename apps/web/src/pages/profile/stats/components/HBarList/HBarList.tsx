@@ -27,10 +27,10 @@ export function HBarList({ items }: HBarListProps) {
             >
               {item.label}
             </span>
-            <div title={title} className="h-2 overflow-hidden bg-white/5">
+            <div title={title} className="h-2 overflow-hidden rounded-full bg-white/5">
               <div
                 aria-hidden
-                className={`h-full transition-all duration-500 ${item.muted ? "bg-white/10" : "bg-yellow"}`}
+                className={`h-full rounded-full transition-all duration-500 ${item.muted ? "bg-white/10" : "bg-yellow"}`}
                 style={{ width: `${width}%` }}
               />
             </div>

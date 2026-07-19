@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { AddSectionBar, reorderSections } from "./AddSectionBar.tsx";
+import { AddSectionBar, reorderCombined, reorderSections } from "./AddSectionBar.tsx";
 
 describe("reorderSections", () => {
   it("moves an item down", () => {
@@ -23,6 +23,32 @@ describe("reorderSections", () => {
   it("returns a copy when unchanged", () => {
     const input = ["watching", "not_watched_recently"] as const;
     expect(reorderSections(input, 0, 0)).toEqual([...input]);
+  });
+});
+
+describe("reorderCombined", () => {
+  // combined = [watching, up_to_date | not_started, finished], activeCount = 2
+  const combined = ["watching", "up_to_date", "not_started", "finished"] as const;
+
+  it("reorders within the active zone", () => {
+    expect(reorderCombined(combined, 2, 0, 1)).toEqual(["up_to_date", "watching"]);
+  });
+
+  it("inserts an available row dragged above the boundary", () => {
+    expect(reorderCombined(combined, 2, 2, 1)).toEqual(["watching", "not_started", "up_to_date"]);
+  });
+
+  it("drops an active row dragged into the available zone", () => {
+    expect(reorderCombined(combined, 2, 1, 2)).toEqual(["watching"]);
+  });
+
+  it("leaves the active list unchanged when reordering within the available zone", () => {
+    expect(reorderCombined(combined, 2, 2, 3)).toEqual(["watching", "up_to_date"]);
+  });
+
+  it("clamps non-removable rows so they can never leave the active zone", () => {
+    // watching is non-removable; dragging it into the available zone keeps it active
+    expect(reorderCombined(combined, 2, 0, 3)).toEqual(["up_to_date", "watching"]);
   });
 });
 
@@ -53,7 +79,7 @@ describe("AddSectionBar", () => {
     await user.click(screen.getByRole("button", { name: "Kategorileri yönet" }));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(screen.getByText("İzleniyor")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Daha başlanmadı" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Daha başlanmadı ekle" })).toBeInTheDocument();
   });
 
   it("calls onSectionsChange when adding a category", async () => {
@@ -69,12 +95,29 @@ describe("AddSectionBar", () => {
     );
 
     await user.click(screen.getByRole("button", { name: "Kategorileri yönet" }));
-    await user.click(screen.getByRole("button", { name: "Daha başlanmadı" }));
+    await user.click(screen.getByRole("button", { name: "Daha başlanmadı ekle" }));
     expect(onSectionsChange).toHaveBeenCalledWith([
       "watching",
       "not_watched_recently",
       "not_started",
     ]);
+  });
+
+  it("marks non-removable sections with a pin instead of a remove button", async () => {
+    const user = userEvent.setup();
+    render(
+      <AddSectionBar
+        sections={["watching", "not_watched_recently"]}
+        sectionSorts={{}}
+        onSectionsChange={() => {}}
+        onSortChange={() => {}}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Kategorileri yönet" }));
+    // watching can't be removed → pinned marker, only one remove button (for the other row)
+    expect(screen.getByRole("img", { name: "Sabit kategori — kaldırılamaz" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Kategoriyi kaldır" })).toHaveLength(1);
   });
 
   it("calls onSortChange when the sort select changes", async () => {
@@ -94,7 +137,7 @@ describe("AddSectionBar", () => {
     expect(onSortChange).toHaveBeenCalledWith("watching", "title");
   });
 
-  it("exposes drag handles for reordering", async () => {
+  it("exposes draggable rows for reordering", async () => {
     const user = userEvent.setup();
     render(
       <AddSectionBar
@@ -107,10 +150,10 @@ describe("AddSectionBar", () => {
 
     await user.click(screen.getByRole("button", { name: "Kategorileri yönet" }));
     expect(
-      screen.getByRole("button", { name: "İzleniyor — sıralamak için sürükle" }),
+      screen.getByRole("listitem", { name: "İzleniyor — sıralamak için sürükle" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Bir süredir izlenmedi — sıralamak için sürükle" }),
+      screen.getByRole("listitem", { name: "Bir süredir izlenmedi — sıralamak için sürükle" }),
     ).toBeInTheDocument();
   });
 
@@ -130,5 +173,63 @@ describe("AddSectionBar", () => {
     await user.click(screen.getByRole("button", { name: "Kategoriyi kaldır" }));
     expect(onSectionsChange).toHaveBeenCalledWith(["watching"]);
     expect(screen.queryByText(/emin misin/i)).not.toBeInTheDocument();
+  });
+});
+
+describe("AddSectionBar sortOnly", () => {
+  it("opens a sort dialog with the full category list and no manage affordances", async () => {
+    const user = userEvent.setup();
+    render(
+      <AddSectionBar
+        mode="sortOnly"
+        sections={["watching", "finished", "stopped"]}
+        sectionSorts={{ watching: "lastWatched" }}
+        onSortChange={() => {}}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Sıralama" }));
+    expect(screen.getByRole("dialog", { name: "Sıralama" })).toBeInTheDocument();
+    expect(screen.getByText("İzleniyor")).toBeInTheDocument();
+    expect(screen.getByText("Bitirildi")).toBeInTheDocument();
+    expect(screen.queryByText("Kategori ekle")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Kategoriyi kaldır" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("listitem", { name: "İzleniyor — sıralamak için sürükle" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("omits fixed-order categories such as needs_review from the sort list", async () => {
+    const user = userEvent.setup();
+    render(
+      <AddSectionBar
+        mode="sortOnly"
+        sections={["needs_review", "watching", "finished"]}
+        sectionSorts={{}}
+        onSortChange={() => {}}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Sıralama" }));
+    expect(screen.getByText("İzleniyor")).toBeInTheDocument();
+    expect(screen.getByText("Bitirildi")).toBeInTheDocument();
+    expect(screen.queryByText("İnceleme bekliyor")).not.toBeInTheDocument();
+  });
+
+  it("calls onSortChange when the sort select changes", async () => {
+    const user = userEvent.setup();
+    const onSortChange = vi.fn();
+    render(
+      <AddSectionBar
+        mode="sortOnly"
+        sections={["watching"]}
+        sectionSorts={{ watching: "lastWatched" }}
+        onSortChange={onSortChange}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Sıralama" }));
+    await user.selectOptions(screen.getByRole("combobox"), "title");
+    expect(onSortChange).toHaveBeenCalledWith("watching", "title");
   });
 });

@@ -57,7 +57,7 @@ export function ProfileBannerPicker({ bannerRef, candidates, children }: Profile
       <Modal isOpen={open} onClose={() => setOpen(false)} title={t("profile.banner.title")}>
         <div className="p-4">
           {candidates.length === 0 ? (
-            <p className="py-6 text-center font-mono text-xs text-muted/70">
+            <p className="py-6 text-center font-mono text-xs text-muted-dim">
               {t("profile.banner.empty")}
             </p>
           ) : (

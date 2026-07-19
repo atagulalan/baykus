@@ -269,7 +269,11 @@ export function PullToRefresh(props: PullToRefreshProps) {
         <div className="flex items-center justify-center gap-2">
           {isHistory ? (
             <>
-              <History size={18} strokeWidth={1.75} className={past ? "text-yellow" : "text-muted"} />
+              <History
+                size={18}
+                strokeWidth={1.75}
+                className={past ? "text-yellow" : "text-muted"}
+              />
               <span className={`text-xs ${past ? "text-yellow" : "text-muted"}`}>
                 {t("watch.showHistory")}
               </span>

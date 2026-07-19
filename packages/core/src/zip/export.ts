@@ -15,7 +15,7 @@ import type {
 } from "./types.ts";
 
 const APP_VERSION = "0.1.0";
-const SCHEMA_VERSION = 6;
+const SCHEMA_VERSION = 7;
 
 type ItemRow = typeof schema.items.$inferSelect;
 type TrackingRow = typeof schema.tracking.$inferSelect;
@@ -55,6 +55,7 @@ function buildItemEntry(
       title: ep.title,
       overview: ep.overview,
       airDate: ep.airDate,
+      airStamp: ep.airStamp,
       runtimeMin: ep.runtimeMin,
       type: ep.episodeType,
       stillRef: ep.stillRef,

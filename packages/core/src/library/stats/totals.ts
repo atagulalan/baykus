@@ -2,6 +2,7 @@ import type { ReleaseStatus } from "@baykus/provider-sdk";
 import { and, eq, inArray, isNotNull, isNull, lte, ne, sql } from "drizzle-orm";
 import type { LibraryDatabase } from "../../db/open.ts";
 import * as schema from "../../db/schema.ts";
+import { episodeAiredCondition } from "../airing.ts";
 import type { WatchCategory } from "../category.ts";
 import {
   ACTIVE_TRIO,
@@ -9,7 +10,6 @@ import {
   computeCategories,
   ONGOING_RELEASE_STATUSES,
 } from "../category.ts";
-import { todayUtc } from "../progress.ts";
 
 export interface RewatchedEpisode {
   itemId: number;
@@ -228,9 +228,8 @@ function computeSeriesEpisodeProgress(
   const result = new Map<number, { watchedEpisodes: number; airedEpisodes: number }>();
   if (itemIds.length === 0) return result;
 
-  const today = todayUtc();
   const nonSpecial = ne(schema.episodes.seasonNumber, 0);
-  const aired = and(isNotNull(schema.episodes.airDate), lte(schema.episodes.airDate, today));
+  const aired = episodeAiredCondition();
 
   const airedAgg = db
     .select({ itemId: schema.episodes.itemId, count: sql<number>`count(*)` })
@@ -390,7 +389,6 @@ function computeBacklog(
     return { episodes: 0, seriesCount: 0, watchTimeMin: 0, topSeries: [] };
   }
 
-  const today = todayUtc();
   const remainingRows = db
     .select({
       itemId: schema.episodes.itemId,
@@ -405,8 +403,7 @@ function computeBacklog(
       and(
         inArray(schema.episodes.itemId, trioItemIds),
         ne(schema.episodes.seasonNumber, 0),
-        isNotNull(schema.episodes.airDate),
-        lte(schema.episodes.airDate, today),
+        episodeAiredCondition(),
         isNull(schema.watches.id),
       ),
     )

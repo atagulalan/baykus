@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import type { Stats } from "../../../../../api/types.ts";
 import { formatDurationLabel, formatDurationParts } from "../../../../../lib/date.ts";
 import { HBarList } from "../HBarList/HBarList.tsx";
+import { StatsSectionHeading } from "../StatsSectionHeading/StatsSectionHeading.tsx";
 
 interface MostWatchedSectionProps {
   stats: Pick<Stats, "mostWatchedByTime">;
@@ -14,9 +15,7 @@ export function MostWatchedSection({ stats }: MostWatchedSectionProps) {
 
   return (
     <section className="content-inset flex flex-col gap-4">
-      <h2 className="font-display italic text-snow text-2xl tracking-tight">
-        {t("stats.mostWatchedByTime.title")}
-      </h2>
+      <StatsSectionHeading>{t("stats.mostWatchedByTime.title")}</StatsSectionHeading>
       <HBarList
         items={stats.mostWatchedByTime.map((item) => {
           const displayValue = formatDurationLabel(formatDurationParts(item.watchTimeMin), t);

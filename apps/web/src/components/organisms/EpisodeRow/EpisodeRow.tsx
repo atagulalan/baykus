@@ -1,17 +1,33 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type MouseEvent, type ReactNode, useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { getSeriesByParam, getSettings } from "../../../api/client.ts";
 import { buildImageUrl } from "../../../api/images.ts";
 import type { EpisodeType } from "../../../api/types.ts";
-import { dayUnitLabel, formatAirDateLabel, unairedTrailingState } from "../../../lib/airDateLabel.ts";
+import { formatAirDateLabel, unairedTrailingState } from "../../../lib/airDateLabel.ts";
+import {
+  countdownDayUnit,
+  countdownHourUnit,
+  countdownMinuteUnit,
+  countdownSecondUnit,
+} from "../../../lib/countdownUnit.ts";
+import { todayIso } from "../../../lib/date.ts";
+import { pageViewTransition } from "../../../lib/pageViewTransition.ts";
+import {
+  posterMorphStyle,
+  setLastPosterItemId,
+  useLastPosterItemId,
+} from "../../../lib/posterTransition.ts";
+import { seriesParam as seriesPathParam } from "../../../lib/seriesPath.ts";
+import { useAiringClock } from "../../../lib/useAiringClock.ts";
 import { Checkbox } from "../../atoms/Checkbox/Checkbox.tsx";
-import { EpisodeDetailsModal } from "../../dialogs/EpisodeDetailsModal/EpisodeDetailsModal.tsx";
 import { EpisodeLabel } from "../../atoms/EpisodeLabel/EpisodeLabel.tsx";
-import { type EpisodeTagKind, EpisodeTags } from "../../molecules/EpisodeTags/EpisodeTags.tsx";
 import { MediaImage } from "../../atoms/MediaImage/MediaImage.tsx";
 import { RatingControl } from "../../atoms/RatingControl/RatingControl.tsx";
+import { EpisodeDetailsModal } from "../../dialogs/EpisodeDetailsModal/EpisodeDetailsModal.tsx";
+import { type EpisodeTagKind, EpisodeTags } from "../../molecules/EpisodeTags/EpisodeTags.tsx";
 import { EpisodeRowWatchModals } from "./EpisodeRowWatchModals.tsx";
 import { useEpisodeRowDetailsFetch } from "./useEpisodeRowDetailsFetch.ts";
 
@@ -22,10 +38,13 @@ export interface EpisodeRowProps {
   e: number;
   episodeTitle: string | null;
   airDate: string | null;
+  airStamp?: string | null;
   episodeType: EpisodeType | null;
 
   /** Series chrome — poster + linked series title when `itemId` + `seriesTitle` are set. */
   itemId?: number;
+  /** E52: when set, links use the TMDB-parity URL (avoids a post-load canonical replace). */
+  tmdbId?: number | null;
   seriesTitle?: string;
   posterRef?: string | null;
 
@@ -56,6 +75,10 @@ export interface EpisodeRowProps {
   checkboxDisabled?: boolean;
   /** Hide the inline checkbox but keep the details-modal watch actions (detail next-up rail). */
   hideCheckbox?: boolean;
+  /** Inside a pill/card shell (NextUpCard) — drop the list-row bottom border. */
+  embedded?: boolean;
+  /** Card rail — poster spans row height, flush on the leading edge (WatchNextRow). */
+  posterStretch?: boolean;
   /** Default true when a checkbox is shown. */
   showHint?: boolean;
 
@@ -81,15 +104,6 @@ export interface EpisodeRowProps {
   detailsEpisodeId?: number;
 }
 
-function setPosterTransition(itemId: number, poster: HTMLElement | null) {
-  document.querySelectorAll(`[style*="view-transition-name: poster-${itemId}"]`).forEach((el) => {
-    (el as HTMLElement).style.viewTransitionName = "";
-  });
-  if (poster) {
-    poster.style.viewTransitionName = `poster-${itemId}`;
-  }
-}
-
 /**
  * Unified episode list row — season detail, calendar timeline, and watch page.
  * Same visual language at every density: display italic primary, mono meta, border hover.
@@ -99,8 +113,10 @@ export function EpisodeRow({
   e,
   episodeTitle,
   airDate,
+  airStamp = null,
   episodeType,
   itemId,
+  tmdbId = null,
   seriesTitle,
   posterRef = null,
   density = "comfortable",
@@ -118,6 +134,8 @@ export function EpisodeRow({
   onToggleWatch,
   checkboxDisabled = false,
   hideCheckbox = false,
+  embedded = false,
+  posterStretch = false,
   showHint = true,
   onWatchAgain,
   onEditDate,
@@ -142,14 +160,22 @@ export function EpisodeRow({
   const [showMarkUpToHereModal, setShowMarkUpToHereModal] = useState(false);
   const [showWatchedOptionsModal, setShowWatchedOptionsModal] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
+  const lastPosterId = useLastPosterItemId();
+  const posterTransition = itemId != null && lastPosterId === itemId;
   const promptAnchorRef = useRef<HTMLDivElement>(null);
   const posterLinkRef = useRef<HTMLAnchorElement>(null);
+
+  function armPosterTransition() {
+    if (itemId == null) return;
+    flushSync(() => setLastPosterItemId(itemId));
+  }
 
   const hasSeriesChrome = itemId != null && seriesTitle != null;
   const tagsVisible = showTags ?? hasSeriesChrome;
   const hideSpoilers = (settings?.spoilerProtection ?? false) && !watched;
   const compact = density === "compact";
-  const seriesParam = itemId != null ? `i${itemId}` : null;
+  const seriesRouteParam =
+    itemId != null ? seriesPathParam({ id: itemId, tmdbId: tmdbId ?? null }) : null;
   const imageUrl = buildImageUrl(posterRef);
 
   const {
@@ -188,15 +214,20 @@ export function EpisodeRow({
   }, [showRatingPrompt, onDismissPrompt]);
 
   function prefetchSeries() {
-    if (!seriesParam) return;
+    if (!seriesRouteParam) return;
     queryClient.prefetchQuery({
-      queryKey: ["series", seriesParam],
-      queryFn: () => getSeriesByParam(seriesParam),
+      queryKey: ["series", seriesRouteParam],
+      queryFn: () => getSeriesByParam(seriesRouteParam),
     });
   }
 
-  function handleCheckboxClick() {
+  function handleCheckboxClick(event?: Pick<MouseEvent, "shiftKey">) {
     if (!onToggleWatch) return;
+    // Shift+click skips confirm sheets: watched → unwatch; unwatched → mark only this.
+    if (event?.shiftKey) {
+      onToggleWatch();
+      return;
+    }
     if (watched && onWatchAgain && onEditDate) {
       setShowWatchedOptionsModal(true);
     } else if (!watched && hasUnwatchedBefore && onBulkUpToHere) {
@@ -206,26 +237,49 @@ export function EpisodeRow({
     }
   }
 
+  function openDetails() {
+    setShowDetailsModal(true);
+  }
+
+  function openDetailsFromShell(event: MouseEvent<HTMLDivElement>) {
+    const target = event.target as HTMLElement;
+    if (target.closest('a, button, [role="checkbox"], [role="dialog"]')) return;
+    openDetails();
+  }
+
   const centered = align === "center";
+  const episodeDisplayTitle = episodeTitle ?? t("episode.untitled");
+  const stretchPoster = posterStretch && hasSeriesChrome;
   const shellClass = [
-    "flex min-w-0 items-center border-white/5 border-b transition-colors hover:bg-white/5",
-    // Same horizontal padding at every density so the trailing checkbox column lines up.
-    compact ? "gap-2 py-1.5 text-sm" : "gap-3 py-3 sm:gap-4",
-    "list-inset",
+    "flex min-w-0 transition-colors",
+    stretchPoster
+      ? "items-stretch gap-0 rounded-md pl-3 pr-3 py-2 hover:bg-white/[0.04]"
+      : "items-center",
+    embedded ? "" : "border-white/5 border-b hover:bg-white/5",
+    stretchPoster
+      ? ""
+      : compact
+        ? "list-inset gap-2 py-1.5 text-sm"
+        : "list-inset gap-3 py-3 sm:gap-4",
     centered ? "justify-center" : "",
-    muted ? "opacity-60" : "",
   ]
     .filter(Boolean)
     .join(" ");
+  const stretchContentClass = compact
+    ? `flex min-w-0 flex-1 items-center gap-2 py-1.5 pl-4 ${stretchPoster ? "pr-0" : "pr-2"} text-sm ${stretchPoster ? "" : "sm:pr-4"}`
+    : `flex min-w-0 flex-1 items-center gap-3 ${stretchPoster ? "py-2" : "py-3"} pl-4 ${stretchPoster ? "pr-0" : "pr-2"} sm:gap-4 ${stretchPoster ? "" : "sm:pr-4"}`;
 
-  const primaryClass = `min-w-0 truncate font-display italic text-snow ${
-    compact ? "text-sm" : "text-base"
-  } ${centered ? "text-center" : ""} ${
+  const primaryClass = `min-w-0 truncate font-display italic ${
+    muted ? "text-muted-dim" : "text-snow"
+  } ${compact ? "text-sm" : "text-base"} ${centered ? "text-center" : ""} ${
     hideSpoilers && !hasSeriesChrome ? "blur-sm opacity-60" : ""
   }`;
 
   const rewatched = watchCount > 1;
-  const trailingState = unairedTrailingState(airDate);
+  const needsAiringClock =
+    !watched && (airStamp != null || (airDate != null && airDate > todayIso()));
+  const now = useAiringClock(airDate, airStamp, needsAiringClock);
+  const trailingState = unairedTrailingState(airDate, undefined, airStamp, now);
   // Unaired marks only for unwatched rows — watched rows keep rewatch controls.
   const showUnairedMark = !watched && trailingState.kind !== "none";
   const unairedMark =
@@ -233,45 +287,69 @@ export function EpisodeRow({
       <div className="flex min-w-5 shrink-0 flex-col items-center justify-center leading-none">
         <span className="font-mono text-base text-snow/80 tabular-nums">{trailingState.days}</span>
         <span className="mt-0.5 font-mono text-[9px] text-muted">
-          {dayUnitLabel(trailingState.days, i18n.language)}
+          {countdownDayUnit(trailingState.days, t)}
         </span>
+      </div>
+    ) : showUnairedMark && trailingState.kind === "countdownClock" ? (
+      <div className="flex min-w-5 shrink-0 flex-col items-center justify-center leading-none">
+        <span className="font-mono text-base text-snow/80 tabular-nums">{trailingState.hours}</span>
+        <span className="mt-0.5 font-mono text-[9px] text-muted">
+          {countdownHourUnit(trailingState.hours, t)}
+        </span>
+      </div>
+    ) : showUnairedMark && trailingState.kind === "countdownMinutes" ? (
+      <div className="flex min-w-5 shrink-0 flex-col items-center justify-center leading-none">
+        <span className="font-mono text-base text-snow/80 tabular-nums">
+          {trailingState.minutes}
+        </span>
+        <span className="mt-0.5 font-mono text-[9px] text-muted">{countdownMinuteUnit(t)}</span>
+      </div>
+    ) : showUnairedMark && trailingState.kind === "countdownSeconds" ? (
+      <div className="flex min-w-5 shrink-0 flex-col items-center justify-center leading-none">
+        <span className="font-mono text-base text-snow/80 tabular-nums">
+          {trailingState.seconds}
+        </span>
+        <span className="mt-0.5 font-mono text-[9px] text-muted">{countdownSecondUnit(t)}</span>
       </div>
     ) : showUnairedMark && trailingState.kind === "tbd" ? (
       <span className="shrink-0 font-mono text-[10px] text-muted uppercase tracking-widest">
         {t("episode.tbd")}
       </span>
     ) : null;
+  const checkboxShellSize = "h-9 min-w-9";
+  const checkboxRailClass = stretchPoster
+    ? "relative flex h-11 w-11 shrink-0 items-center justify-center"
+    : `relative flex shrink-0 items-center justify-center ${checkboxShellSize}`;
   const checkbox =
     showUnairedMark || hideCheckbox ? null : onToggleWatch ? (
-      // biome-ignore lint/a11y/useKeyWithClickEvents: stopPropagation only
-      // biome-ignore lint/a11y/noStaticElementInteractions: stopPropagation only
+      // biome-ignore lint/a11y/noStaticElementInteractions: isolates nested checkbox clicks from the row activator
+      // biome-ignore lint/a11y/useKeyWithClickEvents: stopPropagation only — keyboard activation stays on the nested checkbox
       <div
         ref={promptAnchorRef}
-        className="relative flex h-5 min-w-5 shrink-0 items-center justify-center"
+        className={checkboxRailClass}
         onClick={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
       >
         {showRatingPrompt && (
           <div
             role="dialog"
             aria-label={t("rating.label")}
-            className="absolute top-0 bottom-0 right-full z-10 mr-2 flex items-center animate-rating-slide-left"
+            className="absolute top-0 bottom-0 right-full z-10 mr-2 flex items-center gap-1.5 animate-rating-slide-left"
           >
-            <div className="flex items-center gap-2 border border-white/10 bg-[#101010] p-2 shadow-2xl">
-              <RatingControl
-                value={myRating}
-                onChange={(value) => {
-                  if (value !== null) onRate?.(value);
-                }}
-                size="sm"
-              />
-              <button
-                type="button"
-                onClick={onDismissPrompt}
-                className="px-1.5 font-mono text-[10px] text-muted uppercase tracking-widest hover:text-snow"
-              >
-                {t("rating.skip")}
-              </button>
-            </div>
+            <RatingControl
+              value={myRating}
+              onChange={(value) => {
+                if (value !== null) onRate?.(value);
+              }}
+              size="sm"
+            />
+            <button
+              type="button"
+              onClick={onDismissPrompt}
+              className="inline-flex min-h-7 items-center rounded-full border border-white/10 bg-void/95 px-2.5 font-mono text-[10px] uppercase tracking-widest text-muted backdrop-blur-md transition-colors hover:bg-white/[0.04] hover:text-snow"
+            >
+              {t("rating.skip")}
+            </button>
           </div>
         )}
         {rewatched ? (
@@ -280,7 +358,7 @@ export function EpisodeRow({
             disabled={checkboxDisabled}
             onClick={handleCheckboxClick}
             aria-label={t("episode.watchedCount", { count: watchCount })}
-            className={`flex h-5 min-w-5 shrink-0 items-center justify-center px-0.5 font-mono text-xs text-yellow tabular-nums transition-opacity ${
+            className={`flex shrink-0 items-center justify-center px-0.5 font-mono text-sm text-yellow tabular-nums transition-opacity ${checkboxShellSize} ${
               checkboxDisabled ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:opacity-80"
             }`}
           >
@@ -291,22 +369,28 @@ export function EpisodeRow({
             checked={watched}
             showHint={showHint}
             disabled={checkboxDisabled}
-            onChange={handleCheckboxClick}
+            variant="rounded"
+            onChange={(_checked, event) => handleCheckboxClick(event)}
             aria-label={t("episode.toggleWatched")}
           />
         )}
       </div>
     ) : null;
 
-  const poster = hasSeriesChrome && seriesParam && (
+  const poster = hasSeriesChrome && seriesRouteParam && (
     <Link
       ref={posterLinkRef}
       to="/series/$id"
-      params={{ id: seriesParam }}
-      className="js-poster h-12 w-8 shrink-0 overflow-hidden bg-white/5"
+      params={{ id: seriesRouteParam }}
+      viewTransition={pageViewTransition}
+      aria-label={seriesTitle}
+      className={`js-poster shrink-0 overflow-hidden rounded-md bg-white/5 ${
+        stretchPoster ? "w-12 self-stretch sm:w-14" : "h-12 w-8"
+      }`}
+      style={itemId != null ? posterMorphStyle(itemId, posterTransition) : undefined}
       onClick={(e) => {
         e.stopPropagation();
-        setPosterTransition(itemId, e.currentTarget);
+        armPosterTransition();
       }}
       onMouseEnter={prefetchSeries}
     >
@@ -327,7 +411,7 @@ export function EpisodeRow({
     <MediaImage
       src={stillImageUrl}
       alt=""
-      wrapperClassName="block h-12 w-20 shrink-0 bg-white/5"
+      wrapperClassName="block h-12 w-20 shrink-0 rounded-md bg-white/5"
       className="h-full w-full object-cover opacity-90"
       spinnerSize={12}
       loading="lazy"
@@ -335,16 +419,17 @@ export function EpisodeRow({
     />
   );
 
-  const seriesTitleLink = hasSeriesChrome && seriesParam && (
+  const seriesTitleLink = hasSeriesChrome && seriesRouteParam && (
     <Link
       to="/series/$id"
-      params={{ id: seriesParam }}
+      params={{ id: seriesRouteParam }}
+      viewTransition={pageViewTransition}
       className={`${primaryClass} w-auto max-w-full self-start hover:text-yellow ${
-        muted ? "text-muted" : ""
+        muted ? "text-muted-dim" : ""
       }`}
       onClick={(e) => {
         e.stopPropagation();
-        setPosterTransition(itemId, posterLinkRef.current);
+        armPosterTransition();
       }}
       onMouseEnter={prefetchSeries}
     >
@@ -356,13 +441,17 @@ export function EpisodeRow({
     <div className={`flex min-w-0 items-center ${compact ? "gap-1.5" : "gap-2"}`}>
       <span className="shrink-0 font-mono text-xs text-muted">
         <EpisodeLabel s={s} e={e} format={episodeLabelFormat} />
-        {overflow > 0 && <span className="ml-1 opacity-50">+{overflow}</span>}
+        {overflow > 0 && <span className="ml-1 text-muted-dim">+{overflow}</span>}
       </span>
       {episodeTitle && hasSeriesChrome && (
         <>
-          {compact && <span className="opacity-50 text-muted">{t("common.separator")}</span>}
+          {compact && (
+            <span className="text-muted-dim" aria-hidden>
+              {t("common.separator")}
+            </span>
+          )}
           <span
-            className={`truncate font-mono text-xs text-muted/70 ${hideSpoilers ? "blur-sm" : ""}`}
+            className={`truncate font-mono text-xs text-muted-dim ${hideSpoilers ? "blur-sm" : ""}`}
           >
             {episodeTitle}
           </span>
@@ -388,7 +477,10 @@ export function EpisodeRow({
         centered ? "flex-col justify-center text-center" : "flex-1"
       }`}
     >
-      <div className={`min-w-0 overflow-hidden ${centered ? "" : "flex-1"}`}>
+      {/* Centered mode stacks in a column, where `items-center` sizes children to
+          max-content on the cross axis — w-full pins the width so the title's
+          `truncate` engages instead of widening the page. */}
+      <div className={`min-w-0 overflow-hidden ${centered ? "w-full" : "flex-1"}`}>
         <div className={primaryClass}>{episodeTitle ?? t("episode.untitled")}</div>
         <div
           className={`mt-0.5 truncate font-mono text-xs text-muted ${
@@ -398,7 +490,9 @@ export function EpisodeRow({
           <EpisodeLabel s={s} e={e} format={episodeLabelFormat} />
           {airDate && (
             <>
-              <span className="text-muted/50"> – </span>
+              <span className="text-muted-dim" aria-hidden>
+                {" – "}
+              </span>
               <span className="tabular-nums text-snow/70">
                 {formatAirDateLabel(airDate, i18n.language)}
               </span>
@@ -433,14 +527,42 @@ export function EpisodeRow({
   );
 
   const body = hasSeriesChrome ? (
-    <>
-      {poster}
-      {seriesPrimary}
-    </>
+    stretchPoster ? (
+      seriesPrimary
+    ) : (
+      <>
+        {poster}
+        {seriesPrimary}
+      </>
+    )
   ) : (
     <>
       {episodeThumbnail}
       {seasonPrimary}
+    </>
+  );
+
+  const trailingControls = (
+    <>
+      {tagsVisible && !hasSeriesChrome && !centered && (
+        <EpisodeTags
+          s={s}
+          e={e}
+          airDate={airDate}
+          episodeType={episodeType}
+          episodeTitle={episodeTitle}
+          {...(seasonName !== undefined ? { seasonName } : {})}
+          {...(excludeTags ? { excludeTags } : {})}
+        />
+      )}
+      {trailing != null && (
+        <div className="flex h-5 shrink-0 items-center justify-center">{trailing}</div>
+      )}
+      {unairedMark}
+      {checkbox}
+      <button type="button" className="sr-only" onClick={openDetails}>
+        {t("episode.openDetails", { title: episodeDisplayTitle })}
+      </button>
     </>
   );
 
@@ -449,30 +571,26 @@ export function EpisodeRow({
       className="episode-row flex min-w-0 flex-col"
       style={transitionName ? { viewTransitionName: transitionName } : undefined}
     >
-      {/* biome-ignore lint/a11y/useKeyWithClickEvents: row opens details; links handle series nav */}
-      {/* biome-ignore lint/a11y/noStaticElementInteractions: list row */}
+      {/* biome-ignore lint/a11y/useSemanticElements: row contains nested links/checkboxes — shell is a click target, not a nested button */}
       <div
         className={`${shellClass} episode-row-shell cursor-pointer`}
-        onClick={() => setShowDetailsModal(true)}
+        onClick={openDetailsFromShell}
         onMouseEnter={hasSeriesChrome ? prefetchSeries : undefined}
       >
-        {body}
-        {tagsVisible && !hasSeriesChrome && !centered && (
-          <EpisodeTags
-            s={s}
-            e={e}
-            airDate={airDate}
-            episodeType={episodeType}
-            episodeTitle={episodeTitle}
-            {...(seasonName !== undefined ? { seasonName } : {})}
-            {...(excludeTags ? { excludeTags } : {})}
-          />
+        {stretchPoster ? (
+          <>
+            {poster}
+            <div className={stretchContentClass}>
+              {body}
+              {trailingControls}
+            </div>
+          </>
+        ) : (
+          <>
+            {body}
+            {trailingControls}
+          </>
         )}
-        {trailing != null && (
-          <div className="flex h-5 shrink-0 items-center justify-center">{trailing}</div>
-        )}
-        {unairedMark}
-        {checkbox}
       </div>
 
       <EpisodeRowWatchModals
@@ -504,7 +622,7 @@ export function EpisodeRow({
         {...(seriesTitle !== undefined ? { seriesTitle } : {})}
         {...(seasonName !== undefined ? { seasonName } : {})}
         {...(networkOrProvider ? { networkOrProvider } : {})}
-        {...(itemId != null ? { itemId } : {})}
+        {...(airStamp ? { airStamp } : {})}
         watched={watched}
         myRating={myRating}
         {...(onRate ? { onRate } : {})}

@@ -23,11 +23,7 @@ describe("CategorySection", () => {
 
   it("renders series cards for non-empty items", async () => {
     await renderWithRouter(
-      <CategorySection
-        category="watching"
-        items={[mockSeriesSummary]}
-        sort="lastWatched"
-      />,
+      <CategorySection category="watching" items={[mockSeriesSummary]} sort="lastWatched" />,
       {},
     );
     expect(screen.getAllByText("Breaking Bad").length).toBeGreaterThan(0);

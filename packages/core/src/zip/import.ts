@@ -107,7 +107,7 @@ export interface ImportResult {
   warnings: string[];
 }
 
-const SUPPORTED_SCHEMA_VERSIONS = [1, 2, 3, 4, 5, 6];
+const SUPPORTED_SCHEMA_VERSIONS = [1, 2, 3, 4, 5, 6, 7];
 
 interface ParsedZip {
   manifest: ZipManifest;
@@ -305,6 +305,7 @@ function upsertSeasonsAndEpisodes(db: LibraryDatabase, itemId: number, entry: Zi
         title: ep.title,
         overview: ep.overview,
         airDate: ep.airDate,
+        airStamp: ep.airStamp ?? null,
         runtimeMin: ep.runtimeMin,
         episodeType: ep.type,
         externalRatings: ep.externalRatings,

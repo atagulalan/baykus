@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, Navigate, useNavigate } from "@tanstack/react-router";
+import { Bird } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getAuthSession, login } from "../../api/client.ts";
@@ -36,7 +37,10 @@ export function LoginPage() {
         }}
         className="flex w-full max-w-sm flex-col gap-4 border border-white/5 bg-[#101010] p-6"
       >
-        <h1 className="text-center font-bold text-xl">🦉 {t("app.name")}</h1>
+        <h1 className="flex items-center justify-center gap-2 text-center font-bold text-xl">
+          <Bird size={22} strokeWidth={1.5} aria-hidden />
+          {t("app.name")}
+        </h1>
 
         {mode === "multi" && (
           <label className="flex flex-col gap-1 text-sm">
