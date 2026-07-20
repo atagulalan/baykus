@@ -1,11 +1,8 @@
+import { useQuery } from "@tanstack/react-query";
 import { memo, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { getSettings } from "../../../api/client.ts";
 import { Z } from "../../../lib/zIndex.ts";
-import {
-  APP_HEADER_HOOK,
-  isProfileHeroPath,
-  isSeriesHeroPath,
-  useCommittedPathname,
-} from "./layoutShared.ts";
+import { APP_HEADER_HOOK, isBannerChromePage, useCommittedPathname } from "./layoutShared.ts";
 
 /** Banner/hero: scrub progress 0→1 over this scroll distance (linear). */
 const BANNER_FADE_PX = 100;
@@ -243,7 +240,8 @@ function useSettledProgress(want: number): number {
  */
 export const AppEdgeBlur = memo(function AppEdgeBlur() {
   const pathname = useCommittedPathname();
-  const isBannerPage = isSeriesHeroPath(pathname) || isProfileHeroPath(pathname);
+  const settingsQuery = useQuery({ queryKey: ["settings"], queryFn: getSettings });
+  const isBannerPage = isBannerChromePage(pathname, settingsQuery.data?.bannerRef);
   const [scrollY, setScrollY] = useState(0);
   const bannerHover = useBannerHeaderHover(isBannerPage);
   const hoverProgress = useHoverScrub(bannerHover);

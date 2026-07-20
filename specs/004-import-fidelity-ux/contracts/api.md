@@ -37,6 +37,9 @@ library until a refresh with a TMDB key fills it — E53).
   zero-aired seasons are omitted; `sequential` is computed over the aired
   list. Same fields, new values — clients need no code change, but a
   caught-up series now reports `watched == total` for every listed season.
+  <!-- DECISION: 2026-07-20 (013 E185) — each season also exposes
+  `announced` (aired + unaired count) so the web can distinguish finished
+  green beads from blue caught-up beads. -->
 - **Refresh** (`POST /api/refresh/*`, E53): a successful item refresh may
   additionally fill previously-null external-id columns (fill-only, never
   overwrite, unique-conflict-safe). Response shapes unchanged.

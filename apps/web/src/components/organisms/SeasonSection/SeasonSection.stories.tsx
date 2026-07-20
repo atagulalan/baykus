@@ -47,6 +47,8 @@ const meta = {
   args: {
     season: mockSeason,
     nextUnwatched: { s: 1, e: 2 },
+    expanded: true,
+    onToggleExpanded: noop,
     onToggleWatch: noop,
     onWatchAgain: noop,
     onEditDate: noop,
@@ -72,12 +74,14 @@ export const WithRatingPrompt: Story = {
 /** Season does not contain the next unwatched episode — starts collapsed. */
 export const Collapsed: Story = {
   args: {
+    expanded: false,
     nextUnwatched: { s: 5, e: 1 },
   },
 };
 
 export const Complete: Story = {
   args: {
+    expanded: false,
     season: completeSeason,
     nextUnwatched: { s: 2, e: 1 },
   },
@@ -87,5 +91,21 @@ export const Specials: Story = {
   args: {
     season: specialsSeason,
     nextUnwatched: { s: 1, e: 2 },
+  },
+};
+
+/** Confirmed season with no episodes yet — TBD empty panel (E184). */
+export const EmptyAnnounced: Story = {
+  args: {
+    season: {
+      number: 3,
+      name: null,
+      overview: null,
+      posterRef: null,
+      airDate: null,
+      episodes: [],
+    },
+    nextUnwatched: null,
+    expanded: true,
   },
 };

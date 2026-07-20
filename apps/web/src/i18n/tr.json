@@ -105,6 +105,12 @@
     "needsReviewDismiss": "Yoksay",
     "specials": "Özel Bölümler",
     "seasonNumber": "Sezon {{number}}",
+    "seasonEmpty": {
+      "title": "Bölümler henüz duyurulmadı",
+      "hint": "Sezon onaylandı — bölüm listesi TBD."
+    },
+    "showHiddenSeasons": "{{count}} sezon daha göster",
+    "hiddenSeasonsWatched": "{{count}} sezon izlendi",
     "markSeasonWatched": "Sezonu izledim",
     "unwatchSeason": "Sezonu geri al",
     "seasonMenu": "Sezon menüsü",
@@ -123,7 +129,7 @@
     "unwatchSeasonWarning": "Bu işlem seçili sezondaki tüm izleme geçmişinizi silecektir. Devam etmek istiyor musunuz?",
     "unwatchSeasonConfirm": "Evet, sil",
     "releaseStatus": {
-      "returning": "Hâlâ Devam Ediyor",
+      "returning": "Devam Ediyor",
       "ended": "Bitti",
       "canceled": "İptal Edildi",
       "in_production": "Yapım Aşamasında",
@@ -150,7 +156,8 @@
     },
     "cast": {
       "title": "Oyuncular"
-    }
+    },
+    "adding": "Ekleniyor…"
   },
   "episode": {
     "toggleWatched": "İzledim",
@@ -374,7 +381,7 @@
     },
     "production": {
       "title": "Prodüksiyon Durumu",
-      "ongoing": "Hâlâ Devam Ediyor",
+      "ongoing": "Devam Ediyor",
       "ended": "Bitti",
       "episodeProgress": "{{watched}}/{{aired}} bölüm",
       "showMore": "daha fazla",
@@ -403,6 +410,7 @@
       "value": "~{{count}} bölüm",
       "sub": "son 2 ayın ortalaması",
       "projectionLabel": "Tahmini bitiş",
+      "projection_zero": "Bitirdin",
       "projection": "~{{weeks}} haftada bitirirsin",
       "projectionDate": "yani tahmini {{date}} gibi"
     },
@@ -453,9 +461,11 @@
     "title": "Profilim",
     "allSeries": "Tüm diziler",
     "allSeriesEmpty": "Henüz kütüphanende dizi yok.",
+    "allSeriesEmptyHint": "Arama ile dizi bulup ekleyebilirsin.",
     "detailedStats": "Detaylı istatistikler",
     "favorites": {
       "title": "Favoriler",
+      "emptyTitle": "Henüz favorin yok",
       "empty": "Dizi detayındaki kalple favorilerini seç."
     },
     "banner": {

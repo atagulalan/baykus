@@ -41,7 +41,10 @@ describe("CategorySection", () => {
       />,
       {},
     );
-    expect(container.querySelector(".section-collapse")).toHaveAttribute("data-expanded", "false");
+    expect(container.querySelector('[data-slot="accordion-panel"]')).toHaveAttribute(
+      "data-expanded",
+      "false",
+    );
     expect(screen.getByRole("button", { expanded: false })).toBeInTheDocument();
   });
 });

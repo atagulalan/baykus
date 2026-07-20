@@ -8,17 +8,23 @@ import type { EpisodeSummary, SeriesDetail, SeriesListResponse } from "../../api
 import { SkeletonSeriesDetailHero } from "../../components/atoms/Skeleton/Skeleton.tsx";
 import { RemoveSeriesDialog } from "../../components/dialogs/RemoveSeriesDialog/RemoveSeriesDialog.tsx";
 import { WatchDateDialog } from "../../components/dialogs/WatchDateDialog/WatchDateDialog.tsx";
+import { CollapsedSeasonsGap } from "../../components/molecules/CollapsedSeasonsGap/CollapsedSeasonsGap.tsx";
 import { NextUpCard } from "../../components/molecules/NextUpCard/NextUpCard.tsx";
 import { PullToRefresh } from "../../components/molecules/PullToRefresh/PullToRefresh.tsx";
 import { SeasonSection } from "../../components/organisms/SeasonSection/SeasonSection.tsx";
 import { SeriesActionsMenu } from "../../components/organisms/SeriesActionsMenu/SeriesActionsMenu.tsx";
 import { SERIES_HEADER_ACTION_SLOT_ID } from "../../lib/headerActionSlot.ts";
 import { pageViewTransition } from "../../lib/pageViewTransition.ts";
-import { posterMorphStyle, getLastPosterItemId } from "../../lib/posterTransition.ts";
-import { sortSeasonsSpecialsLast } from "../../lib/seasons.ts";
+import { getLastPosterItemId, posterMorphStyle } from "../../lib/posterTransition.ts";
+import {
+  collapseCompletedSeasonRuns,
+  isSeasonComplete,
+  sortSeasonsSpecialsLast,
+} from "../../lib/seasons.ts";
 import { parseSeriesParam, seriesParam } from "../../lib/seriesPath.ts";
 import { isStale } from "../../lib/staleSweep.ts";
 import { readUiPrefs } from "../../lib/uiPrefs.ts";
+import { useSeasonAccordionAdvance } from "../../lib/useSeasonAccordionAdvance.ts";
 import { NeedsReviewBanner } from "./components/NeedsReviewBanner/NeedsReviewBanner.tsx";
 import { SeriesDetailHero } from "./components/SeriesDetailHero/SeriesDetailHero.tsx";
 import { useSeriesDetailMutations } from "./useSeriesDetailMutations.ts";
@@ -54,6 +60,14 @@ export function SeriesDetailPage() {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
   const [headerActionSlot, setHeaderActionSlot] = useState<HTMLElement | null>(null);
+  const [expandedSeasonGaps, setExpandedSeasonGaps] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+  const [gapsForParam, setGapsForParam] = useState(param);
+  if (gapsForParam !== param) {
+    setGapsForParam(param);
+    setExpandedSeasonGaps(new Set());
+  }
 
   const navigate = useNavigate();
 
@@ -118,6 +132,13 @@ export function SeriesDetailPage() {
       .catch(() => {});
   }, [query.data, queryClient, queryKey]);
 
+  const { expandedSeasonNumber, onToggleExpanded, onSeasonCloseComplete, onSeasonOpenComplete } =
+    useSeasonAccordionAdvance({
+      seasons: query.data?.seasons,
+      identity: query.data?.id,
+      nextUnwatched: query.data?.nextUnwatched ?? null,
+    });
+
   function handleRemove() {
     if (query.data) {
       setShowRemoveDialog(true);
@@ -137,7 +158,7 @@ export function SeriesDetailPage() {
   if (query.isError) {
     const notFound = query.error instanceof ApiError && query.error.code === "NOT_FOUND";
     return (
-      <div className="content-inset flex flex-col items-center gap-2 py-24 text-center">
+      <div className="page-top content-inset flex flex-col items-center gap-2 py-24 text-center">
         <p className="text-muted">{notFound ? t("series.notFound") : t("errors.generic")}</p>
         {!notFound && (
           <button
@@ -159,6 +180,11 @@ export function SeriesDetailPage() {
   if (!detail) return null;
 
   const sortedSeasons = sortSeasonsSpecialsLast(detail.seasons);
+  const seasonEntries = collapseCompletedSeasonRuns(
+    sortedSeasons,
+    isSeasonComplete,
+    expandedSeasonGaps,
+  );
   const nextUpEpisode =
     detail.nextUnwatched == null
       ? null
@@ -225,28 +251,44 @@ export function SeriesDetailPage() {
         )}
 
         <div className="flex flex-col">
-          {sortedSeasons.map((season) => (
-            <SeasonSection
-              key={season.number}
-              season={season}
-              nextUnwatched={detail.nextUnwatched}
-              onToggleWatch={(episodeId) => {
-                const episode = season.episodes.find((e) => e.id === episodeId);
-                if (episode) toggleWatch.mutate(episode);
-              }}
-              onWatchAgain={(episodeId) => watchAgain.mutate(episodeId)}
-              onEditDate={(episodeId) => {
-                const episode = season.episodes.find((e) => e.id === episodeId);
-                if (episode) setDateDialogEpisode(episode);
-              }}
-              onBulkUpToHere={(episodeId) => bulkUpToHere.mutate(episodeId)}
-              onMarkSeasonWatched={() => markSeasonWatched.mutate(season.number)}
-              onUnwatchSeason={() => unwatchSeason.mutate(season.number)}
-              promptEpisodeId={promptEpisodeId}
-              onRateEpisode={(episodeId, value) => rateEpisode.mutate({ episodeId, value })}
-              onDismissPrompt={() => setPromptEpisodeId(null)}
-            />
-          ))}
+          {seasonEntries.map((entry) => {
+            if (entry.kind === "gap") {
+              return (
+                <CollapsedSeasonsGap
+                  key={entry.gapKey}
+                  count={entry.seasons.length}
+                  onExpand={() => setExpandedSeasonGaps((prev) => new Set(prev).add(entry.gapKey))}
+                />
+              );
+            }
+            const { season } = entry;
+            return (
+              <SeasonSection
+                key={season.number}
+                season={season}
+                nextUnwatched={detail.nextUnwatched}
+                expanded={expandedSeasonNumber === season.number}
+                onToggleExpanded={() => onToggleExpanded(season.number)}
+                onCloseComplete={() => onSeasonCloseComplete(season.number)}
+                onOpenComplete={() => onSeasonOpenComplete(season.number)}
+                onToggleWatch={(episodeId) => {
+                  const episode = season.episodes.find((e) => e.id === episodeId);
+                  if (episode) toggleWatch.mutate(episode);
+                }}
+                onWatchAgain={(episodeId) => watchAgain.mutate(episodeId)}
+                onEditDate={(episodeId) => {
+                  const episode = season.episodes.find((e) => e.id === episodeId);
+                  if (episode) setDateDialogEpisode(episode);
+                }}
+                onBulkUpToHere={(episodeId) => bulkUpToHere.mutate(episodeId)}
+                onMarkSeasonWatched={() => markSeasonWatched.mutate(season.number)}
+                onUnwatchSeason={() => unwatchSeason.mutate(season.number)}
+                promptEpisodeId={promptEpisodeId}
+                onRateEpisode={(episodeId, value) => rateEpisode.mutate({ episodeId, value })}
+                onDismissPrompt={() => setPromptEpisodeId(null)}
+              />
+            );
+          })}
         </div>
 
         {dateDialogEpisode && (

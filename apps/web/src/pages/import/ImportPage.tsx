@@ -99,7 +99,7 @@ export function ImportPage() {
 
   if (step === "upload") {
     return (
-      <div className="mx-auto flex max-w-lg flex-col gap-4">
+      <div className="page-top mx-auto flex max-w-lg flex-col gap-4">
         <div className="content-inset">
           <PageTitle>{t("importWizard.title")}</PageTitle>
         </div>
@@ -192,7 +192,7 @@ export function ImportPage() {
     const percent = total > 0 ? Math.round((done / total) * 100) : 0;
 
     return (
-      <div className="mx-auto flex max-w-md flex-col gap-4 border border-white/5 p-6">
+      <div className="page-top mx-auto flex max-w-md flex-col gap-4 border border-white/5 p-6">
         <PageTitle>{t("importWizard.confirming")}</PageTitle>
 
         <div className="flex flex-col gap-2">
@@ -222,7 +222,7 @@ export function ImportPage() {
 
   if (step === "report" && report) {
     return (
-      <div className="mx-auto flex max-w-3xl flex-col gap-4">
+      <div className="page-top mx-auto flex max-w-3xl flex-col gap-4">
         <div className="content-inset">
           <PageTitle>{t("importWizard.reportTitle")}</PageTitle>
         </div>
@@ -390,7 +390,7 @@ export function ImportPage() {
 
   if (step === "summary" && summary) {
     return (
-      <div className="mx-auto flex max-w-sm flex-col gap-4 border border-white/5 p-6 text-center">
+      <div className="page-top mx-auto flex max-w-sm flex-col gap-4 border border-white/5 p-6 text-center">
         <PageTitle>{t("importWizard.summaryTitle")}</PageTitle>
         <dl className="flex flex-col gap-2 text-sm">
           <div className="flex justify-between">

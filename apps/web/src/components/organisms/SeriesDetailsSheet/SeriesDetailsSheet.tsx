@@ -82,25 +82,23 @@ function InfoRow({ label, children }: { label: string; children: React.ReactNode
 }
 
 /** Release status reads as a state, so it is colour-coded like the episode tags. */
+const RELEASE_STATUS_CHIP_BASE =
+  "inline-flex shrink-0 items-center rounded-full border px-2.5 py-1 text-xs";
+
 const RELEASE_STATUS_STYLES: Record<string, string> = {
-  returning: "border-yellow/35 text-yellow",
-  in_production: "border-yellow/35 text-yellow",
-  planned: "border-sky-400/40 text-sky-300",
-  pilot: "border-sky-400/40 text-sky-300",
-  canceled: "border-red-400/40 text-red-300",
-  ended: "border-white/20 text-muted",
+  returning: "border-yellow/25 bg-yellow/5 text-yellow",
+  in_production: "border-yellow/25 bg-yellow/5 text-yellow",
+  planned: "border-sky-400/25 bg-sky-400/5 text-sky-300",
+  pilot: "border-sky-400/25 bg-sky-400/5 text-sky-300",
+  canceled: "border-red-400/25 bg-red-400/5 text-red-300",
+  ended: "border-white/15 bg-white/5 text-muted",
 };
 
 /** Sits next to the series title (sheet header on mobile, restated row on desktop). */
 function ReleaseStatusBadge({ status, label }: { status: string | null; label: string }) {
-  const style = (status && RELEASE_STATUS_STYLES[status]) ?? "border-white/20 text-muted";
-  return (
-    <span
-      className={`inline-flex shrink-0 items-center justify-center border px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-widest ${style}`}
-    >
-      {label}
-    </span>
-  );
+  const style =
+    (status && RELEASE_STATUS_STYLES[status]) ?? "border-white/15 bg-white/5 text-muted";
+  return <span className={`${RELEASE_STATUS_CHIP_BASE} ${style}`}>{label}</span>;
 }
 
 interface SeriesDetailsSheetProps {
@@ -153,18 +151,11 @@ export function SeriesDetailsSheet({
       isOpen={isOpen}
       onClose={onClose}
       desktop="modal"
+      size="large"
       title={detail.title}
       {...(statusBadge ? { titleAccessory: statusBadge } : {})}
       className="flex flex-col gap-5 p-4"
     >
-      {/* The desktop centered modal has no header bar, so the title (and the
-          status badge anchored to it) is restated here at the sm breakpoint
-          Modal itself switches on. The header's own h2 handles a11y. */}
-      <div className="hidden items-center gap-2 sm:flex" aria-hidden>
-        <h3 className="min-w-0 truncate font-display text-lg italic text-snow">{detail.title}</h3>
-        {statusBadge}
-      </div>
-
       {(detail.tagline || detail.overview) && (
         <div className="flex flex-col gap-1.5">
           {detail.tagline && <p className="text-sm italic text-muted">"{detail.tagline}"</p>}

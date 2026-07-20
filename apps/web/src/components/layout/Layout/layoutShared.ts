@@ -85,26 +85,25 @@ export function isWatchHistoryPath(pathname: string): boolean {
   return pathname === "/watch/history";
 }
 
-export function isPullToRefreshPath(pathname: string): boolean {
-  return (
-    pathname === "/" ||
-    pathname === "/watch" ||
-    pathname === "/calendar" ||
-    pathname.startsWith("/calendar/") ||
-    pathname.endsWith("/all-series") ||
-    pathname.endsWith("/favorites") ||
-    pathname === "/watch/history"
-  );
-}
-
-/** E146: series detail / preview hero starts at viewport top beneath the transparent header. */
+/** Series detail / preview — banner dock-hide + hero bleed under transparent header (E146 / E183). */
 export function isSeriesHeroPath(pathname: string): boolean {
   return pathname.startsWith("/series/");
 }
 
-/** Profile banner uses the same under-header bleed as the series hero. */
+/** Profile hub route (`/user/:handle`) — path only; mobile Settings gear etc. */
 export function isProfileHeroPath(pathname: string): boolean {
   return /^\/user\/[^/]+$/.test(pathname);
+}
+
+/**
+ * Dock-hide nav + scroll/hover edge scrub (E146 / E183).
+ * Series hero always; profile hub only when a banner image is actually set.
+ */
+export function isBannerChromePage(
+  pathname: string,
+  profileBannerRef: string | null | undefined,
+): boolean {
+  return isSeriesHeroPath(pathname) || (isProfileHeroPath(pathname) && Boolean(profileBannerRef));
 }
 
 /** Pathname of the committed leaf match — updates inside `startViewTransition`,

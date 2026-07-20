@@ -178,7 +178,7 @@ describe("getSeasonProgress (E34/E50)", () => {
     insertWatch(db, s1e1, itemId, "2026-01-01T00:00:00Z");
 
     expect(getSeasonProgress(db, itemId)).toEqual({
-      seasons: [{ number: 1, watched: 1, total: 2 }],
+      seasons: [{ number: 1, watched: 1, total: 2, announced: 2 }],
       sequential: true,
     });
   });
@@ -193,7 +193,7 @@ describe("getSeasonProgress (E34/E50)", () => {
     insertWatch(db, e2, itemId, "2026-01-02T00:00:00Z");
 
     expect(getSeasonProgress(db, itemId)).toEqual({
-      seasons: [{ number: 1, watched: 2, total: 2 }],
+      seasons: [{ number: 1, watched: 2, total: 2, announced: 3 }],
       sequential: true,
     });
   });
@@ -209,7 +209,7 @@ describe("getSeasonProgress (E34/E50)", () => {
     insertWatch(db, future, itemId, "2026-01-02T00:00:00Z");
 
     expect(getSeasonProgress(db, itemId)).toEqual({
-      seasons: [{ number: 1, watched: 1, total: 1 }],
+      seasons: [{ number: 1, watched: 1, total: 1, announced: 2 }],
       sequential: true,
     });
   });
@@ -267,8 +267,8 @@ describe("getSeasonProgress (E34/E50)", () => {
     const result = getSeasonProgress(db, itemId);
     expect(result.sequential).toBe(true);
     expect(result.seasons).toEqual([
-      { number: 1, watched: 1, total: 1 },
-      { number: 2, watched: 1, total: 1 },
+      { number: 1, watched: 1, total: 1, announced: 1 },
+      { number: 2, watched: 1, total: 1, announced: 1 },
     ]);
   });
 

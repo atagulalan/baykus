@@ -1,4 +1,6 @@
+import { X } from "lucide-react";
 import {
+  type MouseEvent as ReactMouseEvent,
   type ReactNode,
   type PointerEvent as ReactPointerEvent,
   type RefObject,
@@ -23,6 +25,33 @@ const PANEL =
 const EXIT_MS = 280;
 const SHEET_DISMISS_PX = 100;
 const SHEET_FLING_VELOCITY = 0.6;
+
+/**
+ * Nested modals must share one body scroll lock. Saving/restoring
+ * `style.overflow` per instance leaves `overflow: hidden` stuck when the
+ * under-modal cleans up first (or both exit in the same tick / Escape).
+ */
+let bodyScrollLockCount = 0;
+let bodyScrollLockPrev = "";
+
+function acquireBodyScrollLock() {
+  if (bodyScrollLockCount === 0) {
+    bodyScrollLockPrev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+  }
+  bodyScrollLockCount += 1;
+}
+
+function releaseBodyScrollLock() {
+  if (bodyScrollLockCount === 0) return;
+  bodyScrollLockCount -= 1;
+  if (bodyScrollLockCount === 0) {
+    document.body.style.overflow = bodyScrollLockPrev;
+  }
+}
+
+/** LIFO stack so Escape closes only the topmost open overlay. */
+const escapeStack: Array<() => void> = [];
 
 function useIsDesktop(): boolean {
   const [isDesktop, setIsDesktop] = useState(() => window.matchMedia(DESKTOP_QUERY).matches);
@@ -59,6 +88,15 @@ interface ModalProps {
    * `right-0` / `top-full` — they are ignored once portaled.
    */
   popoverClassName?: string;
+  /**
+   * desktop="popover" only: placement relative to the anchor.
+   * - `"end"` (default): below the anchor, right edges lined up (⋮ menus).
+   * - `"center"`: below the anchor, horizontally centered (season progress ring).
+   * - `"end-top"`: to the left of the anchor, top edges lined up (episode
+   *   checkbox — panel opens inward from the trailing control).
+   * - `"end-middle"`: to the left of the anchor, vertically centered.
+   */
+  popoverAlign?: "end" | "center" | "end-top" | "end-middle";
   /** Bottom-sheet header (title + close button). Desktop modal/popover render children only. */
   title?: string;
   /**
@@ -69,6 +107,21 @@ interface ModalProps {
   titleAccessory?: ReactNode;
   /** Added classes for the sheet/modal container, typically for padding/layout. */
   className?: string;
+  /** Centered desktop modal width only (`default` = max-w-sm, `large` = max-w-lg). */
+  size?: "default" | "large";
+}
+
+function ModalCloseButton({ onClose, label }: { onClose: () => void; label: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClose}
+      aria-label={label}
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-white/5 hover:text-snow"
+    >
+      <X size={18} strokeWidth={1.5} aria-hidden />
+    </button>
+  );
 }
 
 interface AnchorRect {
@@ -223,7 +276,15 @@ function useSheetSwipe(onClose: () => void, enabled: boolean) {
 
   useEffect(() => {
     if (enabled) {
+      // A prior swipe-dismiss leaves dragY offscreen (held through exit). Clear
+      // it on reopen or the sheet stays translated away while the backdrop enters.
       dismissHeldRef.current = false;
+      draggingRef.current = false;
+      dragYRef.current = 0;
+      setDragY(0);
+      setDragging(false);
+      setSpringing(false);
+      window.clearTimeout(springTimerRef.current);
       return;
     }
     draggingRef.current = false;
@@ -296,7 +357,7 @@ function useSheetSwipe(onClose: () => void, enabled: boolean) {
     }
   }
 
-  function onMouseDown(e: React.MouseEvent<HTMLElement>) {
+  function onMouseDown(e: ReactMouseEvent<HTMLElement>) {
     // Prefer Pointer Events when the runtime supports them (avoids double-firing
     // pointerdown→mousedown). jsdom lacks PointerEvent — mouse path covers tests.
     if (typeof PointerEvent !== "undefined") return;
@@ -314,7 +375,7 @@ function useSheetSwipe(onClose: () => void, enabled: boolean) {
     setDragging(true);
   }
 
-  function onMouseMove(e: React.MouseEvent<HTMLElement>) {
+  function onMouseMove(e: ReactMouseEvent<HTMLElement>) {
     if (typeof PointerEvent !== "undefined") return;
     moveDrag(e.clientY);
   }
@@ -340,15 +401,52 @@ function useSheetSwipe(onClose: () => void, enabled: boolean) {
   };
 }
 
+/** Fixed-position styles for a portaled popover — `translate` stays off `transform` so scale anims keep working. */
+function popoverStyle(
+  rect: AnchorRect,
+  align: "end" | "center" | "end-top" | "end-middle",
+): {
+  zIndex: number;
+  top: number;
+  left?: number;
+  right?: number;
+  translate?: string;
+} {
+  if (align === "center") {
+    return {
+      zIndex: Z.overlayPanel,
+      top: rect.bottom + 4,
+      left: rect.left + rect.width / 2,
+      translate: "-50% 0",
+    };
+  }
+  if (align === "end-top" || align === "end-middle") {
+    // Panel sits just left of the anchor (inward from a trailing control).
+    return {
+      zIndex: Z.overlayPanel,
+      top: align === "end-middle" ? (rect.top + rect.bottom) / 2 : rect.top,
+      right: Math.max(8, window.innerWidth - rect.left + 4),
+      ...(align === "end-middle" ? { translate: "0 -50%" } : {}),
+    };
+  }
+  return {
+    zIndex: Z.overlayPanel,
+    top: rect.bottom + 4,
+    right: Math.max(8, window.innerWidth - rect.right),
+  };
+}
+
 export function Modal({
   isOpen,
   onClose,
   children,
   desktop = "modal",
   popoverClassName = "",
+  popoverAlign = "end",
   title,
   titleAccessory,
   className = "",
+  size = "default",
 }: ModalProps) {
   const { t } = useTranslation();
   const isDesktop = useIsDesktop();
@@ -369,11 +467,18 @@ export function Modal({
 
   useEffect(() => {
     if (!active) return;
+    escapeStack.push(onClose);
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+      if (e.key !== "Escape") return;
+      if (escapeStack[escapeStack.length - 1] !== onClose) return;
+      onClose();
     }
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      const idx = escapeStack.lastIndexOf(onClose);
+      if (idx >= 0) escapeStack.splice(idx, 1);
+    };
   }, [active, onClose]);
 
   // The sheet and the centered modal own the screen; popovers keep the page
@@ -381,11 +486,8 @@ export function Modal({
   const lockScroll = mounted && variant !== "popover";
   useEffect(() => {
     if (!lockScroll) return;
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previous;
-    };
+    acquireBodyScrollLock();
+    return () => releaseBodyScrollLock();
   }, [lockScroll]);
 
   useLayoutEffect(() => {
@@ -419,11 +521,7 @@ export function Modal({
                 className={`fixed overflow-hidden rounded-xl ${PANEL} ${
                   closing ? "animate-modal-out" : "animate-modal"
                 } ${popoverClassName}`}
-                style={{
-                  zIndex: Z.overlayPanel,
-                  top: rect.bottom + 4,
-                  right: Math.max(8, window.innerWidth - rect.right),
-                }}
+                style={popoverStyle(rect, popoverAlign)}
               >
                 {children}
               </div>
@@ -437,6 +535,7 @@ export function Modal({
   if (!mounted) return null;
 
   const isSheet = variant === "sheet";
+  const modalWidthClass = size === "large" ? "max-w-lg" : "max-w-sm";
   // With a sheet header, the consumer's className styles the content below the
   // header (so its padding never wraps the header bar); otherwise it styles the
   // container itself, as the plain dialogs expect.
@@ -445,14 +544,9 @@ export function Modal({
   const describedByProps = hasHeader ? { "aria-describedby": bodyId } : {};
   const sheetDragging = isSheet && sheetSwipe.dragging;
   const sheetOffset = isSheet ? sheetSwipe.dragY : 0;
-  const sheetGestureActive =
-    isSheet && (sheetDragging || sheetOffset > 0 || sheetSwipe.springing);
+  const sheetGestureActive = isSheet && (sheetDragging || sheetOffset > 0 || sheetSwipe.springing);
   // Drag / spring / held-dismiss owns the transform; CSS enter/exit only when idle.
-  const sheetAnimClass = sheetGestureActive
-    ? ""
-    : closing
-      ? "animate-sheet-out"
-      : "animate-sheet";
+  const sheetAnimClass = sheetGestureActive ? "" : closing ? "animate-sheet-out" : "animate-sheet";
   const sheetTransformStyle = sheetGestureActive
     ? {
         transform: `translateY(${sheetOffset}px)`,
@@ -461,6 +555,8 @@ export function Modal({
           : `transform ${EXIT_MS}ms cubic-bezier(0.32, 0.72, 0, 1)`,
       }
     : undefined;
+
+  const hasDesktopHeader = !isSheet && title !== undefined;
 
   return createPortal(
     <div
@@ -471,7 +567,7 @@ export function Modal({
       <button
         type="button"
         tabIndex={-1}
-        aria-label={t("modal.close")}
+        aria-hidden="true"
         onClick={onClose}
         className={`absolute inset-0 cursor-default bg-black/40 ${
           closing ? "animate-backdrop-out" : "animate-backdrop"
@@ -487,13 +583,24 @@ export function Modal({
         className={`relative w-full overflow-y-auto ${PANEL} ${
           isSheet
             ? `max-h-[90vh] rounded-t-[1.5rem] border-x-0 border-b-0 pb-[calc(1rem+env(safe-area-inset-bottom))] ${sheetAnimClass}`
-            : `max-h-[85vh] max-w-sm rounded-2xl ${closing ? "animate-modal-out" : "animate-modal"} ${className}`
+            : `${modalWidthClass} max-h-[85vh] rounded-2xl ${closing ? "animate-modal-out" : "animate-modal"}`
         }`}
         style={{
           zIndex: Z.overlayPanel,
           ...sheetTransformStyle,
         }}
       >
+        {hasDesktopHeader && (
+          <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
+            <div className="flex min-w-0 items-center gap-2">
+              <h2 id={titleId} className="truncate font-display italic text-lg text-snow">
+                {title}
+              </h2>
+              {titleAccessory}
+            </div>
+            <ModalCloseButton onClose={onClose} label={t("modal.close")} />
+          </div>
+        )}
         {isSheet && (
           <div
             className="touch-none select-none"
@@ -509,18 +616,12 @@ export function Modal({
                   </h2>
                   {titleAccessory}
                 </div>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="shrink-0 font-mono text-[10px] text-muted uppercase tracking-widest transition-colors hover:text-snow"
-                >
-                  {t("modal.close")}
-                </button>
+                <ModalCloseButton onClose={onClose} label={t("modal.close")} />
               </div>
             )}
           </div>
         )}
-        {hasHeader ? (
+        {hasHeader || hasDesktopHeader ? (
           <div id={bodyId} className={className}>
             {children}
           </div>
@@ -531,8 +632,11 @@ export function Modal({
                 {title}
               </h2>
             )}
-            {/* Sheet: keep className on the body so padding never wraps the handle. */}
-            {isSheet ? <div className={className}>{children}</div> : children}
+            {isSheet ? (
+              <div className={className}>{children}</div>
+            ) : (
+              <div className={className}>{children}</div>
+            )}
           </>
         )}
       </div>

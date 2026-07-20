@@ -29,6 +29,27 @@ describe("ProfileBannerPicker", () => {
     expect(screen.getByRole("button", { name: "Change banner" })).toBeInTheDocument();
   });
 
+  it("uses a compact identity strip when no banner is set", async () => {
+    const { container } = await renderWithProviders(
+      <ProfileBannerPicker bannerRef={null} candidates={[candidate]}>
+        {() => <span>identity</span>}
+      </ProfileBannerPicker>,
+    );
+    const strip = container.querySelector("section > div.relative.z-10");
+    expect(strip?.className).toContain("pt-[calc(var(--app-header-height)+0.75rem)]");
+    expect(strip?.className).not.toContain("min-h-[24rem]");
+  });
+
+  it("keeps the tall banner shell when a banner is set", async () => {
+    const { container } = await renderWithProviders(
+      <ProfileBannerPicker bannerRef="tmdb:1396/backdrop.jpg" candidates={[candidate]}>
+        {() => <span>identity</span>}
+      </ProfileBannerPicker>,
+    );
+    const strip = container.querySelector("section > div.relative.z-10");
+    expect(strip?.className).toContain("min-h-[24rem]");
+  });
+
   it("opens picker modal when openPicker is invoked", async () => {
     const user = userEvent.setup();
     await renderWithProviders(

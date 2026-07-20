@@ -68,6 +68,10 @@ export function useSeriesSearch() {
     enabled,
   });
 
+  // Typed query has moved on from the settled request — treat as loading so
+  // Enter/↑↓ cannot open a stale row from the previous result set (E154).
+  const isDebouncing = enabled && query.trim() !== debouncedQuery.trim();
+
   const addMutation = useMutation({
     mutationFn: (result: SearchResult) => addSeries(result.externalIds, manualList ?? undefined),
     onSuccess: (summary) => {
@@ -98,7 +102,7 @@ export function useSeriesSearch() {
     setManualList,
     enabled,
     results: searchQuery.data?.items ?? [],
-    isLoading: searchQuery.isLoading,
+    isLoading: isDebouncing || searchQuery.isLoading,
     isError: searchQuery.isError,
     refetch: searchQuery.refetch,
     selectResult,

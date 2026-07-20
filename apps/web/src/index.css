@@ -13,15 +13,16 @@
 }
 
 :root {
-  /* Overwritten by Layout when the sticky <header> mounts; ~76px desktop nav. */
+  /* Overwritten by Layout when the fixed <header> mounts; ~76px desktop nav. */
   --app-header-height: 4.75rem;
 }
 
 /*
- * MainShell is intentionally full-bleed. Content that needs breathing room
- * opts in at the component that owns the pixels; lists can keep their own
- * tighter row padding without inheriting a second outer inset.
+ * MainShell is full-bleed. Content that needs breathing room opts in at the
+ * component/page that owns the pixels; lists keep their own tighter row padding.
  * E157: content-inset = 12px / 24px at sm+; list-inset = 8px / 16px at sm+.
+ * E183: page-top = 2rem; page-top-flush = 0 / 2rem at sm+ (pull-to-refresh paths);
+ *       library + calendar + watch history tablet gutter = sm:px-3 lg:px-0 (not on MainShell).
  */
 .content-inset {
   padding-inline: 0.75rem;
@@ -41,6 +42,21 @@
 @media (min-width: 40rem) {
   .list-inset {
     padding-inline: 1rem;
+  }
+}
+
+/* Vertical page inset — owned by each page, not MainShell (E183). */
+.page-top {
+  padding-top: 2rem;
+}
+
+.page-top-flush {
+  padding-top: 0;
+}
+
+@media (min-width: 40rem) {
+  .page-top-flush {
+    padding-top: 2rem;
   }
 }
 
@@ -165,13 +181,29 @@ body::after {
   opacity: 1;
 }
 
-/* Page content cross-fade — #main-content (view-transition-name: app-main). */
+/* Page content cross-fade — `.app-main-vt` (view-transition-name: app-main).
+ * Browse↔hero mains have different content boxes. While a VT is active the
+ * shell freezes to 100dvh + overflow:hidden so old/new snapshots share one
+ * frame size (no aspect stretch). Live scroll is unaffected outside VT.
+ * Opaque void fill + mix-blend-mode:normal — UA plus-lighter on transparent
+ * page pixels stacked both routes (ghosting). */
+.app-main-vt {
+  background-color: var(--color-void, #080808);
+}
+html:active-view-transition .app-main-vt {
+  height: 100dvh;
+  overflow: hidden;
+}
 ::view-transition-group(app-main) {
   z-index: 1;
+  animation: none;
+  overflow: hidden;
+  background-color: var(--color-void, #080808);
 }
 ::view-transition-old(app-main),
 ::view-transition-new(app-main) {
   animation-duration: 160ms;
+  mix-blend-mode: normal;
 }
 
 /* Poster card → detail morph (view-transition-class: poster-morph).
@@ -193,9 +225,10 @@ body::after {
  *   app-main < edge tint/blur < chrome < poster-morph < grain
  *
  * Edge scrubs never use CSS opacity (kills backdrop-filter; alphas live in
- * the gradient stops). While app-main opacity-fades, disable the blur group's
- * backdrop-filter so it doesn't sample the ghost composite; hide flattened
- * blur snapshot images. Tint keeps ::view-transition-new (paint only). */
+ * the gradient stops). While app-main's new snapshot fades in, disable the
+ * blur group's backdrop-filter so it doesn't sample the ghost composite;
+ * hide flattened blur snapshot images. Tint keeps ::view-transition-new
+ * (paint only). */
 ::view-transition-group(app-edge-top-tint),
 ::view-transition-group(app-edge-bottom-tint) {
   animation: none;
@@ -383,21 +416,4 @@ body::after {
   .animate-rating-slide-left {
     animation: none;
   }
-}
-
-.section-collapse {
-  display: grid;
-  grid-template-rows: 0fr;
-  transition: grid-template-rows 200ms ease-out;
-  overflow: hidden;
-}
-.section-collapse[data-expanded="true"] {
-  grid-template-rows: 1fr;
-  /* Visible when open so poster view-transition morphs aren't clipped
-     (library grid lives inside these wrappers; profile grids do not). */
-  overflow: visible;
-}
-.section-collapse > div {
-  min-width: 0;
-  min-height: 0;
 }

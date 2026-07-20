@@ -40,7 +40,7 @@ function FavoritesPageContent() {
 
   return (
     <PullToRefresh onRefresh={pullRefresh}>
-      <section className="flex flex-col gap-6">
+      <section className="page-top-flush flex flex-col gap-6">
         <div className="content-inset hidden sm:block">
           <PageTitle>
             {t("profile.favorites.title")}

@@ -72,4 +72,31 @@ describe("SectionHeader", () => {
     expect(onAction).toHaveBeenCalledOnce();
     expect(onClick).not.toHaveBeenCalled();
   });
+
+  it("keeps leading outside the expand toggle so it can host its own control", async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn();
+    const onLeading = vi.fn();
+    render(
+      <SectionHeader
+        label="Season 1"
+        count="3/10"
+        onClick={onClick}
+        expanded
+        leading={
+          <button type="button" onClick={onLeading}>
+            ring
+          </button>
+        }
+      />,
+    );
+
+    const leading = screen.getByRole("button", { name: "ring" });
+    const toggle = screen.getByRole("button", { name: /Season 1/i });
+    expect(toggle).not.toContainElement(leading);
+
+    await user.click(leading);
+    expect(onLeading).toHaveBeenCalledOnce();
+    expect(onClick).not.toHaveBeenCalled();
+  });
 });

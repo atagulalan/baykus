@@ -25,6 +25,8 @@ export const RatedBad: Story = { args: { value: 1 } };
 
 export const Small: Story = { args: { size: "sm", value: 2 } };
 
+export const IconsOnly: Story = { args: { iconsOnly: true, value: 2 } };
+
 export const Interactive: Story = {
   render: function InteractiveRating(args) {
     const [value, setValue] = useState<1 | 2 | 3 | null>(args.value);

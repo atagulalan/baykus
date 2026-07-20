@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { LayoutGrid, List } from "lucide-react";
+import { LayoutGrid, Library, List, ListX } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { useTranslation } from "react-i18next";
@@ -12,6 +12,10 @@ import {
 } from "../../components/atoms/Skeleton/Skeleton.tsx";
 import { PAGE_HEADING_ACTION_CLASS } from "../../components/layout/Layout/layoutShared.ts";
 import { AddSectionBar } from "../../components/molecules/AddSectionBar/AddSectionBar.tsx";
+import {
+  EMPTY_PANEL_CTA_CLASS,
+  EmptyPanel,
+} from "../../components/molecules/EmptyPanel/EmptyPanel.tsx";
 import { PageTitleRow } from "../../components/molecules/PageTitleRow/PageTitleRow.tsx";
 import { PullToRefresh } from "../../components/molecules/PullToRefresh/PullToRefresh.tsx";
 import { CategoryListSection } from "../../components/organisms/CategoryListSection/CategoryListSection.tsx";
@@ -141,10 +145,10 @@ export function BrowsePage({ view }: { view: BrowseView }) {
     : sections;
   const anchorCategory =
     sectionsToRender.find((c) => c === "watching") ?? sectionsToRender[0] ?? null;
+  // E186: list and grid use the same section membership — any series in an
+  // enabled section counts (caught-up / finished rows no longer drop the section).
   const hasVisibleGridItems = sectionsToRender.some((c) => (byCategory.get(c)?.length ?? 0) > 0);
-  const hasVisibleListItems = sectionsToRender.some((c) =>
-    (byCategory.get(c) ?? []).some((s) => s.nextUnwatched != null),
-  );
+  const hasVisibleListItems = hasVisibleGridItems;
   const isGrid = view === "grid";
   const destinationView: BrowseView = isGrid ? "list" : "grid";
   const ViewIcon = isGrid ? List : LayoutGrid;
@@ -158,7 +162,7 @@ export function BrowsePage({ view }: { view: BrowseView }) {
         void navigate({ to: "/watch/history", viewTransition: pageViewTransition });
       }}
     >
-      <section className="flex flex-col gap-3">
+      <section className="page-top-flush flex flex-col gap-3 sm:px-3 lg:px-0">
         {isGrid && sweepProgress && (
           <p className="list-inset font-mono text-[10px] uppercase tracking-widest text-muted">
             {t("library.sweep.progress", { done: sweepProgress.done, total: sweepProgress.total })}
@@ -193,29 +197,45 @@ export function BrowsePage({ view }: { view: BrowseView }) {
         ) : libraryQuery.isError ? (
           <ErrorState onRetry={() => libraryQuery.refetch()} />
         ) : items.length === 0 ? (
-          <div className="list-inset mt-4 flex flex-col items-center gap-4 border border-white/5 bg-[#101010] py-24 text-center">
-            <h1 className="font-display italic text-snow text-4xl tracking-tight">
-              {t("library.empty.title")}
-            </h1>
-            <p className="font-mono text-xs text-muted/70">{t("library.empty.hint")}</p>
-          </div>
-        ) : (isGrid ? !hasVisibleGridItems : !hasVisibleListItems) ? (
-          <div className="list-inset mt-4 flex flex-col items-center gap-4 border border-white/5 bg-[#101010] py-24 text-center">
-            <h1 className="font-display italic text-snow text-4xl tracking-tight">
-              {t("library.empty.allDoneTitle")}
-            </h1>
-            <p className="font-mono text-xs text-muted/70">{t("library.empty.allDoneHint")}</p>
-            {sessionQuery.data && (
+          <EmptyPanel
+            icon={Library}
+            title={t("library.empty.title")}
+            action={
               <Link
-                to="/user/$handle/all-series"
-                params={{ handle: selfHandleParam(sessionQuery.data) }}
+                to="/search"
                 viewTransition={pageViewTransition}
-                className="font-mono text-[10px] tracking-widest uppercase bg-yellow text-[#080808] px-4 py-2 mt-4 transition-opacity hover:opacity-90"
+                className={EMPTY_PANEL_CTA_CLASS}
               >
-                {t("profile.allSeries")}
+                {t("calendar.empty.suggestAdd")}
               </Link>
-            )}
-          </div>
+            }
+          />
+        ) : (isGrid ? !hasVisibleGridItems : !hasVisibleListItems) ? (
+          <>
+            <EmptyPanel
+              icon={ListX}
+              title={t("library.empty.allDoneTitle")}
+              hint={t("library.empty.allDoneHint")}
+              action={
+                sessionQuery.data ? (
+                  <Link
+                    to="/user/$handle/all-series"
+                    params={{ handle: selfHandleParam(sessionQuery.data) }}
+                    viewTransition={pageViewTransition}
+                    className={EMPTY_PANEL_CTA_CLASS}
+                  >
+                    {t("profile.allSeries")}
+                  </Link>
+                ) : null
+              }
+            />
+            <AddSectionBar
+              sections={sections}
+              sectionSorts={sectionSorts}
+              onSectionsChange={updateSections}
+              onSortChange={setSortFor}
+            />
+          </>
         ) : (
           <>
             {sectionsToRender.map((c) =>

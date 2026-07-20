@@ -2,8 +2,8 @@
  * Layout shell tests with mocked TanStack Router hooks and API client.
  *
  * Limitations (not covered here — needs browser/e2e):
- * - MobileBackButton history.back vs fallback navigate
- * - Banner-page dock-hide hover reveal on series/profile hero routes
+ * - MobileBackButton in-app back stack vs fallback navigate
+ * - Banner-page dock-hide hover reveal on series hero / profile-with-banner routes
  * - Scroll-driven header gradient and ResizeObserver height sync
  * - BrowseViewToggle navigate + uiPrefs persistence
  */

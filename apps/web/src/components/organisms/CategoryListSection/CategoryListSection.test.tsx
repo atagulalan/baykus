@@ -26,14 +26,48 @@ describe("CategoryListSection", () => {
     expect(screen.getByText("Más")).toBeInTheDocument();
   });
 
-  it("renders nothing when no rows qualify", () => {
+  it("renders nothing when the section has no items", () => {
     const { container } = renderWithProviders(
-      <CategoryListSection
-        {...baseProps}
-        items={[{ ...mockSeriesSummary, nextUnwatched: null }]}
-      />,
+      <CategoryListSection {...baseProps} items={[]} />,
     );
     expect(container).toBeEmptyDOMElement();
+  });
+
+  it("renders finished rows without nextUnwatched (E186)", async () => {
+    await renderWithRouter(
+      <CategoryListSection
+        {...baseProps}
+        category="finished"
+        items={[
+          {
+            ...mockSeriesSummary,
+            category: "finished",
+            nextUnwatched: null,
+          },
+        ]}
+      />,
+      {},
+    );
+    expect(screen.getByText("Breaking Bad")).toBeInTheDocument();
+  });
+
+  it("renders caught-up up_to_date rows without nextUnwatched", async () => {
+    await renderWithRouter(
+      <CategoryListSection
+        {...baseProps}
+        category="up_to_date"
+        items={[
+          {
+            ...mockSeriesSummary,
+            category: "up_to_date",
+            nextUnwatched: null,
+            nextAirDate: "2026-08-15",
+          },
+        ]}
+      />,
+      {},
+    );
+    expect(screen.getByText("Breaking Bad")).toBeInTheDocument();
   });
 
   it("does not show section remove control in the header", async () => {

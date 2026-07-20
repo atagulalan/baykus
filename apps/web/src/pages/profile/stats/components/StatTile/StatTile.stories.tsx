@@ -22,12 +22,3 @@ export const WithoutSub: Story = {
     value: "842",
   },
 };
-
-export const Compact: Story = {
-  args: {
-    label: "Time spent",
-    value: "7m 3d 8h",
-    size: "compact",
-    sub: undefined,
-  },
-};

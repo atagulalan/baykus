@@ -200,12 +200,7 @@ export function EpisodeDetailsModal({
         )}
 
         {onRate && (
-          <div className="flex flex-col gap-2">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-muted">
-              {t("rating.label")}
-            </span>
-            <RatingControl value={myRating} onChange={onRate} size="sm" />
-          </div>
+          <RatingControl value={myRating} onChange={onRate} size="sm" iconsOnly />
         )}
 
         {onToggleWatched &&

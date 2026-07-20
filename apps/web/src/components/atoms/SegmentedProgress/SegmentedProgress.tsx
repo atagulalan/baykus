@@ -8,6 +8,9 @@ export type Segment =
 
 const MAX_SEGMENTED_SEASONS = 12;
 
+/** E180/E185: donut bead — aired caught-up with unaired remaining. */
+const CAUGHT_UP_BEAD = "box-border border border-green-500 bg-transparent";
+
 /**
  * E34: null means "fall back to the plain percentage bar" — a skip-around
  * watch history, zero seasons, or more than 12 seasons.
@@ -26,6 +29,35 @@ export function buildProgressSegments(sp: SeasonProgress): Segment[] | null {
     }
     return { kind: "hollow" };
   });
+}
+
+/** Same predicate as CircularProgress `caughtUp` (E180): aired done, unaired remain. */
+export function isCaughtUpWaiting(entry: {
+  watched: number;
+  total: number;
+  announced: number;
+}): boolean {
+  return entry.total > 0 && entry.watched >= entry.total && entry.announced > entry.total;
+}
+
+/**
+ * Prefer announced counts from the season episode lists (same source as the
+ * accordion rings) so hero beads stay in lockstep with CircularProgress.
+ */
+export function alignSeasonProgressAnnounced(
+  seasonProgress: SeasonProgress,
+  seasons: Array<{ number: number; episodes: readonly unknown[] }>,
+): SeasonProgress {
+  const announcedByNumber = new Map(
+    seasons.filter((s) => s.number !== 0).map((s) => [s.number, s.episodes.length]),
+  );
+  return {
+    ...seasonProgress,
+    seasons: seasonProgress.seasons.map((entry) => ({
+      ...entry,
+      announced: announcedByNumber.get(entry.number) ?? entry.announced ?? entry.total,
+    })),
+  };
 }
 
 type Size = "sm" | "md";
@@ -57,9 +89,11 @@ export function SegmentedProgress({
   if (segments === null) {
     const percent = aired > 0 ? Math.round((watched / aired) * 100) : 0;
     return (
-      <div className={`w-full overflow-hidden bg-white/5 ${TRACK_HEIGHT[size]} ${className}`}>
+      <div
+        className={`w-full overflow-hidden rounded-full bg-white/[0.08] ${TRACK_HEIGHT[size]} ${className}`}
+      >
         <div
-          className={`h-full ${colorClass} transition-all duration-500`}
+          className={`h-full rounded-full ${colorClass} transition-all duration-500`}
           style={{ width: `${percent}%` }}
         />
       </div>
@@ -67,24 +101,32 @@ export function SegmentedProgress({
   }
 
   return (
-    <div className={`flex w-full items-center gap-[1px] ${className}`}>
+    <div className={`flex w-full items-center gap-0.5 ${className}`}>
       {segments.map((segment, i) => {
         const key = `${segment.kind}-${i}`;
         if (segment.kind === "frontier") {
           return (
-            <div key={key} className={`flex-1 overflow-hidden bg-white/5 ${TRACK_HEIGHT[size]}`}>
+            <div
+              key={key}
+              className={`flex-1 overflow-hidden rounded-full bg-white/[0.08] ${TRACK_HEIGHT[size]}`}
+            >
               <div
-                className={`h-full ${colorClass} transition-all duration-500`}
+                className={`h-full rounded-full ${colorClass} transition-all duration-500`}
                 style={{ width: segment.percent === 0 && i > 0 ? "1px" : `${segment.percent}%` }}
               />
             </div>
           );
         }
+        const entry = seasonProgress.seasons[i];
+        const filledClass =
+          segment.kind === "filled" && entry && isCaughtUpWaiting(entry)
+            ? CAUGHT_UP_BEAD
+            : colorClass;
         return (
           <div
             key={key}
-            className={`shrink-0 ${SQUARE_SIZE[size]} transition-colors ${
-              segment.kind === "filled" ? colorClass : "bg-white/5"
+            className={`shrink-0 rounded-full ${SQUARE_SIZE[size]} transition-colors ${
+              segment.kind === "filled" ? filledClass : "bg-white/[0.08]"
             }`}
           />
         );

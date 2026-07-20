@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link, useCanGoBack, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, User } from "lucide-react";
 import { memo, useCallback, useRef } from "react";
 import { flushSync } from "react-dom";
@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { getSettings } from "../../../api/client.ts";
 import { buildAvatarUrl } from "../../../api/images.ts";
 import { backAffordance } from "../../../lib/backFallback.ts";
+import { navigateMobileBack } from "../../../lib/navBackStack.ts";
 import { pageViewTransition } from "../../../lib/pageViewTransition.ts";
 import { clearLastPosterItemId } from "../../../lib/posterTransition.ts";
 import { Z } from "../../../lib/zIndex.ts";
@@ -16,9 +17,8 @@ import {
   ACTIVE_FILL,
   APP_HEADER_HOOK,
   FORCE_FILL,
+  isBannerChromePage,
   isBrowsePath,
-  isProfileHeroPath,
-  isSeriesHeroPath,
   NAV_ITEMS,
   NAV_REVEAL_DELAYS,
   useCommittedPathname,
@@ -37,7 +37,6 @@ function MobileBackButton({
   pathname: string;
 }) {
   const { t } = useTranslation();
-  const canGoBack = useCanGoBack();
   const navigate = useNavigate();
   const back = backAffordance(pathname, profileHandle);
 
@@ -51,8 +50,7 @@ function MobileBackButton({
             if (!(pathname.startsWith("/series/") && back.to === "/watch")) {
               disarmPosterMorph();
             }
-            if (canGoBack) window.history.back();
-            else void navigate({ ...back, viewTransition: pageViewTransition });
+            navigateMobileBack(navigate, back);
           }}
           aria-label={t("app.back")}
           className="flex h-11 w-11 items-center justify-center text-muted transition-colors hover:text-snow"
@@ -71,13 +69,13 @@ export const AppHeader = memo(function AppHeader({ profileHandle }: { profileHan
   // before the view-transition old snapshot is taken (E51).
   const pathname = useCommittedPathname();
   const browseActive = isBrowsePath(pathname);
-  /** Dock-hide only on banner/hero pages (series detail + profile hub). */
-  const isBannerPage = isSeriesHeroPath(pathname) || isProfileHeroPath(pathname);
   const watchTo = useWatchBrowsePath();
   const settingsQuery = useQuery({
     queryKey: ["settings"],
     queryFn: getSettings,
   });
+  /** Dock-hide only when a real banner/hero is present (series always; profile if bannerRef). */
+  const isBannerPage = isBannerChromePage(pathname, settingsQuery.data?.bannerRef);
   const avatarUrl = buildAvatarUrl(settingsQuery.data?.avatarRef);
 
   const headerRef = useCallback((el: HTMLElement | null) => {
@@ -86,13 +84,11 @@ export const AppHeader = memo(function AppHeader({ profileHandle }: { profileHan
     if (!el) return;
     const header = el;
     function updateHeight() {
-      document.documentElement.style.setProperty(
-        "--app-header-height",
-        `${header.getBoundingClientRect().height}px`,
-      );
+      const next = `${header.getBoundingClientRect().height}px`;
+      document.documentElement.style.setProperty("--app-header-height", next);
     }
     updateHeight();
-    const observer = new ResizeObserver(updateHeight);
+    const observer = new ResizeObserver(() => updateHeight());
     observer.observe(header);
     headerObserverRef.current = observer;
   }, []);
@@ -101,7 +97,7 @@ export const AppHeader = memo(function AppHeader({ profileHandle }: { profileHan
     <header
       ref={headerRef}
       {...{ [APP_HEADER_HOOK]: "" }}
-      className={`group sticky top-0 bg-transparent${isBannerPage ? " overflow-hidden" : ""}`}
+      className={`group fixed inset-x-0 top-0 bg-transparent${isBannerPage ? " overflow-hidden" : ""}`}
       style={{
         viewTransitionName: "app-header",
         zIndex: Z.chrome,

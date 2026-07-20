@@ -126,7 +126,9 @@ export function SearchPage() {
     activeResult != null ? optionId(listId, resultKey(activeResult)) : undefined;
 
   const onInputKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (!search.enabled || results.length === 0) return;
+    // E154: list keys only while settled results are shown — not during
+    // debounce/fetch, when `results` may still hold the previous query's rows.
+    if (!search.enabled || search.isLoading || results.length === 0) return;
 
     if (e.key === "ArrowDown" || e.key === "ArrowUp") {
       e.preventDefault();
@@ -156,18 +158,16 @@ export function SearchPage() {
     }
   };
 
-  // MainShell only pads from `sm` up, so the page owns its own mobile gutter
-  // (matching the browse grid) — otherwise the pill and the list card bleed
-  // into the screen edges on a phone.
+  // Page owns horizontal gutter (E157) + top inset (E183); MainShell is flush.
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 px-3 sm:gap-5 sm:px-0">
+    <div className="page-top mx-auto flex w-full max-w-2xl flex-col gap-4 px-3 sm:gap-5 sm:px-0">
       <div className="relative flex items-center gap-2.5 rounded-full border border-white/10 bg-white/[0.03] px-4 shadow-sm backdrop-blur-md transition-colors focus-within:border-white/20 focus-within:bg-white/[0.05] sm:gap-3 sm:px-5">
         <Search size={18} strokeWidth={1.75} className="shrink-0 text-muted" />
         <input
           ref={inputRef}
           type="search"
           role="combobox"
-          aria-expanded={search.enabled && results.length > 0}
+          aria-expanded={search.enabled && !search.isLoading && results.length > 0}
           aria-controls={listId}
           aria-autocomplete="list"
           aria-activedescendant={activeDescendant}

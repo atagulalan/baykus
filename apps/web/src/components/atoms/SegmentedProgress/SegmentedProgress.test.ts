@@ -1,9 +1,18 @@
 import { describe, expect, it } from "vitest";
-import type { SeasonProgress } from "../../../api/types.ts";
+import type { SeasonProgress, SeasonProgressEntry } from "../../../api/types.ts";
 import { buildProgressSegments } from "./SegmentedProgress.tsx";
 
-function sp(seasons: SeasonProgress["seasons"], sequential: boolean): SeasonProgress {
-  return { seasons, sequential };
+function entry(
+  partial: Omit<SeasonProgressEntry, "announced"> & { announced?: number },
+): SeasonProgressEntry {
+  return { announced: partial.announced ?? partial.total, ...partial };
+}
+
+function sp(
+  seasons: Array<Omit<SeasonProgressEntry, "announced"> & { announced?: number }>,
+  sequential: boolean,
+): SeasonProgress {
+  return { seasons: seasons.map(entry), sequential };
 }
 
 describe("buildProgressSegments (E34)", () => {
@@ -42,7 +51,7 @@ describe("buildProgressSegments (E34)", () => {
     const seasons = sp(
       [
         { number: 1, watched: 8, total: 8 },
-        { number: 2, watched: 5, total: 5 },
+        { number: 2, watched: 5, total: 5, announced: 13 },
       ],
       true,
     );

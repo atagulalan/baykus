@@ -31,10 +31,10 @@ export function ProfileBannerPicker({ bannerRef, candidates, children }: Profile
   const bannerUrl = buildImageUrl(bannerRef, "large");
 
   return (
-    <section className="relative">
-      {/* Same backdrop stack as SeriesDetailPage hero (E146). */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
-        {bannerUrl && (
+    <section className="relative -mt-[var(--app-header-height)]">
+      {/* Same backdrop stack as SeriesDetailPage hero (E146 / E183) — only when a banner is set. */}
+      {bannerUrl ? (
+        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
           <MediaImage
             src={bannerUrl}
             alt=""
@@ -44,13 +44,19 @@ export function ProfileBannerPicker({ bannerRef, candidates, children }: Profile
             spinnerSize={24}
             fetchPriority="high"
           />
-        )}
-        <div className="absolute inset-0 bg-black/45" />
-        <div className="absolute inset-0 hidden bg-gradient-to-r from-void via-transparent to-void sm:block" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-void/20 to-void" />
-      </div>
+          <div className="absolute inset-0 bg-black/45" />
+          <div className="absolute inset-0 hidden bg-gradient-to-r from-void via-transparent to-void sm:block" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-void/20 to-void" />
+        </div>
+      ) : null}
 
-      <div className="relative z-10 flex min-h-[24rem] items-end pb-4 pt-20 sm:min-h-[30rem] sm:pb-12 sm:pt-32">
+      <div
+        className={
+          bannerUrl
+            ? "relative z-10 flex min-h-[24rem] items-end pb-4 pt-20 sm:min-h-[30rem] sm:pb-12 sm:pt-32"
+            : "relative z-10 flex items-end pb-2 pt-[calc(var(--app-header-height)+0.75rem)]"
+        }
+      >
         <div className="w-full">{children(() => setOpen(true))}</div>
       </div>
 

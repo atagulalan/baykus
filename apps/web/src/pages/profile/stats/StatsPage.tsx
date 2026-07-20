@@ -27,12 +27,16 @@ export function StatsPage() {
   const query = useQuery({ queryKey: ["stats", tz], queryFn: () => getStats(tz) });
 
   if (query.isLoading) {
-    return <SkeletonStatsPage />;
+    return (
+      <div className="page-top">
+        <SkeletonStatsPage />
+      </div>
+    );
   }
 
   if (query.isError) {
     return (
-      <div className="content-inset flex flex-col items-center gap-2 py-24 text-center">
+      <div className="page-top content-inset flex flex-col items-center gap-2 py-24 text-center">
         <p className="text-muted">{t("errors.generic")}</p>
         <button
           type="button"
@@ -51,7 +55,7 @@ export function StatsPage() {
   const { dated, total } = stats.datedWatches;
 
   return (
-    <div className="flex flex-col gap-10">
+    <div className="page-top flex flex-col gap-10">
       <HeroSection stats={stats} />
       <RecentSection stats={stats} />
       <MostWatchedSection stats={stats} />

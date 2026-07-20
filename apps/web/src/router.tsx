@@ -14,6 +14,7 @@ import {
   getScrollRestorationKey,
   installCalendarWatchScrollIsolation,
 } from "./lib/scrollRestoration.ts";
+import { installNavBackStack } from "./lib/navBackStack.ts";
 import { installPosterMorphCleanup } from "./lib/posterTransition.ts";
 import { ClaimPage } from "./pages/auth/ClaimPage.tsx";
 import { LoginPage } from "./pages/auth/LoginPage.tsx";
@@ -238,6 +239,7 @@ export const router = createRouter({
 
 installCalendarWatchScrollIsolation(router);
 installPosterMorphCleanup(router);
+installNavBackStack(router);
 
 declare module "@tanstack/react-router" {
   interface Register {

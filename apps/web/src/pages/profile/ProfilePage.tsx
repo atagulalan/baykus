@@ -1,10 +1,10 @@
-import { useQuery } from "@tanstack/react-query";
-import { Link, useParams } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import type { LucideIcon } from "lucide-react";
-import { Camera, ChevronRight, Clapperboard, Heart, History, Settings } from "lucide-react";
+import { Camera, ChevronRight, Clapperboard, Heart, History, LogOut, Settings } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { getSettings, getStats, listSeries } from "../../api/client.ts";
+import { getSettings, getStats, listSeries, logout } from "../../api/client.ts";
 import type { AuthSession, SeriesSummary, Stats } from "../../api/types.ts";
 import { PageTitle } from "../../components/atoms/PageTitle/PageTitle.tsx";
 import { SectionPill } from "../../components/atoms/SectionPill/SectionPill.tsx";
@@ -16,7 +16,6 @@ import { ProfilePhotoUpload } from "../../components/organisms/ProfilePhotoUploa
 import { formatDurationLabel, formatDurationParts } from "../../lib/date.ts";
 import { SERIES_GRID_CLASSNAME } from "../../lib/grid.ts";
 import { pageViewTransition } from "../../lib/pageViewTransition.ts";
-import { StatTile } from "./stats/components/StatTile/StatTile.tsx";
 
 /** E79: the preview grid shows at most this many favorites; beyond it the heading links to the full page. */
 const PROFILE_FAVORITES_LIMIT = 6;
@@ -40,6 +39,19 @@ export function byLastWatchedDesc(
   if (a.lastWatchedAt === null) return 1;
   if (b.lastWatchedAt === null) return -1;
   return a.lastWatchedAt < b.lastWatchedAt ? 1 : -1;
+}
+
+function ProfileStatItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex min-w-0 flex-1 flex-col items-center gap-1.5 text-center">
+      <p className="font-mono text-[10px] uppercase tracking-widest text-muted">{label}</p>
+      <p className="font-display italic text-snow text-2xl leading-none tracking-tight">{value}</p>
+    </div>
+  );
+}
+
+function ProfileStatDivider() {
+  return <div className="h-8 w-px shrink-0 bg-white/10" aria-hidden="true" />;
 }
 
 /**
@@ -101,18 +113,23 @@ function SeriesGridSection({
   heading,
   items,
   limit,
-  emptyText,
+  emptyTitle,
+  emptyHint,
 }: {
   heading: ReactNode;
   items: SeriesSummary[];
   limit: number;
-  emptyText: string;
+  emptyTitle: string;
+  emptyHint: string;
 }) {
   return (
     <section className="flex flex-col gap-3">
       <HubSectionHeader>{heading}</HubSectionHeader>
       {items.length === 0 ? (
-        <p className="px-3 font-mono text-xs text-muted/70 sm:px-0">{emptyText}</p>
+        <div className="flex flex-col items-center gap-2 px-3 py-8 text-center sm:px-0">
+          <p className="font-display italic text-lg tracking-tight text-snow/90">{emptyTitle}</p>
+          <p className="font-mono text-xs text-muted/70">{emptyHint}</p>
+        </div>
       ) : (
         <div className={SERIES_GRID_CLASSNAME}>
           {items.slice(0, limit).map((series) => (
@@ -186,11 +203,17 @@ function ProfileHub({
   stats,
   allSeries,
   total,
+  showLogout,
+  onLogout,
+  logoutPending,
 }: {
   handle: string;
   stats: Stats | undefined;
   allSeries: SeriesSummary[];
   total: number;
+  showLogout: boolean;
+  onLogout: () => void;
+  logoutPending: boolean;
 }) {
   const { t } = useTranslation();
 
@@ -199,87 +222,112 @@ function ProfileHub({
 
   return (
     <>
-      {/* 011 E153: stats first, then favorites, then all series. */}
-      <Link
-        to="/user/$handle/stats"
-        params={{ handle }}
-        viewTransition={pageViewTransition}
-        className="grid grid-cols-3 gap-4 px-3 transition-opacity hover:opacity-80"
-      >
-        <StatTile size="compact" label={t("stats.timeSpent")} value={timeSpentValue} />
-        <StatTile
-          size="compact"
-          label={t("stats.episodesWatched")}
-          value={(stats?.episodesWatched ?? 0).toLocaleString("tr-TR")}
-        />
-        <StatTile
-          size="compact"
-          label={t("stats.activeSeries")}
-          value={(stats?.itemCount.watching ?? 0).toLocaleString("tr-TR")}
-        />
-      </Link>
+      {/* 011 E153: stats first, then favorites, then all series. Hidden when library is empty. */}
+      {allSeries.length > 0 ? (
+        <Link
+          to="/user/$handle/stats"
+          params={{ handle }}
+          viewTransition={pageViewTransition}
+          className="flex items-center px-3 transition-opacity hover:opacity-80"
+        >
+          <ProfileStatItem label={t("stats.timeSpent")} value={timeSpentValue} />
+          <ProfileStatDivider />
+          <ProfileStatItem
+            label={t("stats.episodesWatched")}
+            value={(stats?.episodesWatched ?? 0).toLocaleString("tr-TR")}
+          />
+          <ProfileStatDivider />
+          <ProfileStatItem
+            label={t("stats.activeSeries")}
+            value={(stats?.itemCount.watching ?? 0).toLocaleString("tr-TR")}
+          />
+        </Link>
+      ) : null}
 
-      <SeriesGridSection
-        heading={
-          favorites.length > PROFILE_FAVORITES_LIMIT ? (
-            <Link
-              to="/user/$handle/favorites"
-              params={{ handle }}
-              viewTransition={pageViewTransition}
-              className={HUB_LINK_CLASS}
-            >
+      {allSeries.length > 0 ? (
+        <SeriesGridSection
+          heading={
+            favorites.length > PROFILE_FAVORITES_LIMIT ? (
+              <Link
+                to="/user/$handle/favorites"
+                params={{ handle }}
+                viewTransition={pageViewTransition}
+                className={HUB_LINK_CLASS}
+              >
+                <HubHeaderContent
+                  icon={Heart}
+                  label={t("profile.favorites.title")}
+                  count={favorites.length}
+                  linked
+                />
+              </Link>
+            ) : (
               <HubHeaderContent
                 icon={Heart}
                 label={t("profile.favorites.title")}
                 count={favorites.length}
-                linked
               />
-            </Link>
-          ) : (
-            <HubHeaderContent
-              icon={Heart}
-              label={t("profile.favorites.title")}
-              count={favorites.length}
-            />
-          )
-        }
-        items={favorites}
-        limit={PROFILE_FAVORITES_LIMIT}
-        emptyText={t("profile.favorites.empty")}
-      />
+            )
+          }
+          items={favorites}
+          limit={PROFILE_FAVORITES_LIMIT}
+          emptyTitle={t("profile.favorites.emptyTitle")}
+          emptyHint={t("profile.favorites.empty")}
+        />
+      ) : null}
 
-      <SeriesGridSection
-        heading={
-          allSeries.length > PROFILE_ALL_SERIES_LIMIT ? (
-            <Link
-              to="/user/$handle/all-series"
-              params={{ handle }}
-              viewTransition={pageViewTransition}
-              className={HUB_LINK_CLASS}
+      {allSeries.length > 0 ? (
+        <SeriesGridSection
+          heading={
+            allSeries.length > PROFILE_ALL_SERIES_LIMIT ? (
+              <Link
+                to="/user/$handle/all-series"
+                params={{ handle }}
+                viewTransition={pageViewTransition}
+                className={HUB_LINK_CLASS}
+              >
+                <HubHeaderContent
+                  icon={Clapperboard}
+                  label={t("profile.allSeries")}
+                  count={total}
+                  linked
+                />
+              </Link>
+            ) : (
+              <HubHeaderContent icon={Clapperboard} label={t("profile.allSeries")} count={total} />
+            )
+          }
+          items={allSeries}
+          limit={PROFILE_ALL_SERIES_LIMIT}
+          emptyTitle={t("profile.allSeriesEmpty")}
+          emptyHint={t("profile.allSeriesEmptyHint")}
+        />
+      ) : null}
+
+      {allSeries.length > 0 ? (
+        <section className="flex flex-col">
+          <HubSectionHeader>
+            <Link to="/watch/history" viewTransition={pageViewTransition} className={HUB_LINK_CLASS}>
+              <HubHeaderContent icon={History} label={t("watch.history")} linked />
+            </Link>
+          </HubSectionHeader>
+        </section>
+      ) : null}
+
+      {showLogout ? (
+        <section className="flex flex-col">
+          <HubSectionHeader>
+            <button
+              type="button"
+              onClick={onLogout}
+              disabled={logoutPending}
+              className={`${HUB_LINK_CLASS} disabled:opacity-50`}
             >
-              <HubHeaderContent
-                icon={Clapperboard}
-                label={t("profile.allSeries")}
-                count={total}
-                linked
-              />
-            </Link>
-          ) : (
-            <HubHeaderContent icon={Clapperboard} label={t("profile.allSeries")} count={total} />
-          )
-        }
-        items={allSeries}
-        limit={PROFILE_ALL_SERIES_LIMIT}
-        emptyText={t("profile.allSeriesEmpty")}
-      />
-
-      <section className="flex flex-col">
-        <HubSectionHeader>
-          <Link to="/watch/history" viewTransition={pageViewTransition} className={HUB_LINK_CLASS}>
-            <HubHeaderContent icon={History} label={t("watch.history")} linked />
-          </Link>
-        </HubSectionHeader>
-      </section>
+              <HubHeaderContent icon={LogOut} label={t("auth.account.logout")} />
+            </button>
+          </HubSectionHeader>
+        </section>
+      ) : null}
     </>
   );
 }
@@ -295,8 +343,17 @@ export function ProfilePage() {
 }
 
 function ProfilePageContent({ handle, session }: { handle: string; session: AuthSession }) {
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const statsQuery = useQuery({ queryKey: ["stats", tz], queryFn: () => getStats(tz) });
+  const logoutMutation = useMutation({
+    mutationFn: logout,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["auth-session"] });
+      void navigate({ to: "/login" });
+    },
+  });
   const libraryQuery = useQuery({
     queryKey: ["library", "lastWatched"],
     queryFn: () => listSeries({ sort: "lastWatched" }),
@@ -345,6 +402,9 @@ function ProfilePageContent({ handle, session }: { handle: string; session: Auth
             stats={statsQuery.data}
             allSeries={allSeries}
             total={libraryQuery.data?.total ?? allSeries.length}
+            showLogout={session.mode === "multi"}
+            onLogout={() => logoutMutation.mutate()}
+            logoutPending={logoutMutation.isPending}
           />
         </div>
       )}

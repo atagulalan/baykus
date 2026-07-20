@@ -1,4 +1,4 @@
-import type { SeriesDetail, SeriesPreview, SeasonProgress } from "../api/types.ts";
+import type { SeasonProgress, SeriesDetail, SeriesPreview } from "../api/types.ts";
 import { isEpisodeAired } from "./airing.ts";
 
 /** Map preview DTO → SeriesDetail so /series/new can reuse the detail page chrome. */
@@ -9,13 +9,24 @@ export function seriesPreviewAsDetail(preview: SeriesPreview): SeriesDetail {
 
   for (const season of preview.seasons) {
     if (season.number === 0) continue;
-    let seasonTotal = 0;
+    let airedCount = 0;
+    let announcedCount = 0;
     for (const ep of season.episodes) {
-      seasonTotal += 1;
-      if (isEpisodeAired(ep)) aired += 1;
+      announcedCount += 1;
+      if (isEpisodeAired(ep)) {
+        airedCount += 1;
+        aired += 1;
+      }
     }
-    total += seasonTotal;
-    seasonEntries.push({ number: season.number, watched: 0, total: seasonTotal });
+    total += announcedCount;
+    // E50: omit zero-aired seasons from the segmented bar.
+    if (airedCount === 0) continue;
+    seasonEntries.push({
+      number: season.number,
+      watched: 0,
+      total: airedCount,
+      announced: announcedCount,
+    });
   }
 
   const networks =

@@ -1,4 +1,4 @@
-import { Heart, MoreVertical } from "lucide-react";
+import { Bell, BellOff, Bookmark, CircleX, Heart, MoreVertical, Play, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { ManualList, WatchCategory } from "../../../api/types.ts";
@@ -18,7 +18,7 @@ interface SeriesActionsMenuProps {
 }
 
 const MENU_ITEM_CLASS =
-  "block w-full px-4 py-3.5 text-left text-xs font-mono text-muted hover:text-snow hover:bg-white/5 transition-colors border-b border-white/5";
+  "flex w-full items-center gap-2 px-4 py-3.5 text-left text-xs font-mono text-muted hover:text-snow hover:bg-white/5 transition-colors border-b border-white/5";
 
 /**
  * Series detail's overflow menu (favorite / list / mute / remove). Extracted so it
@@ -66,7 +66,7 @@ export function SeriesActionsMenu({
           type="button"
           onClick={() => act(onToggleFavorite)}
           aria-pressed={favorite}
-          className={`flex w-full items-center gap-2 ${MENU_ITEM_CLASS}`}
+          className={`${MENU_ITEM_CLASS}`}
         >
           <Heart size={16} className={favorite ? "fill-yellow text-yellow" : ""} />
           {t(favorite ? "series.unfavorite" : "series.favorite")}
@@ -77,6 +77,7 @@ export function SeriesActionsMenu({
             onClick={() => act(() => onChangeManualList(null))}
             className={MENU_ITEM_CLASS}
           >
+            <Play size={16} />
             {t("category.watching")}
           </button>
         )}
@@ -86,6 +87,7 @@ export function SeriesActionsMenu({
             onClick={() => act(() => onChangeManualList("watch_later"))}
             className={MENU_ITEM_CLASS}
           >
+            <Bookmark size={16} />
             {t("manualList.watch_later")}
           </button>
         )}
@@ -95,17 +97,20 @@ export function SeriesActionsMenu({
             onClick={() => act(() => onChangeManualList("stopped"))}
             className={MENU_ITEM_CLASS}
           >
+            <CircleX size={16} />
             {t("manualList.stopped")}
           </button>
         )}
         <button type="button" onClick={() => act(onToggleMute)} className={MENU_ITEM_CLASS}>
+          {pushMuted ? <BellOff size={16} /> : <Bell size={16} />}
           {pushMuted ? t("series.unmute") : t("series.mute")}
         </button>
         <button
           type="button"
           onClick={() => act(onRemove)}
-          className="block w-full px-4 py-3.5 text-left text-xs font-mono text-red-400 hover:text-red-300 hover:bg-white/5 transition-colors"
+          className="flex w-full items-center gap-2 px-4 py-3.5 text-left text-xs font-mono text-red-400 hover:text-red-300 hover:bg-white/5 transition-colors"
         >
+          <Trash2 size={16} />
           {t("library.card.remove")}
         </button>
       </Modal>

@@ -18,14 +18,58 @@ afterEach(() => {
 });
 
 describe("uiPrefs (E143)", () => {
-  it("defaults watch sections and warning flag", () => {
+  it("defaults to home categories (E186) excluding needs_review", () => {
     const prefs = readUiPrefs();
+    expect(prefs.watchSections).toEqual([
+      "watching",
+      "not_watched_recently",
+      "not_started",
+      "watch_later",
+      "up_to_date",
+    ]);
     expect(prefs.watchSections).toEqual(DEFAULT_WATCH_SECTIONS);
     expect(prefs.skipSectionRemoveConfirm).toBe(false);
     expect(prefs.historyCollapsed).toBe(false);
     expect(prefs.showNextUpCarousel).toBe(true);
     expect(prefs.browseView).toBe("list");
     expect(readBrowsePath()).toBe("/watch");
+  });
+
+  it("expands prior factory defaults to the home section set (E186)", () => {
+    hydrateUiPrefsFromServer({
+      libraryBrowse: { sort: "title", category: ["watching"] },
+      watchSections: ["watching", "not_watched_recently", "up_to_date"],
+      watchSectionSorts: {},
+      historyCollapsed: false,
+      skipSectionRemoveConfirm: false,
+      showNextUpCarousel: true,
+      browseView: "list",
+    });
+    expect(readUiPrefs().watchSections).toEqual(DEFAULT_WATCH_SECTIONS);
+
+    hydrateUiPrefsFromServer({
+      libraryBrowse: { sort: "title", category: ["watching"] },
+      watchSections: ["watching", "not_watched_recently"],
+      watchSectionSorts: {},
+      historyCollapsed: false,
+      skipSectionRemoveConfirm: false,
+      showNextUpCarousel: true,
+      browseView: "list",
+    });
+    expect(readUiPrefs().watchSections).toEqual(DEFAULT_WATCH_SECTIONS);
+  });
+
+  it("keeps intentional custom section lists", () => {
+    hydrateUiPrefsFromServer({
+      libraryBrowse: { sort: "title", category: ["watching"] },
+      watchSections: ["watching", "finished"],
+      watchSectionSorts: {},
+      historyCollapsed: false,
+      skipSectionRemoveConfirm: false,
+      showNextUpCarousel: true,
+      browseView: "list",
+    });
+    expect(readUiPrefs().watchSections).toEqual(["watching", "finished"]);
   });
 
   it("persists patches", () => {

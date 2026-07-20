@@ -106,7 +106,7 @@ describe("EpisodeRow", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
-  it("opens the watched-options sheet when a watched checkbox is clicked", async () => {
+  it("opens the watched-options menu when a watched checkbox is clicked", async () => {
     const user = userEvent.setup();
     const onToggleWatch = vi.fn();
     await renderWithRouter(
@@ -130,7 +130,7 @@ describe("EpisodeRow", () => {
     expect(screen.getByText("İzlenmedi olarak işaretle")).toBeInTheDocument();
   });
 
-  it("Shift+clicks a watched checkbox to unwatch without opening the sheet", async () => {
+  it("Shift+clicks a watched checkbox to unwatch without opening the menu", async () => {
     const user = userEvent.setup();
     const onToggleWatch = vi.fn();
     await renderWithRouter(

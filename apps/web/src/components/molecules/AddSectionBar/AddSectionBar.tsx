@@ -1,4 +1,4 @@
-import { GripVertical, Pin, Plus, SlidersHorizontal, X } from "lucide-react";
+import { Check, GripVertical, Pin, Plus, SlidersHorizontal, X } from "lucide-react";
 import { type ReactNode, useCallback, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
@@ -88,6 +88,48 @@ type SectionRowContentProps = {
   pinnedLabel: string;
 };
 
+function SortOptionList({
+  category,
+  currentSort,
+  sortOptions,
+  onSortChange,
+  sortLabel,
+}: {
+  category: WatchCategory;
+  currentSort: LibrarySort;
+  sortOptions: LibrarySort[];
+  onSortChange: (category: WatchCategory, sort: LibrarySort) => void;
+  sortLabel: string;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <div
+      role="listbox"
+      aria-label={`${sortLabel}: ${t(`category.${category}`)}`}
+      className="flex flex-col gap-0.5"
+    >
+      {sortOptions.map((sort) => (
+        <button
+          key={sort}
+          type="button"
+          role="option"
+          aria-selected={sort === currentSort}
+          onClick={() => onSortChange(category, sort)}
+          className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left font-mono text-xs transition-colors ${
+            sort === currentSort ? "bg-white/5 text-yellow" : "text-snow hover:bg-white/5"
+          }`}
+        >
+          {t(`library.sort.${sort}`)}
+          {sort === currentSort ? (
+            <Check size={14} className="shrink-0 text-yellow" aria-hidden />
+          ) : null}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function SectionRowContent({
   category,
   sortOnly,
@@ -128,24 +170,24 @@ function SectionRowContent({
         {t(`category.${category}`)}
       </span>
 
-      {sortOptions.length > 0 ? (
-        <label className="sr-only" htmlFor={`section-sort-${category}`}>
-          {sortLabel}
-        </label>
-      ) : null}
-      {sortOptions.length > 0 ? (
-        <select
-          id={`section-sort-${category}`}
-          value={currentSort}
-          onChange={(e) => onSortChange(category, e.target.value as LibrarySort)}
-          className="max-w-[7.5rem] truncate rounded-lg border border-white/10 bg-void/80 px-2 py-1.5 font-mono text-[10px] text-muted uppercase tracking-wide transition-colors hover:border-white/20 focus:border-yellow/40 focus:text-snow focus:outline-none"
-        >
-          {sortOptions.map((sort) => (
-            <option key={sort} value={sort}>
-              {t(`library.sort.${sort}`)}
-            </option>
-          ))}
-        </select>
+      {sortOptions.length > 0 && !sortOnly ? (
+        <>
+          <label className="sr-only" htmlFor={`section-sort-${category}`}>
+            {sortLabel}
+          </label>
+          <select
+            id={`section-sort-${category}`}
+            value={currentSort}
+            onChange={(e) => onSortChange(category, e.target.value as LibrarySort)}
+            className="max-w-[7.5rem] truncate rounded-lg border border-white/10 bg-void/80 px-2 py-1.5 font-mono text-[10px] text-muted uppercase tracking-wide transition-colors hover:border-white/20 focus:border-yellow/40 focus:text-snow focus:outline-none"
+          >
+            {sortOptions.map((sort) => (
+              <option key={sort} value={sort}>
+                {t(`library.sort.${sort}`)}
+              </option>
+            ))}
+          </select>
+        </>
       ) : null}
 
       {rightAction === "remove" ? (
@@ -288,7 +330,7 @@ export function AddSectionBar(props: AddSectionBarProps) {
   }
 
   return (
-    <div className={wrapperClass}>
+    <div className={`${wrapperClass} ${sortOnly ? "relative" : ""}`}>
       <button
         type="button"
         onClick={() => setOpen(true)}
@@ -305,7 +347,8 @@ export function AddSectionBar(props: AddSectionBarProps) {
       <Modal
         isOpen={open}
         onClose={() => setOpen(false)}
-        desktop="modal"
+        desktop={sortOnly ? "popover" : "modal"}
+        {...(sortOnly ? { popoverClassName: "w-72" } : {})}
         title={modalTitle}
         className="flex max-h-[min(70vh,32rem)] flex-col gap-3 overflow-y-auto p-4"
       >
@@ -330,33 +373,59 @@ export function AddSectionBar(props: AddSectionBarProps) {
                 ? "border-dashed border-white/10 bg-white/[0.01]"
                 : "border-white/8 bg-white/[0.02]";
 
+            if (sortOnly) {
+              return (
+                <li
+                  key={category}
+                  className={`flex flex-col gap-2 rounded-xl border py-2 px-3 ${look}`}
+                >
+                  <div className="flex items-center gap-2">
+                    <SectionRowContent
+                      category={category}
+                      sortOnly
+                      dimmed={false}
+                      currentSort={currentSort}
+                      sortOptions={sortOptions}
+                      rightAction="none"
+                      onSortChange={onSortChange}
+                      onRemove={removeSection}
+                      onAdd={addSection}
+                      sortLabel={sortLabel}
+                      removeLabel={removeLabel}
+                      addLabel={t("watch.addSectionNamed", {
+                        category: t(`category.${category}`),
+                      })}
+                      pinnedLabel={pinnedLabel}
+                    />
+                  </div>
+                  {sortOptions.length > 0 ? (
+                    <SortOptionList
+                      category={category}
+                      currentSort={currentSort}
+                      sortOptions={sortOptions}
+                      onSortChange={onSortChange}
+                      sortLabel={sortLabel}
+                    />
+                  ) : null}
+                </li>
+              );
+            }
+
             return (
               <li
                 key={category}
-                ref={sortOnly ? undefined : (el) => reorder.setRowRef(category, el)}
+                ref={(el) => reorder.setRowRef(category, el)}
                 aria-grabbed={dragging || undefined}
-                aria-label={
-                  sortOnly
-                    ? undefined
-                    : t("watch.reorderSection", { category: t(`category.${category}`) })
-                }
-                onPointerDown={
-                  sortOnly ? undefined : (e) => reorder.onRowPointerDown(sourceIndex, category, e)
-                }
-                className={`relative flex items-center gap-2 rounded-xl border py-2 ${
-                  sortOnly ? "px-3" : "touch-none cursor-grab px-2 active:cursor-grabbing"
-                } ${look}`}
-                style={
-                  sortOnly
-                    ? undefined
-                    : {
-                        transform: shiftY ? `translateY(${shiftY}px)` : undefined,
-                        transition:
-                          reorder.isDragging && !shiftY
-                            ? `transform ${slideMs}ms cubic-bezier(0.2, 0, 0, 1)`
-                            : undefined,
-                      }
-                }
+                aria-label={t("watch.reorderSection", { category: t(`category.${category}`) })}
+                onPointerDown={(e) => reorder.onRowPointerDown(sourceIndex, category, e)}
+                className={`relative flex items-center gap-2 rounded-xl border py-2 touch-none cursor-grab px-2 active:cursor-grabbing ${look}`}
+                style={{
+                  transform: shiftY ? `translateY(${shiftY}px)` : undefined,
+                  transition:
+                    reorder.isDragging && !shiftY
+                      ? `transform ${slideMs}ms cubic-bezier(0.2, 0, 0, 1)`
+                      : undefined,
+                }}
               >
                 <div
                   className={`flex w-full items-center gap-2 ${dragging ? "invisible" : ""}`}
@@ -364,7 +433,7 @@ export function AddSectionBar(props: AddSectionBarProps) {
                 >
                   <SectionRowContent
                     category={category}
-                    sortOnly={sortOnly}
+                    sortOnly={false}
                     dimmed={dimmed}
                     currentSort={currentSort}
                     sortOptions={sortOptions}
@@ -374,7 +443,9 @@ export function AddSectionBar(props: AddSectionBarProps) {
                     onAdd={addSection}
                     sortLabel={sortLabel}
                     removeLabel={removeLabel}
-                    addLabel={t("watch.addSectionNamed", { category: t(`category.${category}`) })}
+                    addLabel={t("watch.addSectionNamed", {
+                      category: t(`category.${category}`),
+                    })}
                     pinnedLabel={pinnedLabel}
                   />
                 </div>

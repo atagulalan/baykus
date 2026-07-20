@@ -150,12 +150,16 @@ export function SettingsPage() {
   });
 
   if (query.isLoading) {
-    return <SkeletonSettingsSections sections={3} />;
+    return (
+      <div className="page-top">
+        <SkeletonSettingsSections sections={3} />
+      </div>
+    );
   }
 
   if (query.isError) {
     return (
-      <div className="content-inset flex flex-col items-center gap-2 py-24 text-center">
+      <div className="page-top content-inset flex flex-col items-center gap-2 py-24 text-center">
         <p className="text-muted">{t("errors.generic")}</p>
         <button
           type="button"
@@ -378,7 +382,7 @@ export function SettingsPage() {
 
   return (
     <>
-      <div className="mx-auto max-w-4xl">
+      <div className="page-top mx-auto max-w-4xl">
         <div className="mb-4">
           <PageTitleRow>{t("settings.title")}</PageTitleRow>
         </div>

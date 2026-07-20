@@ -4,6 +4,7 @@ import { CATEGORY_ICONS } from "../../../lib/categoryIcons.ts";
 import { SERIES_GRID_CLASSNAME } from "../../../lib/grid.ts";
 import type { LibrarySort } from "../../../lib/librarySort.ts";
 import { sortSeriesSummaries } from "../../../lib/sortSeries.ts";
+import { AccordionPanel } from "../../atoms/Accordion/Accordion.tsx";
 import { SectionHeader } from "../../molecules/SectionHeader/SectionHeader.tsx";
 import { SeriesCard } from "../../molecules/SeriesCard/SeriesCard.tsx";
 
@@ -39,15 +40,13 @@ export function CategorySection({
         inset="list"
         {...(onToggleCollapse ? { onClick: onToggleCollapse, expanded: !collapsed } : {})}
       />
-      <div data-expanded={!collapsed} className="section-collapse">
-        <div>
-          <div className={SERIES_GRID_CLASSNAME}>
-            {sorted.map((series) => (
-              <SeriesCard key={series.id} series={series} />
-            ))}
-          </div>
+      <AccordionPanel open={!collapsed} unmountOnExit={false} overflowVisibleWhenOpen>
+        <div className={SERIES_GRID_CLASSNAME}>
+          {sorted.map((series) => (
+            <SeriesCard key={series.id} series={series} />
+          ))}
         </div>
-      </div>
+      </AccordionPanel>
     </section>
   );
 }

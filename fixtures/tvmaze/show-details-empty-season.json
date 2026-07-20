@@ -1,0 +1,100 @@
+{
+  "id": 44933,
+  "name": "Severance",
+  "status": "Running",
+  "premiered": "2022-02-18",
+  "ended": null,
+  "genres": ["Drama", "Science-Fiction"],
+  "summary": "<p>Mark leads a team of office workers whose memories have been surgically divided.</p>",
+  "network": null,
+  "webChannel": {
+    "id": 310,
+    "name": "Apple TV",
+    "country": null
+  },
+  "image": {
+    "medium": "https://static.tvmaze.com/uploads/images/medium_portrait/545/1362561.jpg",
+    "original": "https://static.tvmaze.com/uploads/images/original_untouched/545/1362561.jpg"
+  },
+  "averageRuntime": 50,
+  "externals": {
+    "imdb": "tt11280740",
+    "thetvdb": 371980
+  },
+  "_embedded": {
+    "seasons": [
+      {
+        "id": 102615,
+        "number": 1,
+        "name": "",
+        "episodeOrder": 2,
+        "premiereDate": "2022-02-18",
+        "endDate": "2022-02-18",
+        "summary": "<p>Season one.</p>",
+        "image": {
+          "medium": "https://static.tvmaze.com/uploads/images/medium_portrait/545/1362561.jpg",
+          "original": "https://static.tvmaze.com/uploads/images/original_untouched/545/1362561.jpg"
+        }
+      },
+      {
+        "id": 137329,
+        "number": 2,
+        "name": "",
+        "episodeOrder": 1,
+        "premiereDate": "2025-01-17",
+        "endDate": "2025-01-17",
+        "summary": "<p>Season two.</p>",
+        "image": {
+          "medium": "https://static.tvmaze.com/uploads/images/medium_portrait/552/1380557.jpg",
+          "original": "https://static.tvmaze.com/uploads/images/original_untouched/552/1380557.jpg"
+        }
+      },
+      {
+        "id": 183341,
+        "number": 3,
+        "name": "",
+        "episodeOrder": null,
+        "premiereDate": null,
+        "endDate": null,
+        "summary": null,
+        "image": null
+      }
+    ],
+    "episodes": [
+      {
+        "season": 1,
+        "number": 1,
+        "name": "Good News About Hell",
+        "type": "regular",
+        "airdate": "2022-02-18",
+        "airstamp": "2022-02-18T12:00:00+00:00",
+        "runtime": 57,
+        "summary": "<p>Mark returns.</p>",
+        "image": null
+      },
+      {
+        "season": 1,
+        "number": 2,
+        "name": "Half Loop",
+        "type": "regular",
+        "airdate": "2022-02-18",
+        "airstamp": "2022-02-18T12:00:00+00:00",
+        "runtime": 53,
+        "summary": "<p>Helly adapts.</p>",
+        "image": null
+      },
+      {
+        "season": 2,
+        "number": 1,
+        "name": "Hello, Ms. Cobel",
+        "type": "regular",
+        "airdate": "2025-01-17",
+        "airstamp": "2025-01-17T12:00:00+00:00",
+        "runtime": 50,
+        "summary": "<p>Mark wakes.</p>",
+        "image": null
+      }
+    ],
+    "images": []
+  }
+}

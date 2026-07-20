@@ -144,7 +144,7 @@ function TodayEmptyPanel({
           <Link
             to="/search"
             viewTransition={pageViewTransition}
-            className="border border-white/10 px-4 py-2 font-mono text-[10px] uppercase tracking-widest text-snow transition-colors hover:bg-white/5"
+            className="inline-flex min-h-10 items-center gap-2 rounded-full bg-yellow px-5 py-2.5 font-mono text-[10px] uppercase tracking-widest text-[#080808] shadow-sm transition-opacity hover:opacity-90 active:scale-[0.98]"
           >
             {t("calendar.empty.suggestAdd")}
           </Link>
@@ -609,7 +609,7 @@ export function CalendarPage({ mode }: { mode: Mode }) {
 
   return (
     <PullToRefresh onRefresh={pullRefresh}>
-      <div className="flex flex-col gap-4">
+      <div className="page-top-flush flex flex-col gap-4 sm:px-3 lg:px-0">
         <PageTitleRow
           action={<CalendarModeToggle pathname={pathname} className={PAGE_HEADING_ACTION_CLASS} />}
         >

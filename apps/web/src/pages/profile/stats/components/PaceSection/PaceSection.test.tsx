@@ -19,4 +19,12 @@ describe("PaceSection (render)", () => {
     );
     expect(container.firstChild).toBeNull();
   });
+
+  it("shows caught-up copy when projectedWeeks is zero", () => {
+    renderWithProviders(
+      <PaceSection stats={{ pace: { episodesPerWeek: 4.2, projectedWeeks: 0 } }} />,
+    );
+    expect(screen.getByText("Bitirdin")).toBeInTheDocument();
+    expect(screen.queryByText(/yani tahmini/i)).not.toBeInTheDocument();
+  });
 });

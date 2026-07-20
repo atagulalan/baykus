@@ -5,6 +5,13 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getAuthSession, login } from "../../api/client.ts";
 
+const AUTH_INPUT =
+  "rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-snow transition-colors focus:border-yellow/50 focus:outline-none focus:ring-1 focus:ring-yellow/30";
+const AUTH_PANEL =
+  "flex w-full max-w-sm flex-col gap-4 rounded-2xl border border-white/10 bg-[#101010] p-6 shadow-[0_16px_48px_rgba(0,0,0,0.5)] backdrop-blur-xl";
+const AUTH_CTA =
+  "rounded-full bg-yellow px-4 py-2.5 font-mono text-[10px] uppercase tracking-widest text-[#080808] transition-opacity hover:opacity-90 disabled:opacity-50";
+
 export function LoginPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -35,33 +42,33 @@ export function LoginPage() {
           e.preventDefault();
           loginMutation.mutate();
         }}
-        className="flex w-full max-w-sm flex-col gap-4 border border-white/5 bg-[#101010] p-6"
+        className={AUTH_PANEL}
       >
-        <h1 className="flex items-center justify-center gap-2 text-center font-bold text-xl">
+        <h1 className="flex items-center justify-center gap-2 text-center font-display italic text-xl text-snow">
           <Bird size={22} strokeWidth={1.5} aria-hidden />
           {t("app.name")}
         </h1>
 
         {mode === "multi" && (
-          <label className="flex flex-col gap-1 text-sm">
+          <label className="flex flex-col gap-1.5 text-sm">
             {t("auth.handle")}
             <input
               value={handle}
               onChange={(e) => setHandle(e.target.value)}
               autoComplete="username"
-              className="border border-white/10 bg-white/5 px-3 py-2 text-sm text-snow focus:border-yellow focus:outline-none"
+              className={AUTH_INPUT}
             />
           </label>
         )}
 
-        <label className="flex flex-col gap-1 text-sm">
+        <label className="flex flex-col gap-1.5 text-sm">
           {t("auth.password")}
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="current-password"
-            className="border border-white/10 bg-white/5 px-3 py-2 text-sm text-snow focus:border-yellow focus:outline-none"
+            className={AUTH_INPUT}
           />
         </label>
 
@@ -70,13 +77,13 @@ export function LoginPage() {
         <button
           type="submit"
           disabled={loginMutation.isPending || !password || (mode === "multi" && !handle)}
-          className="bg-yellow text-[#080808] font-mono text-[10px] uppercase tracking-widest px-4 py-2.5 disabled:opacity-50"
+          className={AUTH_CTA}
         >
           {t("auth.login")}
         </button>
 
         {mode === "multi" && (
-          <Link to="/claim" className="text-center text-sm text-muted underline">
+          <Link to="/claim" className="text-center text-sm text-muted underline hover:text-snow">
             {t("auth.needAccount")}
           </Link>
         )}

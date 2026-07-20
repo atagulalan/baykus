@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Navigate, Outlet, ScrollRestoration, useRouterState } from "@tanstack/react-router";
+import { Navigate, Outlet, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { getAuthSession } from "../../../api/client.ts";
@@ -8,13 +8,7 @@ import { AppEdgeBlur } from "./AppEdgeBlur.tsx";
 import { AppHeader } from "./AppHeader.tsx";
 import { AppTabBar } from "./AppTabBar.tsx";
 import { BrowseOrOutlet } from "./BrowseOrOutlet.tsx";
-import {
-  BARE_PATHS,
-  isProfileHeroPath,
-  isPullToRefreshPath,
-  isSeriesHeroPath,
-  useCommittedPathname,
-} from "./layoutShared.ts";
+import { BARE_PATHS } from "./layoutShared.ts";
 
 export function Layout() {
   const { t } = useTranslation();
@@ -24,12 +18,7 @@ export function Layout() {
   const sessionQuery = useQuery({ queryKey: ["auth-session"], queryFn: getAuthSession });
 
   if (isBarePath) {
-    return (
-      <>
-        <ScrollRestoration />
-        <Outlet />
-      </>
-    );
+    return <Outlet />;
   }
 
   if (sessionQuery.isLoading) return null;
@@ -39,7 +28,6 @@ export function Layout() {
 
   return (
     <div className="min-h-screen bg-void text-snow font-sans">
-      <ScrollRestoration />
       <a href="#main-content" className="skip-link">
         {t("common.skipToMain")}
       </a>
@@ -54,19 +42,20 @@ export function Layout() {
 }
 
 export function MainShell({ children }: { children: ReactNode }) {
-  // Committed match path — keep hero bleed stable until VT update commits.
-  const pathname = useCommittedPathname();
-  const heroBleed = isSeriesHeroPath(pathname) || isProfileHeroPath(pathname);
-  const flushTop = isPullToRefreshPath(pathname);
   return (
-    <main
-      id="main-content"
-      className={`mx-auto max-w-5xl pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:pb-8 ${
-        heroBleed ? "pt-0 -mt-[var(--app-header-height)]" : flushTop ? "pt-0 sm:pt-8" : "pt-8"
-      } ${heroBleed ? "" : "sm:px-3 lg:px-0"}`}
-      style={{ viewTransitionName: "app-main" }}
-    >
-      {children}
-    </main>
+    // VT name on a shell that freezes to 100dvh + overflow:hidden while
+    // :active-view-transition — old/new snapshots share one frame size so the
+    // cross-fade cannot aspect-stretch (browse↔hero main boxes differ).
+    // pt clears the fixed header; heroes cancel it with -mt (E183).
+    // Horizontal: MainShell stays full-bleed; pages that need a tablet gutter
+    // (library / calendar / watch history `sm:px-3 lg:px-0`) opt in themselves (E183 amends E157).
+    <div className="app-main-vt w-full bg-void" style={{ viewTransitionName: "app-main" }}>
+      <main
+        id="main-content"
+        className="mx-auto max-w-5xl pt-[var(--app-header-height)] pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:pb-8"
+      >
+        {children}
+      </main>
+    </div>
   );
 }

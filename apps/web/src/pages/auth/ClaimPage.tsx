@@ -7,6 +7,15 @@ import { claim, exportZipUrl, importZip } from "../../api/client.ts";
 
 const HANDLE_PATTERN = /^[a-z0-9-]{3,30}$/;
 
+const AUTH_INPUT =
+  "rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-snow transition-colors focus:border-yellow/50 focus:outline-none focus:ring-1 focus:ring-yellow/30";
+const AUTH_PANEL =
+  "flex w-full max-w-sm flex-col gap-4 rounded-2xl border border-white/10 bg-[#101010] p-6 shadow-[0_16px_48px_rgba(0,0,0,0.5)] backdrop-blur-xl";
+const AUTH_CTA =
+  "rounded-full bg-yellow px-4 py-2.5 font-mono text-[10px] uppercase tracking-widest text-[#080808] transition-opacity hover:opacity-90 disabled:opacity-50";
+const AUTH_SECONDARY =
+  "rounded-full border border-white/10 px-4 py-2.5 font-mono text-[10px] uppercase tracking-widest text-muted transition-colors hover:border-white/20 hover:text-snow";
+
 export function ClaimPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -43,7 +52,7 @@ export function ClaimPage() {
   if (claimedHandle) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-void px-4 text-snow">
-        <div className="flex w-full max-w-sm flex-col gap-4 border border-white/10 bg-[#101010] p-6 text-center">
+        <div className={`${AUTH_PANEL} text-center`}>
           <p>
             <TriangleAlert
               size={32}
@@ -55,17 +64,13 @@ export function ClaimPage() {
           <h1 className="font-display italic text-snow text-lg">{t("auth.claim.successTitle")}</h1>
           <p className="text-sm text-snow">{t("auth.claim.successBody")}</p>
           {seedWarning && <p className="text-sm text-yellow">{t("auth.claim.seedImportFailed")}</p>}
-          <a
-            href={exportZipUrl()}
-            download
-            className="bg-yellow px-4 py-2.5 font-mono text-[10px] text-[#080808] uppercase tracking-widest"
-          >
+          <a href={exportZipUrl()} download className={AUTH_CTA}>
             {t("settings.data.export")}
           </a>
           <button
             type="button"
             onClick={() => navigate({ to: "/watch" })}
-            className="border border-white/10 px-3 py-2 font-mono text-[10px] text-muted uppercase tracking-widest transition-colors hover:border-white/20 hover:text-snow"
+            className={AUTH_SECONDARY}
           >
             {t("auth.claim.continue")}
           </button>
@@ -81,52 +86,52 @@ export function ClaimPage() {
           e.preventDefault();
           claimMutation.mutate();
         }}
-        className="flex w-full max-w-sm flex-col gap-4 border border-white/10 bg-[#101010] p-6"
+        className={AUTH_PANEL}
       >
         <h1 className="flex items-center justify-center gap-2 text-center font-display italic text-snow text-xl">
           <Bird size={22} strokeWidth={1.5} aria-hidden />
           {t("auth.claim.title")}
         </h1>
 
-        <label className="flex flex-col gap-1 text-sm">
+        <label className="flex flex-col gap-1.5 text-sm">
           {t("auth.handle")}
           <input
             value={handle}
             onChange={(e) => setHandle(e.target.value)}
             autoComplete="username"
-            className="border border-white/10 bg-white/5 px-3 py-2 text-sm text-snow focus:border-yellow focus:outline-none"
+            className={AUTH_INPUT}
           />
           {handle.length > 0 && !handleValid && (
             <span className="text-xs text-red-400">{t("auth.claim.handleHint")}</span>
           )}
         </label>
 
-        <label className="flex flex-col gap-1 text-sm">
+        <label className="flex flex-col gap-1.5 text-sm">
           {t("auth.password")}
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="new-password"
-            className="border border-white/10 bg-white/5 px-3 py-2 text-sm text-snow focus:border-yellow focus:outline-none"
+            className={AUTH_INPUT}
           />
         </label>
 
-        <label className="flex flex-col gap-1 text-sm">
+        <label className="flex flex-col gap-1.5 text-sm">
           {t("auth.claim.confirmPassword")}
           <input
             type="password"
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
             autoComplete="new-password"
-            className="border border-white/10 bg-white/5 px-3 py-2 text-sm text-snow focus:border-yellow focus:outline-none"
+            className={AUTH_INPUT}
           />
           {confirm.length > 0 && !passwordsMatch && (
             <span className="text-xs text-red-400">{t("auth.claim.passwordMismatch")}</span>
           )}
         </label>
 
-        <label className="flex flex-col gap-1 text-sm">
+        <label className="flex flex-col gap-1.5 text-sm">
           {t("auth.claim.seedZip")}
           <input
             type="file"
@@ -143,7 +148,7 @@ export function ClaimPage() {
           disabled={
             claimMutation.isPending || !handleValid || !passwordsMatch || password.length < 8
           }
-          className="bg-yellow px-4 py-2.5 font-mono text-[10px] text-[#080808] uppercase tracking-widest disabled:opacity-50"
+          className={AUTH_CTA}
         >
           {t("auth.claim.submit")}
         </button>

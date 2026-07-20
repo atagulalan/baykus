@@ -1,4 +1,5 @@
-import { useParams } from "@tanstack/react-router";
+import { Link, useParams } from "@tanstack/react-router";
+import { Library } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { CATEGORY_ORDER } from "../../api/types.ts";
 import { PageTitle } from "../../components/atoms/PageTitle/PageTitle.tsx";
@@ -6,10 +7,15 @@ import { SkeletonCategoryGrid } from "../../components/atoms/Skeleton/Skeleton.t
 import { ProfileGuard } from "../../components/layout/ProfileGuard/ProfileGuard.tsx";
 import { AddSectionBar } from "../../components/molecules/AddSectionBar/AddSectionBar.tsx";
 import {
+  EMPTY_PANEL_CTA_CLASS,
+  EmptyPanel,
+} from "../../components/molecules/EmptyPanel/EmptyPanel.tsx";
+import {
   PullToRefresh,
   useLibrarySweepRefresh,
 } from "../../components/molecules/PullToRefresh/PullToRefresh.tsx";
 import { CategorySection } from "../../components/organisms/CategorySection/CategorySection.tsx";
+import { pageViewTransition } from "../../lib/pageViewTransition.ts";
 import { useLibraryFilter } from "../../lib/useLibraryFilter.ts";
 
 /** E60: full seven-category library grid. Per-section sort via header dialog (sortOnly AddSectionBar). */
@@ -33,7 +39,7 @@ function AllSeriesPageContent() {
 
   return (
     <PullToRefresh onRefresh={pullRefresh}>
-      <section className="flex flex-col gap-6">
+      <section className="page-top-flush flex flex-col gap-6">
         <div className="content-inset hidden flex-wrap items-center justify-between gap-2 sm:flex">
           <PageTitle>
             {t("profile.allSeries")}
@@ -68,12 +74,20 @@ function AllSeriesPageContent() {
             </button>
           </div>
         ) : items.length === 0 ? (
-          <div className="content-inset mt-4 flex flex-col items-center gap-4 border border-white/5 bg-[#101010] py-24 text-center">
-            <h1 className="font-display italic text-snow text-4xl tracking-tight">
-              {t("library.empty.title")}
-            </h1>
-            <p className="font-mono text-xs text-muted/70">{t("library.empty.hint")}</p>
-          </div>
+          <EmptyPanel
+            icon={Library}
+            title={t("library.empty.title")}
+            insetClassName="content-inset"
+            action={
+              <Link
+                to="/search"
+                viewTransition={pageViewTransition}
+                className={EMPTY_PANEL_CTA_CLASS}
+              >
+                {t("calendar.empty.suggestAdd")}
+              </Link>
+            }
+          />
         ) : (
           <div className="flex flex-col gap-8">
             {categoriesToRender.map((c) => (

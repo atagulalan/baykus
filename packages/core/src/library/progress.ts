@@ -20,7 +20,10 @@ export interface SeriesProgress {
 export interface SeasonProgressEntry {
   number: number;
   watched: number;
+  /** Aired episode count (E50). */
   total: number;
+  /** Announced episode count in the season (aired + unaired). E185. */
+  announced: number;
 }
 
 export interface SeasonProgress {
@@ -71,18 +74,18 @@ export function getSeriesProgress(
 }
 
 /**
- * E34/E50: per-season watched/total (total = aired, not announced) plus
- * `sequential` — whether the watched set is a contiguous (s,e)-ordered
- * prefix of the aired list. One episode query + one grouped watch query,
- * then a single JS scan; never per-episode. Seasons with zero aired
- * episodes are omitted entirely (E50).
+ * E34/E50/E185: per-season watched/total (total = aired) plus `announced`
+ * (aired + unaired in that season) and `sequential` — whether the watched
+ * set is a contiguous (s,e)-ordered prefix of the aired list. One episode
+ * query + one grouped watch query, then a single JS scan; never
+ * per-episode. Seasons with zero aired episodes are omitted entirely (E50).
  */
 export function getSeasonProgress(
   db: LibraryDatabase,
   itemId: number,
   now = new Date(),
 ): SeasonProgress {
-  const episodes = db
+  const allEpisodes = db
     .select({
       id: schema.episodes.id,
       seasonNumber: schema.episodes.seasonNumber,
@@ -92,8 +95,14 @@ export function getSeasonProgress(
     })
     .from(schema.episodes)
     .where(and(eq(schema.episodes.itemId, itemId), ne(schema.episodes.seasonNumber, 0)))
-    .all()
-    .filter((ep) => isEpisodeAired(ep, now));
+    .all();
+
+  const announcedBySeason = new Map<number, number>();
+  for (const ep of allEpisodes) {
+    announcedBySeason.set(ep.seasonNumber, (announcedBySeason.get(ep.seasonNumber) ?? 0) + 1);
+  }
+
+  const episodes = allEpisodes.filter((ep) => isEpisodeAired(ep, now));
 
   const watchedIds = new Set(
     db
@@ -120,6 +129,7 @@ export function getSeasonProgress(
       number,
       watched: eps.filter((e) => watchedIds.has(e.id)).length,
       total: eps.length,
+      announced: announcedBySeason.get(number) ?? eps.length,
     });
   }
 

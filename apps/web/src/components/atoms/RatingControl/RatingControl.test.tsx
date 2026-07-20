@@ -41,4 +41,13 @@ describe("RatingControl", () => {
     await user.click(badButton as HTMLElement);
     expect(onChange).toHaveBeenCalledWith(null);
   });
+
+  it("hides text labels in iconsOnly mode", () => {
+    renderWithProviders(<RatingControl value={null} onChange={() => {}} iconsOnly />);
+    expect(screen.queryByText("kötü")).not.toBeInTheDocument();
+    expect(screen.queryByText("normal")).not.toBeInTheDocument();
+    expect(screen.queryByText("iyi")).not.toBeInTheDocument();
+    const buttons = screen.getAllByRole("button");
+    expect(buttons[0]).toHaveAttribute("aria-label");
+  });
 });

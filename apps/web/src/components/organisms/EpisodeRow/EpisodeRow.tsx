@@ -374,6 +374,17 @@ export function EpisodeRow({
             aria-label={t("episode.toggleWatched")}
           />
         )}
+        <EpisodeRowWatchModals
+          showMarkUpToHereModal={showMarkUpToHereModal}
+          onCloseMarkUpToHereModal={() => setShowMarkUpToHereModal(false)}
+          showWatchedOptionsModal={showWatchedOptionsModal}
+          onCloseWatchedOptionsModal={() => setShowWatchedOptionsModal(false)}
+          onBulkUpToHere={onBulkUpToHere}
+          onToggleWatch={onToggleWatch}
+          onWatchAgain={onWatchAgain}
+          onEditDate={onEditDate}
+          watchCount={watchCount}
+        />
       </div>
     ) : null;
 
@@ -501,7 +512,7 @@ export function EpisodeRow({
         </div>
       </div>
       {episodeType === "finale" && (
-        <span className="shrink-0 border border-white/20 px-1.5 py-0.5 font-mono text-[9px] text-snow uppercase tracking-widest">
+        <span className="inline-flex shrink-0 items-center rounded-full border border-red-400/25 bg-red-400/10 px-2 py-0.5 font-mono text-[9px] uppercase tracking-wide text-red-300/90">
           {t("episode.finale")}
         </span>
       )}
@@ -571,7 +582,8 @@ export function EpisodeRow({
       className="episode-row flex min-w-0 flex-col"
       style={transitionName ? { viewTransitionName: transitionName } : undefined}
     >
-      {/* biome-ignore lint/a11y/useSemanticElements: row contains nested links/checkboxes — shell is a click target, not a nested button */}
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: row contains nested links/checkboxes — shell is a click target, not a nested button */}
+      {/* biome-ignore lint/a11y/useKeyWithClickEvents: keyboard activation stays on the nested sr-only details control */}
       <div
         className={`${shellClass} episode-row-shell cursor-pointer`}
         onClick={openDetailsFromShell}
@@ -592,18 +604,6 @@ export function EpisodeRow({
           </>
         )}
       </div>
-
-      <EpisodeRowWatchModals
-        showMarkUpToHereModal={showMarkUpToHereModal}
-        onCloseMarkUpToHereModal={() => setShowMarkUpToHereModal(false)}
-        showWatchedOptionsModal={showWatchedOptionsModal}
-        onCloseWatchedOptionsModal={() => setShowWatchedOptionsModal(false)}
-        onBulkUpToHere={onBulkUpToHere}
-        onToggleWatch={onToggleWatch}
-        onWatchAgain={onWatchAgain}
-        onEditDate={onEditDate}
-        watchCount={watchCount}
-      />
 
       <EpisodeDetailsModal
         open={showDetailsModal}

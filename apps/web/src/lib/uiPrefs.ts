@@ -2,6 +2,7 @@ import { updateSettings } from "../api/client.ts";
 import {
   type BrowseView,
   CATEGORY_ORDER,
+  HOME_CATEGORY_ORDER,
   type UiPrefsDto,
   type WatchCategory,
 } from "../api/types.ts";
@@ -69,9 +70,21 @@ function sessionRemove(key: string): void {
   }
 }
 
-/** E141: `watching` is pinned; defaults also include not_watched_recently.
- * `needs_review` is not a user section — Watch/Library prepend it only when non-empty (E156). */
-export const DEFAULT_WATCH_SECTIONS: WatchCategory[] = ["watching", "not_watched_recently"];
+/**
+ * E186 / E59: default Watch/Library sections = home categories minus `needs_review`
+ * (auto-prepended when non-empty — E156). `watching` stays pinned.
+ * Prior factory defaults (active-trio only / watching+recent) always expand to this set.
+ */
+export const DEFAULT_WATCH_SECTIONS: WatchCategory[] = HOME_CATEGORY_ORDER.filter(
+  (c) => c !== "needs_review",
+);
+
+/** Known prior factory defaults — always expanded to DEFAULT_WATCH_SECTIONS on parse. */
+const LEGACY_DEFAULT_WATCH_SECTIONS: readonly (readonly WatchCategory[])[] = [
+  ["watching", "not_watched_recently"],
+  ["watching", "not_watched_recently", "up_to_date"],
+];
+
 export const DEFAULT_BROWSE_VIEW: BrowseView = "list";
 
 export interface LibraryBrowsePrefs {
@@ -123,11 +136,21 @@ export function ensurePinnedWatchSections(cats: WatchCategory[]): WatchCategory[
     : (["watching", ...withoutNeedsReview] as WatchCategory[]);
 }
 
+/** Set when parseSections expands a prior factory default to DEFAULT_WATCH_SECTIONS. */
+let watchSectionsUpgraded = false;
+
 function parseSections(raw: unknown): WatchCategory[] {
+  watchSectionsUpgraded = false;
   if (!Array.isArray(raw)) return [...DEFAULT_WATCH_SECTIONS];
   const cats = raw.filter(isWatchCategory);
   if (cats.length === 0) return [...DEFAULT_WATCH_SECTIONS];
-  return ensurePinnedWatchSections(cats);
+  const pinned = ensurePinnedWatchSections(cats);
+  const key = pinned.join(",");
+  if (LEGACY_DEFAULT_WATCH_SECTIONS.some((legacy) => legacy.join(",") === key)) {
+    watchSectionsUpgraded = true;
+    return [...DEFAULT_WATCH_SECTIONS];
+  }
+  return pinned;
 }
 
 function parseSorts(raw: unknown): Partial<Record<WatchCategory, LibrarySort>> {
@@ -224,7 +247,10 @@ export function readUiPrefs(): UiPrefs {
       if (Object.keys(migrated).length > 0) writeUiPrefs(merged);
       return merged;
     }
-    return normalizePrefs(JSON.parse(raw) as Partial<UiPrefs>);
+    const prefs = normalizePrefs(JSON.parse(raw) as Partial<UiPrefs>);
+    // Persist the E186 home-set upgrade so the next load does not revert.
+    if (watchSectionsUpgraded) writeUiPrefs(prefs);
+    return prefs;
   } catch {
     return base;
   }
@@ -259,7 +285,9 @@ export function writeUiPrefs(prefs: UiPrefs): void {
  */
 export function hydrateUiPrefsFromServer(serverPrefs: UiPrefsDto | null): void {
   if (serverPrefs) {
-    persistLocal(normalizePrefs(serverPrefs));
+    const prefs = normalizePrefs(serverPrefs);
+    persistLocal(prefs);
+    if (watchSectionsUpgraded) syncToServer(prefs);
     return;
   }
   const local = readUiPrefs();

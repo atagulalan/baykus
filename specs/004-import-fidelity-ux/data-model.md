@@ -43,12 +43,15 @@ Route-level status → manual list (`apps/server/src/routes/tvtime.ts`):
 `plan_to_watch → watch_later`, `dropped → stopped`, `watching → null`.
 The `paused → null` row is deleted with the enum member.
 
-## `seasonProgress` (computed — semantics change only, E50)
-
-Interface unchanged from 003:
+## `seasonProgress` (computed — semantics change only, E50; `announced` additive E185)
 
 ```ts
-interface SeasonProgressEntry { number: number; watched: number; total: number }
+interface SeasonProgressEntry {
+  number: number
+  watched: number
+  total: number      // aired (E50)
+  announced: number  // aired + unaired in season (E185)
+}
 interface SeasonProgress { seasons: SeasonProgressEntry[]; sequential: boolean }
 ```
 
@@ -58,6 +61,9 @@ plain-date compare — E3):
 - `total` = **aired** episodes in that season *(was announced)*.
 - `watched` = aired episodes with ≥1 watch (watches on unaired episodes are
   ignored).
+- `announced` = all episodes in that season (aired + unaired). Used by the
+  web segmented bar to paint a blue caught-up bead when `watched ≥ total`
+  and `announced > total` (013 E185 / E180 parity).
 - Seasons whose aired count is 0 are **omitted** from `seasons` entirely.
 - `sequential` = contiguous-prefix test over the (s,e)-ordered **aired**
   non-special episode list.

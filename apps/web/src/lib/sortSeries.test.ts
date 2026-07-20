@@ -17,7 +17,7 @@ function stub(
     releaseStatus: null,
     network: null,
     progress: { aired: 1, watched: 0, total: 1 },
-    seasonProgress: { seasons: [{ number: 1, watched: 0, total: 1 }], sequential: true },
+    seasonProgress: { seasons: [{ number: 1, watched: 0, total: 1, announced: 1 }], sequential: true },
     nextUnwatched: {
       episodeId: 1,
       s: 1,

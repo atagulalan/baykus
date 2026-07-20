@@ -67,6 +67,9 @@ export function EpisodeRowWatchModals({
         <Modal
           isOpen={showWatchedOptionsModal}
           onClose={onCloseWatchedOptionsModal}
+          desktop="popover"
+          popoverAlign="end-top"
+          popoverClassName="w-56"
           title={t("episode.menu")}
           className="!p-0 !overflow-hidden"
         >
@@ -76,7 +79,7 @@ export function EpisodeRowWatchModals({
               onCloseWatchedOptionsModal();
               onWatchAgain();
             }}
-            className="block w-full border-white/5 border-b px-4 py-4 text-left font-mono text-muted text-sm transition-colors hover:bg-white/5 hover:text-snow"
+            className="block w-full border-white/5 border-b px-4 py-3.5 text-left font-mono text-muted text-xs transition-colors hover:bg-white/5 hover:text-snow"
           >
             {t("episode.watchAgain")}
           </button>
@@ -86,7 +89,7 @@ export function EpisodeRowWatchModals({
               onCloseWatchedOptionsModal();
               onEditDate();
             }}
-            className="block w-full border-white/5 border-b px-4 py-4 text-left font-mono text-muted text-sm transition-colors hover:bg-white/5 hover:text-snow"
+            className="block w-full border-white/5 border-b px-4 py-3.5 text-left font-mono text-muted text-xs transition-colors hover:bg-white/5 hover:text-snow"
           >
             {t("episode.editDate")}
           </button>
@@ -96,7 +99,7 @@ export function EpisodeRowWatchModals({
               onCloseWatchedOptionsModal();
               onToggleWatch();
             }}
-            className="block w-full px-4 py-4 text-left font-mono text-red-400 text-sm transition-colors hover:bg-white/5 hover:text-red-300"
+            className="block w-full px-4 py-3.5 text-left font-mono text-red-400 text-xs transition-colors hover:bg-white/5 hover:text-red-300"
           >
             {watchCount > 1 ? t("episode.removeRewatch") : t("episode.markAsUnwatched")}
           </button>

@@ -111,7 +111,7 @@ export function WatchHistoryPage() {
   const unwatchingEpisodeId = unwatch.isPending ? (unwatch.variables ?? null) : null;
 
   return (
-    <section className="flex flex-col gap-3">
+    <section className="page-top-flush flex flex-col gap-3 sm:px-3 lg:px-0">
       <PageTitleRow action={<HistorySortToggle className={PAGE_HEADING_ACTION_CLASS} />}>
         {t("watch.history")}
       </PageTitleRow>

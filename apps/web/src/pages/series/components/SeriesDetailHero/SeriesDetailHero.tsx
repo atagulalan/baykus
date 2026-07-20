@@ -1,10 +1,13 @@
 import { Info } from "lucide-react";
-import { useLayoutEffect, type CSSProperties } from "react";
+import { type CSSProperties, useLayoutEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { buildImageUrl } from "../../../../api/images.ts";
 import type { ManualList, SeriesDetail } from "../../../../api/types.ts";
 import { MediaImage } from "../../../../components/atoms/MediaImage/MediaImage.tsx";
-import { SegmentedProgress } from "../../../../components/atoms/SegmentedProgress/SegmentedProgress.tsx";
+import {
+  alignSeasonProgressAnnounced,
+  SegmentedProgress,
+} from "../../../../components/atoms/SegmentedProgress/SegmentedProgress.tsx";
 import { SeriesActionsMenu } from "../../../../components/organisms/SeriesActionsMenu/SeriesActionsMenu.tsx";
 import { SeriesDetailsSheet } from "../../../../components/organisms/SeriesDetailsSheet/SeriesDetailsSheet.tsx";
 import { progressTextColor } from "../../../../lib/categoryColors.ts";
@@ -54,9 +57,7 @@ export function SeriesDetailHero({
   const { watched, aired } = detail.progress;
   const lastPosterId = useLastPosterItemId();
   const posterActive = !preview && lastPosterId === detail.id;
-  const resolvedPosterStyle = preview
-    ? posterStyle
-    : posterMorphStyle(detail.id, posterActive);
+  const resolvedPosterStyle = preview ? posterStyle : posterMorphStyle(detail.id, posterActive);
 
   // Keep the return morph target armed for the matching library card.
   useLayoutEffect(() => {
@@ -65,7 +66,7 @@ export function SeriesDetailHero({
   }, [detail.id, preview]);
 
   return (
-    <section className="relative">
+    <section className="relative -mt-[var(--app-header-height)]" data-hero-banner="">
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
         {backdropUrl && (
           <MediaImage
@@ -156,15 +157,15 @@ export function SeriesDetailHero({
                 type="button"
                 disabled={startWatchingPending}
                 onClick={onStartWatching}
-                className="rounded-lg bg-yellow px-4 py-2.5 font-mono text-[10px] uppercase tracking-widest text-[#080808] transition-opacity hover:opacity-90 disabled:opacity-50"
+                className="inline-flex min-h-10 items-center gap-2 rounded-full bg-yellow px-5 py-2.5 font-mono text-[10px] uppercase tracking-widest text-[#080808] shadow-sm transition-opacity hover:opacity-90 active:scale-[0.98] disabled:opacity-50"
               >
-                {startWatchingPending ? t("search.loading") : t("series.startWatching")}
+                {startWatchingPending ? t("series.adding") : t("series.startWatching")}
               </button>
             </div>
           ) : (
             <div className="mt-2 flex flex-col gap-1">
               <SegmentedProgress
-                seasonProgress={detail.seasonProgress}
+                seasonProgress={alignSeasonProgressAnnounced(detail.seasonProgress, detail.seasons)}
                 watched={watched}
                 aired={aired}
                 category={detail.category}

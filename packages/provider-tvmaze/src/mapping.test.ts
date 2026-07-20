@@ -68,3 +68,24 @@ describe("mapSeriesDetails", () => {
     expect(s1e1?.overview).not.toMatch(/[<>]/);
   });
 });
+
+describe("mapSeriesDetails empty confirmed season (E184)", () => {
+  const show = loadFixture<TvmazeShow>("show-details-empty-season.json");
+  const details = mapSeriesDetails(show);
+
+  it("keeps a confirmed season with zero episodes", () => {
+    expect(details.seasons.map((s) => s.number)).toEqual([1, 2, 3]);
+    const season3 = details.seasons.find((s) => s.number === 3);
+    expect(season3?.episodes).toEqual([]);
+    expect(details.seasons.reduce((sum, s) => sum + s.episodes.length, 0)).toBe(3);
+  });
+
+  it("maps season metadata when present", () => {
+    const season1 = details.seasons.find((s) => s.number === 1);
+    expect(season1?.airDate).toBe("2022-02-18");
+    expect(season1?.overview).toBe("Season one.");
+    expect(season1?.posterRef).toBe(
+      "tvmaze:https://static.tvmaze.com/uploads/images/medium_portrait/545/1362561.jpg",
+    );
+  });
+});

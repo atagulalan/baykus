@@ -273,11 +273,11 @@ export const mockSeriesSummary: SeriesSummary = {
   progress: { watched: 42, aired: 62, total: 62 },
   seasonProgress: {
     seasons: [
-      { number: 1, watched: 7, total: 7 },
-      { number: 2, watched: 13, total: 13 },
-      { number: 3, watched: 13, total: 13 },
-      { number: 4, watched: 9, total: 13 },
-      { number: 5, watched: 0, total: 16 },
+      { number: 1, watched: 7, total: 7, announced: 7 },
+      { number: 2, watched: 13, total: 13, announced: 13 },
+      { number: 3, watched: 13, total: 13, announced: 13 },
+      { number: 4, watched: 9, total: 13, announced: 13 },
+      { number: 5, watched: 0, total: 16, announced: 16 },
     ],
     sequential: true,
   },

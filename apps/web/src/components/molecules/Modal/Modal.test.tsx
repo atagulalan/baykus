@@ -1,7 +1,7 @@
-import { fireEvent, screen } from "@testing-library/react";
+import { act, fireEvent, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { configureAxe } from "vitest-axe";
 import { renderWithProviders } from "../../../test/renderWithProviders.tsx";
 import { Modal } from "./Modal.tsx";
@@ -10,6 +10,11 @@ const axe = configureAxe({
   rules: {
     "color-contrast": { enabled: false },
   },
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+  document.body.style.overflow = "";
 });
 
 function mockMobileViewport() {
@@ -81,8 +86,9 @@ describe("Modal", () => {
         <p>Body</p>
       </Modal>,
     );
-    const backdrop = screen.getByRole("button", { name: "Kapat" });
-    await user.click(backdrop);
+    const backdrop = document.querySelector('[aria-hidden="true"]');
+    expect(backdrop).toBeInstanceOf(HTMLElement);
+    await user.click(backdrop as HTMLElement);
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
@@ -164,6 +170,33 @@ describe("Modal", () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 
+  it("closes the sheet from the header X button", async () => {
+    mockMobileViewport();
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    renderWithProviders(
+      <Modal isOpen onClose={onClose} title="Sheet title">
+        <p>Body copy</p>
+      </Modal>,
+    );
+
+    const dialog = screen.getByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "Kapat" }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses max-w-lg for large desktop modals", () => {
+    mockDesktopViewport();
+    renderWithProviders(
+      <Modal isOpen onClose={() => {}} title="Details" size="large">
+        <p>Body</p>
+      </Modal>,
+    );
+
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.className).toContain("max-w-lg");
+  });
+
   it("renders an iOS-like sheet handle and top radius on mobile", () => {
     mockMobileViewport();
     renderWithProviders(
@@ -228,6 +261,117 @@ describe("Modal", () => {
     expect(closing.className).not.toContain("animate-sheet-out");
   });
 
+  it("resets sheet offset so reopen slides in after a drag dismiss", () => {
+    mockMobileViewport();
+    vi.useFakeTimers();
+    const onClose = vi.fn();
+    const { rerender } = renderWithProviders(
+      <Modal isOpen onClose={onClose} title="Sheet title">
+        <p>Body copy</p>
+      </Modal>,
+    );
+
+    const dialog = screen.getByRole("dialog");
+    const handleZone = dialog.querySelector(".touch-none");
+    expect(handleZone).toBeInstanceOf(HTMLElement);
+    if (!(handleZone instanceof HTMLElement)) return;
+
+    fireEvent.mouseDown(handleZone, { button: 0, clientY: 100 });
+    fireEvent.mouseMove(handleZone, { clientY: 220 });
+    fireEvent.mouseUp(handleZone, { clientY: 220 });
+
+    rerender(
+      <Modal isOpen={false} onClose={onClose} title="Sheet title">
+        <p>Body copy</p>
+      </Modal>,
+    );
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+
+    rerender(
+      <Modal isOpen onClose={onClose} title="Sheet title">
+        <p>Body copy</p>
+      </Modal>,
+    );
+
+    const reopened = screen.getByRole("dialog");
+    expect(reopened.style.transform).toBe("");
+    expect(reopened.className).toContain("animate-sheet");
+    vi.useRealTimers();
+  });
+
+  it("restores body scroll after stacked modals close in either order", () => {
+    mockDesktopViewport();
+    vi.useFakeTimers();
+    document.body.style.overflow = "";
+
+    function Harness({
+      outerOpen,
+      innerOpen,
+    }: {
+      outerOpen: boolean;
+      innerOpen: boolean;
+    }) {
+      return (
+        <>
+          <Modal isOpen={outerOpen} onClose={() => {}}>
+            <p>Outer</p>
+          </Modal>
+          <Modal isOpen={innerOpen} onClose={() => {}}>
+            <p>Inner</p>
+          </Modal>
+        </>
+      );
+    }
+
+    const { rerender } = renderWithProviders(<Harness outerOpen innerOpen />);
+    expect(document.body.style.overflow).toBe("hidden");
+
+    // Close outer first while inner stays open — must remain locked.
+    rerender(<Harness outerOpen={false} innerOpen />);
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+    expect(document.body.style.overflow).toBe("hidden");
+
+    // Close inner — unlock after its exit animation.
+    rerender(<Harness outerOpen={false} innerOpen={false} />);
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+    expect(document.body.style.overflow).toBe("");
+
+    // Re-open both, then close together (Escape-style) — must not stick locked.
+    rerender(<Harness outerOpen innerOpen />);
+    expect(document.body.style.overflow).toBe("hidden");
+    rerender(<Harness outerOpen={false} innerOpen={false} />);
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+    expect(document.body.style.overflow).toBe("");
+  });
+
+  it("Escape closes only the topmost stacked modal", () => {
+    mockDesktopViewport();
+    const onCloseOuter = vi.fn();
+    const onCloseInner = vi.fn();
+    renderWithProviders(
+      <>
+        <Modal isOpen onClose={onCloseOuter}>
+          <p>Outer</p>
+        </Modal>
+        <Modal isOpen onClose={onCloseInner}>
+          <p>Inner</p>
+        </Modal>
+      </>,
+    );
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(onCloseInner).toHaveBeenCalledTimes(1);
+    expect(onCloseOuter).not.toHaveBeenCalled();
+  });
+
   it("names popover dialogs via aria-label from title prop", () => {
     mockDesktopViewport();
     renderWithProviders(
@@ -251,7 +395,53 @@ describe("Modal", () => {
     expect(screen.getByRole("dialog", { name: "Sort options" })).toBeInTheDocument();
   });
 
-  it("names desktop modals via aria-label when title prop is set without a heading", () => {
+  it("centers a popover on its anchor when popoverAlign is center", () => {
+    mockDesktopViewport();
+    renderWithProviders(
+      <span className="relative inline-flex">
+        <Modal
+          isOpen
+          onClose={() => {}}
+          desktop="popover"
+          popoverAlign="center"
+          popoverClassName="w-56 p-3"
+          title="Season menu"
+        >
+          <button type="button">Mark season watched</button>
+        </Modal>
+      </span>,
+    );
+
+    const dialog = screen.getByRole("dialog", { name: "Season menu" });
+    expect(dialog.style.translate).toBe("-50% 0");
+    expect(dialog.style.left).not.toBe("");
+    expect(dialog.style.right).toBe("");
+  });
+
+  it("places an end-top popover left of its anchor, top-aligned", () => {
+    mockDesktopViewport();
+    renderWithProviders(
+      <span className="relative inline-flex">
+        <Modal
+          isOpen
+          onClose={() => {}}
+          desktop="popover"
+          popoverAlign="end-top"
+          popoverClassName="w-56 p-3"
+          title="Episode menu"
+        >
+          <button type="button">Watch again</button>
+        </Modal>
+      </span>,
+    );
+
+    const dialog = screen.getByRole("dialog", { name: "Episode menu" });
+    expect(dialog.style.translate).toBe("");
+    expect(dialog.style.right).not.toBe("");
+    expect(dialog.style.left).toBe("");
+  });
+
+  it("names desktop modals via aria-labelledby when title prop is set", () => {
     mockDesktopViewport();
     renderWithProviders(
       <Modal isOpen onClose={() => {}} title="Manage sections">
@@ -261,7 +451,24 @@ describe("Modal", () => {
       </Modal>,
     );
 
-    expect(screen.getByRole("dialog", { name: "Manage sections" })).toBeInTheDocument();
+    const dialog = screen.getByRole("dialog", { name: "Manage sections" });
+    expect(dialog).toHaveAttribute("aria-labelledby");
+    expect(screen.getByRole("heading", { name: "Manage sections" })).toBeInTheDocument();
+  });
+
+  it("applies className padding on desktop even without a title prop", () => {
+    mockDesktopViewport();
+    renderWithProviders(
+      <Modal isOpen onClose={() => {}} className="flex flex-col gap-3 p-4">
+        <h2>Emin misiniz?</h2>
+        <p>Body copy</p>
+      </Modal>,
+    );
+
+    const dialog = screen.getByRole("dialog");
+    const body = dialog.querySelector(".p-4");
+    expect(body).not.toBeNull();
+    expect(body).toContainElement(screen.getByRole("heading", { name: "Emin misiniz?" }));
   });
 
   it("has no axe violations for popover with title prop", async () => {

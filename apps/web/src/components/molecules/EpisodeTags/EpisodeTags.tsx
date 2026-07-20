@@ -67,13 +67,16 @@ export function computeEpisodeTagKinds(
   return kinds;
 }
 
+const TAG_CHIP_BASE =
+  "inline-flex shrink-0 items-center justify-center rounded-full border px-2 py-0.5 font-mono text-[9px] uppercase tracking-wide";
+
 const TAG_STYLES: Record<EpisodeTagKind, string> = {
-  new: "border border-yellow/35 text-yellow",
-  upcoming: "border border-sky-400/40 text-sky-300",
-  premiere: "border border-purple-400/45 text-purple-300",
-  finale: "border border-red-400/40 text-red-300",
-  special: "border border-white/20 text-muted",
-  ova: "border border-violet-400/40 text-violet-300",
+  new: "border-yellow/25 bg-yellow/10 text-yellow/90",
+  upcoming: "border-sky-400/25 bg-sky-400/10 text-sky-300/90",
+  premiere: "border-purple-400/25 bg-purple-400/10 text-purple-300/90",
+  finale: "border-red-400/25 bg-red-400/10 text-red-300/90",
+  special: "border-white/15 bg-white/5 text-muted",
+  ova: "border-violet-400/25 bg-violet-400/10 text-violet-300/90",
 };
 
 const TAG_LABEL_KEYS: Record<EpisodeTagKind, string> = {
@@ -102,11 +105,7 @@ export function EpisodeTags(props: EpisodeTagsProps) {
       {kinds.map((kind) => {
         const label = t(TAG_LABEL_KEYS[kind]);
         return (
-          <span
-            key={kind}
-            title={label}
-            className={`inline-flex shrink-0 items-center justify-center font-mono text-[9px] uppercase tracking-widest px-1.5 py-0.5 ${TAG_STYLES[kind]}`}
-          >
+          <span key={kind} title={label} className={`${TAG_CHIP_BASE} ${TAG_STYLES[kind]}`}>
             {label}
           </span>
         );

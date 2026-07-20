@@ -20,6 +20,7 @@ export function PaceSection({ stats }: PaceSectionProps) {
   if (stats.pace === null) return null;
   const { episodesPerWeek, projectedWeeks } = stats.pace;
 
+  const caughtUp = projectedWeeks === 0;
   const estimatedDate = projectedCatchUpDate(projectedWeeks).toLocaleDateString(
     i18n.language === "en" ? "en-US" : "tr-TR",
     { day: "numeric", month: "long", year: "numeric" },
@@ -31,8 +32,8 @@ export function PaceSection({ stats }: PaceSectionProps) {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <StatTile
           label={t("stats.pace.projectionLabel")}
-          value={t("stats.pace.projection", { weeks: projectedWeeks })}
-          sub={t("stats.pace.projectionDate", { date: estimatedDate })}
+          value={t("stats.pace.projection", { count: projectedWeeks, weeks: projectedWeeks })}
+          sub={caughtUp ? undefined : t("stats.pace.projectionDate", { date: estimatedDate })}
         />
         <StatTile
           label={t("stats.pace.label")}

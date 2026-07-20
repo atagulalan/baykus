@@ -101,7 +101,10 @@ export interface SeriesProgress {
 export interface SeasonProgressEntry {
   number: number;
   watched: number;
+  /** Aired episode count (E50). */
   total: number;
+  /** Announced episode count (aired + unaired). E185. */
+  announced: number;
 }
 
 export interface SeasonProgress {

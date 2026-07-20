@@ -25,6 +25,10 @@ interface SectionHeaderProps {
  * Sticky centered pill header shared by the Library grid + Watch list surfaces:
  * icon · label · count. MainShell is always full-bleed: `page` owns the standard
  * screen inset, while `list` matches EpisodeRow.
+ *
+ * When both `leading` and `onClick` are set, `leading` sits outside the expand
+ * toggle so it can host its own control (e.g. season progress → actions menu)
+ * without nesting buttons.
  */
 export function SectionHeader({
   icon: Icon,
@@ -40,13 +44,12 @@ export function SectionHeader({
   const insetClass = inset === "list" ? "list-inset" : "px-3 sm:px-6";
   const pillPadding = onClick ? "splitLabel" : "default";
 
-  const leadingNode =
-    leading ??
-    (Icon ? <Icon size={14} strokeWidth={1.75} className="shrink-0 text-muted" /> : null);
+  const iconNode = Icon ? (
+    <Icon size={14} strokeWidth={1.75} className="shrink-0 text-muted" />
+  ) : null;
 
-  const labelContent = (
+  const labelText = (
     <>
-      {leadingNode}
       <span className="min-w-0 truncate font-semibold text-sm text-snow">{label}</span>
       <span className="shrink-0 text-muted/35" aria-hidden>
         |
@@ -55,8 +58,11 @@ export function SectionHeader({
     </>
   );
 
-  const labelButtonClass =
-    "inline-flex min-w-0 flex-1 items-center gap-1.5 rounded-full -mx-2.5 px-2.5 py-1 transition-colors hover:bg-white/5 sm:-mx-3 sm:px-3";
+  // When leading owns its own control, pull the label under the ring so they
+  // share space; the leading control stays on top via z-index.
+  const labelButtonClass = leading
+    ? "relative z-0 inline-flex min-w-0 flex-1 items-center gap-1.5 rounded-full -mr-2.5 -ml-4 pl-3 pr-2.5 py-1 transition-colors hover:bg-white/5 sm:-mr-3 sm:-ml-5 sm:pl-3.5 sm:pr-3"
+    : "inline-flex min-w-0 flex-1 items-center gap-1.5 rounded-full -mx-2.5 px-2.5 py-1 transition-colors hover:bg-white/5 sm:-mx-3 sm:px-3";
 
   return (
     <div
@@ -68,16 +74,25 @@ export function SectionHeader({
     >
       <SectionPill padding={pillPadding} {...(headingRef ? { headingRef } : {})}>
         {onClick ? (
-          <button
-            type="button"
-            onClick={onClick}
-            aria-expanded={expanded ?? true}
-            className={labelButtonClass}
-          >
-            {labelContent}
-          </button>
+          <>
+            {leading ? (
+              <span className="relative z-20 -ml-2.5 shrink-0 sm:-ml-3">{leading}</span>
+            ) : null}
+            <button
+              type="button"
+              onClick={onClick}
+              aria-expanded={expanded ?? true}
+              className={labelButtonClass}
+            >
+              {leading ? null : iconNode}
+              {labelText}
+            </button>
+          </>
         ) : (
-          labelContent
+          <>
+            {leading ?? iconNode}
+            {labelText}
+          </>
         )}
       </SectionPill>
       {action}

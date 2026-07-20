@@ -105,6 +105,12 @@
     "needsReviewDismiss": "Dismiss",
     "specials": "Specials",
     "seasonNumber": "Season {{number}}",
+    "seasonEmpty": {
+      "title": "Episodes not announced yet",
+      "hint": "This season is confirmed — episode list TBD."
+    },
+    "showHiddenSeasons": "Show {{count}} more seasons",
+    "hiddenSeasonsWatched": "{{count}} seasons watched",
     "markSeasonWatched": "Mark season watched",
     "unwatchSeason": "Unwatch season",
     "seasonMenu": "Season menu",
@@ -150,7 +156,8 @@
     },
     "cast": {
       "title": "Cast"
-    }
+    },
+    "adding": "Adding…"
   },
   "episode": {
     "toggleWatched": "Watched",
@@ -403,6 +410,7 @@
       "value": "~{{count}} episodes",
       "sub": "average of the last 2 months",
       "projectionLabel": "Estimated finish",
+      "projection_zero": "You're caught up",
       "projection": "~{{weeks}} weeks to catch up",
       "projectionDate": "around {{date}}"
     },
@@ -453,9 +461,11 @@
     "title": "My profile",
     "allSeries": "All series",
     "allSeriesEmpty": "Your library is empty so far.",
+    "allSeriesEmptyHint": "Use Search to find a series and add it.",
     "detailedStats": "Detailed stats",
     "favorites": {
       "title": "Favorites",
+      "emptyTitle": "No favorites yet",
       "empty": "Heart a series on its detail page to see it here."
     },
     "banner": {

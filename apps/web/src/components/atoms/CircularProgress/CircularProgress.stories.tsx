@@ -13,4 +13,5 @@ type Story = StoryObj<typeof meta>;
 
 export const Empty: Story = { args: { value: 0 } };
 export const Partial: Story = { args: { value: 40 } };
+export const CaughtUp: Story = { args: { value: 100, caughtUp: true } };
 export const Complete: Story = { args: { value: 100, complete: true } };

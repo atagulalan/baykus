@@ -13,12 +13,18 @@ import {
 } from "../../api/client.ts";
 import type { EpisodeSummary, ExternalIds } from "../../api/types.ts";
 import { SkeletonSeriesDetailHero } from "../../components/atoms/Skeleton/Skeleton.tsx";
+import { CollapsedSeasonsGap } from "../../components/molecules/CollapsedSeasonsGap/CollapsedSeasonsGap.tsx";
 import { SeasonSection } from "../../components/organisms/SeasonSection/SeasonSection.tsx";
 import { isEpisodeAired } from "../../lib/airing.ts";
 import { pageViewTransition } from "../../lib/pageViewTransition.ts";
-import { sortSeasonsSpecialsLast } from "../../lib/seasons.ts";
+import {
+  collapseCompletedSeasonRuns,
+  isSeasonComplete,
+  sortSeasonsSpecialsLast,
+} from "../../lib/seasons.ts";
 import { seriesPreviewAsDetail } from "../../lib/seriesPreviewAsDetail.ts";
 import { useToast } from "../../lib/toast.tsx";
+import { useSeasonAccordionAdvance } from "../../lib/useSeasonAccordionAdvance.ts";
 import { SeriesDetailHero } from "./components/SeriesDetailHero/SeriesDetailHero.tsx";
 
 function idsFromSearch(search: {
@@ -77,6 +83,15 @@ export function SeriesPreviewPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [expandedSeasonGaps, setExpandedSeasonGaps] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+  const previewGapKey = JSON.stringify(search);
+  const [gapsForPreview, setGapsForPreview] = useState(previewGapKey);
+  if (gapsForPreview !== previewGapKey) {
+    setGapsForPreview(previewGapKey);
+    setExpandedSeasonGaps(new Set());
+  }
 
   const query = useQuery({
     queryKey: ["series-preview", search],
@@ -88,6 +103,24 @@ export function SeriesPreviewPage() {
     queryFn: getSettings,
   });
   const activeRegion = settingsQuery.data?.region ?? "TR";
+  const preview = query.data;
+
+  const previewIdentity = preview
+    ? String(
+        preview.externalIds.tmdbId ??
+          preview.externalIds.tvmazeId ??
+          preview.externalIds.tvdbId ??
+          preview.title,
+      )
+    : null;
+
+  const { expandedSeasonNumber, onToggleExpanded, onSeasonCloseComplete, onSeasonOpenComplete } =
+    useSeasonAccordionAdvance({
+      seasons: preview?.seasons,
+      identity: previewIdentity,
+      nextUnwatched: preview ? previewNextUnwatched(preview.seasons) : null,
+      enabled: preview != null && preview.libraryItemId == null,
+    });
 
   useEffect(() => {
     if (query.data?.libraryItemId != null) {
@@ -161,9 +194,13 @@ export function SeriesPreviewPage() {
 
   if (externalIds == null) {
     return (
-      <div className="content-inset flex flex-col items-center gap-2 py-24 text-center">
+      <div className="page-top content-inset flex flex-col items-center gap-2 py-24 text-center">
         <p className="text-muted">{t("series.previewMissingIds")}</p>
-        <Link to="/search" viewTransition={pageViewTransition} className="text-sm text-muted underline">
+        <Link
+          to="/search"
+          viewTransition={pageViewTransition}
+          className="text-sm text-muted underline"
+        >
           {t("app.nav.search")}
         </Link>
       </div>
@@ -176,7 +213,7 @@ export function SeriesPreviewPage() {
 
   if (query.isError) {
     return (
-      <div className="content-inset flex flex-col items-center gap-2 py-24 text-center">
+      <div className="page-top content-inset flex flex-col items-center gap-2 py-24 text-center">
         <p className="text-muted">{t("errors.generic")}</p>
         <button
           type="button"
@@ -185,24 +222,33 @@ export function SeriesPreviewPage() {
         >
           {t("errors.retry")}
         </button>
-        <Link to="/search" viewTransition={pageViewTransition} className="text-sm text-muted underline">
+        <Link
+          to="/search"
+          viewTransition={pageViewTransition}
+          className="text-sm text-muted underline"
+        >
           {t("app.nav.search")}
         </Link>
       </div>
     );
   }
 
-  const preview = query.data;
   if (!preview || preview.libraryItemId != null) return null;
 
-  const detail = seriesPreviewAsDetail(preview);
-  const sortedSeasons = sortSeasonsSpecialsLast(preview.seasons);
-  const nextUnwatched = previewNextUnwatched(preview.seasons);
+  const loadedPreview = preview;
+  const detail = seriesPreviewAsDetail(loadedPreview);
+  const sortedSeasons = sortSeasonsSpecialsLast(loadedPreview.seasons);
+  const seasonEntries = collapseCompletedSeasonRuns(
+    sortedSeasons,
+    isSeasonComplete,
+    expandedSeasonGaps,
+  );
+  const nextUnwatched = previewNextUnwatched(loadedPreview.seasons);
   const pending = startMutation.isPending;
-  const transitionName = `poster-preview-${preview.externalIds.tmdbId ?? preview.externalIds.tvmazeId ?? preview.externalIds.tvdbId ?? preview.title}`;
+  const transitionName = `poster-preview-${loadedPreview.externalIds.tmdbId ?? loadedPreview.externalIds.tvmazeId ?? loadedPreview.externalIds.tvdbId ?? loadedPreview.title}`;
 
   function episodeBySyntheticId(id: number): EpisodeSummary | undefined {
-    for (const season of preview.seasons) {
+    for (const season of loadedPreview.seasons) {
       const ep = season.episodes.find((e) => e.id === id);
       if (ep) return ep;
     }
@@ -228,30 +274,46 @@ export function SeriesPreviewPage() {
       />
 
       <div className="flex flex-col">
-        {sortedSeasons.map((season) => (
-          <SeasonSection
-            key={season.number}
-            season={season}
-            nextUnwatched={nextUnwatched}
-            onToggleWatch={(episodeId) => {
-              const ep = episodeBySyntheticId(episodeId);
-              if (ep) startMutation.mutate({ kind: "watch", s: ep.s, e: ep.e });
-            }}
-            onWatchAgain={() => {}}
-            onEditDate={() => {}}
-            onBulkUpToHere={(episodeId) => {
-              const ep = episodeBySyntheticId(episodeId);
-              if (ep) startMutation.mutate({ kind: "bulkUpTo", s: ep.s, e: ep.e });
-            }}
-            onMarkSeasonWatched={() =>
-              startMutation.mutate({ kind: "season", seasonNumber: season.number })
-            }
-            onUnwatchSeason={() => {}}
-            promptEpisodeId={null}
-            onRateEpisode={() => {}}
-            onDismissPrompt={() => {}}
-          />
-        ))}
+        {seasonEntries.map((entry) => {
+          if (entry.kind === "gap") {
+            return (
+              <CollapsedSeasonsGap
+                key={entry.gapKey}
+                count={entry.seasons.length}
+                onExpand={() => setExpandedSeasonGaps((prev) => new Set(prev).add(entry.gapKey))}
+              />
+            );
+          }
+          const { season } = entry;
+          return (
+            <SeasonSection
+              key={season.number}
+              season={season}
+              nextUnwatched={nextUnwatched}
+              expanded={expandedSeasonNumber === season.number}
+              onToggleExpanded={() => onToggleExpanded(season.number)}
+              onCloseComplete={() => onSeasonCloseComplete(season.number)}
+              onOpenComplete={() => onSeasonOpenComplete(season.number)}
+              onToggleWatch={(episodeId) => {
+                const ep = episodeBySyntheticId(episodeId);
+                if (ep) startMutation.mutate({ kind: "watch", s: ep.s, e: ep.e });
+              }}
+              onWatchAgain={() => {}}
+              onEditDate={() => {}}
+              onBulkUpToHere={(episodeId) => {
+                const ep = episodeBySyntheticId(episodeId);
+                if (ep) startMutation.mutate({ kind: "bulkUpTo", s: ep.s, e: ep.e });
+              }}
+              onMarkSeasonWatched={() =>
+                startMutation.mutate({ kind: "season", seasonNumber: season.number })
+              }
+              onUnwatchSeason={() => {}}
+              promptEpisodeId={null}
+              onRateEpisode={() => {}}
+              onDismissPrompt={() => {}}
+            />
+          );
+        })}
       </div>
     </div>
   );

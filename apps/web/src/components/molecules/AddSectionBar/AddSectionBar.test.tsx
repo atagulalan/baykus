@@ -1,7 +1,34 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { renderWithProviders } from "../../../test/renderWithProviders.tsx";
 import { AddSectionBar, reorderCombined, reorderSections } from "./AddSectionBar.tsx";
+
+function mockMobileViewport() {
+  window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  }));
+}
+
+function mockDesktopViewport() {
+  window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+    matches: query.includes("min-width: 640px"),
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  }));
+}
 
 describe("reorderSections", () => {
   it("moves an item down", () => {
@@ -54,7 +81,7 @@ describe("reorderCombined", () => {
 
 describe("AddSectionBar", () => {
   it("renders the manage button", () => {
-    render(
+    renderWithProviders(
       <AddSectionBar
         sections={["watching", "not_watched_recently"]}
         sectionSorts={{}}
@@ -67,7 +94,7 @@ describe("AddSectionBar", () => {
 
   it("opens the modal with current sections and add options", async () => {
     const user = userEvent.setup();
-    render(
+    renderWithProviders(
       <AddSectionBar
         sections={["watching", "not_watched_recently"]}
         sectionSorts={{}}
@@ -85,7 +112,7 @@ describe("AddSectionBar", () => {
   it("calls onSectionsChange when adding a category", async () => {
     const user = userEvent.setup();
     const onSectionsChange = vi.fn();
-    render(
+    renderWithProviders(
       <AddSectionBar
         sections={["watching", "not_watched_recently"]}
         sectionSorts={{}}
@@ -105,7 +132,7 @@ describe("AddSectionBar", () => {
 
   it("marks non-removable sections with a pin instead of a remove button", async () => {
     const user = userEvent.setup();
-    render(
+    renderWithProviders(
       <AddSectionBar
         sections={["watching", "not_watched_recently"]}
         sectionSorts={{}}
@@ -123,7 +150,7 @@ describe("AddSectionBar", () => {
   it("calls onSortChange when the sort select changes", async () => {
     const user = userEvent.setup();
     const onSortChange = vi.fn();
-    render(
+    renderWithProviders(
       <AddSectionBar
         sections={["watching"]}
         sectionSorts={{ watching: "lastWatched" }}
@@ -139,7 +166,7 @@ describe("AddSectionBar", () => {
 
   it("exposes draggable rows for reordering", async () => {
     const user = userEvent.setup();
-    render(
+    renderWithProviders(
       <AddSectionBar
         sections={["watching", "not_watched_recently"]}
         sectionSorts={{}}
@@ -160,7 +187,7 @@ describe("AddSectionBar", () => {
   it("removes a section immediately without a confirm dialog", async () => {
     const user = userEvent.setup();
     const onSectionsChange = vi.fn();
-    render(
+    renderWithProviders(
       <AddSectionBar
         sections={["watching", "not_watched_recently"]}
         sectionSorts={{}}
@@ -177,9 +204,14 @@ describe("AddSectionBar", () => {
 });
 
 describe("AddSectionBar sortOnly", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("opens a sort dialog with the full category list and no manage affordances", async () => {
+    mockMobileViewport();
     const user = userEvent.setup();
-    render(
+    renderWithProviders(
       <AddSectionBar
         mode="sortOnly"
         sections={["watching", "finished", "stopped"]}
@@ -200,8 +232,9 @@ describe("AddSectionBar sortOnly", () => {
   });
 
   it("omits fixed-order categories such as needs_review from the sort list", async () => {
+    mockMobileViewport();
     const user = userEvent.setup();
-    render(
+    renderWithProviders(
       <AddSectionBar
         mode="sortOnly"
         sections={["needs_review", "watching", "finished"]}
@@ -216,10 +249,11 @@ describe("AddSectionBar sortOnly", () => {
     expect(screen.queryByText("İnceleme bekliyor")).not.toBeInTheDocument();
   });
 
-  it("calls onSortChange when the sort select changes", async () => {
+  it("calls onSortChange when a sort list option is chosen", async () => {
+    mockMobileViewport();
     const user = userEvent.setup();
     const onSortChange = vi.fn();
-    render(
+    renderWithProviders(
       <AddSectionBar
         mode="sortOnly"
         sections={["watching"]}
@@ -229,7 +263,40 @@ describe("AddSectionBar sortOnly", () => {
     );
 
     await user.click(screen.getByRole("button", { name: "Sıralama" }));
-    await user.selectOptions(screen.getByRole("combobox"), "title");
+    const dialog = screen.getByRole("dialog", { name: "Sıralama" });
+    const options = within(dialog).getAllByRole("option");
+    expect(options.length).toBeGreaterThan(1);
+    const titleOption = options.find((node) => node.textContent?.includes("Başlık"));
+    expect(titleOption).toBeDefined();
+    fireEvent.click(titleOption as HTMLElement);
     expect(onSortChange).toHaveBeenCalledWith("watching", "title");
+  });
+
+  it("opens a desktop sort popover anchored to the trigger", async () => {
+    mockDesktopViewport();
+    Element.prototype.getBoundingClientRect = vi.fn(() => ({
+      x: 100,
+      y: 200,
+      width: 120,
+      height: 40,
+      top: 200,
+      left: 100,
+      right: 220,
+      bottom: 240,
+      toJSON: () => ({}),
+    }));
+    const user = userEvent.setup();
+    renderWithProviders(
+      <AddSectionBar
+        mode="sortOnly"
+        sections={["watching"]}
+        sectionSorts={{ watching: "lastWatched" }}
+        onSortChange={() => {}}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Sıralama" }));
+    expect(screen.getByRole("dialog", { name: "Sıralama" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Başlık" })).toBeInTheDocument();
   });
 });

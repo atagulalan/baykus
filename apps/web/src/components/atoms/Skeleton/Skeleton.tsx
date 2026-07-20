@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import { type CSSProperties, Fragment } from "react";
 import { SERIES_GRID_CLASSNAME } from "../../../lib/grid.ts";
 
 const KEYS = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"] as const;
@@ -108,19 +108,18 @@ export function SkeletonEpisodeList({
   );
 }
 
-/** Profile hub stats tiles — soft compact StatTile chrome. */
+/** Profile hub stats — text row with short hairline dividers. */
 export function SkeletonHubStatTiles() {
   return (
-    <div className="grid grid-cols-3 gap-4 px-3">
-      {KEYS.slice(0, 3).map((key) => (
-        <div
-          key={key}
-          className="flex flex-col items-center gap-2 rounded-md bg-white/10 p-4"
-          aria-hidden
-        >
-          <SkeletonBone className="h-2.5 w-16 rounded" />
-          <SkeletonBone className="h-6 w-12 rounded" />
-        </div>
+    <div className="flex items-center px-3" aria-hidden>
+      {KEYS.slice(0, 3).map((key, index) => (
+        <Fragment key={key}>
+          {index > 0 ? <div className="h-8 w-px shrink-0 bg-white/10" /> : null}
+          <div className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
+            <SkeletonBone className="h-2.5 w-16 rounded" />
+            <SkeletonBone className="h-6 w-12 rounded" />
+          </div>
+        </Fragment>
       ))}
     </div>
   );
@@ -198,7 +197,7 @@ export function SkeletonSeriesDetailHero({
   posterStyle?: CSSProperties | undefined;
 }) {
   return (
-    <section className="relative">
+    <section className="relative -mt-[var(--app-header-height)]">
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
         <SkeletonBone className="absolute inset-0" />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-void/20 to-void" />

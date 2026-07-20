@@ -45,6 +45,17 @@ export interface TvmazeEpisode {
   image?: TvmazeImage | null;
 }
 
+/** Entry from the show's `seasons` collection (embed[]=seasons). */
+export interface TvmazeSeason {
+  number: number;
+  name?: string | null;
+  premiereDate?: string | null;
+  endDate?: string | null;
+  summary?: string | null;
+  image?: TvmazeImage | null;
+  episodeOrder?: number | null;
+}
+
 export interface TvmazeShow {
   id: number;
   name: string;
@@ -58,7 +69,11 @@ export interface TvmazeShow {
   image?: TvmazeImage | null;
   averageRuntime?: number | null;
   externals?: { imdb?: string | null; thetvdb?: number | null } | null;
-  _embedded?: { episodes?: TvmazeEpisode[]; images?: TvmazeImageEntry[] };
+  _embedded?: {
+    episodes?: TvmazeEpisode[];
+    images?: TvmazeImageEntry[];
+    seasons?: TvmazeSeason[];
+  };
 }
 
 export interface TvmazeSearchEntry {
@@ -166,16 +181,45 @@ function mapEpisode(ep: TvmazeEpisode): EpisodeDetails {
   return episode;
 }
 
-function groupSeasons(episodes: TvmazeEpisode[]): SeasonDetails[] {
-  const bySeasonNumber = new Map<number, EpisodeDetails[]>();
+function mapSeasonMeta(season: TvmazeSeason, episodes: EpisodeDetails[]): SeasonDetails {
+  const out: SeasonDetails = { number: season.number, episodes };
+  if (season.name) out.name = season.name;
+  const overview = stripHtml(season.summary);
+  if (overview) out.overview = overview;
+  if (season.premiereDate) out.airDate = season.premiereDate;
+  const posterRef = toImageRef(season.image);
+  if (posterRef) out.posterRef = posterRef;
+  return out;
+}
+
+/**
+ * Union of confirmed season inventory (`embed[]=seasons`) and episode-derived
+ * seasons. Confirmed seasons with no episodes yet survive as `episodes: []`.
+ */
+function mergeSeasons(
+  seasonMetas: TvmazeSeason[] | undefined,
+  episodes: TvmazeEpisode[],
+): SeasonDetails[] {
+  const episodesBySeason = new Map<number, EpisodeDetails[]>();
   for (const ep of episodes) {
-    const list = bySeasonNumber.get(ep.season) ?? [];
+    const list = episodesBySeason.get(ep.season) ?? [];
     list.push(mapEpisode(ep));
-    bySeasonNumber.set(ep.season, list);
+    episodesBySeason.set(ep.season, list);
   }
-  return [...bySeasonNumber.entries()]
-    .sort(([a], [b]) => a - b)
-    .map(([number, eps]) => ({ number, episodes: eps }));
+
+  const byNumber = new Map<number, SeasonDetails>();
+  if (seasonMetas) {
+    for (const meta of seasonMetas) {
+      byNumber.set(meta.number, mapSeasonMeta(meta, episodesBySeason.get(meta.number) ?? []));
+    }
+  }
+  for (const [number, eps] of episodesBySeason) {
+    if (!byNumber.has(number)) {
+      byNumber.set(number, { number, episodes: eps });
+    }
+  }
+
+  return [...byNumber.entries()].sort(([a], [b]) => a - b).map(([, season]) => season);
 }
 
 export function mapSeriesDetails(show: TvmazeShow): SeriesDetails {
@@ -184,7 +228,7 @@ export function mapSeriesDetails(show: TvmazeShow): SeriesDetails {
     mediaType: "series",
     externalIds: toExternalIds(show),
     title: show.name,
-    seasons: groupSeasons(show._embedded?.episodes ?? []),
+    seasons: mergeSeasons(show._embedded?.seasons, show._embedded?.episodes ?? []),
   };
   const overview = stripHtml(show.summary);
   if (overview) details.overview = overview;
