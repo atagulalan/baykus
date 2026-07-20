@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>baykuş Google sign-in</title>
+  </head>
+  <body>
+    <p style="font: 14px/1.4 system-ui, sans-serif; color: #888; padding: 24px">
+      Completing Google sign-in…
+    </p>
+    <script>
+      (function () {
+        var hash = location.hash ? location.hash.slice(1) : "";
+        var query = location.search ? location.search.slice(1) : "";
+        var params = new URLSearchParams(hash || query);
+        var idToken = params.get("id_token");
+        var error = params.get("error");
+        var returnTo = "/login";
+        try {
+          var pending = sessionStorage.getItem("baykus.oauth.google.pending");
+          if (pending) {
+            var parsed = JSON.parse(pending);
+            if (parsed && typeof parsed.returnTo === "string") returnTo = parsed.returnTo;
+          }
+        } catch (e) {}
+
+        try {
+          if (error) {
+            sessionStorage.setItem("baykus.oauth.google.error", error);
+            sessionStorage.removeItem("baykus.oauth.google.id_token");
+          } else if (idToken) {
+            sessionStorage.setItem("baykus.oauth.google.id_token", idToken);
+            sessionStorage.removeItem("baykus.oauth.google.error");
+          } else {
+            sessionStorage.setItem(
+              "baykus.oauth.google.error",
+              "Google sign-in returned no id_token",
+            );
+          }
+        } catch (e) {
+          sessionStorage.setItem("baykus.oauth.google.error", "sessionStorage unavailable");
+        }
+
+        var target = returnTo.indexOf("/") === 0 ? returnTo : "/login";
+        location.replace(target);
+      })();
+    </script>
+  </body>
+</html>

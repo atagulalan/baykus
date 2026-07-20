@@ -556,6 +556,23 @@
     "login": "Giriş yap",
     "loginError": "Kullanıcı adı veya şifre hatalı",
     "needAccount": "Hesabın yok mu? Oluştur",
+    "oauth": {
+      "or": "veya",
+      "google": "Google ile devam et",
+      "apple": "Apple ile devam et",
+      "error": "Sosyal giriş başarısız",
+      "errorUnregisteredOrigin": "Bu origin Google'da kayıtlı değil — Cloud Console → OAuth istemci → Authorized redirect URIs'e {{origin}}/oauth-google.html ekle (ve JavaScript origins'a {{origin}})",
+      "errorPopupBlocked": "Popup engellendi — tarayıcıda bu site için pencerelere izin ver",
+      "pickHandle": "Kullanıcı adını seç",
+      "finish": "Hesabı oluştur",
+      "backupReminder": "Yedeğin = zip export. Ayarlar → Zip indir. (Şifre yok — kurtarma IdP üzerinden.)",
+      "linked": "Bağlı girişler",
+      "connected": "bağlı",
+      "link": "Bağla",
+      "unlink": "Kaldır",
+      "linkError": "Bağlanamadı",
+      "unlinkError": "Kaldırılamadı — en az bir giriş yöntemi kalmalı"
+    },
     "claim": {
       "title": "Hesap oluştur",
       "confirmPassword": "Şifre (tekrar)",
@@ -578,7 +595,8 @@
     "deleteAccount": {
       "warning": "Önce son bir yedek indir",
       "confirm": "Yine de sil",
-      "error": "Hesap silinemedi — şifreni kontrol et"
+      "error": "Hesap silinemedi — şifreni kontrol et",
+      "reauthOAuth": "Silmek için bağlı hesabınla yeniden doğrula"
     }
   },
   "importWizard": {

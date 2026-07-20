@@ -8,6 +8,7 @@ import type { Config } from "./config.ts";
 import { openMetadataCache } from "./providers/cache.ts";
 import { createProviderRegistry, effectiveScrapersEnabled } from "./providers/registry.ts";
 import { loadOrCreateVapidKeys, type VapidKeys } from "./push/vapid.ts";
+import { parseClientIds } from "./routes/auth.ts";
 
 /** Real (disk-touching) dependencies for the running server, single or multi mode. */
 export function createProductionDeps(config: Config): AppDeps {
@@ -53,6 +54,10 @@ export function createProductionDeps(config: Config): AppDeps {
             mode: "multi",
             accountsDb: openAccountsDb(join(config.BAYKUS_DATA_DIR, "accounts.db")),
             dataDir: config.BAYKUS_DATA_DIR,
+            oauth: {
+              googleClientIds: parseClientIds(config.BAYKUS_GOOGLE_CLIENT_IDS),
+              appleClientIds: parseClientIds(config.BAYKUS_APPLE_CLIENT_IDS),
+            },
           }
         : {
             mode: "single",

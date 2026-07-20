@@ -6,6 +6,7 @@ import { createLibraryProxy } from "./auth/library-context.ts";
 import { createLibraryPool } from "./auth/library-pool.ts";
 import { createRateLimiter } from "./auth/rate-limit.ts";
 import type { Config } from "./config.ts";
+import { type AccessLogVariables, createAccessLogMiddleware } from "./middleware/access-log.ts";
 import { createAuthGate } from "./middleware/auth-gate.ts";
 import { errorHandler } from "./middleware/errors.ts";
 import { xBaykusGuard } from "./middleware/guard.ts";
@@ -37,8 +38,15 @@ export interface AppDeps {
 }
 
 export function createApp(config: Config, deps: AppDeps) {
-  const app = new Hono();
+  const app = new Hono<{ Variables: AccessLogVariables }>();
   app.onError(errorHandler);
+  app.use(
+    "*",
+    createAccessLogMiddleware({
+      mode: config.BAYKUS_MODE,
+      enabled: config.BAYKUS_LOG_ACCESS === "1",
+    }),
+  );
   app.use("*", xBaykusGuard);
   app.use("*", createAuthGate(deps.auth));
 

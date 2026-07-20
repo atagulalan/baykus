@@ -3,6 +3,8 @@ import { isProviderError } from "@baykus/provider-sdk";
 import type { Context } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { z } from "zod";
+import { captureServerException } from "../observability/sentry.ts";
+import type { AccessLogVariables } from "./access-log.ts";
 
 export type ApiErrorCode =
   | "VALIDATION_FAILED"
@@ -46,8 +48,26 @@ function envelope(code: ApiErrorCode, message: string, details: unknown = null) 
   return { error: { code, message, details } };
 }
 
-export function errorHandler(err: unknown, c: Context): Response {
+type ErrorContext = Context<{ Variables: AccessLogVariables }>;
+
+function requestIdOf(c: ErrorContext): string | undefined {
+  try {
+    return c.get("requestId");
+  } catch {
+    return undefined;
+  }
+}
+
+export function errorHandler(err: unknown, c: ErrorContext): Response {
   if (err instanceof ApiError) {
+    // Explicit INTERNAL from handlers still reports; other ApiError codes are client-facing.
+    if (err.code === "INTERNAL") {
+      const requestId = requestIdOf(c);
+      captureServerException(err, {
+        ...(requestId ? { requestId } : {}),
+        path: c.req.path,
+      });
+    }
     return c.json(envelope(err.code, err.message, err.details), STATUS_BY_CODE[err.code]);
   }
   if (err instanceof z.ZodError) {
@@ -75,6 +95,19 @@ export function errorHandler(err: unknown, c: Context): Response {
     );
   }
 
-  console.error(err);
+  const requestId = requestIdOf(c);
+  captureServerException(err, {
+    ...(requestId ? { requestId } : {}),
+    path: c.req.path,
+  });
+  console.error(
+    JSON.stringify({
+      ts: new Date().toISOString(),
+      level: "error",
+      requestId: requestId ?? null,
+      path: c.req.path,
+      message: err instanceof Error ? err.message : String(err),
+    }),
+  );
   return c.json(envelope("INTERNAL", "internal server error"), STATUS_BY_CODE.INTERNAL);
 }

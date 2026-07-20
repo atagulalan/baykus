@@ -1,10 +1,9 @@
 import type { Context, Next } from "hono";
-import { getCookie } from "hono/cookie";
 import type { AccountsDb } from "../auth/accounts.ts";
 import { runWithLibrary } from "../auth/library-context.ts";
 import type { LibraryPool } from "../auth/library-pool.ts";
+import { resolveSessionToken } from "../auth/session-token.ts";
 import { validateSession } from "../auth/sessions.ts";
-import { SESSION_COOKIE } from "../routes/auth.ts";
 import { isExempt } from "./auth-gate.ts";
 import { ApiError } from "./errors.ts";
 
@@ -24,7 +23,7 @@ export function createLibraryResolver(accountsDb: AccountsDb, pool: LibraryPool)
       return;
     }
 
-    const token = getCookie(c, SESSION_COOKIE);
+    const token = resolveSessionToken(c);
     const session = token ? validateSession(accountsDb, token) : null;
     if (!session) throw new ApiError("UNAUTHORIZED", "authentication required");
 

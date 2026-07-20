@@ -61,6 +61,8 @@ baykus.xava.me (multi mode, handle-claim accounts).
    wins where they overlap. Its tasks.md (M44–M52, E95–E111) is fully
    implemented including its own M52 browser checkpoint, executed
    2026-07-17 (see root `MANUELTEST.md` §M52).
+10. `specs/014-oauth-signin/` — Google/Apple sign-in (multi), Bearer
+    sessions for RN, identity linking. Amends 001 §Auth (E112–E123).
 
 ## Normative sources — order of truth
 
@@ -70,11 +72,11 @@ When documents disagree, the higher one wins; fix the lower one in the same PR:
 2. **Code contracts:** `packages/provider-sdk/src/types.ts` (DTOs),
    `packages/core/src/db/schema.ts` (DB)
 3. Contracts: `specs/001-series-tracking/contracts/api.md` (HTTP) as amended
-   by 002's, 003's, 004's, 005's and then 008's `contracts/api.md` (006 and
+   by 002's, 003's, 004's, 005's, 008's, and 014's `contracts/api.md` (006 and
    007 ship no `contracts/` dir — their API-relevant changes live only in
    spec.md §Edge-case decisions; 008's contract explicitly amends 005 and
-   007's E86), and the spec.md §Edge-case decisions tables (001 + 002 +
-   003 + 004 + 005 + 006 + 007 + 008; **newer spec wins on overlap**)
+   007's E86; 014 amends §Auth), and the spec.md §Edge-case decisions tables
+   (001–008 + 014; **newer spec wins on overlap**)
 4. Prose specs (spec.md, plan.md, data-model.md, ui.md — same newest-wins rule)
 
 **Never invent a field, endpoint, or behavior.** If something you need is not
@@ -112,7 +114,7 @@ comment. Silent divergence is the one unforgivable failure mode.
 | server routes | contracts/api.md (that section), the core service it wraps |
 | web pages/components | ui.md §that screen, contracts/api.md (endpoints it calls) |
 | refresh/push | spec.md US-6/US-7, contracts §Refresh §Push |
-| auth/multi mode | spec.md US-10/US-11, contracts §Auth, plan.md §Modes |
+| auth/multi mode | 001 US-10/US-11 + 014 E112–E123, 014 contracts §Auth, plan.md §Modes |
 | importers | research.md §TV Time, contracts §tvtime (001 as amended by 003 E44 + 004 E48/E49), 004 spec.md E48/E49, fixtures/tvtime |
 
 ## Commands

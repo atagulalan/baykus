@@ -9,6 +9,13 @@ const envSchema = z.object({
   /** Multi mode only — single mode generates+persists its own keypair on first boot. */
   BAYKUS_VAPID_PUBLIC_KEY: z.string().optional(),
   BAYKUS_VAPID_PRIVATE_KEY: z.string().optional(),
+  /**
+   * Multi mode OAuth — comma-separated Google OAuth client IDs (web first,
+   * then iOS/Android). Empty/unset disables Google sign-in (014 E112/E122).
+   */
+  BAYKUS_GOOGLE_CLIENT_IDS: z.string().optional(),
+  /** Multi mode OAuth — comma-separated Apple Services / app IDs (web first). */
+  BAYKUS_APPLE_CLIENT_IDS: z.string().optional(),
   PORT: z.coerce.number().int().default(4004),
   /**
    * Set only by the Docker image's entrypoint. packages/core's migrations
@@ -20,10 +27,20 @@ const envSchema = z.object({
   BAYKUS_MIGRATIONS_DIR: z.string().optional(),
   /** Set only by the Docker image's entrypoint — the built web SPA, served statically with an index.html SPA fallback. Unset (dev/tests): no static serving, Vite serves apps/web separately. */
   BAYKUS_WEB_DIST: z.string().optional(),
+  /** Emit structured JSON access logs to stdout (E188). Set `0` to quiet (e.g. noisy test runs). */
+  BAYKUS_LOG_ACCESS: z.enum(["0", "1"]).default("1"),
+  /** Optional Sentry DSN — unset means no Sentry network calls (E189/E190). */
+  SENTRY_DSN: z.string().optional(),
+  /** Sentry environment tag; defaults to BAYKUS_MODE when unset. */
+  SENTRY_ENVIRONMENT: z.string().optional(),
 });
 
 export type Config = z.infer<typeof envSchema>;
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
-  return envSchema.parse(env);
+  // Quiet access logs under Vitest unless a test opts in (E188).
+  const baykusLogAccess = env.BAYKUS_LOG_ACCESS ?? (process.env.VITEST ? "0" : undefined);
+  return envSchema.parse(
+    baykusLogAccess === undefined ? env : { ...env, BAYKUS_LOG_ACCESS: baykusLogAccess },
+  );
 }

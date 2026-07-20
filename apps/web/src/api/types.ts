@@ -502,16 +502,33 @@ export interface ImportZipResult {
 
 export type AuthMode = "single" | "multi";
 
+export type OAuthProvider = "google" | "apple";
+
+export interface OAuthProviderConfig {
+  clientId: string;
+}
+
 export interface AuthSession {
   authenticated: boolean;
   handle: string | null;
   mode: AuthMode;
+  identities: OAuthProvider[];
+  hasPassword: boolean;
+  oauthProviders: {
+    google?: OAuthProviderConfig;
+    apple?: OAuthProviderConfig;
+  };
 }
 
 export interface ClaimResult {
   handle: string;
   createdAt: string;
+  token?: string;
 }
+
+export type OAuthCallbackResult =
+  | { status: "authenticated"; handle: string; token?: string }
+  | { status: "needs_handle"; pendingToken: string };
 
 export interface UnderflowSeasonDetail {
   seasonNumber: number;

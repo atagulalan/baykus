@@ -39,9 +39,24 @@ All are optional — the app is fully usable with none of them set
 | `BAYKUS_ENABLE_SCRAPERS` | `0` | Set to `1` to make the optional IMDb ratings dataset and Serializd tags/ratings available. This is a deployment-level floor: it can turn extra sources on even if the per-library Settings toggle is off, but the Settings toggle can also turn them on independently. IMDb's data is a bulk, ToS-fine, keyless dataset (~25 MB, refreshed every 24h); Serializd is genuine page scraping and may occasionally break if their site's markup changes (isolated failure — never breaks adding or refreshing a series). |
 | `BAYKUS_VAPID_PUBLIC_KEY` / `BAYKUS_VAPID_PRIVATE_KEY` | *(auto-generated)* | Web Push keys. Single mode generates and persists its own keypair on first boot — you never need to set these unless you're pinning a specific keypair (e.g. across a full data-volume reset). Push notifications require HTTPS in real deployments; `http://localhost` is exempt during local testing. |
 | `PORT` | `4004` | The port the server listens on inside the container. Change the Compose/`docker run` port *mapping*, not this, unless you also change the container's `EXPOSE`. |
+| `BAYKUS_LOG_ACCESS` | `1` | Emit detailed structured JSON access logs to stdout for **every** endpoint (path, query, duration, redacted JSON bodies, status). Cookie/password/token values are never written. Set `0` to disable. |
+| `SENTRY_DSN` | *(unset)* | Optional [Sentry](https://sentry.io) DSN for server error reporting. **Leave unset for self-host** — no Sentry network calls. Hosted multi-mode sets this. |
+| `SENTRY_ENVIRONMENT` | *(defaults to `BAYKUS_MODE`)* | Sentry environment tag (e.g. `production`). |
 
 `BAYKUS_MIGRATIONS_DIR` and `BAYKUS_WEB_DIST` are set automatically by the
 Docker image's own `ENV` — you shouldn't need to touch them.
+
+### Observability (optional)
+
+Access logs are detailed local stdout JSON (Docker/journald). Each line includes
+`durationMs`, query, safe headers, and redacted request/response JSON bodies —
+passwords/cookies/tokens stay scrubbed. Error reporting and light product
+analytics go to Sentry **only** when a DSN is configured — self-host default is
+off. Correlation uses anonymous `X-Request-Id` only. Recommended Sentry
+retention: **30 days**.
+
+For the web SPA build, set `VITE_SENTRY_DSN` at **build time** (Vite inlines it)
+to enable client error capture + page/action events. Unset = no client telemetry.
 
 ## Data & backups
 

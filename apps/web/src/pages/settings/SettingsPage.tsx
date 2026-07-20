@@ -8,16 +8,25 @@ import {
   getSettings,
   importZip,
   logout,
+  oauthLink,
+  oauthUnlink,
   resetLibrary,
   sendTestPush,
   updateSettings,
 } from "../../api/client.ts";
-import type { ImportZipResult, Locale, Settings, SettingsPatch } from "../../api/types.ts";
+import type {
+  ImportZipResult,
+  Locale,
+  OAuthProvider,
+  Settings,
+  SettingsPatch,
+} from "../../api/types.ts";
 import { Checkbox } from "../../components/atoms/Checkbox/Checkbox.tsx";
 import { SkeletonSettingsSections } from "../../components/atoms/Skeleton/Skeleton.tsx";
 import { DeleteAccountDialog } from "../../components/dialogs/DeleteAccountDialog/DeleteAccountDialog.tsx";
 import { ResetLibraryDialog } from "../../components/dialogs/ResetLibraryDialog/ResetLibraryDialog.tsx";
 import { PageTitleRow } from "../../components/molecules/PageTitleRow/PageTitleRow.tsx";
+import { obtainIdToken } from "../../lib/oauth.ts";
 import {
   getCurrentPushSubscription,
   isPushSupported,
@@ -132,11 +141,43 @@ export function SettingsPage() {
   });
 
   const deleteAccountMutation = useMutation({
-    mutationFn: (password: string) => deleteAccount(password),
+    mutationFn: (payload: {
+      password?: string;
+      provider?: OAuthProvider;
+      idToken?: string;
+      nonce?: string;
+    }) => deleteAccount(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["auth-session"] });
       navigate({ to: "/login" });
     },
+  });
+
+  const unlinkMutation = useMutation({
+    mutationFn: (provider: OAuthProvider) => oauthUnlink(provider),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["auth-session"] });
+      toast.show(t("settings.saved"));
+    },
+    onError: () => toast.show(t("auth.oauth.unlinkError"), "error"),
+  });
+
+  const linkMutation = useMutation({
+    mutationFn: async (provider: OAuthProvider) => {
+      const clientId = sessionQuery.data?.oauthProviders[provider]?.clientId;
+      if (!clientId) throw new Error("provider not configured");
+      const { idToken, nonce } = await obtainIdToken(provider, clientId);
+      return oauthLink({
+        provider,
+        idToken,
+        ...(nonce !== undefined ? { nonce } : {}),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["auth-session"] });
+      toast.show(t("settings.saved"));
+    },
+    onError: () => toast.show(t("auth.oauth.linkError"), "error"),
   });
 
   const resetLibraryMutation = useMutation({
@@ -173,6 +214,7 @@ export function SettingsPage() {
   }
 
   const settings = query.data;
+  const authSession = sessionQuery.data;
   if (!settings) return null;
 
   const sections = (
@@ -224,14 +266,52 @@ export function SettingsPage() {
         </div>
       </SettingsSection>
 
-      {sessionQuery.data?.mode === "multi" && (
+      {authSession?.mode === "multi" && (
         <SettingsSection title={t("auth.account.title")}>
           <div className={SETTINGS_BLOCK}>
             <p className="font-sans text-sm text-snow">
               {t("auth.account.handle", {
-                handle: sessionQuery.data.handle ?? "",
+                handle: authSession.handle ?? "",
               })}
             </p>
+            {(authSession.oauthProviders.google || authSession.oauthProviders.apple) && (
+              <div className="flex flex-col gap-2">
+                <p className="font-mono text-[10px] uppercase tracking-widest text-muted">
+                  {t("auth.oauth.linked")}
+                </p>
+                {(["google", "apple"] as const).map((provider) => {
+                  if (!authSession.oauthProviders[provider]) return null;
+                  const linked = authSession.identities.includes(provider);
+                  return (
+                    <div key={provider} className="flex items-center justify-between gap-2">
+                      <span className="font-sans text-sm text-snow">
+                        {provider === "google" ? t("auth.oauth.google") : t("auth.oauth.apple")}
+                        {linked ? ` · ${t("auth.oauth.connected")}` : ""}
+                      </span>
+                      {linked ? (
+                        <button
+                          type="button"
+                          disabled={unlinkMutation.isPending}
+                          onClick={() => unlinkMutation.mutate(provider)}
+                          className="font-mono text-[10px] uppercase tracking-widest text-muted hover:text-red-400 disabled:opacity-50"
+                        >
+                          {t("auth.oauth.unlink")}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={linkMutation.isPending}
+                          onClick={() => linkMutation.mutate(provider)}
+                          className="font-mono text-[10px] uppercase tracking-widest text-muted hover:text-snow disabled:opacity-50"
+                        >
+                          {t("auth.oauth.link")}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
@@ -389,12 +469,15 @@ export function SettingsPage() {
         <div className="columns-1 gap-6 sm:columns-2">{sections}</div>
       </div>
 
-      {deleteDialogOpen && (
+      {deleteDialogOpen && authSession && (
         <DeleteAccountDialog
           pending={deleteAccountMutation.isPending}
           error={deleteAccountMutation.isError}
+          hasPassword={authSession.hasPassword}
+          identities={authSession.identities}
+          oauthProviders={authSession.oauthProviders}
           onClose={() => setDeleteDialogOpen(false)}
-          onConfirm={(password) => deleteAccountMutation.mutate(password)}
+          onConfirm={(payload) => deleteAccountMutation.mutate(payload)}
         />
       )}
 

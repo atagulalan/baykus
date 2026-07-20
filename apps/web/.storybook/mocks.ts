@@ -477,12 +477,18 @@ export const mockAuthSession: AuthSession = {
   authenticated: true,
   handle: "xava",
   mode: "multi",
+  identities: [],
+  hasPassword: true,
+  oauthProviders: {},
 };
 
 export const mockAuthSessionGuest: AuthSession = {
   authenticated: false,
   handle: null,
   mode: "single",
+  identities: [],
+  hasPassword: false,
+  oauthProviders: {},
 };
 
 export const mockSettingsEn: Settings = {

@@ -1,7 +1,7 @@
 import type { Context, Next } from "hono";
-import { getCookie } from "hono/cookie";
+import { resolveSessionToken } from "../auth/session-token.ts";
 import { validateSession } from "../auth/sessions.ts";
-import { type AuthRouteDeps, SESSION_COOKIE } from "../routes/auth.ts";
+import type { AuthRouteDeps } from "../routes/auth.ts";
 import { ApiError } from "./errors.ts";
 
 const EXEMPT_PREFIXES = ["/api/health", "/api/auth/", "/img/"];
@@ -15,6 +15,7 @@ export function isExempt(pathname: string): boolean {
  * contracts/api.md §Auth — single mode gates everything behind BAYKUS_PASSWORD
  * only when it's set (FR-013: the gate is optional); multi mode always gates.
  * /api/health, /api/auth/*, /img/* are exempt in both modes.
+ * Session may be cookie or Authorization Bearer (014 E118).
  */
 export function createAuthGate(deps: AuthRouteDeps) {
   return async function authGate(c: Context, next: Next): Promise<void> {
@@ -24,7 +25,7 @@ export function createAuthGate(deps: AuthRouteDeps) {
     }
 
     if (deps.mode === "multi") {
-      const token = getCookie(c, SESSION_COOKIE);
+      const token = resolveSessionToken(c);
       const session = token ? validateSession(deps.accountsDb, token) : null;
       if (!session) throw new ApiError("UNAUTHORIZED", "authentication required");
       await next();
@@ -35,7 +36,7 @@ export function createAuthGate(deps: AuthRouteDeps) {
       await next();
       return;
     }
-    const token = getCookie(c, SESSION_COOKIE);
+    const token = resolveSessionToken(c);
     if (!token || !deps.singleSessions.validate(token)) {
       throw new ApiError("UNAUTHORIZED", "authentication required");
     }

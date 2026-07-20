@@ -2,10 +2,15 @@ import { beforeEach, describe, expect, it } from "vitest";
 import {
   AccountError,
   createAccount,
+  createOAuthAccount,
   deleteAccount,
   getAccount,
+  IdentityError,
+  linkIdentity,
+  listIdentities,
   openAccountsDb,
   touchLastLogin,
+  unlinkIdentity,
   verifyAccountPassword,
 } from "./accounts.ts";
 import {
@@ -71,6 +76,27 @@ describe("verifyAccountPassword", () => {
     expect(await verifyAccountPassword(db, "xavaneo", "correct horse battery")).toBe(true);
     expect(await verifyAccountPassword(db, "xavaneo", "wrong")).toBe(false);
     expect(await verifyAccountPassword(db, "unknown-handle", "anything")).toBe(false);
+  });
+
+  it("returns false for OAuth-only accounts", async () => {
+    const db = setup();
+    createOAuthAccount(db, "oauthuser");
+    expect(await verifyAccountPassword(db, "oauthuser", "anything")).toBe(false);
+  });
+});
+
+describe("identities", () => {
+  it("links and lists providers; refuses unlinking the last factor", () => {
+    const db = setup();
+    createOAuthAccount(db, "oauthuser");
+    linkIdentity(db, "oauthuser", "google", "sub-1", "a@b.co");
+    expect(listIdentities(db, "oauthuser")).toEqual(["google"]);
+
+    expect(() => unlinkIdentity(db, "oauthuser", "google")).toThrow(IdentityError);
+
+    linkIdentity(db, "oauthuser", "apple", "sub-2", null);
+    unlinkIdentity(db, "oauthuser", "google");
+    expect(listIdentities(db, "oauthuser")).toEqual(["apple"]);
   });
 });
 

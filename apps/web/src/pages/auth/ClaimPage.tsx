@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { Bird, TriangleAlert } from "lucide-react";
+import { TriangleAlert } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { claim, exportZipUrl, importZip } from "../../api/client.ts";
@@ -88,8 +88,7 @@ export function ClaimPage() {
         }}
         className={AUTH_PANEL}
       >
-        <h1 className="flex items-center justify-center gap-2 text-center font-display italic text-snow text-xl">
-          <Bird size={22} strokeWidth={1.5} aria-hidden />
+        <h1 className="text-center font-display italic text-snow text-xl">
           {t("auth.claim.title")}
         </h1>
 

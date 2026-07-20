@@ -41,7 +41,14 @@ describe("single mode — no password configured", () => {
   it("GET /api/auth/session reports authenticated without logging in", async () => {
     const { app } = setupSingle(undefined);
     const res = await app.request("/api/auth/session");
-    expect(await res.json()).toEqual({ authenticated: true, handle: null, mode: "single" });
+    expect(await res.json()).toEqual({
+      authenticated: true,
+      handle: null,
+      mode: "single",
+      identities: [],
+      hasPassword: false,
+      oauthProviders: {},
+    });
   });
 
   it("does not gate protected routes", async () => {
@@ -80,7 +87,14 @@ describe("single mode — password configured", () => {
     expect(statsRes.status).toBe(200);
 
     const sessionRes = await app.request("/api/auth/session", { headers: { cookie } });
-    expect(await sessionRes.json()).toEqual({ authenticated: true, handle: null, mode: "single" });
+    expect(await sessionRes.json()).toEqual({
+      authenticated: true,
+      handle: null,
+      mode: "single",
+      identities: [],
+      hasPassword: false,
+      oauthProviders: {},
+    });
   });
 
   it("401s with a uniform message on a wrong password", async () => {
@@ -133,6 +147,9 @@ describe("multi mode — claim / login / logout / session", () => {
       authenticated: true,
       handle: "xavaneo",
       mode: "multi",
+      identities: [],
+      hasPassword: true,
+      oauthProviders: {},
     });
 
     const loginRes = await app.request("/api/auth/login", {
@@ -233,7 +250,14 @@ describe("multi mode — claim / login / logout / session", () => {
 
     await app.request("/api/auth/logout", { method: "POST", headers: { ...HEADERS, cookie } });
     const sessionRes = await app.request("/api/auth/session", { headers: { cookie } });
-    expect(await sessionRes.json()).toEqual({ authenticated: false, handle: null, mode: "multi" });
+    expect(await sessionRes.json()).toEqual({
+      authenticated: false,
+      handle: null,
+      mode: "multi",
+      identities: [],
+      hasPassword: false,
+      oauthProviders: {},
+    });
   });
 
   it("DELETE /api/auth/account requires re-auth and removes the account", async () => {
@@ -260,7 +284,14 @@ describe("multi mode — claim / login / logout / session", () => {
     expect(deleteRes.status).toBe(204);
 
     const sessionRes = await app.request("/api/auth/session", { headers: { cookie } });
-    expect(await sessionRes.json()).toEqual({ authenticated: false, handle: null, mode: "multi" });
+    expect(await sessionRes.json()).toEqual({
+      authenticated: false,
+      handle: null,
+      mode: "multi",
+      identities: [],
+      hasPassword: false,
+      oauthProviders: {},
+    });
   });
 });
 

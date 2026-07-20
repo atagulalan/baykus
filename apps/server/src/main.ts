@@ -5,8 +5,10 @@ import { serveStatic } from "@hono/node-server/serve-static";
 import { createApp } from "./app.ts";
 import { createProductionDeps } from "./bootstrap.ts";
 import { loadConfig } from "./config.ts";
+import { initSentry } from "./observability/sentry.ts";
 
 const config = loadConfig();
+initSentry(config);
 const app = createApp(config, createProductionDeps(config));
 
 /**

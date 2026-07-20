@@ -556,6 +556,23 @@
     "login": "Log in",
     "loginError": "Invalid handle or password",
     "needAccount": "Don't have an account? Create one",
+    "oauth": {
+      "or": "or",
+      "google": "Continue with Google",
+      "apple": "Continue with Apple",
+      "error": "Social sign-in failed",
+      "errorUnregisteredOrigin": "This origin is not registered with Google — add {{origin}}/oauth-google.html under Authorized redirect URIs (and {{origin}} under JavaScript origins)",
+      "errorPopupBlocked": "Popup blocked — allow popups for this site",
+      "pickHandle": "Choose your handle",
+      "finish": "Create account",
+      "backupReminder": "Your backup is your zip export. Settings → Download zip. (No password — recovery is via the IdP.)",
+      "linked": "Linked sign-in",
+      "connected": "connected",
+      "link": "Link",
+      "unlink": "Unlink",
+      "linkError": "Couldn't link",
+      "unlinkError": "Couldn't unlink — keep at least one sign-in method"
+    },
     "claim": {
       "title": "Create account",
       "confirmPassword": "Confirm password",
@@ -578,7 +595,8 @@
     "deleteAccount": {
       "warning": "Download a final backup first",
       "confirm": "Delete anyway",
-      "error": "Couldn't delete the account — check your password"
+      "error": "Couldn't delete the account — check your password",
+      "reauthOAuth": "Re-authenticate with a linked account to delete"
     }
   },
   "importWizard": {

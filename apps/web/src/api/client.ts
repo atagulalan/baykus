@@ -1,4 +1,5 @@
 import { parseSeriesParam } from "../lib/seriesPath.ts";
+import { addApiBreadcrumb, captureError, track } from "../lib/telemetry.ts";
 import type {
   AddWatchResult,
   ApiErrorEnvelope,
@@ -11,6 +12,8 @@ import type {
   ImportMode,
   ImportZipResult,
   ManualList,
+  OAuthCallbackResult,
+  OAuthProvider,
   Rating,
   RatingTargetType,
   RefreshCompleteEvent,
@@ -46,11 +49,33 @@ export class ApiError extends Error {
   }
 }
 
+function newRequestId(): string {
+  return crypto.randomUUID();
+}
+
+function reportHttpFailure(path: string, status: number, err: unknown, requestId: string): void {
+  addApiBreadcrumb({ path, status, requestId });
+  // E194: only 5xx / network-class failures — not routine 401/404.
+  if (status >= 500 || status === 0) {
+    captureError(err, { path, status, requestId });
+  }
+}
+
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const headers: Record<string, string> = { "X-Baykus": "1" };
+  const requestId = newRequestId();
+  const headers: Record<string, string> = {
+    "X-Baykus": "1",
+    "X-Request-Id": requestId,
+  };
   if (init.body) headers["content-type"] = "application/json";
 
-  const res = await fetch(`/api${path}`, { ...init, headers: { ...headers, ...init.headers } });
+  let res: Response;
+  try {
+    res = await fetch(`/api${path}`, { ...init, headers: { ...headers, ...init.headers } });
+  } catch (err) {
+    reportHttpFailure(path, 0, err, requestId);
+    throw err;
+  }
 
   if (res.status === 204) return undefined as T;
 
@@ -59,19 +84,25 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 
   if (!res.ok) {
     const envelope = body as ApiErrorEnvelope | undefined;
-    throw new ApiError(
+    const err = new ApiError(
       envelope?.error.code ?? "INTERNAL",
       envelope?.error.message ?? res.statusText,
       res.status,
       envelope?.error.details ?? null,
     );
+    reportHttpFailure(path, res.status, err, requestId);
+    throw err;
   }
 
   return body as T;
 }
 
-export function searchSeries(query: string, limit = 10): Promise<SearchResponse> {
-  return request<SearchResponse>(`/search?q=${encodeURIComponent(query)}&limit=${limit}`);
+export async function searchSeries(query: string, limit = 10): Promise<SearchResponse> {
+  const result = await request<SearchResponse>(
+    `/search?q=${encodeURIComponent(query)}&limit=${limit}`,
+  );
+  track("search_submit");
+  return result;
 }
 
 /** E131: provider details for a search hit; redirects client if already in library. */
@@ -84,14 +115,16 @@ export function getSeriesPreview(externalIds: ExternalIds): Promise<SeriesPrevie
   return request<SeriesPreview>(`/search/preview?${query.toString()}`);
 }
 
-export function addSeries(
+export async function addSeries(
   externalIds: ExternalIds,
   manualList?: ManualList,
 ): Promise<SeriesSummary> {
-  return request<SeriesSummary>("/library/series", {
+  const result = await request<SeriesSummary>("/library/series", {
     method: "POST",
     body: JSON.stringify({ externalIds, manualList }),
   });
+  track("series_add");
+  return result;
 }
 
 export function listSeries(
@@ -157,22 +190,29 @@ export function updateSeries(
   });
 }
 
-export function addEpisodeWatch(episodeId: number, watchedAt?: string): Promise<AddWatchResult> {
-  return request<AddWatchResult>(`/episodes/${episodeId}/watches`, {
+export async function addEpisodeWatch(
+  episodeId: number,
+  watchedAt?: string,
+): Promise<AddWatchResult> {
+  const result = await request<AddWatchResult>(`/episodes/${episodeId}/watches`, {
     method: "POST",
     body: JSON.stringify(watchedAt ? { watchedAt } : {}),
   });
+  track("watch_add");
+  return result;
 }
 
 export function removeLatestEpisodeWatch(episodeId: number): Promise<void> {
   return request<void>(`/episodes/${episodeId}/watches/latest`, { method: "DELETE" });
 }
 
-export function bulkWatch(itemId: number, target: BulkWatchTarget): Promise<BulkWatchResult> {
-  return request<BulkWatchResult>(`/library/series/${itemId}/watches/bulk`, {
+export async function bulkWatch(itemId: number, target: BulkWatchTarget): Promise<BulkWatchResult> {
+  const result = await request<BulkWatchResult>(`/library/series/${itemId}/watches/bulk`, {
     method: "POST",
     body: JSON.stringify(target),
   });
+  track("watch_bulk");
+  return result;
 }
 
 export function bulkUnwatch(itemId: number, target: BulkWatchTarget): Promise<{ deleted: number }> {
@@ -216,24 +256,33 @@ export function updateSettings(patch: SettingsPatch): Promise<Settings> {
 export async function uploadAvatar(file: File): Promise<Settings> {
   const formData = new FormData();
   formData.append("file", file);
+  const requestId = newRequestId();
 
-  const res = await fetch("/api/settings/avatar", {
-    method: "POST",
-    headers: { "X-Baykus": "1" },
-    body: formData,
-  });
+  let res: Response;
+  try {
+    res = await fetch("/api/settings/avatar", {
+      method: "POST",
+      headers: { "X-Baykus": "1", "X-Request-Id": requestId },
+      body: formData,
+    });
+  } catch (err) {
+    reportHttpFailure("/settings/avatar", 0, err, requestId);
+    throw err;
+  }
 
   const isJson = res.headers.get("content-type")?.includes("application/json") ?? false;
   const body: unknown = isJson ? await res.json() : undefined;
 
   if (!res.ok) {
     const envelope = body as ApiErrorEnvelope | undefined;
-    throw new ApiError(
+    const err = new ApiError(
       envelope?.error.code ?? "INTERNAL",
       envelope?.error.message ?? res.statusText,
       res.status,
       envelope?.error.details ?? null,
     );
+    reportHttpFailure("/settings/avatar", res.status, err, requestId);
+    throw err;
   }
 
   return body as Settings;
@@ -287,9 +336,21 @@ export async function refreshAllSeries(
   staleOnly?: boolean,
 ): Promise<RefreshCompleteEvent> {
   const url = staleOnly ? "/api/library/refresh?staleOnly=1" : "/api/library/refresh";
-  const res = await fetch(url, { method: "POST", headers: { "X-Baykus": "1" } });
+  const requestId = newRequestId();
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      headers: { "X-Baykus": "1", "X-Request-Id": requestId },
+    });
+  } catch (err) {
+    reportHttpFailure("/library/refresh", 0, err, requestId);
+    throw err;
+  }
   if (!res.ok || !res.body) {
-    throw new ApiError("INTERNAL", "refresh stream failed", res.status, null);
+    const err = new ApiError("INTERNAL", "refresh stream failed", res.status, null);
+    reportHttpFailure("/library/refresh", res.status, err, requestId);
+    throw err;
   }
   return readSseStream<RefreshProgressEvent, RefreshCompleteEvent>(res.body, onProgress);
 }
@@ -327,26 +388,36 @@ export async function importZip(file: File, mode?: ImportMode): Promise<ImportZi
   const formData = new FormData();
   formData.append("file", file);
   if (mode) formData.append("mode", mode);
+  const requestId = newRequestId();
 
-  const res = await fetch("/api/import", {
-    method: "POST",
-    headers: { "X-Baykus": "1" },
-    body: formData,
-  });
+  let res: Response;
+  try {
+    res = await fetch("/api/import", {
+      method: "POST",
+      headers: { "X-Baykus": "1", "X-Request-Id": requestId },
+      body: formData,
+    });
+  } catch (err) {
+    reportHttpFailure("/import", 0, err, requestId);
+    throw err;
+  }
 
   const isJson = res.headers.get("content-type")?.includes("application/json") ?? false;
   const body: unknown = isJson ? await res.json() : undefined;
 
   if (!res.ok) {
     const envelope = body as ApiErrorEnvelope | undefined;
-    throw new ApiError(
+    const err = new ApiError(
       envelope?.error.code ?? "INTERNAL",
       envelope?.error.message ?? res.statusText,
       res.status,
       envelope?.error.details ?? null,
     );
+    reportHttpFailure("/import", res.status, err, requestId);
+    throw err;
   }
 
+  track("import_zip");
   return body as ImportZipResult;
 }
 
@@ -357,11 +428,16 @@ export function getAuthSession(): Promise<AuthSession> {
 export function login(payload: {
   handle?: string;
   password: string;
-}): Promise<{ handle: string | null }> {
+  returnToken?: boolean;
+}): Promise<{ handle: string | null; token?: string }> {
   return request("/auth/login", { method: "POST", body: JSON.stringify(payload) });
 }
 
-export function claim(payload: { handle: string; password: string }): Promise<ClaimResult> {
+export function claim(payload: {
+  handle: string;
+  password: string;
+  returnToken?: boolean;
+}): Promise<ClaimResult> {
   return request<ClaimResult>("/auth/claim", { method: "POST", body: JSON.stringify(payload) });
 }
 
@@ -369,8 +445,51 @@ export function logout(): Promise<void> {
   return request<void>("/auth/logout", { method: "POST" });
 }
 
-export function deleteAccount(password: string): Promise<void> {
-  return request<void>("/auth/account", { method: "DELETE", body: JSON.stringify({ password }) });
+export function deleteAccount(payload: {
+  password?: string;
+  provider?: OAuthProvider;
+  idToken?: string;
+  nonce?: string;
+}): Promise<void> {
+  return request<void>("/auth/account", { method: "DELETE", body: JSON.stringify(payload) });
+}
+
+export function oauthCallback(payload: {
+  provider: OAuthProvider;
+  idToken: string;
+  nonce?: string;
+  returnToken?: boolean;
+}): Promise<OAuthCallbackResult> {
+  return request<OAuthCallbackResult>("/auth/oauth/callback", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function oauthClaim(payload: {
+  pendingToken: string;
+  handle: string;
+  returnToken?: boolean;
+}): Promise<ClaimResult> {
+  return request<ClaimResult>("/auth/oauth/claim", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function oauthLink(payload: {
+  provider: OAuthProvider;
+  idToken: string;
+  nonce?: string;
+}): Promise<{ identities: OAuthProvider[] }> {
+  return request("/auth/oauth/link", { method: "POST", body: JSON.stringify(payload) });
+}
+
+export function oauthUnlink(provider: OAuthProvider): Promise<{ identities: OAuthProvider[] }> {
+  return request("/auth/oauth/link", {
+    method: "DELETE",
+    body: JSON.stringify({ provider }),
+  });
 }
 
 /** Danger zone: irreversibly wipes every series/watch/rating/setting in the library. */
@@ -388,26 +507,37 @@ export async function importTvTime(
 ): Promise<TvTimeReport> {
   const formData = new FormData();
   formData.append("file", file);
+  const requestId = newRequestId();
 
-  const res = await fetch("/api/import/tvtime", {
-    method: "POST",
-    headers: { "X-Baykus": "1" },
-    body: formData,
-  });
+  let res: Response;
+  try {
+    res = await fetch("/api/import/tvtime", {
+      method: "POST",
+      headers: { "X-Baykus": "1", "X-Request-Id": requestId },
+      body: formData,
+    });
+  } catch (err) {
+    reportHttpFailure("/import/tvtime", 0, err, requestId);
+    throw err;
+  }
 
   if (!res.ok || !res.body) {
     const isJson = res.headers.get("content-type")?.includes("application/json") ?? false;
     const body: unknown = isJson ? await res.json() : undefined;
     const envelope = body as ApiErrorEnvelope | undefined;
-    throw new ApiError(
+    const err = new ApiError(
       envelope?.error.code ?? "INTERNAL",
       envelope?.error.message ?? res.statusText,
       res.status,
       envelope?.error.details ?? null,
     );
+    reportHttpFailure("/import/tvtime", res.status, err, requestId);
+    throw err;
   }
 
-  return readSseStream<TvTimeImportProgressEvent, TvTimeReport>(res.body, onProgress);
+  const report = await readSseStream<TvTimeImportProgressEvent, TvTimeReport>(res.body, onProgress);
+  track("import_tvtime");
+  return report;
 }
 
 export async function confirmTvTimeImport(
@@ -415,22 +545,35 @@ export async function confirmTvTimeImport(
   resolutions: { name: string; externalIds: ExternalIds }[],
   onProgress: (event: TvTimeConfirmProgressEvent) => void,
 ): Promise<TvTimeConfirmResult> {
-  const res = await fetch("/api/import/tvtime/confirm", {
-    method: "POST",
-    headers: { "X-Baykus": "1", "content-type": "application/json" },
-    body: JSON.stringify({ reportId, resolutions }),
-  });
+  const requestId = newRequestId();
+  let res: Response;
+  try {
+    res = await fetch("/api/import/tvtime/confirm", {
+      method: "POST",
+      headers: {
+        "X-Baykus": "1",
+        "content-type": "application/json",
+        "X-Request-Id": requestId,
+      },
+      body: JSON.stringify({ reportId, resolutions }),
+    });
+  } catch (err) {
+    reportHttpFailure("/import/tvtime/confirm", 0, err, requestId);
+    throw err;
+  }
 
   if (!res.ok || !res.body) {
     const isJson = res.headers.get("content-type")?.includes("application/json") ?? false;
     const body: unknown = isJson ? await res.json() : undefined;
     const envelope = body as ApiErrorEnvelope | undefined;
-    throw new ApiError(
+    const err = new ApiError(
       envelope?.error.code ?? "INTERNAL",
       envelope?.error.message ?? res.statusText,
       res.status,
       envelope?.error.details ?? null,
     );
+    reportHttpFailure("/import/tvtime/confirm", res.status, err, requestId);
+    throw err;
   }
 
   return readSseStream<TvTimeConfirmProgressEvent, TvTimeConfirmResult>(res.body, onProgress);

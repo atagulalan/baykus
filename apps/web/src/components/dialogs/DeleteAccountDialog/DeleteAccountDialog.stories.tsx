@@ -10,6 +10,9 @@ const meta = {
     onClose: noop,
     pending: false,
     error: false,
+    hasPassword: true,
+    identities: [],
+    oauthProviders: {},
   },
 } satisfies Meta<typeof DeleteAccountDialog>;
 
@@ -21,3 +24,11 @@ export const Default: Story = {};
 export const Pending: Story = { args: { pending: true } };
 
 export const WithError: Story = { args: { error: true } };
+
+export const OAuthOnly: Story = {
+  args: {
+    hasPassword: false,
+    identities: ["google"],
+    oauthProviders: { google: { clientId: "web-client.apps.googleusercontent.com" } },
+  },
+};

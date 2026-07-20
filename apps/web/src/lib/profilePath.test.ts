@@ -3,7 +3,15 @@ import type { AuthSession } from "../api/types.ts";
 import { resolveProfileParam, selfHandleParam } from "./profilePath.ts";
 
 function session(overrides: Partial<AuthSession> = {}): AuthSession {
-  return { authenticated: true, handle: null, mode: "single", ...overrides };
+  return {
+    authenticated: true,
+    handle: null,
+    mode: "single",
+    identities: [],
+    hasPassword: false,
+    oauthProviders: {},
+    ...overrides,
+  };
 }
 
 describe("resolveProfileParam (E57 resolution matrix)", () => {
