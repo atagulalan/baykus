@@ -1,0 +1,27 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "allowImportingTsExtensions": true,
+    "moduleResolution": "Bundler",
+    "paths": {
+      "@baykus/api-client": [
+        "../../packages/api-client/src/index.ts"
+      ],
+      "@baykus/i18n": [
+        "../../packages/i18n/src/index.ts"
+      ],
+      "@baykus/ui": [
+        "../../packages/ui/src/index.ts"
+      ]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "nativewind-env.d.ts",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts"
+  ]
+}

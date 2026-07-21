@@ -13,6 +13,9 @@
     "test:storybook": "vitest run --project storybook"
   },
   "dependencies": {
+    "@baykus/api-client": "workspace:*",
+    "@baykus/i18n": "workspace:*",
+    "@baykus/ui": "workspace:*",
     "@sentry/react": "^10.66.0",
     "@tanstack/react-query": "^5.83.0",
     "@tanstack/react-router": "^1.128.0",

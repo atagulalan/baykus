@@ -1,0 +1,51 @@
+{
+  "name": "@baykus/ui",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tokens": "./src/tokens.ts",
+    "./tokens.cjs": "./tokens.cjs",
+    "./lib/airing": "./src/lib/airing.ts",
+    "./lib/categoryColors": "./src/lib/categoryColors.ts",
+    "./lib/progressSegments": "./src/lib/progressSegments.ts",
+    "./lib/episodeLabel": "./src/lib/episodeLabel.ts",
+    "./lib/episodeTags": "./src/lib/episodeTags.ts",
+    "./lib/watchNext": "./src/lib/watchNext.ts",
+    "./lib/reorderSections": "./src/lib/reorderSections.ts",
+    "./lib/cn": "./src/lib/cn.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit",
+    "storybook": "storybook dev -p 6007",
+    "build-storybook": "storybook build -o storybook-static"
+  },
+  "peerDependencies": {
+    "lucide-react-native": "*",
+    "nativewind": "*",
+    "react": "^19.1.0",
+    "react-native": "*",
+    "react-native-svg": "*"
+  },
+  "devDependencies": {
+    "@storybook/react-native-web-vite": "^10.5.3",
+    "@types/react": "^19.1.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^4.7.0",
+    "autoprefixer": "^10.5.4",
+    "lucide-react-native": "^1.25.0",
+    "nativewind": "^4.2.6",
+    "postcss": "^8.5.20",
+    "react": "^19.1.0",
+    "react-dom": "^19.2.7",
+    "react-native": "^0.81.5",
+    "react-native-svg": "^15.12.1",
+    "react-native-web": "^0.21.2",
+    "storybook": "^10.5.2",
+    "tailwindcss": "3.4.17",
+    "typescript": "^5.9.2",
+    "vite": "^7.3.6"
+  }
+}

@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "pnpm --parallel --filter @baykus/server --filter @baykus/web dev",
     "dev:multi": "bash scripts/dev-multi.sh",
+    "dev:mobile": "pnpm --filter @baykus/mobile start",
     "build": "pnpm -r build",
     "test": "vitest run --project unit",
     "test:storybook": "vitest run --project storybook",

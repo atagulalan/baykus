@@ -63,6 +63,11 @@ baykus.xava.me (multi mode, handle-claim accounts).
    2026-07-17 (see root `MANUELTEST.md` §M52).
 10. `specs/014-oauth-signin/` — Google/Apple sign-in (multi), Bearer
     sessions for RN, identity linking. Amends 001 §Auth (E112–E123).
+11. `docs/react-native-migration.md` — planned Expo + NativeWind dual-client
+    roadmap (shared `packages/ui` / api-client / i18n). Not implemented yet;
+    014 already covers Bearer sessions. When client packages land, amend the
+    Boundaries table below (clients may import those packages; still never
+    `core` / providers).
 
 ## Normative sources — order of truth
 
@@ -93,7 +98,7 @@ comment. Silent divergence is the one unforgivable failure mode.
 4. Run `pnpm lint && pnpm typecheck && pnpm test` (fix with
    `pnpm exec biome check --write .` for format issues), then the task's
    **Verify** line.
-5. New UI strings → both `apps/web/src/i18n/tr.json` and `en.json`, same commit.
+5. New UI strings → both `packages/i18n/locales/tr.json` and `en.json`, same commit.
 6. Check the task's box in tasks.md, commit (`feat(scope): M2.1 …`), move on.
 7. At CHECKPOINT tasks: run the full browser walkthrough before proceeding.
 
@@ -112,8 +117,9 @@ comment. Silent divergence is the one unforgivable failure mode.
 | stats aggregates / /stats page / date_unknown | 008 spec.md §Edge-case decisions (E95–E111), 008 plan.md, `packages/core/src/library/stats/` |
 | zip export/import | data-model.md §Zip + §Merge, constitution Article III |
 | server routes | contracts/api.md (that section), the core service it wraps |
-| web pages/components | ui.md §that screen, contracts/api.md (endpoints it calls) |
-| refresh/push | spec.md US-6/US-7, contracts §Refresh §Push |
+| web pages/components | ui.md §that screen, contracts/api.md (endpoints it calls); prefer `@baykus/ui` when the component is already shared |
+| mobile screens / shared UI | `docs/react-native-migration.md`, `apps/mobile/README.md`, `packages/ui` (+ RN-Web Storybook), `packages/api-client`, `packages/i18n` |
+| refresh/push | spec.md US-6/US-7, contracts §Refresh §Push; native push blocked — see `docs/native-push.md` |
 | auth/multi mode | 001 US-10/US-11 + 014 E112–E123, 014 contracts §Auth, plan.md §Modes |
 | importers | research.md §TV Time, contracts §tvtime (001 as amended by 003 E44 + 004 E48/E49), 004 spec.md E48/E49, fixtures/tvtime |
 
@@ -122,6 +128,7 @@ comment. Silent divergence is the one unforgivable failure mode.
 ```bash
 pnpm install
 pnpm dev            # server (4004) + web (5173, proxies /api and /img)
+pnpm dev:mobile     # Expo Router (@baykus/mobile) — see docs/react-native-migration.md
 pnpm test           # vitest across workspace
 pnpm test <path>    # e.g. pnpm test packages/core
 pnpm typecheck
@@ -136,7 +143,7 @@ pnpm build          # web → apps/web/dist, server → apps/server/dist
 - Providers: no network in tests — recorded fixtures only. Respect rate limits
   in implementation (TVmaze: 20 req/10s hard).
 - User-facing strings: i18next keys only, maintain both `tr` (default) and `en`
-  catalogs in the same PR. Domain wording: rating labels are
+  catalogs in `packages/i18n/locales/` in the same PR. Domain wording: rating labels are
   1 = "kötü", 2 = "normal", 3 = "iyi".
 - Dates/times stored as ISO-8601 UTC strings in SQLite.
 - Commits: conventional commits (`feat(core): …`, `fix(web): …`). Package name
@@ -150,8 +157,12 @@ pnpm build          # web → apps/web/dist, server → apps/server/dist
 | `packages/provider-*` | `provider-sdk` only (+ own deps) |
 | `packages/core` | `provider-sdk` (types), never a concrete provider |
 | `packages/importer-*` | `core` structures, `provider-sdk` |
+| `packages/ui` | RN / NativeWind / icons; never `core` or providers |
+| `packages/api-client` | fetch + DTO types only; never `core` or providers |
+| `packages/i18n` | locale catalogs / i18next helpers only |
 | `apps/server` | everything (composition root) |
-| `apps/web` | nothing from packages — HTTP API only |
+| `apps/web` | `@baykus/api-client`, `@baykus/i18n`, `@baykus/ui` when migrated; never `core` / providers (HTTP API only otherwise) |
+| `apps/mobile` | `@baykus/api-client`, `@baykus/i18n`, `@baykus/ui`; never `core` / providers (HTTP API only) |
 
 ## Secrets & safety
 

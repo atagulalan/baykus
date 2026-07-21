@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/*
+ * Brand colors/fonts — keep in sync with:
+ *   packages/ui/src/tokens.ts
+ *   packages/ui/tokens.cjs (NativeWind / mobile tailwind.config.js)
+ */
 @theme {
   --color-void: #080808;
   --color-snow: #ebebeb;

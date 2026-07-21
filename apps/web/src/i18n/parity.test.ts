@@ -1,6 +1,8 @@
+import { resources } from "@baykus/i18n";
 import { describe, expect, it } from "vitest";
-import en from "./en.json";
-import tr from "./tr.json";
+
+const tr = resources.tr.translation;
+const en = resources.en.translation;
 
 function collectKeyPaths(node: unknown, prefix = ""): string[] {
   if (typeof node !== "object" || node === null) {

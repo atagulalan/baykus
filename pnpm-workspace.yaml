@@ -5,3 +5,12 @@ engineStrict: true
 allowBuilds:
   better-sqlite3: true
   esbuild: true
+# Expo Metro + monorepo: hoist so nested RN/Expo requires resolve
+# (docs.expo.dev/guides/monorepos — node-linker=hoisted).
+nodeLinker: hoisted
+# Keep Expo SDK 54 peers aligned for NativeWind / expo-router (store Expo Go).
+overrides:
+  react-native-reanimated: "4.1.7"
+  react-native-worklets: "0.5.1"
+  "@react-navigation/native": "7.1.8"
+  "@expo/metro-runtime": "6.1.2"

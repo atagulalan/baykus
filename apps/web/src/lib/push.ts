@@ -26,7 +26,7 @@ export async function subscribeToPush(): Promise<void> {
     userVisibleOnly: true,
     applicationServerKey: urlBase64ToUint8Array(key),
   });
-  await subscribePush(subscription.toJSON());
+  await subscribePush(subscription.toJSON() as Parameters<typeof subscribePush>[0]);
 }
 
 export async function unsubscribeFromPush(): Promise<void> {

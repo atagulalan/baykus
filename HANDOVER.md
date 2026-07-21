@@ -81,3 +81,9 @@ pnpm typecheck && pnpm lint && pnpm build
 
 If M9.2 stays credential-blocked and the USER-ONLY checks above are all that's
 left, there is nothing queued — ask xava what's next before starting new work.
+
+**React Native dual-client — birebir product parity pass:** profile banner picker,
+full stats sections, dedicated settings (general/providers/account/danger),
+all-series per-section sort, history newest/oldest, profile all-series preview.
+Remaining thinner: series-detail menus/bulk/rating depth, ScheduleGrid pan,
+web DOM atom switch (TW4), push **spec delta**, device matrix. Commit when xava asks.
