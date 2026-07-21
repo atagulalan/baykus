@@ -36,7 +36,7 @@ pnpm --filter @baykus/ui storybook   # http://localhost:6007
 | `/library/all` | Category-grouped library (E60) |
 | `/library/favorites` | Full favorites grid |
 | `/profile/stats` | Stats first slice (hero / recent / top / categories) |
-| `/(tabs)/calendar` | Timeline / month grid / schedule |
+| `/(tabs)/calendar` | Timeline only |
 | `/(tabs)/search` | Search, preview, quick-add |
 | `/(tabs)/profile` | Hub + account + reset library + favorites preview |
 | `/series/[id]` | Detail, favorite, remove, next-up, seasons |

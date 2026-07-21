@@ -104,7 +104,14 @@ async function authHeaders(
     headers["X-Baykus"] = "1";
   } else {
     const token = await getAccessToken?.();
-    if (token) headers.Authorization = `Bearer ${token}`;
+    if (token) {
+      // Bearer-authenticated mutations skip X-Baykus (014 E119).
+      headers.Authorization = `Bearer ${token}`;
+    } else {
+      // Single-mode / no session: still need CSRF on mutations — transport
+      // is "bearer" on RN even when there is no token yet.
+      headers["X-Baykus"] = "1";
+    }
   }
   if (opts.jsonBody) headers["content-type"] = "application/json";
   return headers;

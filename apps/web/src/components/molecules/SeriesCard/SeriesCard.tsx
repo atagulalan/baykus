@@ -88,7 +88,7 @@ export function SeriesCard({ series }: SeriesCardProps) {
           )}
         </div>
         <div className="flex w-full flex-col items-start gap-1 pt-2">
-          <p className="w-full truncate text-left font-display italic text-snow text-xs leading-tight sm:text-lg">
+          <p className="w-full truncate text-left font-display italic text-snow text-[1rem] leading-tight">
             {series.title}
           </p>
           <div className="flex w-full items-center justify-between font-mono text-[10px] tabular-nums text-muted tracking-wide">

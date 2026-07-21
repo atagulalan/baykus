@@ -107,7 +107,7 @@ export function SeriesDetailHero({
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-3">
           <div className="flex items-center justify-between gap-3">
-            <h1 className="min-w-0 flex-1 font-display italic text-2xl text-snow leading-none tracking-tight sm:text-4xl">
+            <h1 className="min-w-0 flex-1 font-display italic text-2xl text-snow leading-none tracking-tight line-clamp-3 sm:text-4xl">
               {detail.title}
               {detail.year ? (
                 <span className="ml-2 font-sans text-base text-snow/60 not-italic sm:text-2xl">

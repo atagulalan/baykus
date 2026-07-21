@@ -16,4 +16,9 @@ config.resolver.nodeModulesPaths = [
 ];
 config.resolver.disableHierarchicalLookup = true;
 
-module.exports = withNativeWind(config, { input: "./global.css" });
+module.exports = withNativeWind(config, {
+  input: "./global.css",
+  // NativeWind v4 defaults rem→14 on native. Web/Tailwind use 16.
+  // Bumped to 18 for a clear density test (~29% larger than default 14).
+  inlineRem: 18,
+});

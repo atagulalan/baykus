@@ -17,6 +17,24 @@ export type Segment =
 
 const MAX_SEGMENTED_SEASONS = 12;
 
+/**
+ * M43: when the frontier season is 0% watched (and not the first segment),
+ * paint this many px of fill so the bar isn't fully invisible.
+ * `0` disables the sliver.
+ */
+export const EMPTY_FRONTIER_MIN_PX = 0;
+
+/** Width for a frontier fill — percent, or `EMPTY_FRONTIER_MIN_PX` when applicable. */
+export function frontierFillWidth(
+  percent: number,
+  segmentIndex: number,
+): { unit: "px"; value: number } | { unit: "%"; value: number } {
+  if (percent === 0 && segmentIndex > 0 && EMPTY_FRONTIER_MIN_PX > 0) {
+    return { unit: "px", value: EMPTY_FRONTIER_MIN_PX };
+  }
+  return { unit: "%", value: percent };
+}
+
 /** E34: null means fall back to plain percentage bar. */
 export function buildProgressSegments(sp: SeasonProgress): Segment[] | null {
   if (!sp.sequential) return null;

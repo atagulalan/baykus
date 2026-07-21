@@ -2,6 +2,7 @@
 import { ArrowDown, ArrowUp, Minus } from "lucide-react-native";
 import type { ComponentType } from "react";
 import { Pressable, Text, View } from "react-native";
+import { borders } from "../lib/borders.ts";
 import { cn } from "../lib/cn.ts";
 import { colors } from "../tokens.ts";
 
@@ -83,9 +84,10 @@ export function RatingControl({
       accessibilityRole="radiogroup"
       accessibilityLabel={labels.group}
       className={cn(
-        "flex-row items-center gap-0.5 rounded-full border border-white/10 bg-void/95 p-0.5",
+        "flex-row items-center gap-0.5 rounded-full bg-void/95 p-0.5",
         iconsOnly && "self-start",
       )}
+      style={borders.subtle}
     >
       {OPTIONS.map((opt) => {
         const active = value === opt.value;

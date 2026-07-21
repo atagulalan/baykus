@@ -79,7 +79,7 @@ export function SeriesCard({ series, onPress }: SeriesCardProps) {
       <View className="w-full items-start gap-1 pt-2">
         <Text
           numberOfLines={1}
-          className="w-full text-left font-display text-xs italic leading-tight text-snow"
+          className="w-full text-left font-display text-[1rem] italic leading-tight text-snow"
         >
           {series.title}
         </Text>

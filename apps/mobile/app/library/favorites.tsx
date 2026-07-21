@@ -2,10 +2,9 @@ import { ApiError, listSeries, type SeriesSummary, seriesParam } from "@baykus/a
 import {
   EMPTY_PANEL_CTA_CLASS,
   EmptyPanel,
-  PageTitle,
   PullToRefresh,
   SeriesCard,
-  SkeletonBone,
+  SkeletonSeriesGrid,
 } from "@baykus/ui";
 import { Link, router, Stack } from "expo-router";
 import { Heart } from "lucide-react-native";
@@ -14,7 +13,9 @@ import { useTranslation } from "react-i18next";
 import { Pressable, Text, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../src/auth/AuthProvider.tsx";
+import { tabContentBottom, tabContentTop } from "../../src/chrome/layout.ts";
 import { toSeriesCardSeries } from "../../src/lib/mapSeriesCard.ts";
+import { seriesGridCols } from "../../src/lib/seriesGridCols.ts";
 
 /** Full favorites grid (profile hub caps preview at 6 — E79). */
 export default function FavoritesScreen() {
@@ -22,7 +23,7 @@ export default function FavoritesScreen() {
   const { session, loading: authLoading } = useAuth();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const cols = width >= 720 ? 4 : width >= 480 ? 3 : 2;
+  const cols = seriesGridCols(width);
   const [items, setItems] = useState<SeriesSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -59,13 +60,13 @@ export default function FavoritesScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: t("profile.favorites.title") }} />
+      <Stack.Screen options={{ title: "" }} />
       <PullToRefresh
         className="flex-1 bg-void"
         contentContainerStyle={{
-          paddingBottom: insets.bottom + 32,
-          paddingTop: 8,
-          paddingHorizontal: 12,
+          paddingBottom: tabContentBottom(insets.bottom),
+          paddingTop: tabContentTop(insets.top),
+          paddingHorizontal: 6,
         }}
         refreshing={refreshing}
         onRefresh={async () => {
@@ -73,21 +74,8 @@ export default function FavoritesScreen() {
           await load();
         }}
       >
-        <View className="mb-4 flex-row items-baseline gap-2 px-1">
-          <PageTitle>{t("profile.favorites.title")}</PageTitle>
-          {items.length > 0 ? (
-            <Text className="font-sans text-lg text-muted">({items.length})</Text>
-          ) : null}
-        </View>
-
         {authLoading || loading ? (
-          <View className="flex-row flex-wrap">
-            {[0, 1, 2, 3].map((i) => (
-              <View key={i} style={{ width: `${100 / cols}%` }} className="p-1">
-                <SkeletonBone className="aspect-[2/3] w-full rounded-md" />
-              </View>
-            ))}
-          </View>
+          <SkeletonSeriesGrid count={6} cols={cols} />
         ) : needsAuth ? (
           <EmptyPanel
             icon={Heart}

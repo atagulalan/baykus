@@ -20,11 +20,21 @@ module.exports = {
         yellow: colors.yellow,
       },
       fontFamily: {
-        display: fonts.display,
+        // Italic cut only — must match the useFonts key in src/lib/fonts.ts.
+        // Do not use tokens `DM Serif Display` here (see fonts.ts comment).
+        display: ["DM Serif Display Italic"],
         sans: fonts.sans,
         mono: fonts.mono,
       },
     },
   },
-  plugins: [],
+  plugins: [
+    // `font-display` is already the italic TTF. Tailwind `italic` would add a
+    // synthetic extra slant on Android — neutralize without losing the cut.
+    ({ addUtilities }) => {
+      addUtilities({
+        ".italic": { fontStyle: "normal" },
+      });
+    },
+  ],
 };

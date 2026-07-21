@@ -1,5 +1,5 @@
 /// <reference types="nativewind/types" />
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { ActivityIndicator, Pressable, Text, useWindowDimensions, View } from "react-native";
 import { MediaImage } from "../atoms/MediaImage.tsx";
 import { SegmentedProgress } from "../atoms/SegmentedProgress.tsx";
@@ -64,39 +64,30 @@ export function SeriesDetailHero({
   const posterW = wide ? POSTER_W_WIDE : POSTER_W_NARROW;
   const posterH = Math.round(posterW * 1.5);
   const heroMinH = wide ? 480 : 384;
-  const backdropH = heroMinH + insetsTop + 48;
+  const [heroH, setHeroH] = useState(heroMinH);
   const { watched, aired } = progress;
   const countClass = progressTextColor(category, watched);
+  const fadeH = Math.max(heroH, heroMinH);
 
   return (
     <View
-      className={cn("relative w-full overflow-hidden bg-void", className)}
+      className={cn("relative w-full bg-void", className)}
       style={{ minHeight: heroMinH }}
+      onLayout={(e) => {
+        const h = Math.round(e.nativeEvent.layout.height);
+        if (h > 0 && h !== heroH) setHeroH(h);
+      }}
     >
-      <View
-        className="absolute left-0 right-0 top-0 overflow-hidden"
-        style={{ height: backdropH }}
-        pointerEvents="none"
-      >
+      {/* Backdrop sized to the hero (not taller) so the bottom void fade isn't clipped mid-ramp. */}
+      <View className="absolute inset-0 overflow-hidden" pointerEvents="none">
         {backdropUrl ? (
-          <View style={{ width, height: backdropH, overflow: "hidden" }} pointerEvents="none">
-            <MediaImage
-              src={backdropUrl}
-              accessibilityLabel=""
-              resizeMode="cover"
-              style={{ width, height: Math.round(backdropH * 1.2) }}
-              wrapperStyle={{ width, height: Math.round(backdropH * 1.2) }}
-            />
-          </View>
+          <MediaImage src={backdropUrl} accessibilityLabel="" fill resizeMode="cover" />
         ) : null}
-        <HeroBackdropFades width={width} height={backdropH} sideFades={wide} />
+        <HeroBackdropFades width={width} height={fadeH} sideFades={wide} />
       </View>
 
       <View
-        className={cn(
-          "relative z-10 flex-row items-end px-3 pb-6",
-          wide ? "gap-6 px-4" : "gap-4",
-        )}
+        className={cn("relative z-10 flex-row items-end px-3 pb-6", wide ? "gap-6 px-4" : "gap-4")}
         style={{
           minHeight: heroMinH,
           // Web: pt-20 / sm:pt-32 over transparent header; insetsTop already includes bar.
@@ -132,6 +123,7 @@ export function SeriesDetailHero({
           <View className="flex-row items-start justify-between gap-2">
             <View className="min-w-0 flex-1">
               <Text
+                numberOfLines={3}
                 className={cn(
                   "font-display italic leading-none tracking-tight text-snow",
                   wide ? "text-4xl" : "text-2xl",
@@ -156,7 +148,8 @@ export function SeriesDetailHero({
                   accessibilityRole="button"
                   accessibilityLabel={detailsAccessibilityLabel}
                   onPress={onPressDetails}
-                  className="items-center justify-center px-2 py-1 active:opacity-70"
+                  hitSlop={8}
+                  className="h-11 w-11 shrink-0 items-center justify-center active:opacity-70"
                 >
                   {detailsIcon}
                 </Pressable>

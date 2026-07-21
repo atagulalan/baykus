@@ -93,7 +93,7 @@ export function CalendarEntryRow({
   return (
     <View
       className={cn(
-        "min-w-0 flex-row items-center border-b border-white/5 py-2 pl-3 pr-3",
+        "min-w-0 flex-row items-center py-2 pl-3 pr-3",
         watched && "opacity-50",
         className,
       )}

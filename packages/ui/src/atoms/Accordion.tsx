@@ -15,7 +15,8 @@ if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-function animateToggle() {
+/** Ease-in-out layout animation for accordion / section collapse (web height transition stand-in). */
+export function animateLayoutToggle() {
   LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
 }
 
@@ -73,7 +74,12 @@ export function AccordionPanel({
   contentClassName,
   unmountOnExit = true,
 }: AccordionPanelProps) {
-  if (unmountOnExit && !open) return null;
+  // Keep a native child slot when closed so ScrollView `stickyHeaderIndices`
+  // (sibling headers) stay aligned with host children — `return null` shifts indices.
+  // Keep `className` so collapsed sections can use a compact margin (e.g. `mb-1`).
+  if (unmountOnExit && !open) {
+    return <View collapsable={false} className={className} style={{ height: 0 }} />;
+  }
   return (
     <View
       accessibilityElementsHidden={!open}
@@ -112,7 +118,7 @@ export function Accordion({
 
   const toggle = useCallback(
     (itemValue: string) => {
-      animateToggle();
+      animateLayoutToggle();
       let next: string[];
       if (type === "single") {
         const isOpen = value[0] === itemValue;

@@ -9,6 +9,7 @@ export {
   type AccordionProps,
   AccordionTrigger,
   type AccordionTriggerProps,
+  animateLayoutToggle,
 } from "./atoms/Accordion.tsx";
 export {
   CHECKBOX_ROUNDED_SIZE_PX,
@@ -45,8 +46,32 @@ export {
 export {
   SkeletonBone,
   type SkeletonBoneProps,
+  SkeletonCalendarTimeline,
+  SkeletonCategoryGrid,
+  SkeletonEpisodeList,
+  SkeletonEpisodeRow,
+  SkeletonHubStatTiles,
   SkeletonPill,
   type SkeletonPillProps,
+  SkeletonPoster,
+  SkeletonProfileBanner,
+  SkeletonProfileHub,
+  SkeletonProfilePage,
+  SkeletonSearchResults,
+  SkeletonSearchRow,
+  SkeletonSectionHeader,
+  SkeletonSeriesCard,
+  SkeletonSeriesDetailHero,
+  SkeletonSeriesGrid,
+  SkeletonSettingsSections,
+  SkeletonStatsHero,
+  SkeletonStatsPage,
+  type SkeletonStickySection,
+  SkeletonWatchLists,
+  seriesGridCols,
+  skeletonCalendarStickySections,
+  skeletonCategoryStickySections,
+  skeletonWatchStickySections,
 } from "./atoms/Skeleton.tsx";
 export { StatTile, type StatTileProps } from "./atoms/StatTile.tsx";
 export {
@@ -55,6 +80,11 @@ export {
   type StepperInputProps,
 } from "./atoms/StepperInput.tsx";
 export { BrandSmoke, type BrandSmokeProps } from "./BrandSmoke.tsx";
+export {
+  calendarDaysBetween,
+  type FormatAirDateLabelOptions,
+  formatAirDateLabel,
+} from "./lib/airDateLabel.ts";
 export {
   type AiringFields,
   airInstantIso,
@@ -65,11 +95,7 @@ export {
   normalizeAirStamp,
   todayIso,
 } from "./lib/airing.ts";
-export {
-  calendarDaysBetween,
-  formatAirDateLabel,
-  type FormatAirDateLabelOptions,
-} from "./lib/airDateLabel.ts";
+export { borderStroke, borders } from "./lib/borders.ts";
 export {
   buildScheduleGridModel,
   type ScheduleGridDayInput,
@@ -83,6 +109,7 @@ export {
   progressTextColor,
   type WatchCategory,
 } from "./lib/categoryColors.ts";
+export { CATEGORY_ICONS } from "./lib/categoryIcons.ts";
 export { cn } from "./lib/cn.ts";
 export { type EpisodeLabelFormat, formatEpisodeLabel } from "./lib/episodeLabel.ts";
 export {
@@ -90,18 +117,33 @@ export {
   type EpisodeTagKind,
   type EpisodeTagsInput,
   type EpisodeType,
+  TAG_BORDERS,
   TAG_STYLES,
   TAG_TEXT,
 } from "./lib/episodeTags.ts";
 export {
   alignSeasonProgressAnnounced,
   buildProgressSegments,
+  EMPTY_FRONTIER_MIN_PX,
+  frontierFillWidth,
   isCaughtUpWaiting,
   type SeasonProgress,
   type SeasonProgressEntry,
   type Segment,
 } from "./lib/progressSegments.ts";
-export { reorderSections } from "./lib/reorderSections.ts";
+export { reorderCombined, reorderSections } from "./lib/reorderSections.ts";
+export {
+  autoAdvanceIfSeasonJustCompleted,
+  COMPLETED_SEASON_COLLAPSE_MIN,
+  collapseCompletedSeasonRuns,
+  defaultExpandedSeasonNumber,
+  isSeasonComplete,
+  isSeasonFinished,
+  nextIncompleteSeasonAfter,
+  type SeasonListEntry,
+  seasonCompleteSnapshot,
+  sortSeasonsSpecialsLast,
+} from "./lib/seasons.ts";
 export {
   computeOverflowBadge,
   shouldShowQuickMarkCheckbox,
@@ -145,6 +187,10 @@ export {
 export { EpisodeTags, type EpisodeTagsProps } from "./molecules/EpisodeTags.tsx";
 export { HBarList, type HBarListItem, type HBarListProps } from "./molecules/HBarList.tsx";
 export { Heatmap, type HeatmapDay, type HeatmapProps } from "./molecules/Heatmap.tsx";
+export {
+  HeroBackdropFades,
+  type HeroBackdropFadesProps,
+} from "./molecules/HeroBackdropFades.tsx";
 export { MiniBars, type MiniBarsItem, type MiniBarsProps } from "./molecules/MiniBars.tsx";
 export { Modal, type ModalProps } from "./molecules/Modal.tsx";
 export {
@@ -158,7 +204,12 @@ export {
   type OAuthProviderId,
 } from "./molecules/OAuthButtons.tsx";
 export { PageTitleRow, type PageTitleRowProps } from "./molecules/PageTitleRow.tsx";
-export { PullToRefresh, type PullToRefreshProps } from "./molecules/PullToRefresh.tsx";
+export {
+  PullToRefresh,
+  PullToRefreshList,
+  type PullToRefreshListProps,
+  type PullToRefreshProps,
+} from "./molecules/PullToRefresh.tsx";
 export {
   ScheduleGrid,
   type ScheduleGridProps,
@@ -172,7 +223,12 @@ export {
   SearchResultThumb,
   type SearchResultThumbProps,
 } from "./molecules/SearchResultThumb.tsx";
-export { SectionHeader, type SectionHeaderProps } from "./molecules/SectionHeader.tsx";
+export {
+  SEASON_PILL_SIZE,
+  SEASON_PROGRESS_SIZE,
+  SectionHeader,
+  type SectionHeaderProps,
+} from "./molecules/SectionHeader.tsx";
 export {
   SeriesCard,
   type SeriesCardProps,
@@ -182,10 +238,6 @@ export {
   SeriesDetailHero,
   type SeriesDetailHeroProps,
 } from "./molecules/SeriesDetailHero.tsx";
-export {
-  HeroBackdropFades,
-  type HeroBackdropFadesProps,
-} from "./molecules/HeroBackdropFades.tsx";
 export {
   SeriesDetailsSheet,
   type SeriesDetailsSheetDetail,
@@ -198,6 +250,12 @@ export {
   type SortMenuOption,
   type SortMenuProps,
 } from "./molecules/SortMenu.tsx";
+export {
+  type StickySection,
+  StickySectionScroll,
+  type StickySectionScrollProps,
+  stickyRows,
+} from "./molecules/StickySectionScroll.tsx";
 export {
   WatchDateSheet,
   type WatchDateSheetProps,

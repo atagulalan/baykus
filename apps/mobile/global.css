@@ -1,3 +1,21 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/*
+ * NativeWind sets `preflight: false`. Tailwind border-width utilities therefore
+ * don't set `border-style`, and Firefox often paints nothing after RN-web's
+ * `border: 0 solid black` base is overridden by width/color alone.
+ */
+.border,
+.border-2,
+.border-4,
+.border-8,
+.border-t,
+.border-r,
+.border-b,
+.border-l,
+.border-x,
+.border-y {
+  border-style: solid;
+}

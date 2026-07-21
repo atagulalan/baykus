@@ -1,37 +1,54 @@
 /// <reference types="nativewind/types" />
 import { Check } from "lucide-react-native";
-import { Pressable } from "react-native";
+import type { ViewStyle } from "react-native";
+import { Pressable, View } from "react-native";
+import { borders } from "../lib/borders.ts";
 import { cn } from "../lib/cn.ts";
 import { colors } from "../tokens.ts";
 
-/** Shared hit box — keep every list checkbox at this size. */
+/** Shared hit box — keep every list checkbox at this size (web rem=16 parity). */
 export const CHECKBOX_SIZE_PX = 20;
 export const CHECKBOX_ROUNDED_SIZE_PX = 36;
 
+/** Layout class for matching ghost controls / row shells — size is fixed in style. */
 export const ROUNDED_CHECKBOX_SIZE_CLASS = "h-9 w-9 rounded-full";
-export const ROUNDED_CHECKBOX_IDLE_CLASS = "border border-white/20 bg-transparent";
+/** Class remnant for call sites / stories — stroke comes from `borders.idle`. */
+export const ROUNDED_CHECKBOX_IDLE_CLASS = "bg-transparent";
 
 export type CheckboxVariant = "default" | "rounded";
 
+/** web `bg-green-500/12` */
+const GREEN_SOFT = "rgba(34, 197, 94, 0.12)";
+const GREEN = "#22c55e";
+
 const VARIANT = {
   default: {
-    box: "h-5 w-5",
+    size: CHECKBOX_SIZE_PX,
+    radius: 0,
     icon: 14,
     strokeWidth: 3,
-    checked: "border-yellow bg-yellow",
-    unchecked: "border-white/20 bg-void",
+    checkedBg: colors.yellow,
+    uncheckedBg: colors.void,
     checkedIcon: colors.void,
     uncheckedIcon: colors.snow,
+    checkedBorder: {
+      borderWidth: 1,
+      borderColor: colors.yellow,
+      borderStyle: "solid" as const,
+    },
+    uncheckedBorder: borders.idle,
   },
   rounded: {
-    box: ROUNDED_CHECKBOX_SIZE_CLASS,
+    size: CHECKBOX_ROUNDED_SIZE_PX,
+    radius: CHECKBOX_ROUNDED_SIZE_PX / 2,
     icon: 20,
     strokeWidth: 2,
-    // Match web: `bg-green-500/12 text-green-500`
-    checked: "border-0 bg-green-500/12",
-    unchecked: ROUNDED_CHECKBOX_IDLE_CLASS,
-    checkedIcon: "#22c55e",
+    checkedBg: GREEN_SOFT,
+    uncheckedBg: "transparent",
+    checkedIcon: GREEN,
     uncheckedIcon: colors.muted,
+    checkedBorder: borders.none,
+    uncheckedBorder: borders.idle,
   },
 } as const;
 
@@ -56,29 +73,40 @@ export function Checkbox({
 }: CheckboxProps) {
   const v = VARIANT[variant];
   const iconColor = checked ? v.checkedIcon : showHint ? v.uncheckedIcon : "transparent";
+  const borderStyle = checked ? v.checkedBorder : v.uncheckedBorder;
+
+  const boxStyle: ViewStyle = {
+    width: v.size,
+    height: v.size,
+    borderRadius: v.radius,
+    backgroundColor: checked ? v.checkedBg : v.uncheckedBg,
+    ...borderStyle,
+  };
 
   return (
-    <Pressable
-      accessibilityRole="checkbox"
-      accessibilityState={{ checked, disabled }}
-      accessibilityLabel={accessibilityLabel}
-      disabled={disabled}
-      onPress={() => onChange(!checked)}
+    <View
       className={cn(
         "relative shrink-0 items-center justify-center",
-        variant === "default" && "border",
-        v.box,
-        checked ? v.checked : v.unchecked,
         disabled && "opacity-50",
         className,
       )}
+      style={boxStyle}
     >
-      <Check
-        size={v.icon}
-        strokeWidth={v.strokeWidth}
-        color={iconColor}
-        opacity={checked ? 1 : showHint ? 0.2 : 0}
-      />
-    </Pressable>
+      <Pressable
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked, disabled }}
+        accessibilityLabel={accessibilityLabel}
+        disabled={disabled}
+        onPress={() => onChange(!checked)}
+        className="h-full w-full items-center justify-center active:opacity-80"
+      >
+        <Check
+          size={v.icon}
+          strokeWidth={v.strokeWidth}
+          color={iconColor}
+          opacity={checked ? 1 : showHint ? 0.2 : 0}
+        />
+      </Pressable>
+    </View>
   );
 }

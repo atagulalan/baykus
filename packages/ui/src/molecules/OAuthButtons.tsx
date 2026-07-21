@@ -35,14 +35,21 @@ export function OAuthButtons({
               void onPress(p.id);
             }}
             className={cn(
-              "h-11 flex-row items-center justify-center rounded-full border border-white/15 px-4",
+              "h-11 flex-row items-center justify-center rounded-full px-4",
               !p.available || busyProvider !== null ? "opacity-40" : "active:bg-white/5",
             )}
+            style={{
+              borderWidth: 1,
+              borderColor: "rgba(255, 255, 255, 0.15)",
+              borderStyle: "solid",
+            }}
           >
             {busy ? (
               <ActivityIndicator color={colors.snow} />
             ) : (
-              <Text className="font-mono text-xs uppercase tracking-widest text-snow">{p.label}</Text>
+              <Text className="font-mono text-xs uppercase tracking-widest text-snow">
+                {p.label}
+              </Text>
             )}
           </Pressable>
         );

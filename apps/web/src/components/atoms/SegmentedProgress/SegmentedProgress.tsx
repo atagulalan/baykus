@@ -8,6 +8,24 @@ export type Segment =
 
 const MAX_SEGMENTED_SEASONS = 12;
 
+/**
+ * M43: when the frontier season is 0% watched (and not the first segment),
+ * paint this many px of fill so the bar isn't fully invisible.
+ * `0` disables the sliver. Keep in sync with `@baykus/ui` `EMPTY_FRONTIER_MIN_PX`.
+ */
+export const EMPTY_FRONTIER_MIN_PX = 0;
+
+/** Width for a frontier fill — percent, or `EMPTY_FRONTIER_MIN_PX` when applicable. */
+export function frontierFillWidth(
+  percent: number,
+  segmentIndex: number,
+): { unit: "px"; value: number } | { unit: "%"; value: number } {
+  if (percent === 0 && segmentIndex > 0 && EMPTY_FRONTIER_MIN_PX > 0) {
+    return { unit: "px", value: EMPTY_FRONTIER_MIN_PX };
+  }
+  return { unit: "%", value: percent };
+}
+
 /** E180/E185: donut bead — aired caught-up with unaired remaining. */
 const CAUGHT_UP_BEAD = "box-border border border-green-500 bg-transparent";
 
@@ -105,6 +123,7 @@ export function SegmentedProgress({
       {segments.map((segment, i) => {
         const key = `${segment.kind}-${i}`;
         if (segment.kind === "frontier") {
+          const fill = frontierFillWidth(segment.percent, i);
           return (
             <div
               key={key}
@@ -112,7 +131,9 @@ export function SegmentedProgress({
             >
               <div
                 className={`h-full rounded-full ${colorClass} transition-all duration-500`}
-                style={{ width: segment.percent === 0 && i > 0 ? "1px" : `${segment.percent}%` }}
+                style={{
+                  width: fill.unit === "px" ? `${fill.value}px` : `${fill.value}%`,
+                }}
               />
             </div>
           );

@@ -18,30 +18,35 @@ import {
   updateSeries,
 } from "@baykus/api-client";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
+  AccordionPanel,
   ActionSheet,
   type ActionSheetItem,
   alignSeasonProgressAnnounced,
+  autoAdvanceIfSeasonJustCompleted,
   CastRail,
   CircularProgress,
   CollapsedSeasonsGap,
   ConfirmDialog,
+  collapseCompletedSeasonRuns,
   colors,
+  defaultExpandedSeasonNumber,
   EmptyPanel,
   EpisodeDetailsSheet,
   EpisodeRow,
   formatAirDateLabel,
+  isSeasonComplete,
   NeedsReviewBanner,
   NextUpCard,
-  PullToRefresh,
   type RatingValue,
-  SectionPill,
+  SectionHeader,
+  SEASON_PROGRESS_SIZE,
   SeriesDetailHero,
   SeriesDetailsSheet,
-  SkeletonBone,
+  SkeletonSeriesDetailHero,
+  type StickySection,
+  StickySectionScroll,
+  seasonCompleteSnapshot,
+  sortSeasonsSpecialsLast,
   isEpisodeAired as uiIsEpisodeAired,
   WatchDateSheet,
 } from "@baykus/ui";
@@ -59,18 +64,35 @@ import {
   RefreshCw,
   Trash2,
 } from "lucide-react-native";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { LayoutAnimation, Platform, Pressable, Text, UIManager, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { shouldPromptEpisodeRating } from "../../src/lib/shouldPromptEpisodeRating.ts";
+
+import { useBannerEdgeScrub } from "../../src/chrome/EdgeScrubContext.tsx";
+import { useHeaderRightAction } from "../../src/chrome/HeaderActionContext.tsx";
+import {
+  HEADER_ACTION_CLASS,
+  stickySectionTop,
+  tabContentBottom,
+  WORDMARK_ROW_H,
+} from "../../src/chrome/layout.ts";
 import {
   genreKey,
   isStale,
   languageDisplayName,
   releaseStatusLabel,
 } from "../../src/lib/seriesDetailsMeta.ts";
+import { shouldPromptEpisodeRating } from "../../src/lib/shouldPromptEpisodeRating.ts";
 import { resolveUiPrefs } from "../../src/lib/uiPrefs.ts";
+
+if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+function animateSeasonToggle() {
+  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+}
 
 function findNextEpisode(detail: SeriesDetail): EpisodeSummary | null {
   const next = detail.nextUnwatched;
@@ -92,6 +114,7 @@ type EpisodeSheetMode = "upToHere" | "watched";
 export default function SeriesDetailScreen() {
   const { t, i18n } = useTranslation();
   const insets = useSafeAreaInsets();
+  const bannerScrub = useBannerEdgeScrub(true);
   const { id } = useLocalSearchParams<{ id: string }>();
   const [detail, setDetail] = useState<SeriesDetail | null>(null);
   const [settings, setSettings] = useState<Settings | null>(null);
@@ -106,7 +129,13 @@ export default function SeriesDetailScreen() {
   const [seriesMenuOpen, setSeriesMenuOpen] = useState(false);
   const [seriesDetailsOpen, setSeriesDetailsOpen] = useState(false);
   const [detailsEpisode, setDetailsEpisode] = useState<EpisodeSummary | null>(null);
-  const [expandCollapsed, setExpandCollapsed] = useState(false);
+  const [expandedSeasonGaps, setExpandedSeasonGaps] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+  const [openSeason, setOpenSeason] = useState<string>("");
+  const openSeasonRef = useRef(openSeason);
+  openSeasonRef.current = openSeason;
+  const prevSeasonCompleteRef = useRef<Map<number, boolean>>(new Map());
 
   const [seasonMenu, setSeasonMenu] = useState<number | null>(null);
   const [unwatchSeasonConfirm, setUnwatchSeasonConfirm] = useState<number | null>(null);
@@ -118,6 +147,23 @@ export default function SeriesDetailScreen() {
   const [editDateEpisode, setEditDateEpisode] = useState<EpisodeSummary | null>(null);
   const [promptEpisodeId, setPromptEpisodeId] = useState<number | null>(null);
   const [reviewBusy, setReviewBusy] = useState(false);
+
+  const openSeriesMenu = useCallback(() => setSeriesMenuOpen(true), []);
+  const seriesMenuTrigger = useMemo(
+    () => (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t("series.menu")}
+        onPress={openSeriesMenu}
+        hitSlop={8}
+        className={HEADER_ACTION_CLASS}
+      >
+        <MoreVertical size={20} color={colors.snow} strokeWidth={1.5} />
+      </Pressable>
+    ),
+    [t, openSeriesMenu],
+  );
+  useHeaderRightAction(seriesMenuTrigger);
 
   const ratingLabels = {
     group: t("rating.label"),
@@ -146,9 +192,38 @@ export default function SeriesDetailScreen() {
 
   useEffect(() => {
     setLoading(true);
-    setExpandCollapsed(false);
+    setExpandedSeasonGaps(new Set());
+    setOpenSeason("");
+    prevSeasonCompleteRef.current = new Map();
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (!detail) return;
+    const nextDefault = defaultExpandedSeasonNumber(
+      detail.nextUnwatched ? { s: detail.nextUnwatched.s, e: detail.nextUnwatched.e } : null,
+    );
+    setOpenSeason((prev) => {
+      if (prev !== "") return prev;
+      return nextDefault != null ? String(nextDefault) : "";
+    });
+  }, [detail]);
+
+  useEffect(() => {
+    if (!detail) return;
+    const currentOpen = openSeasonRef.current;
+    const openNum = currentOpen === "" ? null : Number(currentOpen);
+    const advanced = autoAdvanceIfSeasonJustCompleted(
+      detail.seasons,
+      Number.isFinite(openNum) ? openNum : null,
+      prevSeasonCompleteRef.current,
+    );
+    prevSeasonCompleteRef.current = seasonCompleteSnapshot(detail.seasons);
+    if (advanced !== undefined) {
+      animateSeasonToggle();
+      setOpenSeason(advanced == null ? "" : String(advanced));
+    }
+  }, [detail]);
 
   function fail(err: unknown, fallback: string) {
     setError(err instanceof ApiError ? err.message : err instanceof Error ? err.message : fallback);
@@ -398,26 +473,11 @@ export default function SeriesDetailScreen() {
   const nextEpisode = detail ? findNextEpisode(detail) : null;
   const showNextUp = resolveUiPrefs(settings).showNextUpCarousel;
 
-  const { collapsedCount, visibleSeasons, defaultOpen } = useMemo(() => {
-    if (!detail) return { collapsedCount: 0, visibleSeasons: [], defaultOpen: "" };
-    const seasons = detail.seasons;
-    let completePrefix = 0;
-    for (const season of seasons) {
-      const allWatched =
-        season.episodes.length > 0 && season.episodes.every((ep) => ep.watchCount > 0);
-      if (!allWatched) break;
-      completePrefix += 1;
-    }
-    const hideCount = !expandCollapsed && completePrefix > 1 ? Math.max(0, completePrefix - 1) : 0;
-    const visible = hideCount > 0 ? seasons.slice(hideCount) : seasons;
-    const openSeason =
-      detail.nextUnwatched?.s != null
-        ? String(detail.nextUnwatched.s)
-        : visible[0]
-          ? String(visible[0].number)
-          : "";
-    return { collapsedCount: hideCount, visibleSeasons: visible, defaultOpen: openSeason };
-  }, [detail, expandCollapsed]);
+  const seasonEntries = useMemo(() => {
+    if (!detail) return [];
+    const sorted = sortSeasonsSpecialsLast(detail.seasons);
+    return collapseCompletedSeasonRuns(sorted, isSeasonComplete, expandedSeasonGaps);
+  }, [detail, expandedSeasonGaps]);
 
   const seriesMenuItems: ActionSheetItem[] = !detail
     ? []
@@ -511,11 +571,7 @@ export default function SeriesDetailScreen() {
             headerStyle: { backgroundColor: "transparent" },
           }}
         />
-        <SkeletonBone className="mb-4 h-96 w-full" />
-        <View className="px-4">
-          <SkeletonBone className="mb-2 h-8 w-56" />
-          <SkeletonBone className="h-4 w-full" />
-        </View>
+        <SkeletonSeriesDetailHero insetsTop={insets.top + WORDMARK_ROW_H} />
       </View>
     );
   }
@@ -592,65 +648,44 @@ export default function SeriesDetailScreen() {
     : [];
 
   // Header sits over backdrop — keep bar transparent; title empty so hero owns the name.
-  const headerPad = 44;
+  const headerPad = WORDMARK_ROW_H;
 
-  return (
-    <PullToRefresh
-      className="flex-1 bg-void"
-      contentContainerClassName="pb-10"
-      refreshing={refreshing}
-      onRefresh={async () => {
-        setRefreshing(true);
-        try {
-          if (detail) {
-            await refreshSeries(detail.id);
-          }
-          await load();
-        } finally {
-          setRefreshing(false);
-        }
-      }}
-    >
-      <Stack.Screen
-        options={{
-          title: "",
-          headerTransparent: true,
-          headerShadowVisible: false,
-          headerStyle: { backgroundColor: "transparent" },
-          headerTintColor: colors.snow,
-          headerRight: () => (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t("series.menu")}
-              onPress={() => setSeriesMenuOpen(true)}
-              className="mr-1 h-11 w-11 items-center justify-center active:opacity-70"
-            >
-              <MoreVertical size={18} color={colors.muted} strokeWidth={1.5} />
-            </Pressable>
-          ),
-        }}
-      />
+  const toggleSeason = (seasonNumber: number) => {
+    animateSeasonToggle();
+    const key = String(seasonNumber);
+    setOpenSeason((prev) => (prev === key ? "" : key));
+  };
 
-      <View className="gap-6">
-      <SeriesDetailHero
-        title={detail.title}
-        year={detail.year}
-        posterUrl={posterUrl}
-        backdropUrl={backdropUrl}
-        category={detail.category}
-        progress={detail.progress}
-        seasonProgress={heroProgress}
-        insetsTop={insets.top + headerPad}
-        onPressDetails={() => setSeriesDetailsOpen(true)}
-        detailsAccessibilityLabel={t("series.details.trigger", {
-          defaultValue: t("series.details", { defaultValue: "Details" }),
-        })}
-        detailsIcon={<Info size={18} color={colors.muted} strokeWidth={1.5} />}
-      />
+  const listHeaderParts: ReactNode[] = [
+    <SeriesDetailHero
+      key="hero"
+      title={detail.title}
+      year={detail.year}
+      posterUrl={posterUrl}
+      backdropUrl={backdropUrl}
+      category={detail.category}
+      progress={detail.progress}
+      seasonProgress={heroProgress}
+      insetsTop={insets.top + headerPad}
+      onPressDetails={() => setSeriesDetailsOpen(true)}
+      detailsAccessibilityLabel={t("series.details.trigger", {
+        defaultValue: t("series.details", { defaultValue: "Details" }),
+      })}
+      detailsIcon={<Info size={18} color={colors.snow} strokeWidth={1.5} />}
+    />,
+  ];
 
-      {error ? <Text className="px-4 font-mono text-xs text-red-400">{error}</Text> : null}
+  if (error) {
+    listHeaderParts.push(
+      <Text key="error" className="mt-6 px-4 font-mono text-xs text-red-400">
+        {error}
+      </Text>,
+    );
+  }
 
-      {detail.needsReview ? (
+  if (detail.needsReview) {
+    listHeaderParts.push(
+      <View key="needs-review" className="mt-6">
         <NeedsReviewBanner
           title={t("series.needsReviewTitle")}
           description={t("series.needsReviewDesc")}
@@ -664,9 +699,13 @@ export default function SeriesDetailScreen() {
             void dismissNeedsReview();
           }}
         />
-      ) : null}
+      </View>,
+    );
+  }
 
-      {showNextUp && nextEpisode ? (
+  if (showNextUp && nextEpisode) {
+    listHeaderParts.push(
+      <View key="next-up" className="mt-6">
         <NextUpCard
           title={t("series.nextUp")}
           episode={{
@@ -697,133 +736,180 @@ export default function SeriesDetailScreen() {
           }}
           onDismissPrompt={() => setPromptEpisodeId(null)}
         />
-      ) : null}
+      </View>,
+    );
+  }
 
-      <View>
-        <CollapsedSeasonsGap
-          count={collapsedCount}
-          label={t("series.hiddenSeasonsWatched", { count: collapsedCount })}
-          onExpand={() => setExpandCollapsed(true)}
+  const stickySections: StickySection[] = [];
+  let seasonsStarted = false;
+  for (const entry of seasonEntries) {
+    const isFirstSeasonBlock = !seasonsStarted;
+    seasonsStarted = true;
+
+    if (entry.kind === "gap") {
+      // Match the first-season spacer so the gap pill isn't glued to Next up.
+      if (isFirstSeasonBlock) {
+        stickySections.push({
+          key: "seasons-top",
+          body: <View className="h-6" />,
+        });
+      }
+      stickySections.push({
+        key: entry.gapKey,
+        body: (
+          <CollapsedSeasonsGap
+            count={entry.seasons.length}
+            label={t("series.hiddenSeasonsWatched", { count: entry.seasons.length })}
+            onExpand={() => {
+              setExpandedSeasonGaps((prev) => new Set([...prev, entry.gapKey]));
+            }}
+          />
+        ),
+      });
+      continue;
+    }
+
+    const season = entry.season;
+    const airedEpisodes = season.episodes.filter((ep) => uiIsEpisodeAired(ep));
+    const airedCount = airedEpisodes.length;
+    const totalCount = season.episodes.length;
+    const watchedAiredCount = airedEpisodes.filter((ep) => ep.watchCount > 0).length;
+    const watchedCount = season.episodes.filter((ep) => ep.watchCount > 0).length;
+    const caughtUpOnAired = airedCount > 0 && watchedAiredCount >= airedCount;
+    const finished = caughtUpOnAired && airedCount === totalCount;
+    const caughtUpWaiting = caughtUpOnAired && !finished;
+    const progressPct = airedCount === 0 ? 0 : (watchedAiredCount / airedCount) * 100;
+    const hasAiredUnwatched = airedCount > 0 && !caughtUpOnAired;
+    const hasWatched = watchedCount > 0;
+    const seasonLabel =
+      season.name ??
+      (season.number === 0
+        ? t("series.specials")
+        : t("series.seasonNumber", { number: season.number }));
+    const seasonCount =
+      totalCount === 0 ? t("episode.tbd") : formatSeasonCount(watchedCount, totalCount, finished);
+    const seasonKey = String(season.number);
+    const expanded = openSeason === seasonKey;
+
+    if (isFirstSeasonBlock) {
+      stickySections.push({
+        key: "seasons-top",
+        body: <View className="h-6" />,
+      });
+    }
+
+    stickySections.push({
+      key: `season-${season.number}`,
+      renderHeader: () => (
+        <SectionHeader
+          className="px-3"
+          leading={
+            hasAiredUnwatched || hasWatched ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t("series.seasonMenu")}
+                onPress={() => setSeasonMenu(season.number)}
+                className="h-full w-full items-center justify-center rounded-full active:bg-white/10"
+              >
+                <CircularProgress
+                  size={SEASON_PROGRESS_SIZE}
+                  value={progressPct}
+                  complete={finished}
+                  caughtUp={caughtUpWaiting}
+                />
+              </Pressable>
+            ) : (
+              <View className="h-full w-full items-center justify-center">
+                <CircularProgress
+                  size={SEASON_PROGRESS_SIZE}
+                  value={progressPct}
+                  complete={finished}
+                  caughtUp={caughtUpWaiting}
+                />
+              </View>
+            )
+          }
+          label={seasonLabel}
+          count={seasonCount}
+          onPress={() => {
+            toggleSeason(season.number);
+          }}
         />
-        <Accordion type="single" defaultValue={defaultOpen} collapsible>
-          {visibleSeasons.map((season) => {
-            const airedEpisodes = season.episodes.filter((ep) => uiIsEpisodeAired(ep));
-            const airedCount = airedEpisodes.length;
-            const totalCount = season.episodes.length;
-            const watchedAiredCount = airedEpisodes.filter((ep) => ep.watchCount > 0).length;
-            const watchedCount = season.episodes.filter((ep) => ep.watchCount > 0).length;
-            const caughtUpOnAired = airedCount > 0 && watchedAiredCount >= airedCount;
-            const finished = caughtUpOnAired && airedCount === totalCount;
-            const caughtUpWaiting = caughtUpOnAired && !finished;
-            const progressPct = airedCount === 0 ? 0 : (watchedAiredCount / airedCount) * 100;
-            const hasAiredUnwatched = airedCount > 0 && !caughtUpOnAired;
-            const hasWatched = watchedCount > 0;
-            const seasonLabel =
-              season.name ??
-              (season.number === 0
-                ? t("series.specials")
-                : t("series.seasonNumber", { number: season.number }));
-            const seasonCount =
-              totalCount === 0
-                ? t("episode.tbd")
-                : formatSeasonCount(watchedCount, totalCount, finished);
+      ),
+      body: (
+        <AccordionPanel open={expanded} contentClassName="gap-0.5 pb-2 pt-2">
+          {season.episodes.length === 0 ? (
+            <EmptyPanel
+              className="px-3 py-6"
+              icon={Clapperboard}
+              title={t("series.seasonEmpty.title", {
+                defaultValue: t("episode.tbd"),
+              })}
+              hint={t("series.seasonEmpty.hint", {
+                defaultValue: " ",
+              })}
+            />
+          ) : (
+            season.episodes.map((ep) => (
+              <EpisodeRow
+                key={ep.id}
+                s={ep.s}
+                e={ep.e}
+                episodeTitle={ep.title}
+                stillUrl={buildImageUrl(ep.stillRef, "thumb")}
+                watched={ep.watchCount > 0}
+                watchCount={ep.watchCount}
+                muted={!uiIsEpisodeAired(ep)}
+                checkboxDisabled={busyEpisode === ep.id || !uiIsEpisodeAired(ep)}
+                showRatingPrompt={promptEpisodeId === ep.id}
+                myRating={ep.myRating}
+                ratingLabels={ratingLabels}
+                skipLabel={t("rating.skip")}
+                airDateLabel={ep.airDate ? formatAirDateLabel(ep.airDate, i18n.language) : null}
+                episodeType={ep.episodeType}
+                finaleLabel={t("episode.finale")}
+                untitledLabel={t("episode.untitled", { defaultValue: "Untitled" })}
+                showTags={false}
+                onRate={(value) => {
+                  void rateEpisode(ep.id, value);
+                }}
+                onDismissPrompt={() => setPromptEpisodeId(null)}
+                onPress={() => setDetailsEpisode(ep)}
+                onToggleWatch={() => {
+                  onEpisodeToggle(ep);
+                }}
+              />
+            ))
+          )}
+        </AccordionPanel>
+      ),
+    });
+  }
 
-            return (
-              <AccordionItem key={season.number} value={String(season.number)}>
-                <View className="items-center px-3 py-1">
-                  <SectionPill>
-                    <View className="flex-row items-center">
-                      {hasAiredUnwatched || hasWatched ? (
-                        <Pressable
-                          accessibilityRole="button"
-                          accessibilityLabel={t("series.seasonMenu")}
-                          onPress={() => setSeasonMenu(season.number)}
-                          className="relative z-20 -ml-2.5 shrink-0 items-center justify-center p-1 active:opacity-70"
-                        >
-                          <CircularProgress
-                            value={progressPct}
-                            complete={finished}
-                            caughtUp={caughtUpWaiting}
-                          />
-                        </Pressable>
-                      ) : (
-                        <View className="relative z-20 -ml-2.5 shrink-0 p-1">
-                          <CircularProgress
-                            value={progressPct}
-                            complete={finished}
-                            caughtUp={caughtUpWaiting}
-                          />
-                        </View>
-                      )}
-                      <AccordionTrigger className="relative z-0 min-w-0 flex-1 flex-row items-center gap-1.5 rounded-full -mr-2.5 -ml-4 pl-3 pr-2.5 py-1 active:bg-white/5">
-                        <Text className="min-w-0 shrink font-semibold text-sm text-snow" numberOfLines={1}>
-                          {seasonLabel}
-                        </Text>
-                        <Text className="shrink-0 text-muted/35" accessibilityElementsHidden>
-                          |
-                        </Text>
-                        <Text className="shrink-0 font-mono text-xs tabular-nums text-muted">
-                          {seasonCount}
-                        </Text>
-                      </AccordionTrigger>
-                    </View>
-                  </SectionPill>
-                </View>
-                <AccordionContent>
-                  <View className="gap-0.5 pb-2 pt-2">
-                    {season.episodes.length === 0 ? (
-                      <EmptyPanel
-                        className="px-3 py-6"
-                        icon={Clapperboard}
-                        title={t("series.seasonEmpty.title", {
-                          defaultValue: t("episode.tbd"),
-                        })}
-                        hint={t("series.seasonEmpty.hint", {
-                          defaultValue: " ",
-                        })}
-                      />
-                    ) : (
-                      season.episodes.map((ep) => (
-                      <EpisodeRow
-                        key={ep.id}
-                        s={ep.s}
-                        e={ep.e}
-                        episodeTitle={ep.title}
-                        stillUrl={buildImageUrl(ep.stillRef, "thumb")}
-                        watched={ep.watchCount > 0}
-                        watchCount={ep.watchCount}
-                        muted={!uiIsEpisodeAired(ep)}
-                        checkboxDisabled={busyEpisode === ep.id || !uiIsEpisodeAired(ep)}
-                        showRatingPrompt={promptEpisodeId === ep.id}
-                        myRating={ep.myRating}
-                        ratingLabels={ratingLabels}
-                        skipLabel={t("rating.skip")}
-                        airDateLabel={
-                          ep.airDate ? formatAirDateLabel(ep.airDate, i18n.language) : null
-                        }
-                        episodeType={ep.episodeType}
-                        finaleLabel={t("episode.finale")}
-                        untitledLabel={t("episode.untitled", { defaultValue: "Untitled" })}
-                        showTags={false}
-                        onRate={(value) => {
-                          void rateEpisode(ep.id, value);
-                        }}
-                        onDismissPrompt={() => setPromptEpisodeId(null)}
-                        onPress={() => setDetailsEpisode(ep)}
-                        onToggleWatch={() => {
-                          onEpisodeToggle(ep);
-                        }}
-                      />
-                    ))
-                    )}
-                  </View>
-                </AccordionContent>
-              </AccordionItem>
-            );
-          })}
-        </Accordion>
-      </View>
-      </View>
+  return (
+    <View className="flex-1 bg-void">
+      <StickySectionScroll
+        className="flex-1 bg-void"
+        contentContainerStyle={{ paddingBottom: tabContentBottom(insets.bottom) }}
+        stickyOffset={stickySectionTop(insets.top)}
+        contentTopSpacer={0}
+        sections={stickySections}
+        listHeader={listHeaderParts}
+        refreshing={refreshing}
+        onScroll={bannerScrub.onScroll}
+        scrollEventThrottle={bannerScrub.scrollEventThrottle}
+        onRefresh={async () => {
+          setRefreshing(true);
+          try {
+            if (detail) {
+              await refreshSeries(detail.id);
+            }
+            await load();
+          } finally {
+            setRefreshing(false);
+          }
+        }}
+      />
 
       <ActionSheet
         isOpen={seriesMenuOpen}
@@ -1034,6 +1120,6 @@ export default function SeriesDetailScreen() {
           }}
         />
       ) : null}
-    </PullToRefresh>
+    </View>
   );
 }

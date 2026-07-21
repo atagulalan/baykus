@@ -5,10 +5,8 @@ import Svg, { Circle } from "react-native-svg";
 import { cn } from "../lib/cn.ts";
 import { colors } from "../tokens.ts";
 
-const SIZE = 14;
-const DEFAULT_STROKE = 1.5;
-const RADIUS = (SIZE - DEFAULT_STROKE) / 2;
-const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+const DEFAULT_SIZE = 18;
+const DEFAULT_STROKE = 2;
 /** E181: in-progress rings never close visually. */
 const IN_PROGRESS_CAP = 90;
 
@@ -21,57 +19,65 @@ export type CircularProgressProps = {
    * Full ring in green, no check — caught up on aired while unaired remain (E180).
    */
   caughtUp?: boolean;
+  /** Outer diameter in px. Default 18. */
+  size?: number;
   className?: string;
 };
 
-/** Compact decorative SVG ring — season accordion leading glyph. */
+/** Decorative SVG ring — season accordion leading glyph. */
 export function CircularProgress({
   value,
   complete = false,
   caughtUp = false,
+  size = DEFAULT_SIZE,
   className,
 }: CircularProgressProps) {
+  const stroke = Math.max(1.5, (size / DEFAULT_SIZE) * DEFAULT_STROKE);
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const checkSize = Math.round(size * 0.55);
+
   const clamped = Math.min(100, Math.max(0, value));
   const full = complete || caughtUp;
   const display = full ? 100 : Math.min(clamped, IN_PROGRESS_CAP);
-  const offset = CIRCUMFERENCE * (1 - display / 100);
-  const stroke = complete || caughtUp ? "#22c55e" : colors.yellow;
+  const offset = circumference * (1 - display / 100);
+  const strokeColor = complete || caughtUp ? "#22c55e" : colors.yellow;
 
   return (
     <View
       accessibilityElementsHidden
       className={cn("relative shrink-0 items-center justify-center", className)}
-      style={{ width: SIZE, height: SIZE }}
+      style={{ width: size, height: size }}
     >
       <Svg
-        width={SIZE}
-        height={SIZE}
-        viewBox={`0 0 ${SIZE} ${SIZE}`}
+        width={size}
+        height={size}
+        viewBox={`0 0 ${size} ${size}`}
         style={{ transform: [{ rotate: "-90deg" }] }}
       >
         <Circle
-          cx={SIZE / 2}
-          cy={SIZE / 2}
-          r={RADIUS}
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
           fill="none"
           stroke="rgba(255,255,255,0.12)"
-          strokeWidth={DEFAULT_STROKE}
+          strokeWidth={stroke}
         />
         <Circle
-          cx={SIZE / 2}
-          cy={SIZE / 2}
-          r={RADIUS}
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
           fill="none"
-          stroke={stroke}
-          strokeWidth={DEFAULT_STROKE}
+          stroke={strokeColor}
+          strokeWidth={stroke}
           strokeLinecap="round"
-          strokeDasharray={`${CIRCUMFERENCE} ${CIRCUMFERENCE}`}
+          strokeDasharray={`${circumference} ${circumference}`}
           strokeDashoffset={offset}
         />
       </Svg>
       {complete ? (
         <View className="absolute items-center justify-center">
-          <Check size={8} strokeWidth={3} color="#22c55e" />
+          <Check size={checkSize} strokeWidth={3} color="#22c55e" />
         </View>
       ) : null}
     </View>

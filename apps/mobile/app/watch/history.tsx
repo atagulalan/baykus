@@ -10,19 +10,26 @@ import {
   colors,
   EpisodeRow,
   PageTitleRow,
-  PullToRefresh,
   SectionPill,
-  SegmentedButtonGroup,
-  SkeletonBone,
+  SkeletonEpisodeList,
+  type StickySection,
+  StickySectionScroll,
   todayIso,
 } from "@baykus/ui";
 import { router, Stack } from "expo-router";
-import { LogIn } from "lucide-react-native";
-import { useCallback, useEffect, useState } from "react";
+import { ArrowUpDown, LogIn } from "lucide-react-native";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../src/auth/AuthProvider.tsx";
+import { useHeaderRightAction } from "../../src/chrome/HeaderActionContext.tsx";
+import {
+  HEADER_ACTION_CLASS,
+  stickySectionTop,
+  tabContentBottom,
+  tabContentTop,
+} from "../../src/chrome/layout.ts";
 import { addDaysIso } from "../../src/lib/calendarBuckets.ts";
 
 type HistoryOrder = "newest" | "oldest";
@@ -60,6 +67,7 @@ export default function WatchHistoryScreen() {
 
   const needsAuth = session?.mode === "multi" && !session.authenticated;
   const locale = i18n.language === "en" ? "en-US" : "tr-TR";
+  const oldestFirst = order === "oldest";
 
   const load = useCallback(async () => {
     if (needsAuth) {
@@ -69,7 +77,7 @@ export default function WatchHistoryScreen() {
     }
     setError(null);
     try {
-      const res = await getWatchHistory({ limit: 100, order });
+      const res = await getWatchHistory({ order });
       setItems(res.items);
     } catch (err) {
       setItems([]);
@@ -87,6 +95,27 @@ export default function WatchHistoryScreen() {
     setLoading(true);
     void load();
   }, [authLoading, load]);
+
+  const sortToggle = useMemo(
+    () => (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t("library.filter.sortTitle")}
+        accessibilityState={{ selected: oldestFirst }}
+        onPress={() => setOrder((prev) => (prev === "newest" ? "oldest" : "newest"))}
+        hitSlop={8}
+        className={HEADER_ACTION_CLASS}
+      >
+        <ArrowUpDown
+          size={20}
+          color={oldestFirst ? colors.yellow : colors.snow}
+          strokeWidth={1.75}
+        />
+      </Pressable>
+    ),
+    [oldestFirst, t],
+  );
+  useHeaderRightAction(needsAuth || authLoading ? null : sortToggle);
 
   async function onUnwatch(episodeId: number) {
     setUnwatchingId(episodeId);
@@ -118,13 +147,12 @@ export default function WatchHistoryScreen() {
     return formatHistoryDayTime(date, time, locale, Number(todayIso().slice(0, 4)));
   }
 
-  if (authLoading || loading) {
+  if (authLoading || (loading && items.length === 0 && !error)) {
     return (
-      <View className="flex-1 bg-void px-4 pt-4">
-        <Stack.Screen options={{ title: t("watch.history") }} />
-        {[0, 1, 2, 3].map((i) => (
-          <SkeletonBone key={i} className="mb-2 h-14 w-full rounded-md" />
-        ))}
+      <View className="flex-1 bg-void px-3" style={{ paddingTop: tabContentTop(insets.top) }}>
+        <Stack.Screen options={{ title: "" }} />
+        <PageTitleRow className="mb-3">{t("watch.history")}</PageTitleRow>
+        <SkeletonEpisodeList rows={6} />
       </View>
     );
   }
@@ -132,70 +160,128 @@ export default function WatchHistoryScreen() {
   if (needsAuth) {
     return (
       <View className="flex-1 items-center justify-center gap-2 bg-void px-4">
-        <Stack.Screen options={{ title: t("watch.history") }} />
+        <Stack.Screen options={{ title: "" }} />
         <LogIn size={28} color={colors.muted} />
         <Text className="text-sm text-muted">Sign in</Text>
       </View>
     );
   }
 
-  return (
-    <PullToRefresh
-      className="flex-1 bg-void"
-      contentContainerStyle={{ paddingBottom: insets.bottom + 24, paddingTop: 8 }}
-      refreshing={refreshing}
-      onRefresh={async () => {
-        setRefreshing(true);
-        await load();
-      }}
-    >
-      <Stack.Screen options={{ title: t("watch.history") }} />
+  const listHeader = (
+    <View className="gap-3 px-3">
       <PageTitleRow
-        className="mb-3 px-4"
         action={
-          <SegmentedButtonGroup
-            value={order}
-            onChange={setOrder}
-            options={[
-              { value: "newest", label: "Newest" },
-              { value: "oldest", label: "Oldest" },
-            ]}
-          />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("library.filter.sortTitle")}
+            accessibilityState={{ selected: oldestFirst }}
+            onPress={() => setOrder((prev) => (prev === "newest" ? "oldest" : "newest"))}
+            hitSlop={8}
+            className="h-9 w-9 items-center justify-center"
+          >
+            <ArrowUpDown
+              size={20}
+              color={oldestFirst ? colors.yellow : colors.muted}
+              strokeWidth={1.75}
+            />
+          </Pressable>
         }
       >
         {t("watch.history")}
       </PageTitleRow>
-
-      <View className="mb-2 items-center px-3 py-1">
-        <SectionPill>
-          <Text className="font-sans text-sm font-semibold text-snow">{t("watch.history")}</Text>
-        </SectionPill>
-      </View>
-
-      {error ? <Text className="mb-3 px-4 font-mono text-xs text-red-400">{error}</Text> : null}
-      {items.length === 0 ? (
-        <Text className="px-4 py-3 text-sm text-muted">{t("watch.empty.history")}</Text>
-      ) : (
-        items.map((item) => (
-          <EpisodeRow
-            key={item.watchId}
-            embedded
-            posterStretch
-            seriesTitle={item.title}
-            stillUrl={buildImageUrl(item.posterRef, "thumb")}
-            s={item.s}
-            e={item.e}
-            episodeTitle={item.episodeTitle}
-            watched
-            onToggleWatch={() => {
-              void onUnwatch(item.episodeId);
+      {error ? (
+        <View className="items-center gap-2 py-8">
+          <Text className="text-center text-sm text-muted">{t("errors.generic")}</Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+              setLoading(true);
+              void load();
             }}
-            checkboxDisabled={unwatchingId === item.episodeId}
-            onPress={() => router.push(`/series/${seriesParam({ id: item.itemId, tmdbId: null })}`)}
-            trailing={<Text className="shrink-0 text-xs text-muted">{relativeDay(item)}</Text>}
-          />
-        ))
-      )}
-    </PullToRefresh>
+            className="border border-white/10 px-3 py-1.5"
+          >
+            <Text className="font-mono text-[10px] uppercase tracking-widest text-muted">
+              {t("errors.retry")}
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
+    </View>
+  );
+
+  const stickySections: StickySection[] =
+    error != null
+      ? []
+      : items.length === 0
+        ? [
+            {
+              key: "empty",
+              body: (
+                <Text className="px-2 py-3 text-sm text-muted">{t("watch.empty.history")}</Text>
+              ),
+            },
+          ]
+        : [
+            {
+              key: "history",
+              renderHeader: () => (
+                <View className="items-center px-2 py-1">
+                  <SectionPill>
+                    <Text className="px-2.5 py-1 font-sans text-sm font-semibold text-snow">
+                      {t("watch.history")}
+                    </Text>
+                  </SectionPill>
+                </View>
+              ),
+              body: (
+                <View>
+                  {items.map((item) => (
+                    <EpisodeRow
+                      key={item.watchId}
+                      embedded
+                      posterStretch
+                      seriesTitle={item.title}
+                      stillUrl={buildImageUrl(item.posterRef, "thumb")}
+                      s={item.s}
+                      e={item.e}
+                      episodeTitle={item.episodeTitle}
+                      watched
+                      onToggleWatch={() => {
+                        void onUnwatch(item.episodeId);
+                      }}
+                      checkboxDisabled={unwatchingId === item.episodeId}
+                      onPress={() =>
+                        router.push(`/series/${seriesParam({ id: item.itemId, tmdbId: null })}`)
+                      }
+                      trailing={
+                        <Text className="shrink-0 text-xs text-muted">{relativeDay(item)}</Text>
+                      }
+                    />
+                  ))}
+                </View>
+              ),
+            },
+          ];
+
+  return (
+    <>
+      <Stack.Screen options={{ title: "" }} />
+      <StickySectionScroll
+        className="flex-1 bg-void"
+        contentContainerStyle={{
+          paddingBottom: tabContentBottom(insets.bottom),
+          paddingTop: tabContentTop(insets.top),
+        }}
+        stickyOffset={stickySectionTop(insets.top)}
+        pinClassName="px-3"
+        listHeader={listHeader}
+        sections={stickySections}
+        refreshing={refreshing}
+        onRefresh={async () => {
+          setRefreshing(true);
+          await load();
+        }}
+      />
+    </>
   );
 }

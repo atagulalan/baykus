@@ -9,10 +9,12 @@ import {
   type RatingControlLabels,
   type RatingValue,
 } from "../atoms/RatingControl.tsx";
+import { borders } from "../lib/borders.ts";
 import { cn } from "../lib/cn.ts";
 import type { EpisodeLabelFormat } from "../lib/episodeLabel.ts";
 import { formatEpisodeLabel } from "../lib/episodeLabel.ts";
 import type { EpisodeType } from "../lib/episodeTags.ts";
+import { TAG_BORDERS } from "../lib/episodeTags.ts";
 import { EpisodeTags, type EpisodeTagsProps } from "../molecules/EpisodeTags.tsx";
 
 export type EpisodeRowProps = {
@@ -148,14 +150,18 @@ export function EpisodeRow({
     <View
       className={cn(
         "min-w-0 items-center gap-2",
-        centered ? "w-full flex-col justify-center" : "flex-1 flex-row",
+        // Centered (NextUpCard): column + hug content like web — no flex-1
+        // so the card shell can stay `w-auto`. `shrink` is required on RN
+        // (default flexShrink is 0) so long titles can compress and truncate.
+        centered ? "shrink flex-col justify-center" : "flex-1 flex-row",
       )}
     >
-      <View className={cn("min-w-0 overflow-hidden", centered ? "w-full" : "flex-1")}>
+      <View className={cn("min-w-0 overflow-hidden", centered ? "w-full shrink" : "flex-1")}>
         <Text
           numberOfLines={1}
+          ellipsizeMode="tail"
           className={cn(
-            "font-display text-base italic",
+            "min-w-0 shrink font-display text-base italic",
             muted ? "text-muted-dim" : "text-snow",
             centered && "text-center",
           )}
@@ -176,7 +182,10 @@ export function EpisodeRow({
         </Text>
       </View>
       {episodeType === "finale" ? (
-        <View className="shrink-0 items-center justify-center rounded-full border border-red-400/25 bg-red-400/10 px-2 py-0.5">
+        <View
+          className="shrink-0 items-center justify-center rounded-full bg-red-400/10 px-2 py-0.5"
+          style={TAG_BORDERS.finale}
+        >
           <Text className="font-mono text-[9px] uppercase tracking-wide text-red-300/90">
             {finaleLabel}
           </Text>
@@ -234,7 +243,7 @@ export function EpisodeRow({
         stretchPoster ? "items-stretch gap-0 py-2 pl-3 pr-3" : "items-center gap-3 py-3 px-3",
         !embedded && "border-b border-white/5",
         muted && "opacity-50",
-        centered && "justify-center",
+        centered && "max-w-full shrink justify-center",
         className,
       )}
     >
@@ -243,7 +252,8 @@ export function EpisodeRow({
           accessibilityRole="button"
           onPress={onPress}
           className={cn(
-            "min-w-0 flex-1 flex-row gap-3",
+            "min-w-0 flex-row gap-3",
+            centered ? "w-auto max-w-full shrink" : "flex-1",
             stretchPoster ? "items-stretch gap-0" : "items-center",
           )}
         >
@@ -252,7 +262,8 @@ export function EpisodeRow({
       ) : (
         <View
           className={cn(
-            "min-w-0 flex-1 flex-row gap-3",
+            "min-w-0 flex-row gap-3",
+            centered ? "w-auto max-w-full shrink" : "flex-1",
             stretchPoster ? "items-stretch gap-0" : "items-center",
           )}
         >
@@ -283,7 +294,8 @@ export function EpisodeRow({
                 accessibilityRole="button"
                 accessibilityLabel={skipLabel}
                 onPress={onDismissPrompt}
-                className="rounded-full border border-white/10 bg-void/95 px-2.5 py-1.5 active:bg-white/5"
+                className="rounded-full bg-void/95 px-2.5 py-1.5 active:bg-white/5"
+                style={borders.subtle}
               >
                 <Text className="font-mono text-[10px] uppercase tracking-widest text-muted">
                   {skipLabel}

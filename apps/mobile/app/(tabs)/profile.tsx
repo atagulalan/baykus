@@ -1,6 +1,5 @@
 import {
   ApiError,
-  buildAvatarUrl,
   buildImageUrl,
   getSettings,
   getStats,
@@ -12,6 +11,7 @@ import {
   uploadAvatar,
 } from "@baykus/api-client";
 import {
+  cn,
   colors,
   EmptyPanel,
   HeroBackdropFades,
@@ -20,21 +20,21 @@ import {
   PullToRefresh,
   SectionPill,
   SeriesCard,
-  SkeletonBone,
+  SkeletonProfilePage,
 } from "@baykus/ui";
 import * as ImagePicker from "expo-image-picker";
-import { Link, router, useNavigation } from "expo-router";
+import { Link, router } from "expo-router";
 import {
+  Bird,
   Camera,
   ChevronRight,
   Clapperboard,
   Heart,
   History,
   LogOut,
-  Settings,
   User,
 } from "lucide-react-native";
-import { type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
@@ -47,11 +47,12 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../src/auth/AuthProvider.tsx";
+import { useBannerEdgeScrub } from "../../src/chrome/EdgeScrubContext.tsx";
+import { tabContentBottom, tabContentTop } from "../../src/chrome/layout.ts";
 import { formatDurationLabel, formatDurationParts } from "../../src/lib/duration.ts";
 import { toSeriesCardSeries } from "../../src/lib/mapSeriesCard.ts";
-
-const PROFILE_FAVORITES_LIMIT = 6;
-const PROFILE_ALL_SERIES_LIMIT = 6;
+import { seriesGridCols } from "../../src/lib/seriesGridCols.ts";
+import { useAvatarImageSource } from "../../src/lib/useAvatarImageSource.ts";
 
 function deviceTimeZone(): string {
   try {
@@ -75,9 +76,10 @@ export default function ProfileScreen() {
   const { session, loading: authLoading, signOut } = useAuth();
   const { t, i18n } = useTranslation();
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation();
   const { width } = useWindowDimensions();
-  const cols = width >= 720 ? 4 : width >= 480 ? 3 : 2;
+  // One preview row: phone ≥3, tablet up to 6 (matches how many posters fit).
+  const cols = Math.max(3, seriesGridCols(width));
+  const previewLimit = cols;
   const [stats, setStats] = useState<Stats | null>(null);
   const [allSeries, setAllSeries] = useState<SeriesSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -94,16 +96,8 @@ export default function ProfileScreen() {
   const title = session?.mode === "single" ? t("profile.title") : `@${handle}`;
   const bannerUrl = buildImageUrl(bannerRef, "large");
   const hasBanner = Boolean(bannerUrl);
-
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      title: hasBanner ? "" : title,
-      headerTransparent: hasBanner,
-      headerShadowVisible: false,
-      headerStyle: { backgroundColor: hasBanner ? "transparent" : colors.void },
-      headerTintColor: colors.snow,
-    });
-  }, [navigation, hasBanner, title]);
+  const bannerScrub = useBannerEdgeScrub(hasBanner);
+  const avatarSource = useAvatarImageSource(avatarRef);
 
   const load = useCallback(async () => {
     if (needsAuth) {
@@ -209,11 +203,10 @@ export default function ProfileScreen() {
   }
 
   if (authLoading || loading) {
+    const bannerH = width >= 640 ? 420 : 320;
     return (
-      <View className="flex-1 bg-void px-4 pt-4">
-        <SkeletonBone className="mb-4 h-64 w-full rounded-xl" />
-        <SkeletonBone className="mb-4 h-8 w-40" />
-        <SkeletonBone className="h-16 w-full rounded-md" />
+      <View className="flex-1 bg-void">
+        <SkeletonProfilePage bannerHeight={bannerH} cols={cols} />
       </View>
     );
   }
@@ -240,13 +233,12 @@ export default function ProfileScreen() {
   }
 
   const heroMinH = width >= 640 ? 420 : 320;
-  const headerPad = 44;
 
   return (
     <PullToRefresh
       className="flex-1 bg-void"
       contentContainerStyle={{
-        paddingBottom: insets.bottom + 40,
+        paddingBottom: tabContentBottom(insets.bottom),
         paddingTop: 0,
       }}
       refreshing={refreshing}
@@ -254,6 +246,8 @@ export default function ProfileScreen() {
         setRefreshing(true);
         await load();
       }}
+      onScroll={bannerScrub.onScroll}
+      scrollEventThrottle={bannerScrub.scrollEventThrottle}
     >
       {/* Full-bleed banner hero — fixed height so backdrop cannot inflate layout */}
       <View
@@ -276,32 +270,39 @@ export default function ProfileScreen() {
         <View
           className="relative z-10 flex-1 justify-end"
           style={{
-            paddingTop: hasBanner ? insets.top + headerPad : Math.max(insets.top, 12) + 24,
+            paddingTop: tabContentTop(insets.top),
             height: heroMinH,
           }}
         >
           <View className="flex-row items-center gap-4 px-3 pb-4">
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Change profile photo"
+              accessibilityLabel={t("profile.photo.upload", { defaultValue: "Upload photo" })}
               disabled={avatarBusy}
               onPress={() => {
                 void onPickAvatar();
               }}
-              className="h-16 w-16 items-center justify-center overflow-hidden rounded-full border border-white/15 bg-void/70 active:opacity-80 disabled:opacity-40"
+              className="relative h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white/5 active:opacity-80 disabled:opacity-40"
             >
-              {avatarBusy ? (
-                <ActivityIndicator color={colors.yellow} />
-              ) : buildAvatarUrl(avatarRef) ? (
+              {avatarSource ? (
                 <MediaImage
-                  src={buildAvatarUrl(avatarRef) ?? ""}
+                  src={avatarSource.uri}
+                  {...(avatarSource.headers ? { headers: avatarSource.headers } : {})}
                   accessibilityLabel={handle}
                   fill
-                  style={{ width: 64, height: 64 }}
                 />
               ) : (
-                <User size={26} color={colors.muted} />
+                <Bird size={22} color={colors.muted} strokeWidth={1.5} />
               )}
+              <View
+                className={cn(
+                  "absolute inset-0 items-center justify-center bg-black/50",
+                  avatarBusy ? "opacity-100" : "opacity-0",
+                )}
+                pointerEvents="none"
+              >
+                {avatarBusy ? <ActivityIndicator color={colors.snow} size="small" /> : null}
+              </View>
             </Pressable>
 
             <View className="min-w-0 flex-1">
@@ -316,14 +317,6 @@ export default function ProfileScreen() {
             >
               <Camera size={20} color={colors.muted} strokeWidth={1.5} />
             </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t("app.nav.settings")}
-              onPress={() => router.push("/(tabs)/settings")}
-              className="h-11 w-11 items-center justify-center active:opacity-70"
-            >
-              <Settings size={20} color={colors.muted} strokeWidth={1.5} />
-            </Pressable>
           </View>
         </View>
       </View>
@@ -334,7 +327,7 @@ export default function ProfileScreen() {
         <Pressable
           accessibilityRole="button"
           onPress={() => router.push("/profile/stats")}
-          className="mb-6 flex-row items-center px-3 active:opacity-80"
+          className="mb-6 mt-4 flex-row items-center px-3 active:opacity-80"
         >
           <ProfileStatItem label={t("stats.timeSpent")} value={timeSpent} />
           <View className="h-8 w-px shrink-0 bg-white/10" />
@@ -357,9 +350,9 @@ export default function ProfileScreen() {
               icon={Heart}
               label={t("profile.favorites.title")}
               count={favorites.length}
-              linked={favorites.length > PROFILE_FAVORITES_LIMIT}
+              linked={favorites.length > previewLimit}
               onPress={
-                favorites.length > PROFILE_FAVORITES_LIMIT
+                favorites.length > previewLimit
                   ? () => router.push("/library/favorites")
                   : undefined
               }
@@ -375,7 +368,7 @@ export default function ProfileScreen() {
             />
           ) : (
             <View className="flex-row flex-wrap px-1.5 py-1.5">
-              {favorites.slice(0, PROFILE_FAVORITES_LIMIT).map((item) => (
+              {favorites.slice(0, previewLimit).map((item) => (
                 <View key={item.id} style={{ width: `${100 / cols}%` }} className="px-1.5 py-1.5">
                   <SeriesCard
                     series={toSeriesCardSeries(item)}
@@ -395,17 +388,15 @@ export default function ProfileScreen() {
               icon={Clapperboard}
               label={t("profile.allSeries")}
               count={allSeries.length}
-              linked={allSeries.length > PROFILE_ALL_SERIES_LIMIT}
+              linked={allSeries.length > previewLimit}
               onPress={
-                allSeries.length > PROFILE_ALL_SERIES_LIMIT
-                  ? () => router.push("/library/all")
-                  : undefined
+                allSeries.length > previewLimit ? () => router.push("/library/all") : undefined
               }
             />
           }
         >
           <View className="flex-row flex-wrap px-1.5 py-1.5">
-            {allSeries.slice(0, PROFILE_ALL_SERIES_LIMIT).map((item) => (
+            {allSeries.slice(0, previewLimit).map((item) => (
               <View key={item.id} style={{ width: `${100 / cols}%` }} className="px-1.5 py-1.5">
                 <SeriesCard
                   series={toSeriesCardSeries(item)}
@@ -504,11 +495,7 @@ export default function ProfileScreen() {
                           }`}
                           style={{ aspectRatio: 16 / 9 }}
                         >
-                          <MediaImage
-                            src={thumb}
-                            accessibilityLabel={series.title}
-                            fill
-                          />
+                          <MediaImage src={thumb} accessibilityLabel={series.title} fill />
                         </Pressable>
                       );
                     })}
@@ -552,7 +539,7 @@ function HubPillHeader({
   return (
     <View className="z-30 items-center px-3 py-1">
       <SectionPill onPress={onPress}>
-        <View className="max-w-full flex-row items-center gap-1.5">
+        <View className="max-w-full flex-row items-center gap-1.5 px-2.5 py-1">
           <Icon size={14} color={colors.muted} strokeWidth={1.75} />
           <Text
             className="min-w-0 shrink font-sans text-sm font-semibold text-snow"

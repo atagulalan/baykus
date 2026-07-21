@@ -1,36 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { buildProgressSegments, isCaughtUpWaiting } from "./progressSegments.ts";
+import { EMPTY_FRONTIER_MIN_PX, frontierFillWidth } from "./progressSegments.ts";
 
-describe("buildProgressSegments (E34)", () => {
-  it("returns null when not sequential", () => {
-    expect(
-      buildProgressSegments({
-        sequential: false,
-        seasons: [{ number: 1, watched: 1, total: 10, announced: 10 }],
-      }),
-    ).toBeNull();
+describe("frontierFillWidth", () => {
+  it("returns percent when progress is non-zero", () => {
+    expect(frontierFillWidth(40, 2)).toEqual({ unit: "%", value: 40 });
   });
 
-  it("builds filled / frontier / hollow", () => {
-    expect(
-      buildProgressSegments({
-        sequential: true,
-        seasons: [
-          { number: 1, watched: 10, total: 10, announced: 10 },
-          { number: 2, watched: 3, total: 10, announced: 10 },
-          { number: 3, watched: 0, total: 10, announced: 10 },
-        ],
-      }),
-    ).toEqual([{ kind: "filled" }, { kind: "frontier", percent: 30 }, { kind: "hollow" }]);
-  });
-});
-
-describe("isCaughtUpWaiting (E180)", () => {
-  it("is true when aired done and unaired remain", () => {
-    expect(isCaughtUpWaiting({ watched: 8, total: 8, announced: 10 })).toBe(true);
+  it("returns percent 0 on the first segment", () => {
+    expect(frontierFillWidth(0, 0)).toEqual({ unit: "%", value: 0 });
   });
 
-  it("is false when still catching aired", () => {
-    expect(isCaughtUpWaiting({ watched: 5, total: 8, announced: 10 })).toBe(false);
+  it("honours EMPTY_FRONTIER_MIN_PX for later empty frontiers", () => {
+    if (EMPTY_FRONTIER_MIN_PX > 0) {
+      expect(frontierFillWidth(0, 1)).toEqual({ unit: "px", value: EMPTY_FRONTIER_MIN_PX });
+    } else {
+      expect(frontierFillWidth(0, 1)).toEqual({ unit: "%", value: 0 });
+    }
   });
 });

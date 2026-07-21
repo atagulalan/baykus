@@ -1,10 +1,10 @@
 import {
   ApiError,
   confirmTvTimeImport,
-  importTvTime,
-  importZip,
   type ExternalIds,
   type ImportZipResult,
+  importTvTime,
+  importZip,
   type TvTimeConfirmProgressEvent,
   type TvTimeConfirmResult,
   type TvTimeImportProgressEvent,
@@ -17,6 +17,7 @@ import { FileUp } from "lucide-react-native";
 import { useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { tabContentBottom, tabContentTop } from "../src/chrome/layout.ts";
 
 type Kind = "zip" | "tvtime";
 type TvStep = "idle" | "matching" | "report" | "confirming" | "done";
@@ -55,7 +56,11 @@ export default function ImportScreen() {
       setZipResult(await importZip(blob, mode));
     } catch (err) {
       setError(
-        err instanceof ApiError ? err.message : err instanceof Error ? err.message : "import_failed",
+        err instanceof ApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "import_failed",
       );
     } finally {
       setBusy(false);
@@ -87,7 +92,11 @@ export default function ImportScreen() {
     } catch (err) {
       setTvStep("idle");
       setError(
-        err instanceof ApiError ? err.message : err instanceof Error ? err.message : "tvtime_failed",
+        err instanceof ApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "tvtime_failed",
       );
     } finally {
       setBusy(false);
@@ -126,9 +135,13 @@ export default function ImportScreen() {
   return (
     <ScrollView
       className="flex-1 bg-void"
-      contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 24 }}
+      contentContainerStyle={{
+        padding: 16,
+        paddingTop: tabContentTop(insets.top),
+        paddingBottom: tabContentBottom(insets.bottom),
+      }}
     >
-      <Stack.Screen options={{ title: "Import" }} />
+      <Stack.Screen options={{ title: "" }} />
       <PageTitle className="mb-4">Import</PageTitle>
       <SegmentedButtonGroup
         value={kind}

@@ -23,6 +23,10 @@ export type MediaImageProps = {
   /** Cover the parent (absolute fill). Parent must have a bounded size. */
   fill?: boolean;
   resizeMode?: ImageResizeMode;
+  /** Optional HTTP headers (e.g. Bearer for `/api/settings/avatar`). */
+  headers?: Record<string, string>;
+  /** Spinner while loading — off for dense list thumbs (Android jank). Default true. */
+  showLoader?: boolean;
   onLoad?: () => void;
   onError?: () => void;
 };
@@ -42,6 +46,8 @@ function MediaImageInner({
   style,
   fill = false,
   resizeMode = "cover",
+  headers,
+  showLoader = true,
   onLoad,
   onError,
 }: MediaImageProps) {
@@ -59,13 +65,13 @@ function MediaImageInner({
       style={[fill ? StyleSheet.absoluteFillObject : null, wrapperStyle]}
       accessibilityState={{ busy: phase === "loading" }}
     >
-      {phase === "loading" ? (
+      {showLoader && phase === "loading" ? (
         <View className="absolute inset-0 z-10 items-center justify-center" pointerEvents="none">
           <ActivityIndicator color={colors.muted} />
         </View>
       ) : null}
       <Image
-        source={{ uri: src }}
+        source={{ uri: src, ...(headers ? { headers } : {}) }}
         accessibilityLabel={accessibilityLabel}
         resizeMode={resizeMode}
         className={cn(className, phase === "ready" ? "opacity-100" : "opacity-0")}

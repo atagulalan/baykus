@@ -13,16 +13,17 @@ import {
   MiniBars,
   PullToRefresh,
   SectionPill,
-  SkeletonBone,
+  SkeletonStatsPage,
   StatTile,
 } from "@baykus/ui";
 import { Stack } from "expo-router";
 import { BarChart3, RefreshCw } from "lucide-react-native";
-import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import { Children, type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../src/auth/AuthProvider.tsx";
+import { tabContentBottom, tabContentTop } from "../../src/chrome/layout.ts";
 import { formatDurationLabel, formatDurationParts } from "../../src/lib/duration.ts";
 
 function deviceTimeZone(): string {
@@ -44,6 +45,37 @@ const FUN_ACTIVITIES = [
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 
+/** Horizontal page pad — matches ScrollView `paddingHorizontal: 12`. */
+const PAGE_PAD_X = 12;
+/** Inner hero/block inset (`px-1`). */
+const INNER_PAD_X = 4;
+
+/**
+ * Equal-width tile grid (web `grid grid-cols-*`).
+ * Pixel widths — `%` + `gap` overflowed and wrapped into a staggered layout.
+ */
+function StatTileGrid({
+  cols,
+  gap,
+  pageWidth,
+  children,
+}: {
+  cols: number;
+  gap: number;
+  pageWidth: number;
+  children: ReactNode;
+}) {
+  const innerW = pageWidth - PAGE_PAD_X * 2 - INNER_PAD_X * 2;
+  const tileW = cols <= 1 ? innerW : (innerW - gap * (cols - 1)) / cols;
+  return (
+    <View className="flex-row flex-wrap" style={{ gap }}>
+      {Children.map(children, (child) =>
+        child == null ? null : <View style={{ width: tileW }}>{child}</View>,
+      )}
+    </View>
+  );
+}
+
 /** Visual parity with web StatsPage — hero + tiles + SectionPill + HBar/MiniBars. */
 export default function StatsScreen() {
   const { t, i18n } = useTranslation();
@@ -60,6 +92,8 @@ export default function StatsScreen() {
 
   const needsAuth = session?.mode === "multi" && !session.authenticated;
   const tileCols = width >= 720 ? 3 : 2;
+  /** Web RecentSection: `grid-cols-1 sm:grid-cols-3`. */
+  const recentCols = width >= 640 ? 3 : 1;
 
   const load = useCallback(async () => {
     if (needsAuth) {
@@ -98,13 +132,13 @@ export default function StatsScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: t("app.nav.stats") }} />
+      <Stack.Screen options={{ title: "" }} />
       <PullToRefresh
         className="flex-1 bg-void"
         contentContainerStyle={{
-          paddingBottom: insets.bottom + 32,
-          paddingTop: 8,
-          paddingHorizontal: 12,
+          paddingBottom: tabContentBottom(insets.bottom),
+          paddingTop: tabContentTop(insets.top),
+          paddingHorizontal: PAGE_PAD_X,
           gap: 40,
         }}
         refreshing={refreshing}
@@ -114,11 +148,7 @@ export default function StatsScreen() {
         }}
       >
         {authLoading || loading ? (
-          <View className="gap-3 px-1">
-            <SkeletonBone className="mx-auto h-16 w-48 rounded" />
-            <SkeletonBone className="h-24 w-full rounded-md" />
-            <SkeletonBone className="h-32 w-full rounded-md" />
-          </View>
+          <SkeletonStatsPage contentWidth={width - PAGE_PAD_X * 2} />
         ) : needsAuth ? (
           <EmptyPanel icon={BarChart3} title="Sign in required" hint="Stats need a session." />
         ) : error ? (
@@ -160,7 +190,7 @@ export default function StatsScreen() {
                 </View>
               </View>
 
-              <View className="flex-row flex-wrap gap-4">
+              <StatTileGrid cols={tileCols} gap={16} pageWidth={width}>
                 {(
                   [
                     [t("stats.tiles.tracked"), stats.seriesCount],
@@ -171,15 +201,14 @@ export default function StatsScreen() {
                     [t("stats.tiles.watchLater"), stats.itemCount.watch_later],
                   ] as const
                 ).map(([label, value]) => (
-                  <View
+                  <StatTile
                     key={label}
-                    style={{ width: `${100 / tileCols - 2}%` }}
-                    className="min-w-[45%] flex-1"
-                  >
-                    <StatTile label={label} value={value.toLocaleString("tr-TR")} />
-                  </View>
+                    className="w-full"
+                    label={label}
+                    value={value.toLocaleString("tr-TR")}
+                  />
                 ))}
-              </View>
+              </StatTileGrid>
 
               {stats.episodesWatched === 0 ? (
                 <Text className="text-center font-mono text-sm text-muted">{t("stats.empty")}</Text>
@@ -189,9 +218,9 @@ export default function StatsScreen() {
             {stats.episodesWatched > 0 ? (
               <>
                 <StatsBlock title={t("stats.recent.title")}>
-                  <View className="flex-row flex-wrap gap-3">
+                  <StatTileGrid cols={recentCols} gap={16} pageWidth={width}>
                     <StatTile
-                      className="min-w-[45%]"
+                      className="w-full"
                       label={t("stats.recent.last7Days")}
                       value={formatDurationLabel(
                         formatDurationParts(stats.recent.last7Days.watchTimeMin),
@@ -200,7 +229,7 @@ export default function StatsScreen() {
                       sub={`${stats.recent.last7Days.episodes} ep`}
                     />
                     <StatTile
-                      className="min-w-[45%]"
+                      className="w-full"
                       label={t("stats.recent.last30Days")}
                       value={formatDurationLabel(
                         formatDurationParts(stats.recent.last30Days.watchTimeMin),
@@ -209,7 +238,7 @@ export default function StatsScreen() {
                       sub={`${stats.recent.last30Days.episodes} ep`}
                     />
                     <StatTile
-                      className="min-w-[45%]"
+                      className="w-full"
                       label={t("stats.recent.thisMonth")}
                       value={formatDurationLabel(
                         formatDurationParts(stats.recent.thisMonth.watchTimeMin),
@@ -217,7 +246,7 @@ export default function StatsScreen() {
                       )}
                       sub={`${stats.recent.thisMonth.episodes} ep`}
                     />
-                  </View>
+                  </StatTileGrid>
                 </StatsBlock>
 
                 {stats.mostWatchedByTime.length > 0 ? (
@@ -329,23 +358,24 @@ export default function StatsScreen() {
                 ) : null}
 
                 <StatsBlock title={t("stats.backlog.title")}>
-                  <View className="mb-3 flex-row flex-wrap gap-3">
+                  <StatTileGrid cols={2} gap={16} pageWidth={width}>
                     <StatTile
-                      className="min-w-[45%]"
+                      className="w-full"
                       label={t("stats.backlog.episodes")}
                       value={String(stats.backlog.episodes)}
                       sub={`${stats.backlog.seriesCount} series`}
                     />
                     <StatTile
-                      className="min-w-[45%]"
+                      className="w-full"
                       label={t("stats.backlog.remainingTime")}
                       value={formatDurationLabel(
                         formatDurationParts(stats.backlog.watchTimeMin),
                         t,
                       )}
                     />
-                  </View>
+                  </StatTileGrid>
                   <HBarList
+                    className="mt-3"
                     items={stats.backlog.topSeries.slice(0, 8).map((row) => ({
                       key: String(row.itemId),
                       label: row.title,
@@ -357,9 +387,9 @@ export default function StatsScreen() {
 
                 {stats.pace ? (
                   <StatsBlock title={t("stats.pace.title")}>
-                    <View className="flex-row flex-wrap gap-3">
+                    <StatTileGrid cols={2} gap={16} pageWidth={width}>
                       <StatTile
-                        className="min-w-[45%]"
+                        className="w-full"
                         label={t("stats.pace.projectionLabel")}
                         value={t("stats.pace.projection", {
                           count: stats.pace.projectedWeeks,
@@ -367,14 +397,14 @@ export default function StatsScreen() {
                         })}
                       />
                       <StatTile
-                        className="min-w-[45%]"
+                        className="w-full"
                         label={t("stats.pace.label")}
                         value={t("stats.pace.value", {
                           count: Math.round(stats.pace.episodesPerWeek),
                         })}
                         sub={t("stats.pace.sub")}
                       />
-                    </View>
+                    </StatTileGrid>
                   </StatsBlock>
                 ) : null}
 
@@ -405,19 +435,20 @@ export default function StatsScreen() {
                 ) : null}
 
                 <StatsBlock title={t("stats.rewatchSummary.title")}>
-                  <View className="mb-3 flex-row flex-wrap gap-3">
+                  <StatTileGrid cols={2} gap={16} pageWidth={width}>
                     <StatTile
-                      className="min-w-[45%]"
+                      className="w-full"
                       label={t("stats.rewatchSummary.total")}
                       value={String(stats.rewatchSummary.totalRewatches)}
                     />
                     <StatTile
-                      className="min-w-[45%]"
+                      className="w-full"
                       label={t("stats.rewatchSummary.episodes")}
                       value={String(stats.rewatchSummary.rewatchedEpisodes)}
                     />
-                  </View>
+                  </StatTileGrid>
                   <HBarList
+                    className="mt-3"
                     items={stats.rewatchSummary.bySeries.slice(0, 8).map((row) => ({
                       key: String(row.itemId),
                       label: row.title,
@@ -428,19 +459,20 @@ export default function StatsScreen() {
                 </StatsBlock>
 
                 <StatsBlock title={t("stats.streaks.title")}>
-                  <View className="mb-3 flex-row flex-wrap gap-3">
+                  <StatTileGrid cols={2} gap={16} pageWidth={width}>
                     <StatTile
-                      className="min-w-[45%]"
+                      className="w-full"
                       label={t("stats.streaks.longest")}
                       value={String(stats.streaks.longestWeeks)}
                     />
                     <StatTile
-                      className="min-w-[45%]"
+                      className="w-full"
                       label={t("stats.streaks.current")}
                       value={String(stats.streaks.currentWeeks)}
                     />
-                  </View>
+                  </StatTileGrid>
                   <HBarList
+                    className="mt-3"
                     items={stats.streaks.bySeries.slice(0, 8).map((row) => ({
                       key: String(row.itemId),
                       label: row.title,
@@ -538,7 +570,7 @@ function StatsBlock({ title, children }: { title: string; children: ReactNode })
     <View className="gap-3 px-1">
       <View className="z-30 items-center py-1">
         <SectionPill>
-          <Text className="font-sans text-sm font-semibold text-snow">{title}</Text>
+          <Text className="px-2.5 py-1 font-sans text-sm font-semibold text-snow">{title}</Text>
         </SectionPill>
       </View>
       {children}

@@ -1,6 +1,7 @@
 /// <reference types="nativewind/types" />
 import type { ReactNode } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { borders } from "../lib/borders.ts";
 import { cn } from "../lib/cn.ts";
 import { colors } from "../tokens.ts";
 import { Modal } from "./Modal.tsx";
@@ -75,10 +76,9 @@ export function ActionSheet({
                 }}
                 className={cn(
                   "w-full items-center rounded-lg px-4 py-2.5 disabled:opacity-40",
-                  item.primary
-                    ? "bg-yellow active:opacity-90"
-                    : "border border-white/10 active:bg-white/5",
+                  item.primary ? "bg-yellow active:opacity-90" : "active:bg-white/5",
                 )}
+                style={item.primary ? undefined : borders.subtle}
               >
                 <Text
                   className={cn(
@@ -94,9 +94,7 @@ export function ActionSheet({
         </View>
       ) : (
         <View className="pb-4">
-          {description ? (
-            <Text className="px-4 pb-2 text-sm text-muted">{description}</Text>
-          ) : null}
+          {description ? <Text className="px-4 pb-2 text-sm text-muted">{description}</Text> : null}
           {items.map((item) => (
             <Pressable
               key={item.key}

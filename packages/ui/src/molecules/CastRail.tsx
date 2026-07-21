@@ -54,7 +54,10 @@ export function CastRail({ cast, title, className }: CastRailProps) {
                 {member.name}
               </Text>
               {member.character ? (
-                <Text numberOfLines={2} className="text-center text-[11px] leading-tight text-muted">
+                <Text
+                  numberOfLines={2}
+                  className="text-center text-[11px] leading-tight text-muted"
+                >
                   {member.character}
                 </Text>
               ) : null}

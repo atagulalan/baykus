@@ -1,4 +1,6 @@
+import type { ViewStyle } from "react-native";
 import { isEpisodeAired, todayIso } from "./airing.ts";
+import { borderStroke } from "./borders.ts";
 
 export type EpisodeType = "standard" | "mid_season" | "finale";
 
@@ -59,13 +61,23 @@ export function computeEpisodeTagKinds(
   return kinds;
 }
 
+/** Fill only — stroke via {@link TAG_BORDERS} (NativeWind opacity borders are flaky on RN). */
 export const TAG_STYLES: Record<EpisodeTagKind, string> = {
-  new: "border-yellow/25 bg-yellow/10",
-  upcoming: "border-sky-400/25 bg-sky-400/10",
-  premiere: "border-purple-400/25 bg-purple-400/10",
-  finale: "border-red-400/25 bg-red-400/10",
-  special: "border-white/15 bg-white/5",
-  ova: "border-violet-400/25 bg-violet-400/10",
+  new: "bg-yellow/10",
+  upcoming: "bg-sky-400/10",
+  premiere: "bg-purple-400/10",
+  finale: "bg-red-400/10",
+  special: "bg-white/5",
+  ova: "bg-violet-400/10",
+};
+
+export const TAG_BORDERS: Record<EpisodeTagKind, ViewStyle> = {
+  new: borderStroke("rgba(240, 224, 0, 0.25)"),
+  upcoming: borderStroke("rgba(56, 189, 248, 0.25)"),
+  premiere: borderStroke("rgba(192, 132, 252, 0.25)"),
+  finale: borderStroke("rgba(248, 113, 113, 0.25)"),
+  special: borderStroke("rgba(255, 255, 255, 0.15)"),
+  ova: borderStroke("rgba(167, 139, 250, 0.25)"),
 };
 
 export const TAG_TEXT: Record<EpisodeTagKind, string> = {

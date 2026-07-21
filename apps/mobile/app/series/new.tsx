@@ -7,13 +7,21 @@ import {
   type SeriesPreview,
   seriesParam,
 } from "@baykus/api-client";
-import { CastRail, colors, EmptyPanel, SeriesDetailHero, SkeletonBone } from "@baykus/ui";
+import {
+  CastRail,
+  colors,
+  EmptyPanel,
+  SeriesDetailHero,
+  SkeletonSeriesDetailHero,
+} from "@baykus/ui";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { Clapperboard } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useBannerEdgeScrub } from "../../src/chrome/EdgeScrubContext.tsx";
+import { tabContentBottom, WORDMARK_ROW_H } from "../../src/chrome/layout.ts";
 
 function idsFromParams(params: Record<string, string | string[] | undefined>): ExternalIds | null {
   const one = (key: string): string | undefined => {
@@ -35,6 +43,7 @@ function idsFromParams(params: Record<string, string | string[] | undefined>): E
 export default function SeriesPreviewScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const bannerScrub = useBannerEdgeScrub(true);
   const params = useLocalSearchParams();
   const externalIds = useMemo(() => idsFromParams(params), [params]);
   const [preview, setPreview] = useState<SeriesPreview | null>(null);
@@ -117,7 +126,7 @@ export default function SeriesPreviewScreen() {
             headerStyle: { backgroundColor: "transparent" },
           }}
         />
-        <SkeletonBone className="mb-4 h-96 w-full" />
+        <SkeletonSeriesDetailHero insetsTop={insets.top + WORDMARK_ROW_H} />
       </View>
     );
   }
@@ -125,7 +134,7 @@ export default function SeriesPreviewScreen() {
   if (!preview) {
     return (
       <View className="flex-1 bg-void">
-        <Stack.Screen options={{ title: "Preview" }} />
+        <Stack.Screen options={{ title: "" }} />
         <EmptyPanel
           icon={Clapperboard}
           title="Preview unavailable"
@@ -149,7 +158,12 @@ export default function SeriesPreviewScreen() {
   }));
 
   return (
-    <ScrollView className="flex-1 bg-void" contentContainerClassName="pb-10">
+    <ScrollView
+      className="flex-1 bg-void"
+      contentContainerStyle={{ paddingBottom: tabContentBottom(insets.bottom) }}
+      onScroll={bannerScrub.onScroll}
+      scrollEventThrottle={bannerScrub.scrollEventThrottle}
+    >
       <Stack.Screen
         options={{
           title: "",
@@ -167,7 +181,7 @@ export default function SeriesPreviewScreen() {
         category="not_started"
         progress={{ watched: 0, aired: 0 }}
         seasonProgress={emptyProgress}
-        insetsTop={insets.top + 44}
+        insetsTop={insets.top + WORDMARK_ROW_H}
         preview
         onStartWatching={() => {
           void onAdd();

@@ -256,7 +256,7 @@ Current folders under [`apps/web/src/components/atoms/`](../apps/web/src/compone
 10. [x] SegmentedButtonGroup → `packages/ui/src/atoms/SegmentedButtonGroup.tsx`  
 11. [x] SegmentedProgress → `packages/ui/src/atoms/SegmentedProgress.tsx` + `lib/progressSegments.ts`  
 12. [x] SettingsSelect → `packages/ui/src/atoms/SettingsSelect.tsx` (RN Modal sheet; web Modal molecule later)  
-13. [x] Skeleton (`SkeletonBone` / `SkeletonPill`) → `packages/ui/src/atoms/Skeleton.tsx` (full page shells stay web-local for now)  
+13. [x] Skeleton (`SkeletonBone` / `SkeletonPill` + composed page shells) → `packages/ui/src/atoms/Skeleton.tsx` (web still keeps DOM shells until RN-Web import switch)  
 14. [x] StepperInput → `packages/ui/src/atoms/StepperInput.tsx`  
 15. [x] Accordion → `packages/ui/src/atoms/Accordion.tsx` (LayoutAnimation; web height easing stays web)
 

@@ -45,7 +45,7 @@ function CaughtUpWatchRow({ series }: { series: SeriesSummary }) {
       to="/series/$id"
       params={{ id: seriesRouteParam }}
       viewTransition={pageViewTransition}
-      className="episode-row list-inset flex min-w-0 items-stretch gap-0 rounded-md border-white/5 border-b py-2 pl-3 pr-3 transition-colors hover:bg-white/[0.04]"
+      className="episode-row list-inset flex min-w-0 items-stretch gap-0 rounded-md py-2 pl-3 pr-3 transition-colors hover:bg-white/[0.04]"
     >
       <span className="js-poster w-12 shrink-0 self-stretch overflow-hidden rounded-md bg-white/5 sm:w-14">
         {imageUrl && !imageFailed ? (

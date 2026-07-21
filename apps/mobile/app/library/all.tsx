@@ -10,26 +10,31 @@ import {
   type WatchCategory,
 } from "@baykus/api-client";
 import {
+  AccordionPanel,
   AddSectionBar,
+  animateLayoutToggle,
+  CATEGORY_ICONS,
   EMPTY_PANEL_CTA_CLASS,
   EmptyPanel,
   type LibrarySort,
-  PageTitleRow,
-  PullToRefresh,
   SectionHeader,
   SeriesCard,
-  SkeletonBone,
+  type StickySection,
+  StickySectionScroll,
+  skeletonCategoryStickySections,
 } from "@baykus/ui";
 import { Link, router, Stack } from "expo-router";
 import { Library } from "lucide-react-native";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../src/auth/AuthProvider.tsx";
+import { stickySectionTop, tabContentBottom } from "../../src/chrome/layout.ts";
 import { groupByCategory } from "../../src/lib/groupByCategory.ts";
 import { toSeriesCardSeries } from "../../src/lib/mapSeriesCard.ts";
 import { sectionSort, sortsForCategory } from "../../src/lib/sectionSort.ts";
+import { seriesGridCols } from "../../src/lib/seriesGridCols.ts";
 import { sortSeriesSummaries } from "../../src/lib/sortSeries.ts";
 import { resolveUiPrefs } from "../../src/lib/uiPrefs.ts";
 
@@ -39,7 +44,7 @@ export default function AllSeriesScreen() {
   const { session, loading: authLoading } = useAuth();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const cols = width >= 720 ? 4 : width >= 480 ? 3 : 2;
+  const cols = seriesGridCols(width);
   const [items, setItems] = useState<SeriesSummary[]>([]);
   const [settings, setSettings] = useState<Settings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -104,60 +109,44 @@ export default function AllSeriesScreen() {
     }
   }
 
-  return (
-    <>
-      <Stack.Screen options={{ title: t("profile.allSeries") }} />
-      <PullToRefresh
-        className="flex-1 bg-void"
-        contentContainerStyle={{
-          paddingBottom: insets.bottom + 32,
-          paddingTop: 8,
-          paddingHorizontal: 12,
-        }}
-        refreshing={refreshing}
-        onRefresh={async () => {
-          setRefreshing(true);
-          await load();
-        }}
-      >
-        <PageTitleRow
-          className="mb-4 px-1"
-          action={
-            sections.length > 0 && !authLoading && !loading && !needsAuth && !error ? (
-              <AddSectionBar
-                sortOnly
-                sections={sections}
-                sectionSorts={sectionSorts}
-                onSortChange={(category, sort) => {
-                  void onSortChange(category, sort);
-                }}
-                sortsForCategory={sortsForCategory}
-                labels={{
-                  trigger: t("library.filter.sortTitle"),
-                  title: t("library.filter.sortTitle"),
-                  categoryLabel: (c) => t(`category.${c}`),
-                  sortLabel: (s) => t(`library.sort.${s}`),
-                  remove: "",
-                  add: "",
-                  pinned: "",
-                  moveUp: "",
-                  moveDown: "",
-                }}
-              />
-            ) : null
-          }
-        >
-          {t("profile.allSeries")}
-          {items.length > 0 ? ` (${items.length})` : ""}
-        </PageTitleRow>
+  const listHeaderParts: ReactNode[] = [];
+  if (sections.length > 0 && !authLoading && !loading && !needsAuth && !error) {
+    listHeaderParts.push(
+      <View key="sort" className="mb-2 items-end px-1">
+        <AddSectionBar
+          sortOnly
+          sections={sections}
+          sectionSorts={sectionSorts}
+          onSortChange={(category, sort) => {
+            void onSortChange(category, sort);
+          }}
+          sortsForCategory={sortsForCategory}
+          labels={{
+            trigger: t("library.filter.sortTitle"),
+            title: t("library.filter.sortTitle"),
+            sortMenu: t("library.filter.sortTitle"),
+            categoryLabel: (c) => t(`category.${c}`),
+            sortLabel: (s) => t(`library.sort.${s}`),
+            remove: "",
+            add: "",
+            pinned: "",
+            moveUp: "",
+            moveDown: "",
+          }}
+        />
+      </View>,
+    );
+  }
 
-        {authLoading || loading ? (
-          <View className="gap-3 px-1">
-            <SkeletonBone className="h-8 w-40 rounded" />
-            <SkeletonBone className="h-40 w-full rounded-lg" />
-            <SkeletonBone className="h-40 w-full rounded-lg" />
-          </View>
-        ) : needsAuth ? (
+  let stickySections: StickySection[] = [];
+
+  if (authLoading || loading) {
+    stickySections = skeletonCategoryStickySections(cols);
+  } else if (needsAuth) {
+    stickySections = [
+      {
+        key: "auth",
+        body: (
           <EmptyPanel
             icon={Library}
             title="Sign in required"
@@ -172,7 +161,14 @@ export default function AllSeriesScreen() {
               </Link>
             }
           />
-        ) : error ? (
+        ),
+      },
+    ];
+  } else if (error) {
+    stickySections = [
+      {
+        key: "error",
+        body: (
           <View className="items-center gap-3 py-16">
             <Text className="font-mono text-xs text-red-400">{error}</Text>
             <Pressable
@@ -188,7 +184,14 @@ export default function AllSeriesScreen() {
               </Text>
             </Pressable>
           </View>
-        ) : items.length === 0 ? (
+        ),
+      },
+    ];
+  } else if (items.length === 0) {
+    stickySections = [
+      {
+        key: "empty",
+        body: (
           <EmptyPanel
             icon={Library}
             title={t("library.empty.title")}
@@ -202,41 +205,69 @@ export default function AllSeriesScreen() {
               </Link>
             }
           />
-        ) : (
-          <View className="gap-8">
-            {sections.map((category) => {
-              const raw = byCategory.get(category) ?? [];
-              const sort = sectionSort(sectionSorts, category);
-              const list = sortSeriesSummaries(raw, sort);
-              const expanded = !collapsed[category];
-              return (
-                <View key={category}>
-                  <SectionHeader
-                    label={t(`category.${category}`)}
-                    count={list.length}
-                    expanded={expanded}
-                    onPress={() =>
-                      setCollapsed((prev) => ({ ...prev, [category]: !prev[category] }))
-                    }
+        ),
+      },
+    ];
+  } else {
+    stickySections = sections.map((category) => {
+      const raw = byCategory.get(category) ?? [];
+      const sort = sectionSort(sectionSorts, category);
+      const list = sortSeriesSummaries(raw, sort);
+      const expanded = !collapsed[category];
+      return {
+        key: category,
+        renderHeader: () => (
+          <SectionHeader
+            icon={CATEGORY_ICONS[category]}
+            label={t(`category.${category}`)}
+            count={list.length}
+            expanded={expanded}
+            onPress={() => {
+              animateLayoutToggle();
+              setCollapsed((prev) => ({ ...prev, [category]: !prev[category] }));
+            }}
+          />
+        ),
+        body: (
+          <AccordionPanel
+            open={expanded}
+            className={expanded ? "mb-8 mt-2" : "mb-1"}
+          >
+            <View className="flex-row flex-wrap">
+              {list.map((item) => (
+                <View key={item.id} style={{ width: `${100 / cols}%` }}>
+                  <SeriesCard
+                    series={toSeriesCardSeries(item)}
+                    onPress={() => router.push(`/series/${seriesParam(item)}`)}
                   />
-                  {expanded ? (
-                    <View className="mt-2 flex-row flex-wrap">
-                      {list.map((item) => (
-                        <View key={item.id} style={{ width: `${100 / cols}%` }}>
-                          <SeriesCard
-                            series={toSeriesCardSeries(item)}
-                            onPress={() => router.push(`/series/${seriesParam(item)}`)}
-                          />
-                        </View>
-                      ))}
-                    </View>
-                  ) : null}
                 </View>
-              );
-            })}
-          </View>
-        )}
-      </PullToRefresh>
+              ))}
+            </View>
+          </AccordionPanel>
+        ),
+      };
+    });
+  }
+
+  return (
+    <>
+      <Stack.Screen options={{ title: "" }} />
+      <StickySectionScroll
+        className="flex-1 bg-void"
+        contentContainerStyle={{
+          paddingBottom: tabContentBottom(insets.bottom),
+          paddingHorizontal: 6,
+        }}
+        stickyOffset={stickySectionTop(insets.top)}
+        pinClassName="px-1.5"
+        sections={stickySections}
+        listHeader={listHeaderParts.length > 0 ? listHeaderParts : null}
+        refreshing={refreshing}
+        onRefresh={async () => {
+          setRefreshing(true);
+          await load();
+        }}
+      />
     </>
   );
 }

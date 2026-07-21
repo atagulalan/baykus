@@ -2,6 +2,7 @@
 import type { ReactNode } from "react";
 import { Text, View } from "react-native";
 import { SectionPill } from "../atoms/SectionPill.tsx";
+import { borders } from "../lib/borders.ts";
 import { cn } from "../lib/cn.ts";
 import { EpisodeRow, type EpisodeRowProps } from "../organisms/EpisodeRow.tsx";
 
@@ -73,11 +74,17 @@ export function NextUpCard({
     <View className={cn("gap-1", className)}>
       <View className="items-center px-3 py-1">
         <SectionPill>
-          <Text className="text-sm font-semibold text-snow">{title}</Text>
+          <Text className="px-2.5 py-1 text-sm font-semibold text-snow">{title}</Text>
         </SectionPill>
       </View>
       <View className="items-center px-3">
-        <View className="w-full max-w-full overflow-hidden rounded-md border border-white/10 bg-void/95">
+        {/* w-auto hugs short titles (web NextUpCard); min-w-0 + shrink lets
+            long ones compress so EpisodeRow truncation can take over (RN
+            defaults flexShrink to 0, unlike web). */}
+        <View
+          className="w-auto min-w-0 max-w-full shrink overflow-hidden rounded-md bg-void/95"
+          style={borders.subtle}
+        >
           <EpisodeRow {...rowProps} />
         </View>
       </View>

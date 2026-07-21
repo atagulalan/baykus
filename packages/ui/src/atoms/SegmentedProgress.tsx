@@ -4,6 +4,7 @@ import { CATEGORY_BG_COLORS, type WatchCategory } from "../lib/categoryColors.ts
 import { cn } from "../lib/cn.ts";
 import {
   buildProgressSegments,
+  frontierFillWidth,
   isCaughtUpWaiting,
   type SeasonProgress,
 } from "../lib/progressSegments.ts";
@@ -57,6 +58,7 @@ export function SegmentedProgress({
       {segments.map((segment, i) => {
         const key = `${segment.kind}-${i}`;
         if (segment.kind === "frontier") {
+          const fill = frontierFillWidth(segment.percent, i);
           return (
             <View
               key={key}
@@ -64,9 +66,7 @@ export function SegmentedProgress({
             >
               <View
                 className={cn("h-full rounded-full", colorClass)}
-                style={{
-                  width: segment.percent === 0 && i > 0 ? 1 : `${segment.percent}%`,
-                }}
+                style={{ width: fill.unit === "px" ? fill.value : `${fill.value}%` }}
               />
             </View>
           );

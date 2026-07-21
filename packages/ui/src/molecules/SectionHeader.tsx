@@ -6,6 +6,13 @@ import { SectionPill } from "../atoms/SectionPill.tsx";
 import { cn } from "../lib/cn.ts";
 import { colors } from "../tokens.ts";
 
+/**
+ * Season accordion pill height. Progress ring sits inset; hit target is 1:1 at this size.
+ */
+export const SEASON_PILL_SIZE = 40;
+/** CircularProgress diameter — smaller than the pill, centered in the leading slot. */
+export const SEASON_PROGRESS_SIZE = 20;
+
 export type SectionHeaderProps = {
   icon?: LucideIcon;
   leading?: ReactNode;
@@ -19,7 +26,7 @@ export type SectionHeaderProps = {
 
 /**
  * Section title pill — web parity: semibold label · | · mono count.
- * Sticky is owned by the list.
+ * Sticky docking is owned by `StickySectionScroll` (floating pin under chrome).
  */
 export function SectionHeader({
   icon: Icon,
@@ -33,7 +40,13 @@ export function SectionHeader({
 }: SectionHeaderProps) {
   const labelText = (
     <>
-      <Text className="min-w-0 shrink font-semibold text-sm text-snow" numberOfLines={1}>
+      <Text
+        className={cn(
+          "min-w-0 shrink font-semibold text-snow",
+          leading ? "text-base" : "text-sm",
+        )}
+        numberOfLines={1}
+      >
         {label}
       </Text>
       {count !== undefined ? (
@@ -41,11 +54,15 @@ export function SectionHeader({
           <Text className="shrink-0 text-muted/35" accessibilityElementsHidden>
             |
           </Text>
-          <Text className="shrink-0 font-mono text-xs tabular-nums text-muted">{count}</Text>
+          <Text
+            className={cn(
+              "shrink-0 font-mono tabular-nums text-muted",
+              leading ? "text-sm" : "text-xs",
+            )}
+          >
+            {count}
+          </Text>
         </>
-      ) : null}
-      {expanded !== undefined ? (
-        <Text className="font-mono text-[10px] text-muted">{expanded ? "−" : "+"}</Text>
       ) : null}
     </>
   );
@@ -53,28 +70,47 @@ export function SectionHeader({
   const body = onPress ? (
     <Pressable
       accessibilityRole="button"
-      accessibilityState={expanded !== undefined ? { expanded } : undefined}
+      accessibilityState={expanded !== undefined ? { expanded: expanded } : undefined}
       onPress={onPress}
       className={cn(
-        "min-w-0 flex-1 flex-row items-center gap-1.5 rounded-full py-1 active:bg-white/5",
-        leading ? "-ml-4 -mr-2.5 pl-3 pr-2.5" : "-mx-2.5 px-2.5",
+        "min-w-0 flex-row items-center gap-1.5 rounded-full active:bg-white/5",
+        leading ? "h-full py-0 pl-0 pr-3" : "px-2.5 py-1",
       )}
     >
       {leading ? null : Icon ? <Icon size={14} color={colors.muted} strokeWidth={1.75} /> : null}
       {labelText}
     </Pressable>
   ) : (
-    <View className="min-w-0 flex-1 flex-row items-center gap-1.5">
+    <View
+      className={cn(
+        "min-w-0 flex-row items-center gap-1.5",
+        leading ? "h-full pr-3" : "px-2.5 py-1",
+      )}
+    >
       {leading ? null : Icon ? <Icon size={14} color={colors.muted} strokeWidth={1.75} /> : null}
       {labelText}
     </View>
   );
 
   return (
-    <View className={cn("flex-row items-center justify-center gap-1 py-1", className)}>
-      <SectionPill>
-        <View className="flex-row items-center gap-0">
-          {leading ? <View className="relative z-20 -ml-2.5 shrink-0">{leading}</View> : null}
+    <View
+      collapsable={false}
+      pointerEvents="box-none"
+      className={cn("w-full flex-row items-center justify-center gap-1 py-1", className)}
+    >
+      <SectionPill
+        className="shrink"
+        style={leading ? { height: SEASON_PILL_SIZE } : undefined}
+      >
+        <View className={cn("flex-row items-center", leading && "h-full")}>
+          {leading ? (
+            <View
+              className="shrink-0 items-center justify-center"
+              style={{ width: SEASON_PILL_SIZE, height: SEASON_PILL_SIZE }}
+            >
+              {leading}
+            </View>
+          ) : null}
           {body}
         </View>
       </SectionPill>

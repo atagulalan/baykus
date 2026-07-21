@@ -13,11 +13,10 @@ import {
 import {
   Checkbox,
   EmptyPanel,
-  PageTitle,
   PullToRefresh,
   SectionPill,
   SettingsSelect,
-  SkeletonBone,
+  SkeletonSettingsSections,
 } from "@baykus/ui";
 import { Link } from "expo-router";
 import { Settings as SettingsIcon } from "lucide-react-native";
@@ -26,6 +25,7 @@ import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../src/auth/AuthProvider.tsx";
+import { tabContentBottom, tabContentTop } from "../../src/chrome/layout.ts";
 import { AccountSection } from "../../src/lib/AccountSection.tsx";
 import { exportLibraryZip } from "../../src/lib/exportZip.ts";
 import { resolveUiPrefs } from "../../src/lib/uiPrefs.ts";
@@ -139,10 +139,8 @@ export default function SettingsScreen() {
 
   if (authLoading || loading) {
     return (
-      <View className="flex-1 bg-void px-4 pt-4">
-        <SkeletonBone className="mb-4 h-8 w-40" />
-        <SkeletonBone className="mb-2 h-12 w-full" />
-        <SkeletonBone className="mb-2 h-12 w-full" />
+      <View className="flex-1 bg-void px-3" style={{ paddingTop: tabContentTop(insets.top) }}>
+        <SkeletonSettingsSections sections={3} />
       </View>
     );
   }
@@ -191,8 +189,8 @@ export default function SettingsScreen() {
     <PullToRefresh
       className="flex-1 bg-void"
       contentContainerStyle={{
-        paddingBottom: insets.bottom + 32,
-        paddingTop: 8,
+        paddingBottom: tabContentBottom(insets.bottom),
+        paddingTop: tabContentTop(insets.top),
         paddingHorizontal: 12,
       }}
       refreshing={refreshing}
@@ -201,15 +199,16 @@ export default function SettingsScreen() {
         await load();
       }}
     >
-      <View className="mb-6 flex-row items-center justify-between px-1">
-        <PageTitle>{t("app.nav.settings")}</PageTitle>
-        {saving ? <ActivityIndicator color="#ebebeb" /> : null}
-        {savedFlash ? (
-          <Text className="font-mono text-[10px] uppercase tracking-widest text-yellow">
-            {t("settings.saved")}
-          </Text>
-        ) : null}
-      </View>
+      {saving || savedFlash ? (
+        <View className="mb-4 flex-row items-center justify-end gap-2 px-1">
+          {saving ? <ActivityIndicator color="#ebebeb" /> : null}
+          {savedFlash ? (
+            <Text className="font-mono text-[10px] uppercase tracking-widest text-yellow">
+              {t("settings.saved")}
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
       {error ? <Text className="mb-3 px-1 font-mono text-xs text-red-400">{error}</Text> : null}
 
       <SettingsGroup title={t("settings.general.title")}>
@@ -370,14 +369,6 @@ export default function SettingsScreen() {
             ) : null}
           </View>
         </View>
-        <CheckboxRow
-          label={t("settings.providers.scrapers")}
-          hint={t("settings.providers.scrapersTos")}
-          checked={settings.scrapersEnabled}
-          onChange={(checked) => {
-            void patch({ scrapersEnabled: checked });
-          }}
-        />
       </SettingsGroup>
 
       <SettingsGroup title={t("settings.data.title")}>
@@ -548,7 +539,7 @@ function SettingsGroup({
       <View className="z-30 items-center px-3 py-1">
         <SectionPill className={danger ? "border-red-900/40" : undefined}>
           <Text
-            className={`font-sans text-sm font-semibold ${danger ? "text-red-400" : "text-snow"}`}
+            className={`px-2.5 py-1 font-sans text-sm font-semibold ${danger ? "text-red-400" : "text-snow"}`}
           >
             {title}
           </Text>

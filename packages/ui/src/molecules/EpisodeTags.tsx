@@ -5,6 +5,7 @@ import {
   computeEpisodeTagKinds,
   type EpisodeTagKind,
   type EpisodeTagsInput,
+  TAG_BORDERS,
   TAG_STYLES,
   TAG_TEXT,
 } from "../lib/episodeTags.ts";
@@ -14,7 +15,7 @@ export type EpisodeTagsProps = EpisodeTagsInput & {
   labels: Record<EpisodeTagKind, string>;
 };
 
-const TAG_CHIP_BASE = "shrink-0 items-center justify-center rounded-full border px-2 py-0.5";
+const TAG_CHIP_BASE = "shrink-0 items-center justify-center rounded-full px-2 py-0.5";
 
 /** Shared by calendar rows and watch lists. */
 export function EpisodeTags(props: EpisodeTagsProps) {
@@ -30,7 +31,11 @@ export function EpisodeTags(props: EpisodeTagsProps) {
       {kinds.map((kind) => {
         const label = labels[kind];
         return (
-          <View key={kind} className={cn(TAG_CHIP_BASE, TAG_STYLES[kind])}>
+          <View
+            key={kind}
+            className={cn(TAG_CHIP_BASE, TAG_STYLES[kind])}
+            style={TAG_BORDERS[kind]}
+          >
             <Text className={cn("font-mono text-[9px] uppercase tracking-wide", TAG_TEXT[kind])}>
               {label}
             </Text>

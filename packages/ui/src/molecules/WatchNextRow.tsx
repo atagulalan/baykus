@@ -1,5 +1,5 @@
 /// <reference types="nativewind/types" />
-import { useState } from "react";
+import { memo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { Checkbox } from "../atoms/Checkbox.tsx";
 import { EpisodeLabel } from "../atoms/EpisodeLabel.tsx";
@@ -65,6 +65,7 @@ function Poster({
           wrapperClassName="h-full w-full"
           className="h-full w-full"
           style={{ width: POSTER_W, height: POSTER_H }}
+          showLoader={false}
           {...(onError ? { onError } : {})}
         />
       ) : null}
@@ -90,7 +91,7 @@ function CaughtUpWatchRow({
       accessibilityRole="button"
       onPress={onPress}
       className={cn(
-        "min-w-0 flex-row items-center gap-0 border-b border-white/5 py-2 pl-3 pr-3 active:bg-white/5",
+        "min-w-0 flex-row items-center gap-0 py-2 pl-3 pr-3 active:bg-white/5",
         className,
       )}
     >
@@ -113,7 +114,7 @@ function CaughtUpWatchRow({
 }
 
 /** One row in a Watch list — next episode chrome or caught-up fallback. */
-export function WatchNextRow({
+export const WatchNextRow = memo(function WatchNextRow({
   series,
   onPress,
   onQuickMark,
@@ -139,7 +140,7 @@ export function WatchNextRow({
   return (
     <View
       className={cn(
-        "min-w-0 flex-row items-center border-b border-white/5 py-2 pl-3 pr-3",
+        "min-w-0 flex-row items-center py-2 pl-3 pr-3",
         className,
       )}
     >
@@ -181,6 +182,6 @@ export function WatchNextRow({
       ) : null}
     </View>
   );
-}
+});
 
 export { computeOverflowBadge, shouldShowQuickMarkCheckbox };

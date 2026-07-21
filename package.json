@@ -7,9 +7,12 @@
     "node": ">=26"
   },
   "scripts": {
+    "api": "pnpm --filter @baykus/server dev",
+    "react": "pnpm --filter @baykus/web dev",
+    "expo": "pnpm --filter @baykus/mobile start",
     "dev": "pnpm --parallel --filter @baykus/server --filter @baykus/web dev",
     "dev:multi": "bash scripts/dev-multi.sh",
-    "dev:mobile": "pnpm --filter @baykus/mobile start",
+    "dev:mobile": "pnpm expo",
     "build": "pnpm -r build",
     "test": "vitest run --project unit",
     "test:storybook": "vitest run --project storybook",

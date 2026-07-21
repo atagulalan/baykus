@@ -22,6 +22,38 @@ function formatAbsoluteAirDate(airDate: string, locale: string): string {
   }).format(new Date(`${airDate}T00:00:00Z`));
 }
 
+/** Hermes (RN) often ships without `Intl.RelativeTimeFormat` — avoid `new` on undefined. */
+function formatRelativeNear(dayDiff: number, locale: string): string | null {
+  const RelativeTimeFormat = (
+    Intl as typeof Intl & {
+      RelativeTimeFormat?: new (
+        locales?: string | string[],
+        options?: Intl.RelativeTimeFormatOptions,
+      ) => Intl.RelativeTimeFormat;
+    }
+  ).RelativeTimeFormat;
+
+  if (typeof RelativeTimeFormat === "function") {
+    try {
+      const rtf = new RelativeTimeFormat(locale, { numeric: "auto" });
+      if (dayDiff === 1) return capitalize(rtf.format(1, "day"), locale);
+      if (dayDiff === 0) return capitalize(rtf.format(0, "day"), locale);
+      if (dayDiff === -1) return capitalize(rtf.format(-1, "day"), locale);
+      if (dayDiff >= -7 && dayDiff <= -2) return capitalize(rtf.format(-1, "week"), locale);
+      return null;
+    } catch {
+      // fall through to static labels
+    }
+  }
+
+  const tr = locale.toLowerCase().startsWith("tr");
+  if (dayDiff === 1) return tr ? "Yarın" : "Tomorrow";
+  if (dayDiff === 0) return tr ? "Bugün" : "Today";
+  if (dayDiff === -1) return tr ? "Dün" : "Yesterday";
+  if (dayDiff >= -7 && dayDiff <= -2) return tr ? "Geçen hafta" : "Last week";
+  return null;
+}
+
 export type FormatAirDateLabelOptions = {
   today?: string;
   isAbsoluteDate?: boolean;
@@ -29,7 +61,7 @@ export type FormatAirDateLabelOptions = {
 
 /**
  * Near air dates as relative labels; otherwise a long absolute date.
- * Mirrors web `formatAirDateLabel` (Intl — no catalog keys).
+ * Mirrors web `formatAirDateLabel` (Intl when available — Hermes fallback for RTF).
  */
 export function formatAirDateLabel(
   airDate: string,
@@ -40,12 +72,8 @@ export function formatAirDateLabel(
 
   const today = opts.today ?? todayIso();
   const dayDiff = calendarDaysBetween(today, airDate);
-  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
-
-  if (dayDiff === 1) return capitalize(rtf.format(1, "day"), locale);
-  if (dayDiff === 0) return capitalize(rtf.format(0, "day"), locale);
-  if (dayDiff === -1) return capitalize(rtf.format(-1, "day"), locale);
-  if (dayDiff >= -7 && dayDiff <= -2) return capitalize(rtf.format(-1, "week"), locale);
+  const relative = formatRelativeNear(dayDiff, locale);
+  if (relative != null) return relative;
 
   return formatAbsoluteAirDate(airDate, locale);
 }

@@ -1,5 +1,5 @@
 /// <reference types="nativewind/types" />
-import { Pressable, Text, View } from "react-native";
+import { Pressable, Text, useWindowDimensions, View } from "react-native";
 import { EpisodeLabel } from "../atoms/EpisodeLabel.tsx";
 import { MediaImage } from "../atoms/MediaImage.tsx";
 import {
@@ -52,20 +52,29 @@ export function EpisodeDetailsSheet({
   toggleLabel,
   className,
 }: EpisodeDetailsSheetProps) {
+  const { width, height } = useWindowDimensions();
+  // Tablet/wide: cap still so it doesn't eat the sheet; keep 16:9 within that box.
+  const stillMaxH = Math.min(240, Math.round(height * 0.28));
+  const stillWidth = Math.min(width - 32, Math.round(stillMaxH * (16 / 9)));
+  const stillHeight = Math.round(stillWidth * (9 / 16));
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
       title={episodeTitle ?? `S${s}E${e}`}
-      className={cn("gap-3", className)}
+      className={cn("gap-3 px-4 pb-8 pt-3", className)}
     >
       {stillUrl ? (
-        <View className="aspect-video w-full overflow-hidden rounded-lg bg-white/5">
+        <View
+          className="self-center overflow-hidden rounded-lg bg-white/5"
+          style={{ width: stillWidth, height: stillHeight }}
+        >
           <MediaImage
             src={stillUrl}
             accessibilityLabel={episodeTitle ?? "Episode still"}
-            wrapperClassName="h-full w-full"
-            className="h-full w-full"
+            fill
+            resizeMode="cover"
           />
         </View>
       ) : null}

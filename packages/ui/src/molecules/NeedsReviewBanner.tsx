@@ -1,6 +1,7 @@
 /// <reference types="nativewind/types" />
 import { TriangleAlert } from "lucide-react-native";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { borders } from "../lib/borders.ts";
 import { cn } from "../lib/cn.ts";
 import { colors } from "../tokens.ts";
 
@@ -27,7 +28,7 @@ export function NeedsReviewBanner({
   className,
 }: NeedsReviewBannerProps) {
   return (
-    <View className={cn("gap-3 border border-yellow/20 bg-[#1a1a00] p-4", className)}>
+    <View className={cn("gap-3 bg-[#1a1a00] p-4", className)} style={borders.yellowSoft}>
       <View className="flex-row items-center gap-2">
         <TriangleAlert size={18} color={colors.yellow} />
         <Text className="font-display text-lg italic text-yellow">{title}</Text>

@@ -1,17 +1,26 @@
 import {
-  addSeries,
   ApiError,
+  addSeries,
   buildImageUrl,
+  type SearchResult,
   searchSeries,
   seriesParam,
-  type SearchResult,
 } from "@baykus/api-client";
-import { EmptyPanel, PageTitle, SearchResultThumb, SkeletonBone } from "@baykus/ui";
+import {
+  EmptyPanel,
+  ROUNDED_CHECKBOX_SIZE_CLASS,
+  SearchResultThumb,
+  SkeletonSearchResults,
+  borders,
+  colors,
+  space,
+} from "@baykus/ui";
 import { router } from "expo-router";
-import { Search } from "lucide-react-native";
+import { Plus, Search } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { tabContentBottom, tabContentTop } from "../../src/chrome/layout.ts";
 
 function previewHref(hit: SearchResult): string {
   const q = new URLSearchParams();
@@ -86,7 +95,9 @@ export default function SearchScreen() {
         "itemId" in err.details
       ) {
         const itemId = (err.details as { itemId: number }).itemId;
-        router.push(`/series/${seriesParam({ id: itemId, tmdbId: hit.externalIds.tmdbId ?? null })}`);
+        router.push(
+          `/series/${seriesParam({ id: itemId, tmdbId: hit.externalIds.tmdbId ?? null })}`,
+        );
         return;
       }
       setError(
@@ -98,8 +109,13 @@ export default function SearchScreen() {
   }
 
   return (
-    <View className="flex-1 bg-void px-4" style={{ paddingTop: 12, paddingBottom: insets.bottom }}>
-      <PageTitle className="mb-4">Search</PageTitle>
+    <View
+      className="flex-1 bg-void px-4"
+      style={{
+        paddingTop: tabContentTop(insets.top) + space.pageTop,
+        paddingBottom: tabContentBottom(insets.bottom),
+      }}
+    >
       <TextInput
         value={query}
         onChangeText={setQuery}
@@ -107,17 +123,13 @@ export default function SearchScreen() {
         autoCorrect={false}
         placeholder="Search series…"
         placeholderTextColor="#888888"
-        className="mb-4 h-11 rounded-lg border border-white/15 px-3 font-mono text-sm text-snow"
+        className="mb-6 h-11 rounded-lg border border-white/15 px-3 font-mono text-sm text-snow"
       />
 
       {error ? <Text className="mb-3 font-mono text-xs text-red-400">{error}</Text> : null}
 
       {loading ? (
-        <View className="gap-2">
-          {[0, 1, 2].map((i) => (
-            <SkeletonBone key={i} className="h-16 w-full rounded-md" />
-          ))}
-        </View>
+        <SkeletonSearchResults rows={4} />
       ) : debounced.length < 2 ? (
         <EmptyPanel
           icon={Search}
@@ -133,10 +145,7 @@ export default function SearchScreen() {
             const inLibrary = hit.libraryItemId != null;
             const adding = addingKey === key;
             return (
-              <View
-                key={key}
-                className="flex-row items-center gap-2 rounded-lg px-1 py-2"
-              >
+              <View key={key} className="flex-row items-center gap-2 rounded-lg px-1 py-2">
                 <Pressable
                   accessibilityRole="button"
                   onPress={() => {
@@ -173,14 +182,13 @@ export default function SearchScreen() {
                     onPress={() => {
                       void quickAdd(hit, key);
                     }}
-                    className="h-9 min-w-14 items-center justify-center rounded-full bg-yellow px-3 disabled:opacity-40"
+                    className={`${ROUNDED_CHECKBOX_SIZE_CLASS} shrink-0 items-center justify-center bg-transparent active:opacity-80 disabled:opacity-40`}
+                    style={borders.idle}
                   >
                     {adding ? (
-                      <ActivityIndicator color="#080808" size="small" />
+                      <ActivityIndicator color={colors.muted} size="small" />
                     ) : (
-                      <Text className="font-mono text-[10px] uppercase tracking-widest text-void">
-                        Add
-                      </Text>
+                      <Plus size={18} color={colors.muted} strokeWidth={2} />
                     )}
                   </Pressable>
                 ) : null}

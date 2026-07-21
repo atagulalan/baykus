@@ -13,8 +13,8 @@ export type HeroBackdropFadesProps = {
 
 /**
  * Soft edge fades over a hero backdrop — mirrors web SeriesDetailHero:
- * `bg-black/45` + `bg-gradient-to-b from-transparent via-void/20 to-void`
- * (+ optional L/R void vignettes).
+ * `bg-black/45` + bottom ease into void (+ optional L/R void vignettes).
+ * Extra stops near the bottom avoid a hard clip where the hero meets page void.
  */
 export function HeroBackdropFades({ width, height, sideFades = false }: HeroBackdropFadesProps) {
   const uid = useId().replace(/:/g, "");
@@ -30,10 +30,12 @@ export function HeroBackdropFades({ width, height, sideFades = false }: HeroBack
 
       <Svg width={width} height={height} style={StyleSheet.absoluteFill}>
         <Defs>
-          {/* from-transparent via-void/20 to-void */}
+          {/* Ease into void in the lower half so the seam under Next-up isn't a hard cut. */}
           <LinearGradient id={idBottom} x1="0" y1="0" x2="0" y2="1">
             <Stop offset="0%" stopColor={colors.void} stopOpacity={0} />
-            <Stop offset="50%" stopColor={colors.void} stopOpacity={0.2} />
+            <Stop offset="40%" stopColor={colors.void} stopOpacity={0} />
+            <Stop offset="58%" stopColor={colors.void} stopOpacity={0.2} />
+            <Stop offset="78%" stopColor={colors.void} stopOpacity={0.65} />
             <Stop offset="100%" stopColor={colors.void} stopOpacity={1} />
           </LinearGradient>
           <LinearGradient id={idLeft} x1="0" y1="0" x2="1" y2="0">
