@@ -296,7 +296,9 @@ SeasonSection, SeriesActionsMenu, SeriesDetailsSheet.
 
 High-effort native reimplementations (styling share ≠ behavior share):
 
-- ScheduleGrid (observers / pan)
+- ScheduleGrid (observers / pan) — **native week×weekday matrix shipped**
+  (`packages/ui` `ScheduleGrid` + `buildScheduleGridModel`; calendar schedule mode).
+  Infinite bi-directional paging / strip-span absolute layout still thinner than web.
 - MonthGrid
 - Profile photo / banner pickers (ImagePicker) — **done on mobile** (`profile` avatar + banner modal)
 - SeriesDetailsSheet / menus (native menus or custom sheets)
@@ -429,8 +431,8 @@ Then expand calendar, watch hub, profile/stats, import, settings polish, search.
 - [x] Library (flat grid + sort + link to category All series)
 - [x] All series (`/library/all` — CATEGORY_ORDER sections + per-section sort via AddSectionBar)
 - [x] Series detail (preview `/series/new` + add; accordion seasons + next-up)
-- [x] Watch (category sections + quick-mark) + watch history (newest/oldest)
-- [x] Calendar timeline / month grid / schedule strip
+- [x] Watch (category sections + quick-mark + uiPrefs section manage/sort) + watch history (newest/oldest)
+- [x] Calendar timeline / month grid / schedule week×weekday grid
 - [x] Profile hub (banner picker, avatar, stats tiles, favorites + all-series previews)
 - [x] Favorites (`/library/favorites`) + All series (`/library/all`)
 - [x] Stats full payload (`/profile/stats` — all Stats fields; activity as intensity strip)
@@ -439,9 +441,8 @@ Then expand calendar, watch hub, profile/stats, import, settings polish, search.
 - [x] Import + export zip; TV Time match/confirm with SSE progress
 - [x] Login + claim (`returnToken` + SecureStore; optional seed zip on claim)
 
-Remaining thinner vs web (not blockers for birebir API surface): series-detail menus /
-bulk season actions / rating prompt depth; ScheduleGrid pan polish; native push
-(blocked — needs contract).
+Remaining thinner vs web (not blockers for birebir API surface): schedule infinite
+paging / strip-span layout polish; native push (blocked — needs contract).
 
 ### Platform polish matrix
 

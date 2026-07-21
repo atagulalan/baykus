@@ -14,16 +14,27 @@ import {
 import {
   colors,
   EmptyPanel,
+  HeroBackdropFades,
   MediaImage,
   PageTitle,
   PullToRefresh,
+  SectionPill,
   SeriesCard,
   SkeletonBone,
 } from "@baykus/ui";
 import * as ImagePicker from "expo-image-picker";
-import { Link, router } from "expo-router";
-import { Clapperboard, Image as ImageLucide, User } from "lucide-react-native";
-import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import { Link, router, useNavigation } from "expo-router";
+import {
+  Camera,
+  ChevronRight,
+  Clapperboard,
+  Heart,
+  History,
+  LogOut,
+  Settings,
+  User,
+} from "lucide-react-native";
+import { type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
@@ -36,18 +47,11 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../src/auth/AuthProvider.tsx";
-import { exportLibraryZip } from "../../src/lib/exportZip.ts";
+import { formatDurationLabel, formatDurationParts } from "../../src/lib/duration.ts";
 import { toSeriesCardSeries } from "../../src/lib/mapSeriesCard.ts";
 
 const PROFILE_FAVORITES_LIMIT = 6;
 const PROFILE_ALL_SERIES_LIMIT = 6;
-
-function formatMinutes(min: number): string {
-  if (min < 60) return `${min}m`;
-  const h = Math.floor(min / 60);
-  const m = min % 60;
-  return m ? `${h}h ${m}m` : `${h}h`;
-}
 
 function deviceTimeZone(): string {
   try {
@@ -57,17 +61,27 @@ function deviceTimeZone(): string {
   }
 }
 
+function byLastWatchedDesc(
+  a: { lastWatchedAt: string | null },
+  b: { lastWatchedAt: string | null },
+) {
+  if (a.lastWatchedAt === b.lastWatchedAt) return 0;
+  if (a.lastWatchedAt === null) return 1;
+  if (b.lastWatchedAt === null) return -1;
+  return a.lastWatchedAt < b.lastWatchedAt ? 1 : -1;
+}
+
 export default function ProfileScreen() {
   const { session, loading: authLoading, signOut } = useAuth();
   const { t, i18n } = useTranslation();
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
   const { width } = useWindowDimensions();
   const cols = width >= 720 ? 4 : width >= 480 ? 3 : 2;
   const [stats, setStats] = useState<Stats | null>(null);
   const [allSeries, setAllSeries] = useState<SeriesSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [exporting, setExporting] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [bannerBusy, setBannerBusy] = useState(false);
   const [avatarRef, setAvatarRef] = useState<string | null>(null);
@@ -77,6 +91,19 @@ export default function ProfileScreen() {
 
   const needsAuth = session?.mode === "multi" && !session.authenticated;
   const handle = session?.handle ?? "library";
+  const title = session?.mode === "single" ? t("profile.title") : `@${handle}`;
+  const bannerUrl = buildImageUrl(bannerRef, "large");
+  const hasBanner = Boolean(bannerUrl);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      title: hasBanner ? "" : title,
+      headerTransparent: hasBanner,
+      headerShadowVisible: false,
+      headerStyle: { backgroundColor: hasBanner ? "transparent" : colors.void },
+      headerTintColor: colors.snow,
+    });
+  }, [navigation, hasBanner, title]);
 
   const load = useCallback(async () => {
     if (needsAuth) {
@@ -115,36 +142,17 @@ export default function ProfileScreen() {
     void load();
   }, [authLoading, load]);
 
-  const favorites = useMemo(() => allSeries.filter((item) => item.favorite), [allSeries]);
+  const favorites = useMemo(
+    () => allSeries.filter((item) => item.favorite).sort(byLastWatchedDesc),
+    [allSeries],
+  );
 
   const bannerCandidates = useMemo(
     () => allSeries.filter((s) => s.backdropRef != null),
     [allSeries],
   );
 
-  const bannerUrl = buildImageUrl(bannerRef, "large");
-
-  const tiles = useMemo(() => {
-    if (!stats) return [];
-    return [
-      { label: "Episodes", value: String(stats.episodesWatched) },
-      { label: "Watch time", value: formatMinutes(stats.watchTimeMin) },
-      { label: "Series", value: String(stats.seriesCount) },
-      { label: "Favorites", value: String(stats.favoritesCount) },
-    ];
-  }, [stats]);
-
-  async function onExport() {
-    setExporting(true);
-    setError(null);
-    try {
-      await exportLibraryZip(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "export_failed");
-    } finally {
-      setExporting(false);
-    }
-  }
+  const timeSpent = formatDurationLabel(formatDurationParts(stats?.watchTimeMin ?? 0), t);
 
   async function onPickAvatar() {
     setError(null);
@@ -203,15 +211,9 @@ export default function ProfileScreen() {
   if (authLoading || loading) {
     return (
       <View className="flex-1 bg-void px-4 pt-4">
-        <SkeletonBone className="mb-4 h-40 w-full rounded-xl" />
+        <SkeletonBone className="mb-4 h-64 w-full rounded-xl" />
         <SkeletonBone className="mb-4 h-8 w-40" />
-        <View className="mb-4 flex-row flex-wrap gap-2">
-          {[0, 1, 2, 3].map((i) => (
-            <View key={i} className="min-w-[45%] flex-1">
-              <SkeletonBone className="h-16 w-full rounded-md" />
-            </View>
-          ))}
-        </View>
+        <SkeletonBone className="h-16 w-full rounded-md" />
       </View>
     );
   }
@@ -237,11 +239,14 @@ export default function ProfileScreen() {
     );
   }
 
+  const heroMinH = width >= 640 ? 420 : 320;
+  const headerPad = 44;
+
   return (
     <PullToRefresh
       className="flex-1 bg-void"
       contentContainerStyle={{
-        paddingBottom: insets.bottom + 32,
+        paddingBottom: insets.bottom + 40,
         paddingTop: 0,
       }}
       refreshing={refreshing}
@@ -250,114 +255,128 @@ export default function ProfileScreen() {
         await load();
       }}
     >
-      <View className="relative mb-4 min-h-[12rem] overflow-hidden">
+      {/* Full-bleed banner hero — fixed height so backdrop cannot inflate layout */}
+      <View
+        className="relative overflow-hidden bg-void"
+        style={{ height: heroMinH, width: "100%" }}
+      >
         {bannerUrl ? (
           <>
             <MediaImage
               src={bannerUrl}
               accessibilityLabel=""
-              wrapperClassName="absolute inset-0"
-              className="h-full w-full"
+              fill
+              style={{ width, height: Math.round(heroMinH * 1.15) }}
+              wrapperStyle={{ width, height: heroMinH }}
             />
-            <View className="absolute inset-0 bg-black/45" />
+            <HeroBackdropFades width={width} height={heroMinH} sideFades={width >= 640} />
           </>
-        ) : (
-          <View className="absolute inset-0 bg-white/5" />
-        )}
+        ) : null}
+
         <View
-          className="relative z-10 px-3 pb-4"
-          style={{ paddingTop: Math.max(insets.top, 12) + 8 }}
+          className="relative z-10 flex-1 justify-end"
+          style={{
+            paddingTop: hasBanner ? insets.top + headerPad : Math.max(insets.top, 12) + 24,
+            height: heroMinH,
+          }}
         >
-          <View className="mb-3 flex-row items-start justify-between gap-3">
-            <View className="min-w-0 flex-1">
-              <PageTitle className="mb-1">@{handle}</PageTitle>
-              <Text className="font-mono text-[10px] uppercase tracking-widest text-muted">
-                {session?.mode ?? "—"} mode
-              </Text>
-            </View>
+          <View className="flex-row items-center gap-4 px-3 pb-4">
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={t("profile.banner.title")}
-              onPress={() => setBannerPickerOpen(true)}
-              className="flex-row items-center gap-1.5 rounded-full border border-white/20 bg-void/60 px-3 py-2 active:bg-void/80"
+              accessibilityLabel="Change profile photo"
+              disabled={avatarBusy}
+              onPress={() => {
+                void onPickAvatar();
+              }}
+              className="h-16 w-16 items-center justify-center overflow-hidden rounded-full border border-white/15 bg-void/70 active:opacity-80 disabled:opacity-40"
             >
-              <ImageLucide size={14} color={colors.muted} />
-              <Text className="font-mono text-[10px] uppercase tracking-widest text-snow">
-                Banner
-              </Text>
+              {avatarBusy ? (
+                <ActivityIndicator color={colors.yellow} />
+              ) : buildAvatarUrl(avatarRef) ? (
+                <MediaImage
+                  src={buildAvatarUrl(avatarRef) ?? ""}
+                  accessibilityLabel={handle}
+                  fill
+                  style={{ width: 64, height: 64 }}
+                />
+              ) : (
+                <User size={26} color={colors.muted} />
+              )}
+            </Pressable>
+
+            <View className="min-w-0 flex-1">
+              <PageTitle>{title}</PageTitle>
+            </View>
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t("profile.banner.edit")}
+              onPress={() => setBannerPickerOpen(true)}
+              className="h-11 w-11 items-center justify-center active:opacity-70"
+            >
+              <Camera size={20} color={colors.muted} strokeWidth={1.5} />
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t("app.nav.settings")}
+              onPress={() => router.push("/(tabs)/settings")}
+              className="h-11 w-11 items-center justify-center active:opacity-70"
+            >
+              <Settings size={20} color={colors.muted} strokeWidth={1.5} />
             </Pressable>
           </View>
-
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Change profile photo"
-            disabled={avatarBusy}
-            onPress={() => {
-              void onPickAvatar();
-            }}
-            className="h-20 w-20 items-center justify-center overflow-hidden rounded-full border border-white/15 bg-void/70 active:opacity-80 disabled:opacity-40"
-          >
-            {avatarBusy ? (
-              <ActivityIndicator color={colors.yellow} />
-            ) : buildAvatarUrl(avatarRef) ? (
-              <MediaImage
-                src={buildAvatarUrl(avatarRef)!}
-                accessibilityLabel={handle}
-                wrapperClassName="h-full w-full"
-                className="h-full w-full"
-              />
-            ) : (
-              <User size={28} color={colors.muted} />
-            )}
-          </Pressable>
         </View>
       </View>
 
-      <View className="px-3">
-        {error ? <Text className="mb-3 font-mono text-xs text-red-400">{error}</Text> : null}
+      {error ? <Text className="mb-3 px-3 font-mono text-xs text-red-400">{error}</Text> : null}
 
-        <View className="mb-6 flex-row flex-wrap gap-2">
-          {tiles.map((tile) => (
-            <Pressable
-              key={tile.label}
-              accessibilityRole="button"
-              onPress={() => router.push("/profile/stats")}
-              className="min-w-[45%] flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-3 active:bg-white/10"
-            >
-              <Text className="font-mono text-[10px] uppercase tracking-widest text-muted">
-                {tile.label}
-              </Text>
-              <Text className="mt-1 font-display text-2xl italic text-snow">{tile.value}</Text>
-            </Pressable>
-          ))}
-        </View>
+      {allSeries.length > 0 ? (
         <Pressable
           accessibilityRole="button"
           onPress={() => router.push("/profile/stats")}
-          className="mb-6"
+          className="mb-6 flex-row items-center px-3 active:opacity-80"
         >
-          <Text className="font-mono text-[10px] uppercase tracking-widest text-muted underline">
-            {t("profile.detailedStats")}
-          </Text>
+          <ProfileStatItem label={t("stats.timeSpent")} value={timeSpent} />
+          <View className="h-8 w-px shrink-0 bg-white/10" />
+          <ProfileStatItem
+            label={t("stats.episodesWatched")}
+            value={(stats?.episodesWatched ?? 0).toLocaleString("tr-TR")}
+          />
+          <View className="h-8 w-px shrink-0 bg-white/10" />
+          <ProfileStatItem
+            label={t("stats.activeSeries")}
+            value={(stats?.itemCount.watching ?? 0).toLocaleString("tr-TR")}
+          />
         </Pressable>
+      ) : null}
 
-        <HubSection
-          title={t("profile.favorites.title")}
-          count={favorites.length}
-          seeAllHref={favorites.length > PROFILE_FAVORITES_LIMIT ? "/library/favorites" : null}
-          seeAllLabel={`See all (${favorites.length})`}
+      {allSeries.length > 0 ? (
+        <SeriesGridSection
+          heading={
+            <HubPillHeader
+              icon={Heart}
+              label={t("profile.favorites.title")}
+              count={favorites.length}
+              linked={favorites.length > PROFILE_FAVORITES_LIMIT}
+              onPress={
+                favorites.length > PROFILE_FAVORITES_LIMIT
+                  ? () => router.push("/library/favorites")
+                  : undefined
+              }
+            />
+          }
         >
           {favorites.length === 0 ? (
             <EmptyPanel
-              icon={User}
+              icon={Heart}
               title={t("profile.favorites.emptyTitle")}
               hint={t("profile.favorites.empty")}
               className="mt-0 py-8"
             />
           ) : (
-            <View className="flex-row flex-wrap">
+            <View className="flex-row flex-wrap px-1.5 py-1.5">
               {favorites.slice(0, PROFILE_FAVORITES_LIMIT).map((item) => (
-                <View key={item.id} style={{ width: `${100 / cols}%` }}>
+                <View key={item.id} style={{ width: `${100 / cols}%` }} className="px-1.5 py-1.5">
                   <SeriesCard
                     series={toSeriesCardSeries(item)}
                     onPress={() => router.push(`/series/${seriesParam(item)}`)}
@@ -366,80 +385,65 @@ export default function ProfileScreen() {
               ))}
             </View>
           )}
-        </HubSection>
+        </SeriesGridSection>
+      ) : null}
 
-        <HubSection
-          title={t("profile.allSeries")}
-          count={allSeries.length}
-          seeAllHref={allSeries.length > PROFILE_ALL_SERIES_LIMIT ? "/library/all" : null}
-          seeAllLabel={`See all (${allSeries.length})`}
-        >
-          {allSeries.length === 0 ? (
-            <EmptyPanel
+      {allSeries.length > 0 ? (
+        <SeriesGridSection
+          heading={
+            <HubPillHeader
               icon={Clapperboard}
-              title={t("profile.allSeriesEmpty")}
-              hint={t("profile.allSeriesEmptyHint")}
-              className="mt-0 py-8"
+              label={t("profile.allSeries")}
+              count={allSeries.length}
+              linked={allSeries.length > PROFILE_ALL_SERIES_LIMIT}
+              onPress={
+                allSeries.length > PROFILE_ALL_SERIES_LIMIT
+                  ? () => router.push("/library/all")
+                  : undefined
+              }
             />
-          ) : (
-            <View className="mb-6 flex-row flex-wrap">
-              {allSeries.slice(0, PROFILE_ALL_SERIES_LIMIT).map((item) => (
-                <View key={item.id} style={{ width: `${100 / cols}%` }}>
-                  <SeriesCard
-                    series={toSeriesCardSeries(item)}
-                    onPress={() => router.push(`/series/${seriesParam(item)}`)}
-                  />
-                </View>
-              ))}
-            </View>
-          )}
-        </HubSection>
+          }
+        >
+          <View className="flex-row flex-wrap px-1.5 py-1.5">
+            {allSeries.slice(0, PROFILE_ALL_SERIES_LIMIT).map((item) => (
+              <View key={item.id} style={{ width: `${100 / cols}%` }} className="px-1.5 py-1.5">
+                <SeriesCard
+                  series={toSeriesCardSeries(item)}
+                  onPress={() => router.push(`/series/${seriesParam(item)}`)}
+                />
+              </View>
+            ))}
+          </View>
+        </SeriesGridSection>
+      ) : (
+        <EmptyPanel
+          icon={Clapperboard}
+          title={t("profile.allSeriesEmpty")}
+          hint={t("profile.allSeriesEmptyHint")}
+          className="mt-8 py-8"
+        />
+      )}
 
-        <View className="mb-6 gap-2">
-          <LinkRow href="/library/all" label={t("profile.allSeries")} />
-          <LinkRow href="/library/favorites" label={t("profile.favorites.title")} />
-          <LinkRow href="/profile/stats" label={t("profile.detailedStats")} />
-          <LinkRow href="/watch/history" label="Watch history" />
-          <LinkRow href="/(tabs)/settings" label={t("app.nav.settings")} />
-          <LinkRow href="/import" label="Import zip" />
-          <Pressable
-            accessibilityRole="button"
-            disabled={exporting}
+      {allSeries.length > 0 ? (
+        <HubPillHeader
+          icon={History}
+          label={t("watch.history")}
+          linked
+          onPress={() => router.push("/watch/history")}
+        />
+      ) : null}
+
+      {session?.authenticated ? (
+        <View className="mt-2">
+          <HubPillHeader
+            icon={LogOut}
+            label={t("auth.account.logout")}
             onPress={() => {
-              void onExport();
+              void signOut();
             }}
-            className="rounded-xl border border-white/10 px-3 py-3 active:bg-white/5 disabled:opacity-40"
-          >
-            {exporting ? (
-              <ActivityIndicator color="#ebebeb" />
-            ) : (
-              <Text className="font-mono text-xs uppercase tracking-widest text-snow">
-                Export zip
-              </Text>
-            )}
-          </Pressable>
-          {session?.mode === "multi" && !session.authenticated ? (
-            <LinkRow href="/claim" label="Claim handle" />
-          ) : null}
-          {session?.mode === "multi" && !session.authenticated ? (
-            <LinkRow href="/login" label="Sign in" />
-          ) : null}
-          <LinkRow href="/dev/smoke" label="Brand smoke" />
-          {session?.authenticated ? (
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => {
-                void signOut();
-              }}
-              className="rounded-xl border border-white/10 px-3 py-3 active:bg-white/5"
-            >
-              <Text className="font-mono text-xs uppercase tracking-widest text-muted">
-                Sign out
-              </Text>
-            </Pressable>
-          ) : null}
+          />
         </View>
-      </View>
+      ) : null}
 
       <Modal
         visible={bannerPickerOpen}
@@ -503,8 +507,7 @@ export default function ProfileScreen() {
                           <MediaImage
                             src={thumb}
                             accessibilityLabel={series.title}
-                            wrapperClassName="h-full w-full"
-                            className="h-full w-full"
+                            fill
                           />
                         </Pressable>
                       );
@@ -520,62 +523,61 @@ export default function ProfileScreen() {
   );
 }
 
-function HubSection({
-  title,
-  count,
-  seeAllHref,
-  seeAllLabel,
-  children,
-}: {
-  title: string;
-  count: number;
-  seeAllHref: "/library/favorites" | "/library/all" | null;
-  seeAllLabel: string;
-  children: ReactNode;
-}) {
+function ProfileStatItem({ label, value }: { label: string; value: string }) {
   return (
-    <View className="mb-2">
-      <View className="mb-3 flex-row items-center justify-between">
-        <Text className="font-mono text-[10px] uppercase tracking-widest text-muted">
-          {title}
-          {count > 0 ? ` (${count})` : ""}
-        </Text>
-        {seeAllHref ? (
-          <Link href={seeAllHref} asChild>
-            <Pressable>
-              <Text className="font-mono text-[10px] uppercase tracking-widest text-muted underline">
-                {seeAllLabel}
-              </Text>
-            </Pressable>
-          </Link>
-        ) : null}
-      </View>
-      {children}
+    <View className="min-w-0 flex-1 items-center gap-1.5">
+      <Text className="text-center font-mono text-[10px] uppercase tracking-widest text-muted">
+        {label}
+      </Text>
+      <Text className="text-center font-display text-2xl italic leading-none tracking-tight text-snow">
+        {value}
+      </Text>
     </View>
   );
 }
 
-function LinkRow({
-  href,
+function HubPillHeader({
+  icon: Icon,
   label,
+  count,
+  linked,
+  onPress,
 }: {
-  href:
-    | "/library/all"
-    | "/library/favorites"
-    | "/profile/stats"
-    | "/watch/history"
-    | "/import"
-    | "/claim"
-    | "/login"
-    | "/dev/smoke"
-    | "/(tabs)/settings";
+  icon: typeof Heart;
   label: string;
+  count?: number;
+  linked?: boolean;
+  onPress?: () => void;
 }) {
   return (
-    <Link href={href} asChild>
-      <Pressable className="rounded-xl border border-white/10 px-3 py-3 active:bg-white/5">
-        <Text className="font-mono text-xs uppercase tracking-widest text-snow">{label}</Text>
-      </Pressable>
-    </Link>
+    <View className="z-30 items-center px-3 py-1">
+      <SectionPill onPress={onPress}>
+        <View className="max-w-full flex-row items-center gap-1.5">
+          <Icon size={14} color={colors.muted} strokeWidth={1.75} />
+          <Text
+            className="min-w-0 shrink font-sans text-sm font-semibold text-snow"
+            numberOfLines={1}
+          >
+            {label}
+          </Text>
+          {count != null ? (
+            <>
+              <Text className="shrink-0 text-muted">|</Text>
+              <Text className="shrink-0 font-mono text-xs tabular-nums text-muted">{count}</Text>
+            </>
+          ) : null}
+          {linked ? <ChevronRight size={14} color={colors.muted} /> : null}
+        </View>
+      </SectionPill>
+    </View>
+  );
+}
+
+function SeriesGridSection({ heading, children }: { heading: ReactNode; children: ReactNode }) {
+  return (
+    <View className="mb-4 flex-col">
+      {heading}
+      {children}
+    </View>
   );
 }

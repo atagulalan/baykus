@@ -57,8 +57,7 @@ export function SeriesCard({ series, onPress }: SeriesCardProps) {
           <MediaImage
             src={series.posterUrl}
             accessibilityLabel={series.title}
-            wrapperClassName="h-full w-full"
-            className="h-full w-full"
+            fill
             onError={() => setImageFailed(true)}
           />
         ) : (

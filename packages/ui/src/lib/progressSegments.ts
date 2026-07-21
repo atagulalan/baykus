@@ -42,3 +42,23 @@ export function isCaughtUpWaiting(entry: {
 }): boolean {
   return entry.total > 0 && entry.watched >= entry.total && entry.announced > entry.total;
 }
+
+/**
+ * Prefer announced counts from season episode lists so hero beads match
+ * accordion rings (web `alignSeasonProgressAnnounced`).
+ */
+export function alignSeasonProgressAnnounced(
+  seasonProgress: SeasonProgress,
+  seasons: Array<{ number: number; episodes: readonly unknown[] }>,
+): SeasonProgress {
+  const announcedByNumber = new Map(
+    seasons.filter((s) => s.number !== 0).map((s) => [s.number, s.episodes.length]),
+  );
+  return {
+    ...seasonProgress,
+    seasons: seasonProgress.seasons.map((entry) => ({
+      ...entry,
+      announced: announcedByNumber.get(entry.number) ?? entry.announced ?? entry.total,
+    })),
+  };
+}

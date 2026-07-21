@@ -1,30 +1,39 @@
 import {
-  addEpisodeWatch,
   ApiError,
+  addEpisodeWatch,
   buildImageUrl,
+  type CalendarDay,
+  type CalendarEntry,
   getCalendar,
   removeLatestEpisodeWatch,
   seriesParam,
-  type CalendarDay,
-  type CalendarEntry,
 } from "@baykus/api-client";
 import {
   CalendarEntryRow,
+  cn,
   EmptyPanel,
   PageTitle,
   PullToRefresh,
+  ScheduleGrid,
   SectionHeader,
   SegmentedButtonGroup,
   SkeletonBone,
-  cn,
   todayIso,
 } from "@baykus/ui";
 import { router } from "expo-router";
 import { CalendarDays, LogIn } from "lucide-react-native";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../src/auth/AuthProvider.tsx";
+import {
+  bucketNeedsDaySubheaders,
+  filterGapTrackerEntries,
+  groupIntoTimelineSections,
+  rebucketCalendarDays,
+  type TimelineBucketId,
+} from "../../src/lib/calendarBuckets.ts";
 
 type CalMode = "timeline" | "month" | "schedule";
 
@@ -52,11 +61,32 @@ function mapEntry(entry: CalendarEntry) {
     s: entry.s,
     e: entry.e,
     episodeTitle: entry.episodeTitle,
-    networkOrProvider: provider
-      ? `${provider.provider} (${provider.region})`
-      : entry.network,
+    networkOrProvider: provider ? `${provider.provider} (${provider.region})` : entry.network,
+    airDate: entry.airDate,
+    airStamp: entry.airStamp,
+    episodeType: entry.episodeType,
+    seasonName: entry.seasonName,
   };
 }
+
+function mergeCalendarDays(a: CalendarDay[], b: CalendarDay[]): CalendarDay[] {
+  const map = new Map<string, CalendarEntry[]>();
+  for (const day of [...a, ...b]) {
+    const list = map.get(day.date) ?? [];
+    const seen = new Set(list.map((e) => e.episodeId));
+    for (const e of day.entries) {
+      if (seen.has(e.episodeId)) continue;
+      list.push(e);
+      seen.add(e.episodeId);
+    }
+    map.set(day.date, list);
+  }
+  return [...map.entries()]
+    .sort(([x], [y]) => (x < y ? -1 : x > y ? 1 : 0))
+    .map(([date, entries]) => ({ date, entries }));
+}
+
+const SCHEDULE_CHUNK_DAYS = 112;
 
 function MonthGrid({
   days,
@@ -73,33 +103,45 @@ function MonthGrid({
   const [y, m] = month.split("-").map(Number);
   const firstDow = new Date(Date.UTC(y!, m! - 1, 1)).getUTCDay(); // 0 Sun
   const lastDay = new Date(Date.UTC(y!, m!, 0)).getUTCDate();
-  const cells: Array<string | null> = [];
-  for (let i = 0; i < firstDow; i++) cells.push(null);
+  const cells: Array<{ key: string; date: string | null }> = [];
+  for (let i = 0; i < firstDow; i++) cells.push({ key: `${month}-pad-${i}`, date: null });
   for (let d = 1; d <= lastDay; d++) {
-    cells.push(`${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`);
+    const date = `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    cells.push({ key: date, date });
   }
   const today = todayIso();
 
   return (
     <View className="px-3">
       <View className="mb-2 flex-row">
-        {["S", "M", "T", "W", "T", "F", "S"].map((label, i) => (
-          <Text key={`${label}-${i}`} className="flex-1 text-center font-mono text-[10px] text-muted">
+        {(
+          [
+            ["sun", "S"],
+            ["mon", "M"],
+            ["tue", "T"],
+            ["wed", "W"],
+            ["thu", "T"],
+            ["fri", "F"],
+            ["sat", "S"],
+          ] as const
+        ).map(([key, label]) => (
+          <Text key={key} className="flex-1 text-center font-mono text-[10px] text-muted">
             {label}
           </Text>
         ))}
       </View>
       <View className="flex-row flex-wrap">
-        {cells.map((date, i) => {
-          if (!date) {
-            return <View key={`e-${i}`} className="aspect-square w-[14.28%]" />;
+        {cells.map((cell) => {
+          if (!cell.date) {
+            return <View key={cell.key} className="aspect-square w-[14.28%]" />;
           }
+          const date = cell.date;
           const count = byDate.get(date) ?? 0;
           const isSelected = selected === date;
           const isToday = date === today;
           return (
             <Pressable
-              key={date}
+              key={cell.key}
               accessibilityRole="button"
               onPress={() => onSelect(date)}
               className={cn(
@@ -109,12 +151,7 @@ function MonthGrid({
                 !isSelected && "active:bg-white/5",
               )}
             >
-              <Text
-                className={cn(
-                  "font-mono text-xs",
-                  isSelected ? "text-void" : "text-snow",
-                )}
-              >
+              <Text className={cn("font-mono text-xs", isSelected ? "text-void" : "text-snow")}>
                 {Number(date.slice(8))}
               </Text>
               {count > 0 ? (
@@ -136,6 +173,7 @@ function MonthGrid({
 }
 
 export default function CalendarScreen() {
+  const { t, i18n } = useTranslation();
   const { session, loading: authLoading } = useAuth();
   const insets = useSafeAreaInsets();
   const [mode, setMode] = useState<CalMode>("timeline");
@@ -147,15 +185,27 @@ export default function CalendarScreen() {
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [checkedOff, setCheckedOff] = useState<Set<number>>(() => new Set());
+  const scheduleRangeRef = useRef({
+    from: addDays(todayIso(), -56),
+    to: addDays(todayIso(), SCHEDULE_CHUNK_DAYS),
+  });
+  const [hasMorePast, setHasMorePast] = useState(true);
+  const [hasMoreFuture, setHasMoreFuture] = useState(true);
+  const [paging, setPaging] = useState(false);
 
   const needsAuth = session?.mode === "multi" && !session.authenticated;
 
-  const window = useMemo(() => {
-    const today = todayIso();
-    if (mode === "month") return monthBounds(`${monthAnchor}-01`);
-    if (mode === "schedule") return { from: today, to: addDays(today, 60) };
-    return { from: addDays(today, -3), to: addDays(today, 14) };
-  }, [mode, monthAnchor]);
+  const tagLabels = useMemo(
+    () => ({
+      new: t("episode.tag.new"),
+      upcoming: t("episode.tag.upcoming"),
+      premiere: t("episode.tag.premiere"),
+      finale: t("episode.finale"),
+      special: t("episode.tag.special"),
+      ova: t("episode.tag.ova"),
+    }),
+    [t],
+  );
 
   const load = useCallback(async () => {
     if (needsAuth) {
@@ -165,8 +215,21 @@ export default function CalendarScreen() {
     }
     setError(null);
     try {
-      const res = await getCalendar(window);
+      const range =
+        mode === "schedule"
+          ? scheduleRangeRef.current
+          : mode === "month"
+            ? monthBounds(`${monthAnchor}-01`)
+            : (() => {
+                const today = todayIso();
+                return { from: addDays(today, -21), to: addDays(today, 28) };
+              })();
+      const res = await getCalendar(range);
       setDays(res.days);
+      if (mode === "schedule") {
+        setHasMorePast(res.hasMorePast !== false);
+        setHasMoreFuture(res.hasMoreFuture !== false);
+      }
     } catch (err) {
       setDays([]);
       setError(
@@ -176,13 +239,49 @@ export default function CalendarScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [needsAuth, window]);
+  }, [needsAuth, mode, monthAnchor]);
 
   useEffect(() => {
     if (authLoading) return;
     setLoading(true);
     void load();
   }, [authLoading, load]);
+
+  const extendSchedule = useCallback(
+    async (dir: "past" | "future") => {
+      if (paging || needsAuth) return;
+      if (dir === "past" && !hasMorePast) return;
+      if (dir === "future" && !hasMoreFuture) return;
+      setPaging(true);
+      setError(null);
+      try {
+        const { from, to } = scheduleRangeRef.current;
+        const range =
+          dir === "past"
+            ? { from: addDays(from, -SCHEDULE_CHUNK_DAYS), to: addDays(from, -1) }
+            : { from: addDays(to, 1), to: addDays(to, SCHEDULE_CHUNK_DAYS) };
+        const res = await getCalendar(range);
+        setDays((prev) => mergeCalendarDays(prev, res.days));
+        scheduleRangeRef.current =
+          dir === "past" ? { from: range.from, to } : { from, to: range.to };
+        if (dir === "past") setHasMorePast(res.hasMorePast !== false);
+        else setHasMoreFuture(res.hasMoreFuture !== false);
+      } catch (err) {
+        setError(
+          err instanceof ApiError
+            ? err.message
+            : err instanceof Error
+              ? err.message
+              : "load_failed",
+        );
+      } finally {
+        setPaging(false);
+      }
+    },
+    [paging, needsAuth, hasMorePast, hasMoreFuture],
+  );
+
+  const displayDays = useMemo(() => rebucketCalendarDays(days), [days]);
 
   async function toggle(entry: CalendarEntry) {
     const watched = entry.isWatched || checkedOff.has(entry.episodeId);
@@ -216,9 +315,8 @@ export default function CalendarScreen() {
         key={`${entry.episodeId}-${entry.airDate}`}
         entry={mapEntry(entry)}
         watched={watched}
-        onPress={() =>
-          router.push(`/series/${seriesParam({ id: entry.itemId, tmdbId: null })}`)
-        }
+        tagLabels={tagLabels}
+        onPress={() => router.push(`/series/${seriesParam({ id: entry.itemId, tmdbId: null })}`)}
         {...(busyId === entry.episodeId
           ? {}
           : {
@@ -230,20 +328,65 @@ export default function CalendarScreen() {
     );
   }
 
-  const scheduleEntries = useMemo(() => {
-    return days
-      .flatMap((d) => d.entries.map((e) => ({ ...e, _day: d.date })))
-      .sort((a, b) => {
-        const ta = a.airStamp ?? `${a.airDate}T00:00:00Z`;
-        const tb = b.airStamp ?? `${b.airDate}T00:00:00Z`;
-        return ta.localeCompare(tb);
-      });
+  const scheduleDays = useMemo(() => {
+    const today = todayIso();
+    return rebucketCalendarDays(days).map((d) => ({
+      date: d.date,
+      entries: filterGapTrackerEntries(d.entries, today).map((entry) => ({
+        episodeId: entry.episodeId,
+        itemId: entry.itemId,
+        title: entry.title,
+        posterRef: entry.posterRef,
+        s: entry.s,
+        e: entry.e,
+        episodeTitle: entry.episodeTitle,
+        airDate: entry.airDate,
+        airStamp: entry.airStamp,
+        isWatched: entry.isWatched || checkedOff.has(entry.episodeId),
+      })),
+    }));
+  }, [days, checkedOff]);
+
+  const monthDays = useMemo(() => {
+    const today = todayIso();
+    return rebucketCalendarDays(days).map((d) => ({
+      ...d,
+      entries: filterGapTrackerEntries(d.entries, today),
+    }));
   }, [days]);
 
   const monthDayEntries = useMemo(() => {
     if (!selectedDay) return [];
-    return days.find((d) => d.date === selectedDay)?.entries ?? [];
-  }, [days, selectedDay]);
+    return monthDays.find((d) => d.date === selectedDay)?.entries ?? [];
+  }, [monthDays, selectedDay]);
+
+  const timelineSections = useMemo(() => {
+    const today = todayIso();
+    const filtered = displayDays.map((d) => ({
+      ...d,
+      entries: filterGapTrackerEntries(d.entries, today).map((e) => ({
+        ...e,
+        isWatched: e.isWatched || checkedOff.has(e.episodeId),
+      })),
+    }));
+    return groupIntoTimelineSections(
+      filtered.filter((d) => d.entries.length > 0),
+      today,
+    );
+  }, [displayDays, checkedOff]);
+
+  function bucketLabel(bucket: TimelineBucketId): string {
+    return t(`calendar.bucket.${bucket}`, {
+      defaultValue:
+        bucket === "today"
+          ? "Today"
+          : bucket === "earlier"
+            ? "Earlier"
+            : bucket === "laterThisWeek"
+              ? "Later this week"
+              : "Later",
+    });
+  }
 
   if (authLoading || loading) {
     return (
@@ -259,7 +402,11 @@ export default function CalendarScreen() {
   if (needsAuth) {
     return (
       <View className="flex-1 justify-center bg-void">
-        <EmptyPanel icon={LogIn} title="Sign in for calendar" hint="Multi-mode requires a session." />
+        <EmptyPanel
+          icon={LogIn}
+          title="Sign in for calendar"
+          hint="Multi-mode requires a session."
+        />
       </View>
     );
   }
@@ -275,17 +422,26 @@ export default function CalendarScreen() {
       }}
     >
       <View className="mb-4 gap-3 px-4">
-        <PageTitle>Calendar</PageTitle>
+        <PageTitle>{t("app.nav.calendar")}</PageTitle>
         <SegmentedButtonGroup
           value={mode}
           onChange={(next) => {
             setMode(next);
             setSelectedDay(null);
+            if (next === "schedule") {
+              const today = todayIso();
+              scheduleRangeRef.current = {
+                from: addDays(today, -56),
+                to: addDays(today, SCHEDULE_CHUNK_DAYS),
+              };
+              setHasMorePast(true);
+              setHasMoreFuture(true);
+            }
           }}
           options={[
-            { value: "timeline", label: "Timeline" },
-            { value: "month", label: "Month" },
-            { value: "schedule", label: "Schedule" },
+            { value: "timeline", label: t("calendar.mode.timeline") },
+            { value: "month", label: t("calendar.mode.month") },
+            { value: "schedule", label: t("calendar.mode.schedule") },
           ]}
         />
       </View>
@@ -300,20 +456,26 @@ export default function CalendarScreen() {
               onPress={() => {
                 const [y, m] = monthAnchor.split("-").map(Number);
                 const d = new Date(Date.UTC(y!, m! - 2, 1));
-                setMonthAnchor(`${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`);
+                setMonthAnchor(
+                  `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`,
+                );
                 setSelectedDay(null);
               }}
               className="rounded-full border border-white/10 px-3 py-1 active:bg-white/5"
             >
               <Text className="font-mono text-xs text-muted">←</Text>
             </Pressable>
-            <Text className="font-mono text-xs uppercase tracking-widest text-snow">{monthAnchor}</Text>
+            <Text className="font-mono text-xs uppercase tracking-widest text-snow">
+              {monthAnchor}
+            </Text>
             <Pressable
               accessibilityRole="button"
               onPress={() => {
                 const [y, m] = monthAnchor.split("-").map(Number);
                 const d = new Date(Date.UTC(y!, m!, 1));
-                setMonthAnchor(`${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`);
+                setMonthAnchor(
+                  `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`,
+                );
                 setSelectedDay(null);
               }}
               className="rounded-full border border-white/10 px-3 py-1 active:bg-white/5"
@@ -322,7 +484,7 @@ export default function CalendarScreen() {
             </Pressable>
           </View>
           <MonthGrid
-            days={days}
+            days={monthDays}
             month={monthAnchor}
             selected={selectedDay}
             onSelect={setSelectedDay}
@@ -343,40 +505,53 @@ export default function CalendarScreen() {
       ) : null}
 
       {mode === "schedule" ? (
-        scheduleEntries.length === 0 ? (
+        days.length === 0 ? (
           <EmptyPanel
             icon={CalendarDays}
-            title="Nothing upcoming"
-            hint="No airings in the next 60 days."
+            title={t("calendar.nothingFurther")}
+            hint={t("calendar.empty.suggestUpcoming")}
           />
         ) : (
-          <View>
-            {scheduleEntries.map((entry) => (
-              <View key={`${entry.episodeId}-${entry.airDate}`}>
-                <Text className="px-4 pt-3 font-mono text-[10px] uppercase tracking-widest text-muted">
-                  {entry.airStamp
-                    ? entry.airStamp.slice(0, 16).replace("T", " ")
-                    : entry.airDate}
-                </Text>
-                {renderEntry(entry)}
-              </View>
-            ))}
-          </View>
+          <ScheduleGrid
+            days={scheduleDays}
+            locale={i18n.language?.startsWith("en") ? "en-US" : "tr-TR"}
+            onPressEpisode={(entry) =>
+              router.push(`/series/${seriesParam({ id: entry.itemId, tmdbId: null })}`)
+            }
+            onNearStart={() => {
+              void extendSchedule("past");
+            }}
+            onNearEnd={() => {
+              void extendSchedule("future");
+            }}
+          />
         )
       ) : null}
 
       {mode === "timeline" ? (
-        days.length === 0 ? (
+        timelineSections.length === 0 ? (
           <EmptyPanel
             icon={CalendarDays}
             title="No airings"
             hint="Nothing in this window — refresh metadata or try Month / Schedule."
           />
         ) : (
-          days.map((day) => (
-            <View key={day.date} className="mb-5">
-              <SectionHeader label={day.date} count={day.entries.length} />
-              <View className="mt-2">{day.entries.map(renderEntry)}</View>
+          timelineSections.map((section) => (
+            <View key={section.bucket} className="mb-6">
+              <SectionHeader
+                label={bucketLabel(section.bucket)}
+                count={section.days.reduce((n, d) => n + d.entries.length, 0)}
+              />
+              {section.days.map((day) => (
+                <View key={day.date} className="mb-3">
+                  {bucketNeedsDaySubheaders(section.bucket) ? (
+                    <Text className="mb-1 px-4 font-mono text-[10px] uppercase tracking-widest text-muted">
+                      {day.date}
+                    </Text>
+                  ) : null}
+                  <View>{day.entries.map(renderEntry)}</View>
+                </View>
+              ))}
             </View>
           ))
         )

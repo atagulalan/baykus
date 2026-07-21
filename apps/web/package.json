@@ -21,8 +21,8 @@
     "@tanstack/react-router": "^1.128.0",
     "i18next": "^25.3.2",
     "lucide-react": "^1.24.0",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
     "react-i18next": "^15.6.0"
   },
   "devDependencies": {

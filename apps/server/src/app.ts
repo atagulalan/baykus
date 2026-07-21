@@ -2,6 +2,7 @@ import type { Library } from "@baykus/core";
 import type { MetadataProvider } from "@baykus/provider-sdk";
 import type { Database } from "better-sqlite3";
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 import { createLibraryProxy } from "./auth/library-context.ts";
 import { createLibraryPool } from "./auth/library-pool.ts";
 import { createRateLimiter } from "./auth/rate-limit.ts";
@@ -37,9 +38,24 @@ export interface AppDeps {
   metadataCache?: Database;
 }
 
+/** Headers the shared api-client may send on cross-origin requests (Expo web). */
+const CORS_ALLOW_HEADERS = ["Content-Type", "Authorization", "X-Baykus", "X-Request-Id"];
+
 export function createApp(config: Config, deps: AppDeps) {
   const app = new Hono<{ Variables: AccessLogVariables }>();
   app.onError(errorHandler);
+  // Before auth-gate: browser preflight (OPTIONS) has no Bearer/cookie and must
+  // not 401. Vite SPA is same-origin via proxy; Expo web hits :4004 cross-origin.
+  app.use(
+    "/api/*",
+    cors({
+      origin: "*",
+      allowHeaders: CORS_ALLOW_HEADERS,
+      allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+      exposeHeaders: ["X-Request-Id"],
+    }),
+  );
+  app.use("/img/*", cors({ origin: "*" }));
   app.use(
     "*",
     createAccessLogMiddleware({

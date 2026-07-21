@@ -38,6 +38,40 @@ export type WatchNextRowProps = {
   className?: string;
 };
 
+/** Match EpisodeRow / web w-12 rail — fixed px so Image cannot expand to intrinsic height. */
+const POSTER_W = 48;
+const POSTER_H = 72;
+
+function Poster({
+  url,
+  label,
+  failed,
+  onError,
+}: {
+  url: string | null;
+  label: string;
+  failed?: boolean;
+  onError?: () => void;
+}) {
+  return (
+    <View
+      className="shrink-0 overflow-hidden rounded-md bg-white/5"
+      style={{ width: POSTER_W, height: POSTER_H }}
+    >
+      {url && !failed ? (
+        <MediaImage
+          src={url}
+          accessibilityLabel={label}
+          wrapperClassName="h-full w-full"
+          className="h-full w-full"
+          style={{ width: POSTER_W, height: POSTER_H }}
+          {...(onError ? { onError } : {})}
+        />
+      ) : null}
+    </View>
+  );
+}
+
 function CaughtUpWatchRow({
   series,
   onPress,
@@ -56,22 +90,17 @@ function CaughtUpWatchRow({
       accessibilityRole="button"
       onPress={onPress}
       className={cn(
-        "min-w-0 flex-row items-stretch gap-0 border-b border-white/5 py-2 pl-3 pr-3 active:bg-white/5",
+        "min-w-0 flex-row items-center gap-0 border-b border-white/5 py-2 pl-3 pr-3 active:bg-white/5",
         className,
       )}
     >
-      <View className="w-12 shrink-0 self-stretch overflow-hidden rounded-md bg-white/5">
-        {series.posterUrl && !imageFailed ? (
-          <MediaImage
-            src={series.posterUrl}
-            accessibilityLabel={series.title}
-            wrapperClassName="h-full w-full"
-            className="h-full w-full opacity-90"
-            onError={() => setImageFailed(true)}
-          />
-        ) : null}
-      </View>
-      <View className="min-w-0 flex-1 justify-center gap-0.5 overflow-hidden py-2 pl-4">
+      <Poster
+        url={series.posterUrl}
+        label={series.title}
+        failed={imageFailed}
+        onError={() => setImageFailed(true)}
+      />
+      <View className="min-w-0 flex-1 justify-center gap-0.5 overflow-hidden py-1 pl-4">
         <Text numberOfLines={1} className="font-display text-base italic text-snow">
           {series.title}
         </Text>
@@ -108,24 +137,20 @@ export function WatchNextRow({
   const showCheckbox = shouldShowQuickMarkCheckbox(next);
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      className={cn("border-b border-white/5 active:bg-white/5", className)}
+    <View
+      className={cn(
+        "min-w-0 flex-row items-center border-b border-white/5 py-2 pl-3 pr-3",
+        className,
+      )}
     >
-      <View className="min-w-0 flex-row items-stretch gap-0 py-2 pl-3 pr-3">
-        <View className="w-12 shrink-0 self-stretch overflow-hidden rounded-md bg-white/5">
-          {series.posterUrl ? (
-            <MediaImage
-              src={series.posterUrl}
-              accessibilityLabel={series.title}
-              wrapperClassName="h-full w-full"
-              className="h-full w-full"
-            />
-          ) : null}
-        </View>
-        <View className="min-w-0 flex-1 justify-center gap-1 py-2 pl-4">
-          <Text numberOfLines={1} className="font-display text-sm italic text-snow">
+      <Pressable
+        accessibilityRole="button"
+        onPress={onPress}
+        className="min-w-0 flex-1 flex-row items-center active:opacity-90"
+      >
+        <Poster url={series.posterUrl} label={series.title} />
+        <View className="min-w-0 flex-1 justify-center gap-1 py-1 pl-4 pr-2">
+          <Text numberOfLines={1} className="font-display text-base italic text-snow">
             {series.title}
           </Text>
           <View className="flex-row flex-wrap items-center gap-2">
@@ -140,20 +165,21 @@ export function WatchNextRow({
             </Text>
           ) : null}
         </View>
-        {showCheckbox ? (
-          <View className="justify-center">
-            <Checkbox
-              checked={marking}
-              disabled={marking}
-              onChange={() => {
-                if (!marking) onQuickMark(next.episodeId);
-              }}
-              accessibilityLabel="Mark watched"
-            />
-          </View>
-        ) : null}
-      </View>
-    </Pressable>
+      </Pressable>
+      {showCheckbox ? (
+        <View className="h-11 w-11 shrink-0 items-center justify-center">
+          <Checkbox
+            checked={marking}
+            disabled={marking}
+            variant="rounded"
+            onChange={() => {
+              if (!marking) onQuickMark(next.episodeId);
+            }}
+            accessibilityLabel="Mark watched"
+          />
+        </View>
+      ) : null}
+    </View>
   );
 }
 

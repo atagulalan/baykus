@@ -41,8 +41,8 @@ export function SettingsSelect<T extends string>({
         accessibilityState={{ expanded: isOpen }}
         onPress={() => setIsOpen((o) => !o)}
         className={cn(
-          "flex-row items-center justify-between border-b border-white/5 px-4 py-3.5",
-          isOpen && "bg-white/5",
+          "flex-row items-center justify-between rounded-xl px-3 py-3.5 active:bg-white/[0.04]",
+          isOpen && "bg-white/[0.04]",
         )}
       >
         <View className="max-w-[70%]">

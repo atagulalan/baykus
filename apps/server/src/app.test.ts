@@ -85,6 +85,23 @@ describe("server app", () => {
     expect(await res.json()).toEqual({ ok: true, mode: "single", version: "0.1.0" });
   });
 
+  it("CORS preflight allows Expo web → API cross-origin", async () => {
+    const app = createTestApp();
+    const res = await app.request("/api/auth/session", {
+      method: "OPTIONS",
+      headers: {
+        Origin: "http://localhost:8081",
+        "Access-Control-Request-Method": "GET",
+        "Access-Control-Request-Headers": "authorization,x-request-id",
+      },
+    });
+    expect(res.status).toBe(204);
+    expect(res.headers.get("Access-Control-Allow-Origin")).toBe("*");
+    expect(res.headers.get("Access-Control-Allow-Headers")?.toLowerCase()).toContain(
+      "authorization",
+    );
+  });
+
   it("config defaults are single mode, port 4004, scrapers off", () => {
     const config = loadConfig({});
     expect(config.BAYKUS_MODE).toBe("single");

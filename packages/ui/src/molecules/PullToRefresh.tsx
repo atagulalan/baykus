@@ -14,11 +14,16 @@ export function PullToRefresh({
   refreshing,
   onRefresh,
   children,
+  style,
+  contentContainerStyle,
   ...scrollProps
 }: PullToRefreshProps) {
   return (
     <ScrollView
       {...scrollProps}
+      style={[{ flex: 1 }, style]}
+      contentContainerStyle={[{ flexGrow: 1 }, contentContainerStyle]}
+      keyboardShouldPersistTaps="handled"
       refreshControl={
         <RefreshControl
           refreshing={refreshing}

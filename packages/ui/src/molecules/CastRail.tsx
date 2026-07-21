@@ -18,36 +18,43 @@ export type CastRailProps = {
   className?: string;
 };
 
-/** Horizontal cast strip. */
+const PHOTO = 64; // web size-16
+const COL_W = 72; // ~4.5rem
+
+/** Horizontal cast strip — sizes match web CastRail. */
 export function CastRail({ cast, title, className }: CastRailProps) {
   if (cast.length === 0) return null;
 
   return (
-    <View className={cn("gap-3", className)}>
-      <Text className="px-3 font-mono text-xs uppercase tracking-widest text-muted">{title}</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="px-3">
-        <View className="flex-row gap-3 pr-3">
+    <View className={cn("gap-2", className)}>
+      <Text className="font-mono text-[10px] uppercase tracking-widest text-muted">{title}</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <View className="flex-row gap-3 pr-1">
           {cast.map((member) => (
-            <View key={String(member.id)} className="w-20 items-center gap-1.5">
-              <View className="h-20 w-20 overflow-hidden rounded-full bg-white/5">
+            <View key={String(member.id)} style={{ width: COL_W }} className="items-center gap-1.5">
+              <View
+                className="overflow-hidden rounded-full bg-white/5"
+                style={{ width: PHOTO, height: PHOTO }}
+              >
                 {member.photoUrl ? (
                   <MediaImage
                     src={member.photoUrl}
                     accessibilityLabel={member.name}
                     wrapperClassName="h-full w-full"
                     className="h-full w-full"
+                    style={{ width: PHOTO, height: PHOTO }}
                   />
                 ) : (
                   <View className="h-full w-full items-center justify-center">
-                    <User size={22} color={colors.muted} />
+                    <User size={22} color={colors.muted} strokeWidth={1.5} />
                   </View>
                 )}
               </View>
-              <Text numberOfLines={2} className="text-center text-xs text-snow">
+              <Text numberOfLines={2} className="text-center text-xs leading-tight text-snow">
                 {member.name}
               </Text>
               {member.character ? (
-                <Text numberOfLines={1} className="text-center font-mono text-[10px] text-muted">
+                <Text numberOfLines={2} className="text-center text-[11px] leading-tight text-muted">
                   {member.character}
                 </Text>
               ) : null}

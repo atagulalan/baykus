@@ -27,7 +27,8 @@ const VARIANT = {
     box: ROUNDED_CHECKBOX_SIZE_CLASS,
     icon: 20,
     strokeWidth: 2,
-    checked: "border-0 bg-green-500/20",
+    // Match web: `bg-green-500/12 text-green-500`
+    checked: "border-0 bg-green-500/12",
     unchecked: ROUNDED_CHECKBOX_IDLE_CLASS,
     checkedIcon: "#22c55e",
     uncheckedIcon: colors.muted,
@@ -64,7 +65,8 @@ export function Checkbox({
       disabled={disabled}
       onPress={() => onChange(!checked)}
       className={cn(
-        "relative shrink-0 items-center justify-center border",
+        "relative shrink-0 items-center justify-center",
+        variant === "default" && "border",
         v.box,
         checked ? v.checked : v.unchecked,
         disabled && "opacity-50",

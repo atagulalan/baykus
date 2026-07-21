@@ -1,23 +1,19 @@
 import {
-  addSeries,
   ApiError,
+  addSeries,
   buildImageUrl,
-  getSeriesPreview,
-  seriesParam,
   type ExternalIds,
+  getSeriesPreview,
   type SeriesPreview,
+  seriesParam,
 } from "@baykus/api-client";
-import {
-  CastRail,
-  EmptyPanel,
-  MediaImage,
-  PageTitle,
-  SkeletonBone,
-} from "@baykus/ui";
-import { Stack, router, useLocalSearchParams } from "expo-router";
+import { CastRail, colors, EmptyPanel, SeriesDetailHero, SkeletonBone } from "@baykus/ui";
+import { router, Stack, useLocalSearchParams } from "expo-router";
 import { Clapperboard } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
+import { useTranslation } from "react-i18next";
+import { ScrollView, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 function idsFromParams(params: Record<string, string | string[] | undefined>): ExternalIds | null {
   const one = (key: string): string | undefined => {
@@ -37,6 +33,8 @@ function idsFromParams(params: Record<string, string | string[] | undefined>): E
 }
 
 export default function SeriesPreviewScreen() {
+  const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
   const externalIds = useMemo(() => idsFromParams(params), [params]);
   const [preview, setPreview] = useState<SeriesPreview | null>(null);
@@ -54,7 +52,9 @@ export default function SeriesPreviewScreen() {
     try {
       const next = await getSeriesPreview(externalIds);
       if (next.libraryItemId != null) {
-        router.replace(`/series/${seriesParam({ id: next.libraryItemId, tmdbId: next.externalIds.tmdbId ?? null })}`);
+        router.replace(
+          `/series/${seriesParam({ id: next.libraryItemId, tmdbId: next.externalIds.tmdbId ?? null })}`,
+        );
         return;
       }
       setPreview(next);
@@ -109,10 +109,15 @@ export default function SeriesPreviewScreen() {
 
   if (loading) {
     return (
-      <View className="flex-1 bg-void px-4 pt-4">
-        <Stack.Screen options={{ title: "Preview" }} />
-        <SkeletonBone className="mb-4 aspect-[2/3] w-40 self-center rounded-md" />
-        <SkeletonBone className="mb-2 h-8 w-56 self-center" />
+      <View className="flex-1 bg-void">
+        <Stack.Screen
+          options={{
+            title: "",
+            headerTransparent: true,
+            headerStyle: { backgroundColor: "transparent" },
+          }}
+        />
+        <SkeletonBone className="mb-4 h-96 w-full" />
       </View>
     );
   }
@@ -131,6 +136,11 @@ export default function SeriesPreviewScreen() {
   }
 
   const posterUrl = buildImageUrl(preview.posterRef, "large");
+  const backdropUrl = buildImageUrl(preview.backdropRef, "large");
+  const emptyProgress = {
+    sequential: true,
+    seasons: [] as Array<{ number: number; watched: number; total: number; announced: number }>,
+  };
   const cast = preview.cast.slice(0, 12).map((c, i) => ({
     id: c.id ?? `${c.name}-${i}`,
     name: c.name,
@@ -140,44 +150,38 @@ export default function SeriesPreviewScreen() {
 
   return (
     <ScrollView className="flex-1 bg-void" contentContainerClassName="pb-10">
-      <Stack.Screen options={{ title: preview.title }} />
-      <View className="items-center gap-4 px-4 pt-2">
-        <View className="aspect-[2/3] w-40 overflow-hidden rounded-md bg-white/5">
-          {posterUrl ? (
-            <MediaImage
-              src={posterUrl}
-              accessibilityLabel={preview.title}
-              wrapperClassName="h-full w-full"
-              className="h-full w-full"
-            />
-          ) : null}
-        </View>
-        <PageTitle className="text-center">{preview.title}</PageTitle>
-        <Text className="font-mono text-[10px] uppercase tracking-widest text-muted">
-          {[preview.year, preview.network, preview.releaseStatus].filter(Boolean).join(" · ")}
-        </Text>
-        {preview.overview ? (
-          <Text className="text-center text-sm leading-5 text-muted">{preview.overview}</Text>
-        ) : null}
-        {error ? <Text className="font-mono text-xs text-red-400">{error}</Text> : null}
-        <Pressable
-          accessibilityRole="button"
-          disabled={busy}
-          onPress={() => {
-            void onAdd();
-          }}
-          className="mt-2 h-11 w-full max-w-sm items-center justify-center rounded-full bg-yellow disabled:opacity-40"
-        >
-          {busy ? (
-            <ActivityIndicator color="#080808" />
-          ) : (
-            <Text className="font-mono text-xs uppercase tracking-widest text-void">
-              Add to library
-            </Text>
-          )}
-        </Pressable>
-      </View>
-      {cast.length > 0 ? <CastRail className="mt-8" title="Cast" cast={cast} /> : null}
+      <Stack.Screen
+        options={{
+          title: "",
+          headerTransparent: true,
+          headerShadowVisible: false,
+          headerStyle: { backgroundColor: "transparent" },
+          headerTintColor: colors.snow,
+        }}
+      />
+      <SeriesDetailHero
+        title={preview.title}
+        year={preview.year}
+        posterUrl={posterUrl}
+        backdropUrl={backdropUrl}
+        category="not_started"
+        progress={{ watched: 0, aired: 0 }}
+        seasonProgress={emptyProgress}
+        insetsTop={insets.top + 44}
+        preview
+        onStartWatching={() => {
+          void onAdd();
+        }}
+        startWatchingLabel={t("series.startWatching", { defaultValue: "Start watching" })}
+        startWatchingPending={busy}
+      />
+      {error ? <Text className="mb-2 px-4 font-mono text-xs text-red-400">{error}</Text> : null}
+      {preview.overview ? (
+        <Text className="mt-4 px-4 text-sm leading-5 text-muted">{preview.overview}</Text>
+      ) : null}
+      {cast.length > 0 ? (
+        <CastRail className="mt-8" title={t("series.cast.title")} cast={cast} />
+      ) : null}
       <Text className="mt-8 px-4 text-center font-mono text-[10px] text-muted">
         {preview.seasons.reduce((n, s) => n + s.episodes.length, 0)} episodes across{" "}
         {preview.seasons.length} seasons — mark watched after adding.

@@ -2,28 +2,53 @@ import {
   ApiError,
   buildImageUrl,
   getWatchHistory,
+  removeLatestEpisodeWatch,
   seriesParam,
   type WatchHistoryEntry,
 } from "@baykus/api-client";
 import {
-  EmptyPanel,
-  EpisodeLabel,
-  MediaImage,
-  PageTitle,
+  colors,
+  EpisodeRow,
+  PageTitleRow,
   PullToRefresh,
+  SectionPill,
   SegmentedButtonGroup,
   SkeletonBone,
+  todayIso,
 } from "@baykus/ui";
 import { router, Stack } from "expo-router";
-import { History, LogIn } from "lucide-react-native";
+import { LogIn } from "lucide-react-native";
 import { useCallback, useEffect, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { useTranslation } from "react-i18next";
+import { Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../src/auth/AuthProvider.tsx";
+import { addDaysIso } from "../../src/lib/calendarBuckets.ts";
 
 type HistoryOrder = "newest" | "oldest";
 
+function yesterdayIso(): string {
+  return addDaysIso(todayIso(), -1);
+}
+
+function formatHistoryDayTime(
+  date: string,
+  time: string,
+  locale: string,
+  currentYear: number,
+): string {
+  const watchYear = Number(date.slice(0, 4));
+  const includeYear = watchYear !== currentYear;
+  const datePart = new Intl.DateTimeFormat(locale, {
+    day: "numeric",
+    month: "short",
+    ...(includeYear ? { year: "numeric" as const } : {}),
+  }).format(new Date(`${date}T00:00:00Z`));
+  return includeYear ? datePart : `${datePart} ${time}`;
+}
+
 export default function WatchHistoryScreen() {
+  const { t, i18n } = useTranslation();
   const { session, loading: authLoading } = useAuth();
   const insets = useSafeAreaInsets();
   const [items, setItems] = useState<WatchHistoryEntry[]>([]);
@@ -31,8 +56,10 @@ export default function WatchHistoryScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [unwatchingId, setUnwatchingId] = useState<number | null>(null);
 
   const needsAuth = session?.mode === "multi" && !session.authenticated;
+  const locale = i18n.language === "en" ? "en-US" : "tr-TR";
 
   const load = useCallback(async () => {
     if (needsAuth) {
@@ -61,10 +88,40 @@ export default function WatchHistoryScreen() {
     void load();
   }, [authLoading, load]);
 
+  async function onUnwatch(episodeId: number) {
+    setUnwatchingId(episodeId);
+    setError(null);
+    try {
+      await removeLatestEpisodeWatch(episodeId);
+      await load();
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : "unwatch_failed",
+      );
+    } finally {
+      setUnwatchingId(null);
+    }
+  }
+
+  function relativeDay(entry: WatchHistoryEntry): string {
+    const date = entry.watchedAt.slice(0, 10);
+    const time = new Intl.DateTimeFormat(locale, {
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(new Date(entry.watchedAt));
+    if (date === todayIso()) return t("watch.relativeDay.todayAt", { time });
+    if (date === yesterdayIso()) return t("watch.relativeDay.yesterdayAt", { time });
+    return formatHistoryDayTime(date, time, locale, Number(todayIso().slice(0, 4)));
+  }
+
   if (authLoading || loading) {
     return (
       <View className="flex-1 bg-void px-4 pt-4">
-        <Stack.Screen options={{ title: "History" }} />
+        <Stack.Screen options={{ title: t("watch.history") }} />
         {[0, 1, 2, 3].map((i) => (
           <SkeletonBone key={i} className="mb-2 h-14 w-full rounded-md" />
         ))}
@@ -74,9 +131,10 @@ export default function WatchHistoryScreen() {
 
   if (needsAuth) {
     return (
-      <View className="flex-1 justify-center bg-void">
-        <Stack.Screen options={{ title: "History" }} />
-        <EmptyPanel icon={LogIn} title="Sign in" hint="History needs a session in multi mode." />
+      <View className="flex-1 items-center justify-center gap-2 bg-void px-4">
+        <Stack.Screen options={{ title: t("watch.history") }} />
+        <LogIn size={28} color={colors.muted} />
+        <Text className="text-sm text-muted">Sign in</Text>
       </View>
     );
   }
@@ -91,56 +149,51 @@ export default function WatchHistoryScreen() {
         await load();
       }}
     >
-      <Stack.Screen options={{ title: "History" }} />
-      <View className="mb-3 px-4">
-        <PageTitle>Watch history</PageTitle>
+      <Stack.Screen options={{ title: t("watch.history") }} />
+      <PageTitleRow
+        className="mb-3 px-4"
+        action={
+          <SegmentedButtonGroup
+            value={order}
+            onChange={setOrder}
+            options={[
+              { value: "newest", label: "Newest" },
+              { value: "oldest", label: "Oldest" },
+            ]}
+          />
+        }
+      >
+        {t("watch.history")}
+      </PageTitleRow>
+
+      <View className="mb-2 items-center px-3 py-1">
+        <SectionPill>
+          <Text className="font-sans text-sm font-semibold text-snow">{t("watch.history")}</Text>
+        </SectionPill>
       </View>
-      <View className="mb-4 px-4">
-        <SegmentedButtonGroup
-          value={order}
-          onChange={setOrder}
-          options={[
-            { value: "newest", label: "Newest" },
-            { value: "oldest", label: "Oldest" },
-          ]}
-        />
-      </View>
+
       {error ? <Text className="mb-3 px-4 font-mono text-xs text-red-400">{error}</Text> : null}
       {items.length === 0 ? (
-        <EmptyPanel icon={History} title="No watches yet" hint="Marked episodes show up here." />
+        <Text className="px-4 py-3 text-sm text-muted">{t("watch.empty.history")}</Text>
       ) : (
         items.map((item) => (
-          <Pressable
+          <EpisodeRow
             key={item.watchId}
-            accessibilityRole="button"
+            embedded
+            posterStretch
+            seriesTitle={item.title}
+            stillUrl={buildImageUrl(item.posterRef, "thumb")}
+            s={item.s}
+            e={item.e}
+            episodeTitle={item.episodeTitle}
+            watched
+            onToggleWatch={() => {
+              void onUnwatch(item.episodeId);
+            }}
+            checkboxDisabled={unwatchingId === item.episodeId}
             onPress={() => router.push(`/series/${seriesParam({ id: item.itemId, tmdbId: null })}`)}
-            className="flex-row items-center gap-3 border-b border-white/5 px-4 py-3 active:bg-white/5"
-          >
-            <View className="h-14 w-10 overflow-hidden rounded bg-white/5">
-              {buildImageUrl(item.posterRef, "thumb") ? (
-                <MediaImage
-                  src={buildImageUrl(item.posterRef, "thumb")!}
-                  accessibilityLabel={item.title}
-                  wrapperClassName="h-full w-full"
-                  className="h-full w-full"
-                />
-              ) : null}
-            </View>
-            <View className="min-w-0 flex-1 gap-0.5">
-              <Text numberOfLines={1} className="font-display text-sm italic text-snow">
-                {item.title}
-              </Text>
-              <EpisodeLabel s={item.s} e={item.e} format="SxEy" className="text-muted" />
-              {item.episodeTitle ? (
-                <Text numberOfLines={1} className="text-xs text-snow">
-                  {item.episodeTitle}
-                </Text>
-              ) : null}
-              <Text className="font-mono text-[10px] text-muted">
-                {item.watchedAt.slice(0, 16).replace("T", " ")}
-              </Text>
-            </View>
-          </Pressable>
+            trailing={<Text className="shrink-0 text-xs text-muted">{relativeDay(item)}</Text>}
+          />
         ))
       )}
     </PullToRefresh>

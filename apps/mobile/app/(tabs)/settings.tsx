@@ -5,6 +5,7 @@ import {
   getSettings,
   type Locale,
   type NewSeriesDefaultStatus,
+  refreshAllSeries,
   resetLibrary,
   type Settings,
   updateSettings,
@@ -14,23 +15,25 @@ import {
   EmptyPanel,
   PageTitle,
   PullToRefresh,
+  SectionPill,
   SettingsSelect,
   SkeletonBone,
 } from "@baykus/ui";
 import { Link } from "expo-router";
 import { Settings as SettingsIcon } from "lucide-react-native";
-import { useCallback, useEffect, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../src/auth/AuthProvider.tsx";
 import { AccountSection } from "../../src/lib/AccountSection.tsx";
+import { exportLibraryZip } from "../../src/lib/exportZip.ts";
 import { resolveUiPrefs } from "../../src/lib/uiPrefs.ts";
 
 const LOCALES: Locale[] = ["tr", "en"];
 const REGIONS = ["TR", "US", "GB", "DE", "FR", "ES", "IT", "NL"] as const;
 
-/** Full settings surface — web SettingsPage general + providers + danger (no native push). */
+/** Visual parity with web SettingsPage — SectionPill groups, soft rows, no card shells. */
 export default function SettingsScreen() {
   const { session, loading: authLoading } = useAuth();
   const { t, i18n } = useTranslation();
@@ -47,6 +50,9 @@ export default function SettingsScreen() {
   const [resetChecked, setResetChecked] = useState(false);
   const [resetPhrase, setResetPhrase] = useState("");
   const [resetBusy, setResetBusy] = useState(false);
+  const [exportBusy, setExportBusy] = useState(false);
+  const [metaBusy, setMetaBusy] = useState(false);
+  const [metaProgress, setMetaProgress] = useState<string | null>(null);
 
   const needsAuth = session?.mode === "multi" && !session.authenticated;
   const confirmPhrase = t("settings.dangerZone.confirmPhrase");
@@ -137,7 +143,6 @@ export default function SettingsScreen() {
         <SkeletonBone className="mb-4 h-8 w-40" />
         <SkeletonBone className="mb-2 h-12 w-full" />
         <SkeletonBone className="mb-2 h-12 w-full" />
-        <SkeletonBone className="h-12 w-full" />
       </View>
     );
   }
@@ -196,8 +201,8 @@ export default function SettingsScreen() {
         await load();
       }}
     >
-      <PageTitle className="mb-1 px-1">{t("app.nav.settings")}</PageTitle>
-      <View className="mb-4 flex-row items-center gap-2 px-1">
+      <View className="mb-6 flex-row items-center justify-between px-1">
+        <PageTitle>{t("app.nav.settings")}</PageTitle>
         {saving ? <ActivityIndicator color="#ebebeb" /> : null}
         {savedFlash ? (
           <Text className="font-mono text-[10px] uppercase tracking-widest text-yellow">
@@ -207,8 +212,7 @@ export default function SettingsScreen() {
       </View>
       {error ? <Text className="mb-3 px-1 font-mono text-xs text-red-400">{error}</Text> : null}
 
-      <SectionTitle title={t("settings.general.title")} />
-      <View className="mb-6 overflow-hidden rounded-xl border border-white/10">
+      <SettingsGroup title={t("settings.general.title")}>
         <SettingsSelect
           label={t("settings.general.locale")}
           value={settings.locale}
@@ -317,11 +321,10 @@ export default function SettingsScreen() {
           options={[{ value: "dark", label: t("settings.general.themeDark") }]}
           onChange={() => {}}
         />
-      </View>
+      </SettingsGroup>
 
-      <SectionTitle title={t("settings.providers.title")} />
-      <View className="mb-6 overflow-hidden rounded-xl border border-white/10">
-        <View className="border-b border-white/5 px-4 py-3.5">
+      <SettingsGroup title={t("settings.providers.title")}>
+        <View className="rounded-xl px-3 py-3">
           <Text className="mb-2 font-sans text-sm text-snow">
             {t("settings.providers.tmdbKey")}
           </Text>
@@ -344,7 +347,7 @@ export default function SettingsScreen() {
                 onPress={() => {
                   void onSaveTmdbKey();
                 }}
-                className="rounded-lg bg-yellow px-3 py-2"
+                className="rounded-full bg-yellow px-3.5 py-2"
               >
                 <Text className="font-mono text-[10px] uppercase tracking-widest text-void">
                   Save
@@ -358,10 +361,10 @@ export default function SettingsScreen() {
                   setIsEditingTmdbKey(false);
                   setTmdbKeyInput("");
                 }}
-                className="rounded-lg border border-white/15 px-3 py-2"
+                className="rounded-full border border-white/15 px-3.5 py-2"
               >
                 <Text className="font-mono text-[10px] uppercase tracking-widest text-muted">
-                  Clear
+                  {t("settings.providers.clear")}
                 </Text>
               </Pressable>
             ) : null}
@@ -375,16 +378,91 @@ export default function SettingsScreen() {
             void patch({ scrapersEnabled: checked });
           }}
         />
-      </View>
+      </SettingsGroup>
+
+      <SettingsGroup title={t("settings.data.title")}>
+        <Pressable
+          accessibilityRole="button"
+          disabled={exportBusy}
+          onPress={() => {
+            void (async () => {
+              setExportBusy(true);
+              setError(null);
+              try {
+                await exportLibraryZip(false);
+              } catch (err) {
+                setError(err instanceof Error ? err.message : "export_failed");
+              } finally {
+                setExportBusy(false);
+              }
+            })();
+          }}
+          className="rounded-xl px-3 py-3 active:bg-white/[0.04] disabled:opacity-40"
+        >
+          {exportBusy ? (
+            <ActivityIndicator color="#888" />
+          ) : (
+            <Text className="font-mono text-[10px] uppercase tracking-widest text-muted">
+              {t("settings.data.export")}
+            </Text>
+          )}
+        </Pressable>
+        <Link href="/import" asChild>
+          <Pressable
+            accessibilityRole="button"
+            className="rounded-xl px-3 py-3 active:bg-white/[0.04]"
+          >
+            <Text className="font-mono text-[10px] uppercase tracking-widest text-muted">
+              {t("settings.data.tvtimeImport")}
+            </Text>
+          </Pressable>
+        </Link>
+        <Pressable
+          accessibilityRole="button"
+          disabled={metaBusy}
+          onPress={() => {
+            void (async () => {
+              setMetaBusy(true);
+              setMetaProgress(null);
+              setError(null);
+              try {
+                const result = await refreshAllSeries((e) => {
+                  setMetaProgress(`${e.done}/${e.total}`);
+                });
+                setMetaProgress(
+                  t("library.refreshAllDone", {
+                    newEpisodes: result.newEpisodes,
+                    defaultValue: `+${result.newEpisodes} episodes`,
+                  }),
+                );
+              } catch (err) {
+                setError(
+                  err instanceof ApiError
+                    ? err.message
+                    : err instanceof Error
+                      ? err.message
+                      : "refresh_failed",
+                );
+              } finally {
+                setMetaBusy(false);
+              }
+            })();
+          }}
+          className="rounded-xl px-3 py-3 active:bg-white/[0.04] disabled:opacity-40"
+        >
+          <Text className="font-mono text-[10px] uppercase tracking-widest text-muted">
+            {metaProgress ?? t("library.refreshAll")}
+          </Text>
+        </Pressable>
+      </SettingsGroup>
 
       {session?.mode === "multi" && session.authenticated ? (
-        <View className="mb-6">
+        <View className="mb-10">
           <AccountSection />
         </View>
       ) : null}
 
-      <SectionTitle title={t("settings.dangerZone.title")} />
-      <View className="mb-6 gap-2">
+      <SettingsGroup title={t("settings.dangerZone.title")} danger>
         <Pressable
           accessibilityRole="button"
           onPress={() => {
@@ -392,14 +470,14 @@ export default function SettingsScreen() {
             setResetChecked(false);
             setResetPhrase("");
           }}
-          className="rounded-xl border border-red-500/40 px-3 py-3 active:bg-red-500/10"
+          className="rounded-xl px-3 py-3 active:bg-white/[0.04]"
         >
           <Text className="font-mono text-xs uppercase tracking-widest text-red-400">
             {t("settings.dangerZone.button")}
           </Text>
         </Pressable>
         {resetOpen ? (
-          <View className="gap-3 rounded-xl border border-red-500/30 bg-[#101010] p-4">
+          <View className="gap-3 rounded-xl px-3 py-3">
             <Text className="font-display text-lg italic text-red-400">
               {t("settings.dangerZone.warningTitle")}
             </Text>
@@ -428,7 +506,7 @@ export default function SettingsScreen() {
               className="h-11 rounded-lg border border-white/15 px-3 font-mono text-sm text-snow disabled:opacity-40"
             />
             <View className="flex-row justify-end gap-2">
-              <Pressable onPress={() => setResetOpen(false)} className="px-3 py-2">
+              <Pressable onPress={() => setResetOpen(false)} className="rounded-full px-3.5 py-2">
                 <Text className="font-mono text-[10px] uppercase tracking-widest text-muted">
                   Cancel
                 </Text>
@@ -438,7 +516,7 @@ export default function SettingsScreen() {
                 onPress={() => {
                   void onResetLibrary();
                 }}
-                className="rounded-lg bg-red-600 px-4 py-2.5 disabled:opacity-40"
+                className="rounded-full bg-red-600 px-3.5 py-2 disabled:opacity-40"
               >
                 {resetBusy ? (
                   <ActivityIndicator color="#fff" />
@@ -451,16 +529,33 @@ export default function SettingsScreen() {
             </View>
           </View>
         ) : null}
-      </View>
+      </SettingsGroup>
     </PullToRefresh>
   );
 }
 
-function SectionTitle({ title }: { title: string }) {
+function SettingsGroup({
+  title,
+  children,
+  danger,
+}: {
+  title: string;
+  children: ReactNode;
+  danger?: boolean;
+}) {
   return (
-    <Text className="mb-2 px-1 font-mono text-[10px] uppercase tracking-widest text-muted">
-      {title}
-    </Text>
+    <View className="mb-10 flex-col gap-3">
+      <View className="z-30 items-center px-3 py-1">
+        <SectionPill className={danger ? "border-red-900/40" : undefined}>
+          <Text
+            className={`font-sans text-sm font-semibold ${danger ? "text-red-400" : "text-snow"}`}
+          >
+            {title}
+          </Text>
+        </SectionPill>
+      </View>
+      <View className="flex-col gap-0.5 px-1">{children}</View>
+    </View>
   );
 }
 
@@ -478,7 +573,7 @@ function CheckboxRow({
   return (
     <Pressable
       onPress={() => onChange(!checked)}
-      className="flex-row items-center justify-between border-b border-white/5 px-4 py-3.5 active:bg-white/5"
+      className="flex-row items-center justify-between rounded-xl px-3 py-3 active:bg-white/[0.04]"
     >
       <View className="max-w-[70%]">
         <Text className="font-sans text-sm text-snow">{label}</Text>

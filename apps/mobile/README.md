@@ -12,9 +12,11 @@ pnpm --filter @baykus/server dev
 # Terminal B — Expo
 cp .env.example .env
 # Set EXPO_PUBLIC_API_BASE_URL to a host the *device* can reach
-# (LAN IP for a phone; 127.0.0.1 for iOS Simulator; 10.0.2.2 for Android emulator).
+# (LAN IP for a phone; 127.0.0.1 for iOS Simulator / Expo web on this machine;
+# 10.0.2.2 for Android emulator). Server allows CORS for Expo web.
 pnpm --filter @baykus/mobile start
 # or: pnpm dev:mobile
+# Expo web: pnpm --filter @baykus/mobile web
 ```
 
 After changing `.env`, restart Metro (Expo inlines `EXPO_PUBLIC_*` at bundle time).

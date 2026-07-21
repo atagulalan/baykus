@@ -1,62 +1,103 @@
 import {
   ApiError,
+  addEpisodeWatch,
+  buildImageUrl,
+  CATEGORY_ORDER,
+  getSettings,
   listSeries,
   refreshAllSeries,
   type SeriesSummary,
+  type Settings,
   seriesParam,
+  updateSettings,
+  type WatchCategory,
 } from "@baykus/api-client";
 import {
+  AddSectionBar,
   colors,
   EMPTY_PANEL_CTA_CLASS,
   EmptyPanel,
   type LibrarySort,
   PageTitle,
   PullToRefresh,
+  SectionHeader,
   SeriesCard,
   SkeletonBone,
-  SortMenu,
+  WatchNextRow,
+  type WatchNextSeries,
 } from "@baykus/ui";
 import { Link, router } from "expo-router";
-import { Library, LogIn, RefreshCw } from "lucide-react-native";
-import { useCallback, useEffect, useState } from "react";
+import { LayoutGrid, Library, List, LogIn, RefreshCw } from "lucide-react-native";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Pressable, Text, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../src/auth/AuthProvider.tsx";
+import { groupByCategory } from "../../src/lib/groupByCategory.ts";
 import { toSeriesCardSeries } from "../../src/lib/mapSeriesCard.ts";
+import { sectionSort, sortsForCategory } from "../../src/lib/sectionSort.ts";
+import { sortSeriesSummaries } from "../../src/lib/sortSeries.ts";
+import { maybeStartSweep } from "../../src/lib/staleSweep.ts";
+import { ensurePinnedWatchSections, resolveUiPrefs } from "../../src/lib/uiPrefs.ts";
 
-const SORT_OPTIONS: Array<{ value: LibrarySort; label: string }> = [
-  { value: "title", label: "Title" },
-  { value: "added", label: "Added" },
-  { value: "rating", label: "Rating" },
-  { value: "nextAir", label: "Next air" },
-  { value: "lastWatched", label: "Last watched" },
-];
+function toWatchNextSeries(item: SeriesSummary): WatchNextSeries {
+  const next = item.nextUnwatched;
+  return {
+    id: item.id,
+    title: item.title,
+    posterUrl: buildImageUrl(item.posterRef, "thumb"),
+    category: item.category,
+    progress: item.progress,
+    seasonProgress: item.seasonProgress,
+    nextAirDate: item.nextAirDate,
+    nextUnwatched: next
+      ? {
+          episodeId: next.episodeId,
+          s: next.s,
+          e: next.e,
+          title: next.title,
+          airDate: next.airDate,
+          airStamp: next.airStamp,
+        }
+      : null,
+  };
+}
 
+/** Library home — BrowsePage grid/list parity with watchSections prefs. */
 export default function LibraryScreen() {
+  const { t } = useTranslation();
   const { session, loading: authLoading } = useAuth();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const cols = width >= 720 ? 4 : width >= 480 ? 3 : 2;
-  const [sort, setSort] = useState<LibrarySort>("title");
   const [items, setItems] = useState<SeriesSummary[]>([]);
+  const [settings, setSettings] = useState<Settings | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [metaRefreshing, setMetaRefreshing] = useState(false);
   const [metaProgress, setMetaProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [markingId, setMarkingId] = useState<number | null>(null);
+  const [collapsed, setCollapsed] = useState<Partial<Record<WatchCategory, boolean>>>({});
 
   const needsAuth = session?.mode === "multi" && !session.authenticated;
+  const prefs = useMemo(() => resolveUiPrefs(settings), [settings]);
+  const isGrid = prefs.browseView !== "list";
+  const sections = prefs.watchSections as WatchCategory[];
+  const sectionSorts = prefs.watchSectionSorts as Partial<Record<WatchCategory, LibrarySort>>;
 
   const load = useCallback(async () => {
     if (needsAuth) {
       setItems([]);
+      setSettings(null);
       setLoading(false);
       return;
     }
     setError(null);
     try {
-      const res = await listSeries({ sort });
+      const [res, s] = await Promise.all([listSeries(), getSettings()]);
       setItems(res.items);
+      setSettings(s);
     } catch (err) {
       const msg =
         err instanceof ApiError ? err.message : err instanceof Error ? err.message : "load_failed";
@@ -66,7 +107,51 @@ export default function LibraryScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [needsAuth, sort]);
+  }, [needsAuth]);
+
+  useEffect(() => {
+    if (authLoading) return;
+    setLoading(true);
+    void load();
+  }, [authLoading, load]);
+
+  useEffect(() => {
+    if (authLoading || needsAuth || loading) return;
+    if (!isGrid) return;
+    maybeStartSweep({ onComplete: () => void load() });
+  }, [authLoading, needsAuth, loading, isGrid, load]);
+
+  const byCategory = useMemo(() => groupByCategory(items), [items]);
+  const needsReviewItems = byCategory.get("needs_review") ?? [];
+  const showNeedsReview = needsReviewItems.some((s) => s.nextUnwatched != null);
+  const sectionsToRender: WatchCategory[] = showNeedsReview
+    ? ["needs_review", ...sections]
+    : [...sections];
+
+  const grouped = useMemo(
+    () =>
+      sectionsToRender
+        .map((category) => ({
+          category,
+          items: sortSeriesSummaries(
+            byCategory.get(category) ?? [],
+            sectionSort(sectionSorts, category),
+          ),
+        }))
+        .filter((s) => s.items.length > 0),
+    [sectionsToRender, byCategory, sectionSorts],
+  );
+
+  async function persistPrefs(next: typeof prefs) {
+    try {
+      const s = await updateSettings({ uiPrefs: next });
+      setSettings(s);
+    } catch (err) {
+      setError(
+        err instanceof ApiError ? err.message : err instanceof Error ? err.message : "prefs_failed",
+      );
+    }
+  }
 
   async function onRefreshMetadata() {
     setMetaRefreshing(true);
@@ -91,11 +176,19 @@ export default function LibraryScreen() {
     }
   }
 
-  useEffect(() => {
-    if (authLoading) return;
-    setLoading(true);
-    void load();
-  }, [authLoading, load]);
+  async function quickMark(episodeId: number) {
+    setMarkingId(episodeId);
+    try {
+      await addEpisodeWatch(episodeId);
+      await load();
+    } catch (err) {
+      setError(
+        err instanceof ApiError ? err.message : err instanceof Error ? err.message : "watch_failed",
+      );
+    } finally {
+      setMarkingId(null);
+    }
+  }
 
   if (authLoading) {
     return (
@@ -146,11 +239,11 @@ export default function LibraryScreen() {
     >
       <View className="mb-4 flex-row items-center justify-between gap-2 px-1">
         <View className="min-w-0 flex-1 flex-row items-baseline gap-3">
-          <PageTitle>Library</PageTitle>
+          <PageTitle>{isGrid ? t("app.nav.library") : t("watch.title")}</PageTitle>
           <Link href="/library/all" asChild>
             <Pressable accessibilityRole="link" className="py-1 active:opacity-80">
               <Text className="font-mono text-[10px] uppercase tracking-widest text-muted underline">
-                All series
+                {t("profile.allSeries")}
               </Text>
             </Pressable>
           </Link>
@@ -159,7 +252,7 @@ export default function LibraryScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Refresh metadata"
-            disabled={metaRefreshing || needsAuth}
+            disabled={metaRefreshing}
             onPress={() => {
               void onRefreshMetadata();
             }}
@@ -171,13 +264,20 @@ export default function LibraryScreen() {
               <RefreshCw size={16} color={colors.muted} />
             )}
           </Pressable>
-          <SortMenu
-            sort={sort}
-            onChange={setSort}
-            options={SORT_OPTIONS}
-            title="Sort"
-            accessibilityLabel="Sort library"
-          />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={isGrid ? t("library.view.list") : t("library.view.grid")}
+            onPress={() => {
+              void persistPrefs({ ...prefs, browseView: isGrid ? "list" : "grid" });
+            }}
+            className="h-9 w-9 items-center justify-center rounded-full active:bg-white/5"
+          >
+            {isGrid ? (
+              <List size={18} color={colors.muted} strokeWidth={1.5} />
+            ) : (
+              <LayoutGrid size={18} color={colors.muted} strokeWidth={1.5} />
+            )}
+          </Pressable>
         </View>
       </View>
 
@@ -201,24 +301,102 @@ export default function LibraryScreen() {
           title="No series yet"
           hint="Add shows from search or import a zip."
         />
+      ) : grouped.length === 0 ? (
+        <EmptyPanel
+          icon={Library}
+          title={t("library.empty.allDoneTitle", { defaultValue: "All caught up" })}
+          hint={t("library.empty.allDoneHint", {
+            defaultValue: "Add more sections below, or browse your full library.",
+          })}
+        />
       ) : (
-        <View className="flex-row flex-wrap">
-          {items.map((item) => (
-            <View key={item.id} style={{ width: `${100 / cols}%` }}>
-              <SeriesCard
-                series={toSeriesCardSeries(item)}
-                onPress={() => router.push(`/series/${seriesParam(item)}`)}
+        grouped.map((section) => {
+          const isCollapsed = collapsed[section.category] === true;
+          return (
+            <View key={section.category} className="mb-6">
+              <SectionHeader
+                label={t(`category.${section.category}`, {
+                  defaultValue: section.category.replaceAll("_", " "),
+                })}
+                count={section.items.length}
+                expanded={!isCollapsed}
+                onPress={() =>
+                  setCollapsed((prev) => ({
+                    ...prev,
+                    [section.category]: !prev[section.category],
+                  }))
+                }
               />
+              {!isCollapsed ? (
+                isGrid ? (
+                  <View className="mt-2 flex-row flex-wrap">
+                    {section.items.map((item) => (
+                      <View key={item.id} style={{ width: `${100 / cols}%` }}>
+                        <SeriesCard
+                          series={toSeriesCardSeries(item)}
+                          onPress={() => router.push(`/series/${seriesParam(item)}`)}
+                        />
+                      </View>
+                    ))}
+                  </View>
+                ) : (
+                  <View className="mt-2">
+                    {section.items.map((item) => (
+                      <WatchNextRow
+                        key={item.id}
+                        series={toWatchNextSeries(item)}
+                        marking={markingId === item.nextUnwatched?.episodeId}
+                        caughtUpSubtitle={
+                          item.nextAirDate ? `Next air ${item.nextAirDate}` : "Up to date"
+                        }
+                        onPress={() => router.push(`/series/${seriesParam(item)}`)}
+                        onQuickMark={(episodeId) => {
+                          void quickMark(episodeId);
+                        }}
+                      />
+                    ))}
+                  </View>
+                )
+              ) : null}
             </View>
-          ))}
-        </View>
+          );
+        })
       )}
 
-      <Link href="/dev/smoke" className="mt-6 px-1">
-        <Text className="font-mono text-[10px] uppercase tracking-widest text-muted">
-          Brand smoke →
-        </Text>
-      </Link>
+      {items.length > 0 ? (
+        <AddSectionBar
+          sections={sections}
+          sectionSorts={sectionSorts}
+          onSectionsChange={(next) => {
+            void persistPrefs({
+              ...prefs,
+              watchSections: ensurePinnedWatchSections(next),
+            });
+          }}
+          onSortChange={(category, sort) => {
+            void persistPrefs({
+              ...prefs,
+              watchSectionSorts: { ...prefs.watchSectionSorts, [category]: sort },
+            });
+          }}
+          sortsForCategory={sortsForCategory}
+          categoryOrder={CATEGORY_ORDER}
+          labels={{
+            trigger: t("watch.manageSections", { defaultValue: "Manage sections" }),
+            title: t("watch.manageSectionsTitle", { defaultValue: "Sections" }),
+            hint: t("watch.manageSectionsHint", {
+              defaultValue: "Reorder, sort, add or remove category sections.",
+            }),
+            categoryLabel: (c) => t(`category.${c}`, { defaultValue: c }),
+            sortLabel: (s) => t(`library.sort.${s}`, { defaultValue: s }),
+            remove: t("watch.removeSection", { defaultValue: "Remove" }),
+            add: t("watch.addSection", { defaultValue: "Add" }),
+            pinned: t("watch.sectionPinned", { defaultValue: "Pinned" }),
+            moveUp: t("common.moveUp", { defaultValue: "Move up" }),
+            moveDown: t("common.moveDown", { defaultValue: "Move down" }),
+          }}
+        />
+      ) : null}
     </PullToRefresh>
   );
 }

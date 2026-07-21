@@ -5,21 +5,25 @@ import {
   type Stats,
   type WatchCategory,
 } from "@baykus/api-client";
-import { EmptyPanel, PageTitle, PullToRefresh, SkeletonBone } from "@baykus/ui";
+import {
+  colors,
+  EmptyPanel,
+  HBarList,
+  Heatmap,
+  MiniBars,
+  PullToRefresh,
+  SectionPill,
+  SkeletonBone,
+  StatTile,
+} from "@baykus/ui";
 import { Stack } from "expo-router";
-import { BarChart3 } from "lucide-react-native";
-import { type ReactNode, useCallback, useEffect, useState } from "react";
+import { BarChart3, RefreshCw } from "lucide-react-native";
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, Text, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../src/auth/AuthProvider.tsx";
-
-function formatMinutes(min: number): string {
-  if (min < 60) return `${min}m`;
-  const h = Math.floor(min / 60);
-  const m = min % 60;
-  return m ? `${h}h ${m}m` : `${h}h`;
-}
+import { formatDurationLabel, formatDurationParts } from "../../src/lib/duration.ts";
 
 function deviceTimeZone(): string {
   try {
@@ -29,20 +33,33 @@ function deviceTimeZone(): string {
   }
 }
 
-const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
-const HOURS = Array.from({ length: 24 }, (_, h) => h);
+const FUN_ACTIVITIES = [
+  { id: "walkAroundWorld", minutes: 480000 },
+  { id: "shower", minutes: 15 },
+  { id: "outerWilds", minutes: 22 },
+  { id: "lotr", minutes: 683 },
+  { id: "moonFlight", minutes: 4320 },
+  { id: "mountEverest", minutes: 57600 },
+] as const;
 
-/** Full stats hub — mirrors web StatsPage sections (list/row UI; heatmap as intensity strip). */
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
+
+/** Visual parity with web StatsPage — hero + tiles + SectionPill + HBar/MiniBars. */
 export default function StatsScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { session, loading: authLoading } = useAuth();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activityIndex, setActivityIndex] = useState(() =>
+    Math.floor(Math.random() * FUN_ACTIVITIES.length),
+  );
 
   const needsAuth = session?.mode === "multi" && !session.authenticated;
+  const tileCols = width >= 720 ? 3 : 2;
 
   const load = useCallback(async () => {
     if (needsAuth) {
@@ -69,6 +86,16 @@ export default function StatsScreen() {
     void load();
   }, [authLoading, load]);
 
+  const currentActivity = FUN_ACTIVITIES[activityIndex] ?? FUN_ACTIVITIES[0];
+  const activityLine = useMemo(() => {
+    if (!stats) return "";
+    const activityTimes = stats.watchTimeMin / currentActivity.minutes;
+    const formattedCount = new Intl.NumberFormat(i18n.language || "tr-TR", {
+      maximumFractionDigits: activityTimes >= 100 ? 0 : 2,
+    }).format(activityTimes);
+    return t(`stats.hero.activities.${currentActivity.id}`, { count: formattedCount });
+  }, [stats, currentActivity, i18n.language, t]);
+
   return (
     <>
       <Stack.Screen options={{ title: t("app.nav.stats") }} />
@@ -78,6 +105,7 @@ export default function StatsScreen() {
           paddingBottom: insets.bottom + 32,
           paddingTop: 8,
           paddingHorizontal: 12,
+          gap: 40,
         }}
         refreshing={refreshing}
         onRefresh={async () => {
@@ -85,18 +113,17 @@ export default function StatsScreen() {
           await load();
         }}
       >
-        <PageTitle className="mb-4 px-1">{t("app.nav.stats")}</PageTitle>
-
         {authLoading || loading ? (
           <View className="gap-3 px-1">
-            <SkeletonBone className="h-24 w-full rounded-xl" />
-            <SkeletonBone className="h-20 w-full rounded-xl" />
-            <SkeletonBone className="h-32 w-full rounded-xl" />
+            <SkeletonBone className="mx-auto h-16 w-48 rounded" />
+            <SkeletonBone className="h-24 w-full rounded-md" />
+            <SkeletonBone className="h-32 w-full rounded-md" />
           </View>
         ) : needsAuth ? (
           <EmptyPanel icon={BarChart3} title="Sign in required" hint="Stats need a session." />
         ) : error ? (
           <View className="items-center gap-3 py-16">
+            <Text className="font-mono text-xs text-muted">{t("errors.generic")}</Text>
             <Text className="font-mono text-xs text-red-400">{error}</Text>
             <Pressable
               accessibilityRole="button"
@@ -104,293 +131,417 @@ export default function StatsScreen() {
                 setLoading(true);
                 void load();
               }}
-              className="rounded-full border border-white/15 px-4 py-2"
+              className="rounded-md border border-white/10 px-3 py-1.5"
             >
-              <Text className="font-mono text-[10px] uppercase tracking-widest text-snow">
-                Retry
+              <Text className="font-mono text-[10px] uppercase tracking-widest text-muted">
+                {t("errors.retry")}
               </Text>
             </Pressable>
           </View>
-        ) : !stats || stats.episodesWatched === 0 ? (
-          <EmptyPanel icon={BarChart3} title={t("stats.empty")} />
-        ) : (
-          <View className="gap-6 px-1">
-            <View className="rounded-xl border border-white/10 bg-white/5 px-4 py-4">
-              <Text className="font-display text-3xl italic text-snow">
-                {formatMinutes(stats.watchTimeMin)}
-              </Text>
-              <Text className="mt-1 font-mono text-xs text-muted">
-                {t("stats.hero.subline", {
-                  episodes: stats.episodesWatched,
-                  series: stats.seriesCount,
-                })}
-              </Text>
-              <Text className="mt-2 font-mono text-[10px] text-muted">
-                Favorites {stats.favoritesCount} · Dated watches {stats.datedWatches.dated}/
-                {stats.datedWatches.total}
-              </Text>
+        ) : !stats ? null : (
+          <>
+            <View className="gap-8 px-1">
+              <View className="items-center gap-2 py-4">
+                <Text className="text-center font-display text-6xl italic leading-none tracking-tight text-snow">
+                  {formatDurationLabel(formatDurationParts(stats.watchTimeMin), t)}
+                </Text>
+                <View className="flex-row items-center gap-2">
+                  <Text className="font-mono text-xs uppercase tracking-widest text-muted">
+                    {activityLine}
+                  </Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={t("stats.hero.activities.next")}
+                    onPress={() => setActivityIndex((prev) => (prev + 1) % FUN_ACTIVITIES.length)}
+                    className="rounded-full p-1 active:bg-white/5"
+                  >
+                    <RefreshCw size={14} color={colors.muted} />
+                  </Pressable>
+                </View>
+              </View>
+
+              <View className="flex-row flex-wrap gap-4">
+                {(
+                  [
+                    [t("stats.tiles.tracked"), stats.seriesCount],
+                    [t("stats.tiles.episodes"), stats.episodesWatched],
+                    [t("stats.tiles.favorites"), stats.favoritesCount],
+                    [t("stats.tiles.watching"), stats.itemCount.watching],
+                    [t("stats.tiles.finished"), stats.itemCount.finished],
+                    [t("stats.tiles.watchLater"), stats.itemCount.watch_later],
+                  ] as const
+                ).map(([label, value]) => (
+                  <View
+                    key={label}
+                    style={{ width: `${100 / tileCols - 2}%` }}
+                    className="min-w-[45%] flex-1"
+                  >
+                    <StatTile label={label} value={value.toLocaleString("tr-TR")} />
+                  </View>
+                ))}
+              </View>
+
+              {stats.episodesWatched === 0 ? (
+                <Text className="text-center font-mono text-sm text-muted">{t("stats.empty")}</Text>
+              ) : null}
             </View>
 
-            <Section title="Recent">
-              <StatRow
-                label="Last 7 days"
-                value={`${stats.recent.last7Days.episodes} · ${formatMinutes(stats.recent.last7Days.watchTimeMin)}`}
-              />
-              <StatRow
-                label="Last 30 days"
-                value={`${stats.recent.last30Days.episodes} · ${formatMinutes(stats.recent.last30Days.watchTimeMin)}`}
-              />
-              <StatRow
-                label="This month"
-                value={`${stats.recent.thisMonth.episodes} · ${formatMinutes(stats.recent.thisMonth.watchTimeMin)}`}
-              />
-            </Section>
+            {stats.episodesWatched > 0 ? (
+              <>
+                <StatsBlock title={t("stats.recent.title")}>
+                  <View className="flex-row flex-wrap gap-3">
+                    <StatTile
+                      className="min-w-[45%]"
+                      label={t("stats.recent.last7Days")}
+                      value={formatDurationLabel(
+                        formatDurationParts(stats.recent.last7Days.watchTimeMin),
+                        t,
+                      )}
+                      sub={`${stats.recent.last7Days.episodes} ep`}
+                    />
+                    <StatTile
+                      className="min-w-[45%]"
+                      label={t("stats.recent.last30Days")}
+                      value={formatDurationLabel(
+                        formatDurationParts(stats.recent.last30Days.watchTimeMin),
+                        t,
+                      )}
+                      sub={`${stats.recent.last30Days.episodes} ep`}
+                    />
+                    <StatTile
+                      className="min-w-[45%]"
+                      label={t("stats.recent.thisMonth")}
+                      value={formatDurationLabel(
+                        formatDurationParts(stats.recent.thisMonth.watchTimeMin),
+                        t,
+                      )}
+                      sub={`${stats.recent.thisMonth.episodes} ep`}
+                    />
+                  </View>
+                </StatsBlock>
 
-            {stats.mostWatchedByTime.length > 0 ? (
-              <Section title="Most watched">
-                {stats.mostWatchedByTime.slice(0, 10).map((row) => (
-                  <StatRow
-                    key={row.itemId}
-                    label={row.title}
-                    value={formatMinutes(row.watchTimeMin)}
-                  />
-                ))}
-              </Section>
-            ) : null}
-
-            <Section title="By category">
-              {CATEGORY_ORDER.filter((c) => (stats.itemCount[c] ?? 0) > 0).map(
-                (c: WatchCategory) => (
-                  <StatRow key={c} label={t(`category.${c}`)} value={String(stats.itemCount[c])} />
-                ),
-              )}
-            </Section>
-
-            <Section title="Ratings">
-              <StatRow label={t("rating.bad")} value={String(stats.ratingDistribution["1"])} />
-              <StatRow label={t("rating.okay")} value={String(stats.ratingDistribution["2"])} />
-              <StatRow label={t("rating.good")} value={String(stats.ratingDistribution["3"])} />
-            </Section>
-
-            {stats.episodesPerMonth.length > 0 ? (
-              <Section title="Episodes per month">
-                {stats.episodesPerMonth.slice(-12).map((row) => (
-                  <StatRow key={row.month} label={row.month} value={String(row.count)} />
-                ))}
-              </Section>
-            ) : null}
-
-            {stats.favoriteProgress.length > 0 ? (
-              <Section title="Favorite progress">
-                {stats.favoriteProgress.slice(0, 10).map((row) => (
-                  <StatRow
-                    key={row.itemId}
-                    label={row.title}
-                    value={`${row.watchedEpisodes}/${row.airedEpisodes}`}
-                  />
-                ))}
-              </Section>
-            ) : null}
-
-            <Section title="Production">
-              <StatRow label="Ongoing" value={String(stats.production.ongoing)} />
-              <StatRow label="Ended" value={String(stats.production.ended)} />
-              {stats.production.ongoingItems.slice(0, 8).map((row) => (
-                <StatRow
-                  key={row.itemId}
-                  label={row.title}
-                  value={`${row.watchedEpisodes}/${row.airedEpisodes}`}
-                />
-              ))}
-            </Section>
-
-            {(stats.genreDistribution.top.length > 0 || stats.genreDistribution.other > 0) && (
-              <Section title="Genres">
-                {stats.genreDistribution.top.map((row) => (
-                  <StatRow key={row.name} label={row.name} value={String(row.episodes)} />
-                ))}
-                {stats.genreDistribution.other > 0 ? (
-                  <StatRow label="Other" value={String(stats.genreDistribution.other)} />
+                {stats.mostWatchedByTime.length > 0 ? (
+                  <StatsBlock title={t("stats.mostWatchedByTime.title")}>
+                    <HBarList
+                      items={stats.mostWatchedByTime.slice(0, 10).map((row) => ({
+                        key: String(row.itemId),
+                        label: row.title,
+                        value: row.watchTimeMin,
+                        displayValue: formatDurationLabel(formatDurationParts(row.watchTimeMin), t),
+                      }))}
+                    />
+                  </StatsBlock>
                 ) : null}
-              </Section>
-            )}
 
-            {(stats.networkDistribution.top.length > 0 || stats.networkDistribution.other > 0) && (
-              <Section title={`Networks (${stats.networkDistribution.networkCount})`}>
-                {stats.networkDistribution.top.map((row) => (
-                  <StatRow key={row.name} label={row.name} value={String(row.episodes)} />
-                ))}
-                {stats.networkDistribution.other > 0 ? (
-                  <StatRow label="Other" value={String(stats.networkDistribution.other)} />
+                <StatsBlock title={t("stats.categoryStatus.title")}>
+                  <HBarList
+                    items={CATEGORY_ORDER.filter((c) => (stats.itemCount[c] ?? 0) > 0).map(
+                      (c: WatchCategory) => ({
+                        key: c,
+                        label: t(`category.${c}`),
+                        value: stats.itemCount[c],
+                        displayValue: String(stats.itemCount[c]),
+                      }),
+                    )}
+                  />
+                </StatsBlock>
+
+                <StatsBlock title={t("stats.ratingDistribution")}>
+                  <HBarList
+                    items={[
+                      {
+                        key: "1",
+                        label: t("rating.bad"),
+                        value: stats.ratingDistribution["1"],
+                        displayValue: String(stats.ratingDistribution["1"]),
+                      },
+                      {
+                        key: "2",
+                        label: t("rating.okay"),
+                        value: stats.ratingDistribution["2"],
+                        displayValue: String(stats.ratingDistribution["2"]),
+                      },
+                      {
+                        key: "3",
+                        label: t("rating.good"),
+                        value: stats.ratingDistribution["3"],
+                        displayValue: String(stats.ratingDistribution["3"]),
+                      },
+                    ]}
+                  />
+                </StatsBlock>
+
+                {stats.genreDistribution.top.length > 0 ? (
+                  <StatsBlock title={t("stats.genreDistribution.title")}>
+                    <HBarList
+                      items={[
+                        ...stats.genreDistribution.top.map((row) => ({
+                          key: row.name,
+                          label: row.name,
+                          value: row.episodes,
+                          displayValue: String(row.episodes),
+                        })),
+                        ...(stats.genreDistribution.other > 0
+                          ? [
+                              {
+                                key: "other",
+                                label: t("stats.distribution.other"),
+                                value: stats.genreDistribution.other,
+                                displayValue: String(stats.genreDistribution.other),
+                                muted: true,
+                              },
+                            ]
+                          : []),
+                      ]}
+                    />
+                  </StatsBlock>
                 ) : null}
-              </Section>
-            )}
 
-            <Section title="Backlog">
-              <StatRow label="Episodes" value={String(stats.backlog.episodes)} />
-              <StatRow label="Series" value={String(stats.backlog.seriesCount)} />
-              <StatRow label="Time" value={formatMinutes(stats.backlog.watchTimeMin)} />
-              {stats.backlog.topSeries.slice(0, 8).map((row) => (
-                <StatRow key={row.itemId} label={row.title} value={`${row.episodes} ep`} />
-              ))}
-            </Section>
+                {stats.networkDistribution.top.length > 0 ? (
+                  <StatsBlock title={t("stats.networkDistribution.title")}>
+                    <StatTile
+                      className="mb-3"
+                      label={t("stats.networkDistribution.networkCount")}
+                      value={String(stats.networkDistribution.networkCount)}
+                    />
+                    <HBarList
+                      items={[
+                        ...stats.networkDistribution.top.map((row) => ({
+                          key: row.name,
+                          label: row.name,
+                          value: row.episodes,
+                          displayValue: String(row.episodes),
+                        })),
+                        ...(stats.networkDistribution.other > 0
+                          ? [
+                              {
+                                key: "other",
+                                label: t("stats.distribution.other"),
+                                value: stats.networkDistribution.other,
+                                displayValue: String(stats.networkDistribution.other),
+                                muted: true,
+                              },
+                            ]
+                          : []),
+                      ]}
+                    />
+                  </StatsBlock>
+                ) : null}
 
-            {stats.pace ? (
-              <Section title="Pace">
-                <StatRow label="Episodes / week" value={stats.pace.episodesPerWeek.toFixed(1)} />
-                <StatRow label="Projected weeks" value={String(stats.pace.projectedWeeks)} />
-              </Section>
-            ) : null}
-
-            {stats.upcoming.months.length > 0 ? (
-              <Section title="Upcoming">
-                {stats.upcoming.months.map((row) => (
-                  <StatRow
-                    key={row.month}
-                    label={row.month}
-                    value={`${row.episodes} · ${formatMinutes(row.watchTimeMin)}`}
+                <StatsBlock title={t("stats.backlog.title")}>
+                  <View className="mb-3 flex-row flex-wrap gap-3">
+                    <StatTile
+                      className="min-w-[45%]"
+                      label={t("stats.backlog.episodes")}
+                      value={String(stats.backlog.episodes)}
+                      sub={`${stats.backlog.seriesCount} series`}
+                    />
+                    <StatTile
+                      className="min-w-[45%]"
+                      label={t("stats.backlog.remainingTime")}
+                      value={formatDurationLabel(
+                        formatDurationParts(stats.backlog.watchTimeMin),
+                        t,
+                      )}
+                    />
+                  </View>
+                  <HBarList
+                    items={stats.backlog.topSeries.slice(0, 8).map((row) => ({
+                      key: String(row.itemId),
+                      label: row.title,
+                      value: row.episodes,
+                      displayValue: String(row.episodes),
+                    }))}
                   />
-                ))}
-              </Section>
-            ) : null}
+                </StatsBlock>
 
-            {stats.binges.length > 0 ? (
-              <Section title="Binges">
-                {stats.binges.slice(0, 10).map((row) => (
-                  <StatRow
-                    key={`${row.itemId}-${row.date}`}
-                    label={`${row.title} · ${row.date}`}
-                    value={`${row.episodes} ep`}
+                {stats.pace ? (
+                  <StatsBlock title={t("stats.pace.title")}>
+                    <View className="flex-row flex-wrap gap-3">
+                      <StatTile
+                        className="min-w-[45%]"
+                        label={t("stats.pace.projectionLabel")}
+                        value={t("stats.pace.projection", {
+                          count: stats.pace.projectedWeeks,
+                          weeks: stats.pace.projectedWeeks,
+                        })}
+                      />
+                      <StatTile
+                        className="min-w-[45%]"
+                        label={t("stats.pace.label")}
+                        value={t("stats.pace.value", {
+                          count: Math.round(stats.pace.episodesPerWeek),
+                        })}
+                        sub={t("stats.pace.sub")}
+                      />
+                    </View>
+                  </StatsBlock>
+                ) : null}
+
+                {stats.upcoming.months.length > 0 ? (
+                  <StatsBlock title={t("stats.upcoming.title")}>
+                    <MiniBars
+                      items={stats.upcoming.months.map((row) => ({
+                        key: row.month,
+                        label: row.month.slice(5),
+                        value: row.episodes,
+                        tooltip: `${row.month}: ${row.episodes}`,
+                      }))}
+                    />
+                  </StatsBlock>
+                ) : null}
+
+                {stats.binges.length > 0 ? (
+                  <StatsBlock title={t("stats.binges.title")}>
+                    <HBarList
+                      items={stats.binges.slice(0, 10).map((row) => ({
+                        key: `${row.itemId}-${row.date}`,
+                        label: row.title,
+                        value: row.episodes,
+                        displayValue: `${row.episodes} · ${row.date}`,
+                      }))}
+                    />
+                  </StatsBlock>
+                ) : null}
+
+                <StatsBlock title={t("stats.rewatchSummary.title")}>
+                  <View className="mb-3 flex-row flex-wrap gap-3">
+                    <StatTile
+                      className="min-w-[45%]"
+                      label={t("stats.rewatchSummary.total")}
+                      value={String(stats.rewatchSummary.totalRewatches)}
+                    />
+                    <StatTile
+                      className="min-w-[45%]"
+                      label={t("stats.rewatchSummary.episodes")}
+                      value={String(stats.rewatchSummary.rewatchedEpisodes)}
+                    />
+                  </View>
+                  <HBarList
+                    items={stats.rewatchSummary.bySeries.slice(0, 8).map((row) => ({
+                      key: String(row.itemId),
+                      label: row.title,
+                      value: row.rewatches,
+                      displayValue: String(row.rewatches),
+                    }))}
                   />
-                ))}
-              </Section>
-            ) : null}
+                </StatsBlock>
 
-            <Section title="Rewatches">
-              <StatRow
-                label="Total rewatches"
-                value={String(stats.rewatchSummary.totalRewatches)}
-              />
-              <StatRow
-                label="Rewatched episodes"
-                value={String(stats.rewatchSummary.rewatchedEpisodes)}
-              />
-              {stats.rewatchSummary.bySeries.slice(0, 8).map((row) => (
-                <StatRow key={row.itemId} label={row.title} value={String(row.rewatches)} />
-              ))}
-              {stats.mostRewatched.slice(0, 5).map((row) => (
-                <StatRow
-                  key={row.episodeId}
-                  label={`${row.itemTitle} S${row.s}E${row.e}`}
-                  value={`×${row.watchCount}`}
-                />
-              ))}
-            </Section>
-
-            <Section title="Streaks">
-              <StatRow label="Longest (weeks)" value={String(stats.streaks.longestWeeks)} />
-              <StatRow label="Current (weeks)" value={String(stats.streaks.currentWeeks)} />
-              {stats.streaks.bySeries.slice(0, 8).map((row) => (
-                <StatRow key={row.itemId} label={row.title} value={`${row.weeks}w`} />
-              ))}
-            </Section>
-
-            {stats.timeByYear.length > 0 ? (
-              <Section title="Time by year">
-                {stats.timeByYear.map((row) => (
-                  <StatRow
-                    key={row.year}
-                    label={String(row.year)}
-                    value={formatMinutes(row.totalMin)}
+                <StatsBlock title={t("stats.streaks.title")}>
+                  <View className="mb-3 flex-row flex-wrap gap-3">
+                    <StatTile
+                      className="min-w-[45%]"
+                      label={t("stats.streaks.longest")}
+                      value={String(stats.streaks.longestWeeks)}
+                    />
+                    <StatTile
+                      className="min-w-[45%]"
+                      label={t("stats.streaks.current")}
+                      value={String(stats.streaks.currentWeeks)}
+                    />
+                  </View>
+                  <HBarList
+                    items={stats.streaks.bySeries.slice(0, 8).map((row) => ({
+                      key: String(row.itemId),
+                      label: row.title,
+                      value: row.weeks,
+                      displayValue: `${row.weeks}w`,
+                    }))}
                   />
-                ))}
-              </Section>
+                </StatsBlock>
+
+                {stats.timeByYear.length > 0 ? (
+                  <StatsBlock title={t("stats.yearlyTime.title")}>
+                    <MiniBars
+                      items={stats.timeByYear.map((row) => ({
+                        key: String(row.year),
+                        label: String(row.year),
+                        value: row.totalMin,
+                        tooltip: formatDurationLabel(formatDurationParts(row.totalMin), t),
+                      }))}
+                    />
+                  </StatsBlock>
+                ) : null}
+
+                {stats.timeByYear.length > 0 ? (
+                  <StatsBlock title={t("stats.activityHeatmap.title")}>
+                    {stats.activityByDay.length === 0 ? (
+                      <View className="h-32 items-center justify-center rounded-md border border-white/10 bg-white/5">
+                        <Text className="font-mono text-[10px] uppercase tracking-widest text-muted">
+                          {t("stats.empty")}
+                        </Text>
+                      </View>
+                    ) : (
+                      <Heatmap
+                        years={[...stats.timeByYear.map((y) => y.year)].sort((a, b) => a - b)}
+                        days={stats.activityByDay}
+                        ariaLabel={t("stats.activityHeatmap.title")}
+                      />
+                    )}
+                    <View className="mt-2 flex-row items-center justify-end gap-1.5">
+                      <Text className="font-mono text-[10px] uppercase tracking-widest text-muted">
+                        {t("stats.activityHeatmap.legendLow")}
+                      </Text>
+                      <View className="h-[11px] w-[11px] bg-white/5" />
+                      <View className="h-[11px] w-[11px] bg-yellow/25" />
+                      <View className="h-[11px] w-[11px] bg-yellow/55" />
+                      <View className="h-[11px] w-[11px] bg-yellow/90" />
+                      <Text className="font-mono text-[10px] uppercase tracking-widest text-muted">
+                        {t("stats.activityHeatmap.legendHigh")}
+                      </Text>
+                    </View>
+                  </StatsBlock>
+                ) : null}
+
+                <StatsBlock title={t("stats.byWeekday.title")}>
+                  <MiniBars
+                    items={WEEKDAYS.map((label, i) => ({
+                      key: label,
+                      label,
+                      value: stats.byWeekday[i] ?? 0,
+                      tooltip: `${label}: ${stats.byWeekday[i] ?? 0}`,
+                    }))}
+                  />
+                </StatsBlock>
+
+                <StatsBlock title={t("stats.byHour.title")}>
+                  <MiniBars
+                    labelEvery={3}
+                    items={Array.from({ length: 24 }, (_, hour) => ({
+                      key: `h-${hour}`,
+                      label: String(hour),
+                      value: stats.byHour[hour] ?? 0,
+                      tooltip: `${hour}:00 — ${stats.byHour[hour] ?? 0}`,
+                    }))}
+                  />
+                </StatsBlock>
+
+                {stats.datedWatches.dated < stats.datedWatches.total ? (
+                  <Text className="px-1 text-center font-mono text-xs text-muted">
+                    {t("stats.footer.caveat", {
+                      dated: stats.datedWatches.dated,
+                      total: stats.datedWatches.total,
+                    })}
+                  </Text>
+                ) : null}
+              </>
             ) : null}
-
-            {stats.activityByDay.length > 0 ? (
-              <Section title="Activity (recent days)">
-                <ActivityStrip days={stats.activityByDay.slice(-90)} />
-              </Section>
-            ) : null}
-
-            <Section title="By weekday">
-              {WEEKDAYS.map((label, i) => (
-                <BarRow
-                  key={label}
-                  label={label}
-                  value={stats.byWeekday[i] ?? 0}
-                  max={Math.max(...stats.byWeekday, 1)}
-                />
-              ))}
-            </Section>
-
-            <Section title="By hour">
-              {HOURS.filter((hour) => (stats.byHour[hour] ?? 0) > 0).map((hour) => (
-                <BarRow
-                  key={`hour-${hour}`}
-                  label={`${String(hour).padStart(2, "0")}:00`}
-                  value={stats.byHour[hour] ?? 0}
-                  max={Math.max(...stats.byHour, 1)}
-                />
-              ))}
-            </Section>
-          </View>
+          </>
         )}
       </PullToRefresh>
     </>
   );
 }
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+function StatsBlock({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <View className="gap-2">
-      <Text className="font-mono text-[10px] uppercase tracking-widest text-muted">{title}</Text>
-      <View className="overflow-hidden rounded-xl border border-white/10">{children}</View>
-    </View>
-  );
-}
-
-function StatRow({ label, value }: { label: string; value: string }) {
-  return (
-    <View className="flex-row items-center justify-between gap-3 border-b border-white/5 px-3 py-3">
-      <Text className="min-w-0 flex-1 text-sm text-snow" numberOfLines={1}>
-        {label}
-      </Text>
-      <Text className="font-mono text-xs tabular-nums text-muted">{value}</Text>
-    </View>
-  );
-}
-
-function BarRow({ label, value, max }: { label: string; value: number; max: number }) {
-  const pct = Math.max(4, Math.round((value / max) * 100));
-  return (
-    <View className="gap-1 border-b border-white/5 px-3 py-2.5">
-      <View className="flex-row items-center justify-between">
-        <Text className="font-mono text-[10px] text-muted">{label}</Text>
-        <Text className="font-mono text-[10px] tabular-nums text-muted">{value}</Text>
+    <View className="gap-3 px-1">
+      <View className="z-30 items-center py-1">
+        <SectionPill>
+          <Text className="font-sans text-sm font-semibold text-snow">{title}</Text>
+        </SectionPill>
       </View>
-      <View className="h-1.5 overflow-hidden rounded-full bg-white/10">
-        <View className="h-full rounded-full bg-yellow" style={{ width: `${pct}%` }} />
-      </View>
-    </View>
-  );
-}
-
-function ActivityStrip({ days }: { days: { date: string; count: number }[] }) {
-  const max = Math.max(...days.map((d) => d.count), 1);
-  return (
-    <View className="flex-row flex-wrap gap-0.5 px-3 py-3">
-      {days.map((d) => {
-        const intensity = d.count === 0 ? 0.08 : 0.2 + (d.count / max) * 0.8;
-        return (
-          <View
-            key={d.date}
-            accessibilityLabel={`${d.date}: ${d.count}`}
-            className="h-2.5 w-2.5 rounded-sm"
-            style={{ backgroundColor: `rgba(255, 214, 10, ${intensity})` }}
-          />
-        );
-      })}
+      {children}
     </View>
   );
 }

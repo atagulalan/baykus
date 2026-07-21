@@ -1,6 +1,15 @@
 /// <reference types="nativewind/types" />
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Image, type ImageStyle, type StyleProp, View } from "react-native";
+import {
+  ActivityIndicator,
+  Image,
+  type ImageResizeMode,
+  type ImageStyle,
+  type StyleProp,
+  StyleSheet,
+  View,
+  type ViewStyle,
+} from "react-native";
 import { cn } from "../lib/cn.ts";
 import { colors } from "../tokens.ts";
 
@@ -9,12 +18,17 @@ export type MediaImageProps = {
   accessibilityLabel?: string;
   className?: string;
   wrapperClassName?: string;
+  wrapperStyle?: StyleProp<ViewStyle>;
   style?: StyleProp<ImageStyle>;
+  /** Cover the parent (absolute fill). Parent must have a bounded size. */
+  fill?: boolean;
+  resizeMode?: ImageResizeMode;
   onLoad?: () => void;
   onError?: () => void;
 };
 
-/** Image with a centered spinner until load completes. */
+/** Image with a centered spinner until load completes. Always `cover` by default so
+ * intrinsic bitmap size never expands the layout (RN Image gotcha). */
 export function MediaImage(props: MediaImageProps) {
   return <MediaImageInner key={props.src} {...props} />;
 }
@@ -24,7 +38,10 @@ function MediaImageInner({
   accessibilityLabel,
   className,
   wrapperClassName,
+  wrapperStyle,
   style,
+  fill = false,
+  resizeMode = "cover",
   onLoad,
   onError,
 }: MediaImageProps) {
@@ -38,7 +55,8 @@ function MediaImageInner({
 
   return (
     <View
-      className={cn("relative overflow-hidden", wrapperClassName)}
+      className={cn("relative overflow-hidden", fill && "absolute inset-0", wrapperClassName)}
+      style={[fill ? StyleSheet.absoluteFillObject : null, wrapperStyle]}
       accessibilityState={{ busy: phase === "loading" }}
     >
       {phase === "loading" ? (
@@ -49,8 +67,9 @@ function MediaImageInner({
       <Image
         source={{ uri: src }}
         accessibilityLabel={accessibilityLabel}
+        resizeMode={resizeMode}
         className={cn(className, phase === "ready" ? "opacity-100" : "opacity-0")}
-        style={style}
+        style={[{ width: "100%", height: "100%" }, style]}
         onLoad={() => {
           setPhase("ready");
           onLoad?.();

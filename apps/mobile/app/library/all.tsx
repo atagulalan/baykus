@@ -14,7 +14,7 @@ import {
   EMPTY_PANEL_CTA_CLASS,
   EmptyPanel,
   type LibrarySort,
-  PageTitle,
+  PageTitleRow,
   PullToRefresh,
   SectionHeader,
   SeriesCard,
@@ -120,12 +120,36 @@ export default function AllSeriesScreen() {
           await load();
         }}
       >
-        <View className="mb-2 flex-row items-baseline gap-2 px-1">
-          <PageTitle>{t("profile.allSeries")}</PageTitle>
-          {items.length > 0 ? (
-            <Text className="font-sans text-lg text-muted">({items.length})</Text>
-          ) : null}
-        </View>
+        <PageTitleRow
+          className="mb-4 px-1"
+          action={
+            sections.length > 0 && !authLoading && !loading && !needsAuth && !error ? (
+              <AddSectionBar
+                sortOnly
+                sections={sections}
+                sectionSorts={sectionSorts}
+                onSortChange={(category, sort) => {
+                  void onSortChange(category, sort);
+                }}
+                sortsForCategory={sortsForCategory}
+                labels={{
+                  trigger: t("library.filter.sortTitle"),
+                  title: t("library.filter.sortTitle"),
+                  categoryLabel: (c) => t(`category.${c}`),
+                  sortLabel: (s) => t(`library.sort.${s}`),
+                  remove: "",
+                  add: "",
+                  pinned: "",
+                  moveUp: "",
+                  moveDown: "",
+                }}
+              />
+            ) : null
+          }
+        >
+          {t("profile.allSeries")}
+          {items.length > 0 ? ` (${items.length})` : ""}
+        </PageTitleRow>
 
         {authLoading || loading ? (
           <View className="gap-3 px-1">
@@ -180,29 +204,6 @@ export default function AllSeriesScreen() {
           />
         ) : (
           <View className="gap-8">
-            {sections.length > 0 ? (
-              <AddSectionBar
-                sortOnly
-                sections={sections}
-                sectionSorts={sectionSorts}
-                onSortChange={(category, sort) => {
-                  void onSortChange(category, sort);
-                }}
-                sortsForCategory={sortsForCategory}
-                labels={{
-                  trigger: t("library.filter.sortTitle"),
-                  title: t("library.filter.sortTitle"),
-                  categoryLabel: (c) => t(`category.${c}`),
-                  sortLabel: (s) => t(`library.sort.${s}`),
-                  remove: "",
-                  add: "",
-                  pinned: "",
-                  moveUp: "",
-                  moveDown: "",
-                }}
-                className="mb-2 px-1"
-              />
-            ) : null}
             {sections.map((category) => {
               const raw = byCategory.get(category) ?? [];
               const sort = sectionSort(sectionSorts, category);
