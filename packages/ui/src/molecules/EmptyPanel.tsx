@@ -14,7 +14,7 @@ export type EmptyPanelProps = {
   className?: string;
 };
 
-/** Soft page-level empty — icon ring + display title + mono hint + optional CTA. */
+/** Soft page-level empty — icon ring + display title + sans hint + optional CTA. */
 export function EmptyPanel({ icon: Icon, title, hint, action, className }: EmptyPanelProps) {
   return (
     <View className={cn("mt-4 w-full items-center gap-5 px-3 py-16", className)}>
@@ -30,7 +30,7 @@ export function EmptyPanel({ icon: Icon, title, hint, action, className }: Empty
           {title}
         </Text>
         {hint ? (
-          <Text className="max-w-[18rem] text-center font-mono text-xs text-muted">{hint}</Text>
+          <Text className="max-w-[18rem] text-center font-sans text-sm text-muted">{hint}</Text>
         ) : null}
       </View>
       {action ? <View className="items-center pt-1">{action}</View> : null}

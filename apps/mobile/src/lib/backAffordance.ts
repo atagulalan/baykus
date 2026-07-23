@@ -11,6 +11,8 @@ const RULES: Array<{
   { test: (p) => p.startsWith("/series/"), fallback: "/(tabs)/watch" },
   { test: (p) => p === "/watch/history", fallback: "/(tabs)/watch" },
   { test: (p) => p === "/import", fallback: "/(tabs)/settings" },
+  // Hidden tab — no dock back chrome unless Wordmark special-cases this path.
+  { test: (p) => p === "/settings", fallback: "/(tabs)/profile" },
   {
     test: (p) => p.startsWith("/library/") || p === "/profile/stats",
     fallback: "/(tabs)/profile",

@@ -21,6 +21,7 @@ export {
   ROUNDED_CHECKBOX_SIZE_CLASS,
 } from "./atoms/Checkbox.tsx";
 export { CircularProgress, type CircularProgressProps } from "./atoms/CircularProgress.tsx";
+export { AirDateLabel, type AirDateLabelProps } from "./atoms/AirDateLabel.tsx";
 export { EpisodeLabel, type EpisodeLabelProps } from "./atoms/EpisodeLabel.tsx";
 export { MediaImage, type MediaImageProps } from "./atoms/MediaImage.tsx";
 export { PageTitle, type PageTitleProps } from "./atoms/PageTitle.tsx";
@@ -32,6 +33,7 @@ export {
 } from "./atoms/RatingControl.tsx";
 export { ReleaseTime, type ReleaseTimeProps } from "./atoms/ReleaseTime.tsx";
 export { SectionPill, type SectionPillProps } from "./atoms/SectionPill.tsx";
+export { Separator, type SeparatorProps } from "./atoms/Separator.tsx";
 export {
   SegmentedButtonGroup,
   type SegmentedButtonGroupProps,
@@ -82,8 +84,12 @@ export {
 export { BrandSmoke, type BrandSmokeProps } from "./BrandSmoke.tsx";
 export {
   calendarDaysBetween,
+  daysUntilAir,
   type FormatAirDateLabelOptions,
   formatAirDateLabel,
+  type UnairedTrailingState,
+  unairedTrailingState,
+  unairedTrailingStateFromEpisode,
 } from "./lib/airDateLabel.ts";
 export {
   type AiringFields,
@@ -122,6 +128,12 @@ export {
   TAG_TEXT,
 } from "./lib/episodeTags.ts";
 export {
+  type HapticKind,
+  type HapticsDriver,
+  haptic,
+  installHaptics,
+} from "./lib/haptics.ts";
+export {
   alignSeasonProgressAnnounced,
   buildProgressSegments,
   EMPTY_FRONTIER_MIN_PX,
@@ -144,6 +156,7 @@ export {
   seasonCompleteSnapshot,
   sortSeasonsSpecialsLast,
 } from "./lib/seasons.ts";
+export { useAiringClock } from "./lib/useAiringClock.ts";
 export {
   computeOverflowBadge,
   shouldShowQuickMarkCheckbox,
@@ -191,8 +204,17 @@ export {
   HeroBackdropFades,
   type HeroBackdropFadesProps,
 } from "./molecules/HeroBackdropFades.tsx";
+export {
+  LiftContextMenu,
+  type LiftContextMenuProps,
+  type LiftSourceRect,
+} from "./molecules/LiftContextMenu.tsx";
 export { MiniBars, type MiniBarsItem, type MiniBarsProps } from "./molecules/MiniBars.tsx";
-export { Modal, type ModalProps } from "./molecules/Modal.tsx";
+export {
+  Modal,
+  type ModalPopoverAlign,
+  type ModalProps,
+} from "./molecules/Modal.tsx";
 export {
   NeedsReviewBanner,
   type NeedsReviewBannerProps,
@@ -253,9 +275,15 @@ export {
 export {
   type StickySection,
   StickySectionScroll,
+  type StickySectionScrollHandle,
   type StickySectionScrollProps,
   stickyRows,
 } from "./molecules/StickySectionScroll.tsx";
+export {
+  UnairedTrailingMark,
+  type UnairedTrailingMarkLabels,
+  type UnairedTrailingMarkProps,
+} from "./molecules/UnairedTrailingMark.tsx";
 export {
   WatchDateSheet,
   type WatchDateSheetProps,

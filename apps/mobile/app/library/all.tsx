@@ -18,7 +18,6 @@ import {
   EmptyPanel,
   type LibrarySort,
   SectionHeader,
-  SeriesCard,
   type StickySection,
   StickySectionScroll,
   skeletonCategoryStickySections,
@@ -31,8 +30,8 @@ import { Pressable, Text, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../src/auth/AuthProvider.tsx";
 import { stickySectionTop, tabContentBottom } from "../../src/chrome/layout.ts";
+import { MenuSeriesCard, SeriesCardMenuProvider } from "../../src/components/SeriesCardMenu.tsx";
 import { groupByCategory } from "../../src/lib/groupByCategory.ts";
-import { toSeriesCardSeries } from "../../src/lib/mapSeriesCard.ts";
 import { sectionSort, sortsForCategory } from "../../src/lib/sectionSort.ts";
 import { seriesGridCols } from "../../src/lib/seriesGridCols.ts";
 import { sortSeriesSummaries } from "../../src/lib/sortSeries.ts";
@@ -229,15 +228,12 @@ export default function AllSeriesScreen() {
           />
         ),
         body: (
-          <AccordionPanel
-            open={expanded}
-            className={expanded ? "mb-8 mt-2" : "mb-1"}
-          >
+          <AccordionPanel open={expanded} className={expanded ? "mb-8 mt-2" : "mb-1"}>
             <View className="flex-row flex-wrap">
               {list.map((item) => (
                 <View key={item.id} style={{ width: `${100 / cols}%` }}>
-                  <SeriesCard
-                    series={toSeriesCardSeries(item)}
+                  <MenuSeriesCard
+                    item={item}
                     onPress={() => router.push(`/series/${seriesParam(item)}`)}
                   />
                 </View>
@@ -250,7 +246,18 @@ export default function AllSeriesScreen() {
   }
 
   return (
-    <>
+    <SeriesCardMenuProvider
+      onSeriesPatched={(updated) => {
+        setItems((prev) => prev.map((s) => (s.id === updated.id ? { ...s, ...updated } : s)));
+      }}
+      onSeriesRemoved={(id) => {
+        setItems((prev) => prev.filter((s) => s.id !== id));
+      }}
+      onReload={() => {
+        void load();
+      }}
+      onError={(message) => setError(message)}
+    >
       <Stack.Screen options={{ title: "" }} />
       <StickySectionScroll
         className="flex-1 bg-void"
@@ -268,6 +275,6 @@ export default function AllSeriesScreen() {
           await load();
         }}
       />
-    </>
+    </SeriesCardMenuProvider>
   );
 }

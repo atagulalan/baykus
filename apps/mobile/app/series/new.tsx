@@ -43,7 +43,8 @@ function idsFromParams(params: Record<string, string | string[] | undefined>): E
 export default function SeriesPreviewScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const bannerScrub = useBannerEdgeScrub(true);
+  // Keep full top scrub so header actions stay readable over the banner.
+  const bannerScrub = useBannerEdgeScrub(false);
   const params = useLocalSearchParams();
   const externalIds = useMemo(() => idsFromParams(params), [params]);
   const [preview, setPreview] = useState<SeriesPreview | null>(null);

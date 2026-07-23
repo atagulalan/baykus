@@ -47,7 +47,7 @@ export function OAuthButtons({
             {busy ? (
               <ActivityIndicator color={colors.snow} />
             ) : (
-              <Text className="font-mono text-xs uppercase tracking-widest text-snow">
+              <Text className="font-sans text-xs font-semibold uppercase tracking-widest text-snow">
                 {p.label}
               </Text>
             )}

@@ -1,11 +1,5 @@
 import { ApiError, listSeries, type SeriesSummary, seriesParam } from "@baykus/api-client";
-import {
-  EMPTY_PANEL_CTA_CLASS,
-  EmptyPanel,
-  PullToRefresh,
-  SeriesCard,
-  SkeletonSeriesGrid,
-} from "@baykus/ui";
+import { EMPTY_PANEL_CTA_CLASS, EmptyPanel, PullToRefresh, SkeletonSeriesGrid } from "@baykus/ui";
 import { Link, router, Stack } from "expo-router";
 import { Heart } from "lucide-react-native";
 import { useCallback, useEffect, useState } from "react";
@@ -14,7 +8,7 @@ import { Pressable, Text, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../src/auth/AuthProvider.tsx";
 import { tabContentBottom, tabContentTop } from "../../src/chrome/layout.ts";
-import { toSeriesCardSeries } from "../../src/lib/mapSeriesCard.ts";
+import { MenuSeriesCard, SeriesCardMenuProvider } from "../../src/components/SeriesCardMenu.tsx";
 import { seriesGridCols } from "../../src/lib/seriesGridCols.ts";
 
 /** Full favorites grid (profile hub caps preview at 6 — E79). */
@@ -59,7 +53,21 @@ export default function FavoritesScreen() {
   }, [authLoading, load]);
 
   return (
-    <>
+    <SeriesCardMenuProvider
+      onSeriesPatched={(updated) => {
+        setItems((prev) => {
+          const next = prev.map((s) => (s.id === updated.id ? { ...s, ...updated } : s));
+          return next.filter((s) => s.favorite);
+        });
+      }}
+      onSeriesRemoved={(id) => {
+        setItems((prev) => prev.filter((s) => s.id !== id));
+      }}
+      onReload={() => {
+        void load();
+      }}
+      onError={(message) => setError(message)}
+    >
       <Stack.Screen options={{ title: "" }} />
       <PullToRefresh
         className="flex-1 bg-void"
@@ -102,8 +110,8 @@ export default function FavoritesScreen() {
           <View className="flex-row flex-wrap">
             {items.map((item) => (
               <View key={item.id} style={{ width: `${100 / cols}%` }}>
-                <SeriesCard
-                  series={toSeriesCardSeries(item)}
+                <MenuSeriesCard
+                  item={item}
                   onPress={() => router.push(`/series/${seriesParam(item)}`)}
                 />
               </View>
@@ -111,6 +119,6 @@ export default function FavoritesScreen() {
           </View>
         )}
       </PullToRefresh>
-    </>
+    </SeriesCardMenuProvider>
   );
 }

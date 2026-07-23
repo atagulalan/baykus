@@ -205,7 +205,7 @@ export function SearchPage() {
       ) : search.isLoading ? (
         <div className="flex flex-col items-center gap-3 py-12 text-center sm:py-16">
           <Loader2 size={22} strokeWidth={2} className="animate-spin text-muted/60" />
-          <p className="font-mono text-xs tracking-wide text-muted/60">{t("search.loading")}</p>
+          <p className="text-sm text-muted/60">{t("search.loading")}</p>
         </div>
       ) : search.isError ? (
         <div className="flex flex-col items-center gap-4 rounded-2xl border border-red-500/20 bg-red-500/5 px-6 py-10 text-center">

@@ -74,8 +74,9 @@ function MediaImageInner({
         source={{ uri: src, ...(headers ? { headers } : {}) }}
         accessibilityLabel={accessibilityLabel}
         resizeMode={resizeMode}
-        className={cn(className, phase === "ready" ? "opacity-100" : "opacity-0")}
-        style={[{ width: "100%", height: "100%" }, style]}
+        className={className ?? ""}
+        // NativeWind opacity classes are unreliable on Image — drive fade via style.
+        style={[{ width: "100%", height: "100%", opacity: phase === "ready" ? 1 : 0 }, style]}
         onLoad={() => {
           setPhase("ready");
           onLoad?.();

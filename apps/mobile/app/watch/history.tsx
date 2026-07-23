@@ -9,7 +9,6 @@ import {
 import {
   colors,
   EpisodeRow,
-  PageTitleRow,
   SectionPill,
   SkeletonEpisodeList,
   type StickySection,
@@ -28,7 +27,6 @@ import {
   HEADER_ACTION_CLASS,
   stickySectionTop,
   tabContentBottom,
-  tabContentTop,
 } from "../../src/chrome/layout.ts";
 import { addDaysIso } from "../../src/lib/calendarBuckets.ts";
 
@@ -66,7 +64,8 @@ export default function WatchHistoryScreen() {
   const [unwatchingId, setUnwatchingId] = useState<number | null>(null);
 
   const needsAuth = session?.mode === "multi" && !session.authenticated;
-  const locale = i18n.language === "en" ? "en-US" : "tr-TR";
+  const locale =
+    i18n.language === "en" ? "en-US" : i18n.language === "ja" ? "ja-JP" : "tr-TR";
   const oldestFirst = order === "oldest";
 
   const load = useCallback(async () => {
@@ -149,11 +148,27 @@ export default function WatchHistoryScreen() {
 
   if (authLoading || (loading && items.length === 0 && !error)) {
     return (
-      <View className="flex-1 bg-void px-3" style={{ paddingTop: tabContentTop(insets.top) }}>
+      <>
         <Stack.Screen options={{ title: "" }} />
-        <PageTitleRow className="mb-3">{t("watch.history")}</PageTitleRow>
-        <SkeletonEpisodeList rows={6} />
-      </View>
+        <StickySectionScroll
+          className="flex-1 bg-void"
+          contentContainerStyle={{
+            paddingBottom: tabContentBottom(insets.bottom),
+          }}
+          stickyOffset={stickySectionTop(insets.top)}
+          pinClassName="px-3"
+          sections={[
+            {
+              key: "loading",
+              body: (
+                <View className="px-3">
+                  <SkeletonEpisodeList rows={6} />
+                </View>
+              ),
+            },
+          ]}
+        />
+      </>
     );
   }
 
@@ -167,29 +182,9 @@ export default function WatchHistoryScreen() {
     );
   }
 
-  const listHeader = (
-    <View className="gap-3 px-3">
-      <PageTitleRow
-        action={
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t("library.filter.sortTitle")}
-            accessibilityState={{ selected: oldestFirst }}
-            onPress={() => setOrder((prev) => (prev === "newest" ? "oldest" : "newest"))}
-            hitSlop={8}
-            className="h-9 w-9 items-center justify-center"
-          >
-            <ArrowUpDown
-              size={20}
-              color={oldestFirst ? colors.yellow : colors.muted}
-              strokeWidth={1.75}
-            />
-          </Pressable>
-        }
-      >
-        {t("watch.history")}
-      </PageTitleRow>
-      {error ? (
+  const listHeader =
+    error != null ? (
+      <View className="gap-3 px-3">
         <View className="items-center gap-2 py-8">
           <Text className="text-center text-sm text-muted">{t("errors.generic")}</Text>
           <Pressable
@@ -205,9 +200,8 @@ export default function WatchHistoryScreen() {
             </Text>
           </Pressable>
         </View>
-      ) : null}
-    </View>
-  );
+      </View>
+    ) : null;
 
   const stickySections: StickySection[] =
     error != null
@@ -270,7 +264,6 @@ export default function WatchHistoryScreen() {
         className="flex-1 bg-void"
         contentContainerStyle={{
           paddingBottom: tabContentBottom(insets.bottom),
-          paddingTop: tabContentTop(insets.top),
         }}
         stickyOffset={stickySectionTop(insets.top)}
         pinClassName="px-3"

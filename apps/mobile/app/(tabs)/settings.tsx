@@ -22,7 +22,14 @@ import { Link } from "expo-router";
 import { Settings as SettingsIcon } from "lucide-react-native";
 import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  Text,
+  TextInput,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../src/auth/AuthProvider.tsx";
 import { tabContentBottom, tabContentTop } from "../../src/chrome/layout.ts";
@@ -30,7 +37,7 @@ import { AccountSection } from "../../src/lib/AccountSection.tsx";
 import { exportLibraryZip } from "../../src/lib/exportZip.ts";
 import { resolveUiPrefs } from "../../src/lib/uiPrefs.ts";
 
-const LOCALES: Locale[] = ["tr", "en"];
+const LOCALES: Locale[] = ["tr", "en", "ja"];
 const REGIONS = ["TR", "US", "GB", "DE", "FR", "ES", "IT", "NL"] as const;
 
 /** Visual parity with web SettingsPage — SectionPill groups, soft rows, no card shells. */
@@ -38,14 +45,13 @@ export default function SettingsScreen() {
   const { session, loading: authLoading } = useAuth();
   const { t, i18n } = useTranslation();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedFlash, setSavedFlash] = useState(false);
-  const [tmdbKeyInput, setTmdbKeyInput] = useState("");
-  const [isEditingTmdbKey, setIsEditingTmdbKey] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
   const [resetChecked, setResetChecked] = useState(false);
   const [resetPhrase, setResetPhrase] = useState("");
@@ -68,7 +74,7 @@ export default function SettingsScreen() {
     try {
       const s = await getSettings();
       setSettings(s);
-      if (s.locale === "en" || s.locale === "tr") {
+      if (s.locale === "en" || s.locale === "tr" || s.locale === "ja") {
         if (i18n.language !== s.locale) await i18n.changeLanguage(s.locale);
       }
     } catch (err) {
@@ -107,14 +113,6 @@ export default function SettingsScreen() {
   async function onLocaleChange(locale: Locale) {
     await i18n.changeLanguage(locale);
     await patch({ locale });
-  }
-
-  async function onSaveTmdbKey() {
-    const value = tmdbKeyInput.trim();
-    if (!value) return;
-    setIsEditingTmdbKey(false);
-    await patch({ tmdbApiKey: value });
-    setTmdbKeyInput("");
   }
 
   async function onResetLibrary() {
@@ -184,6 +182,9 @@ export default function SettingsScreen() {
   }
 
   const prefs = resolveUiPrefs(settings);
+  const twoCol = width >= 640;
+  /** Half-width column cell; mirrors web `sm:columns-2` gap-6. */
+  const colStyle = twoCol ? ({ width: "48%" } as const) : undefined;
 
   return (
     <PullToRefresh
@@ -211,316 +212,295 @@ export default function SettingsScreen() {
       ) : null}
       {error ? <Text className="mb-3 px-1 font-mono text-xs text-red-400">{error}</Text> : null}
 
-      <SettingsGroup title={t("settings.general.title")}>
-        <SettingsSelect
-          label={t("settings.general.locale")}
-          value={settings.locale}
-          options={LOCALES.map((l) => ({
-            value: l,
-            label: t(`settings.general.localeName.${l}`),
-          }))}
-          onChange={(val) => {
-            void onLocaleChange(val);
-          }}
-        />
-        <SettingsSelect
-          label={t("settings.general.region")}
-          value={settings.region}
-          options={REGIONS.map((r) => ({
-            value: r,
-            label: t(`settings.general.regionName.${r}`),
-          }))}
-          onChange={(val) => {
-            void patch({ region: val });
-          }}
-        />
-        <SettingsSelect
-          label={t("settings.general.episodeLabelFormat")}
-          value={settings.episodeLabelFormat}
-          options={[
-            { value: "SxEy" as EpisodeLabelFormat, label: "S1E6" },
-            { value: "S01E06" as EpisodeLabelFormat, label: "S01E06" },
-            { value: "compact" as EpisodeLabelFormat, label: "1×6" },
-          ]}
-          onChange={(val) => {
-            void patch({ episodeLabelFormat: val });
-          }}
-        />
-        <SettingsSelect
-          label={t("settings.general.watchingWindow")}
-          hint={t("settings.general.watchingWindowHint")}
-          value={String(settings.watchingWindowDays)}
-          options={["7", "14", "30", "60", "90", "180", "365"].map((d) => ({
-            value: d,
-            label: t(`settings.general.watchingWindowOptions.${d}`),
-          }))}
-          onChange={(val) => {
-            void patch({ watchingWindowDays: Number(val) });
-          }}
-        />
-        <SettingsSelect
-          label={t("settings.general.defaultStartPage")}
-          value={settings.defaultStartPage}
-          options={[
-            {
-              value: "home" as DefaultStartPage,
-              label: t("settings.general.defaultStartPageName.home"),
-            },
-            {
-              value: "calendar" as DefaultStartPage,
-              label: t("settings.general.defaultStartPageName.calendar"),
-            },
-            {
-              value: "stats" as DefaultStartPage,
-              label: t("settings.general.defaultStartPageName.stats"),
-            },
-          ]}
-          onChange={(val) => {
-            void patch({ defaultStartPage: val });
-          }}
-        />
-        <SettingsSelect
-          label={t("settings.general.newSeriesDefaultStatus")}
-          value={settings.newSeriesDefaultStatus}
-          options={[
-            {
-              value: "watching" as NewSeriesDefaultStatus,
-              label: t("settings.general.newSeriesDefaultStatusName.watching"),
-            },
-            {
-              value: "watchlist" as NewSeriesDefaultStatus,
-              label: t("settings.general.newSeriesDefaultStatusName.watchlist"),
-            },
-          ]}
-          onChange={(val) => {
-            void patch({ newSeriesDefaultStatus: val });
-          }}
-        />
-        <CheckboxRow
-          label={t("settings.general.spoilerProtection")}
-          hint={t("settings.general.spoilerProtectionHint")}
-          checked={settings.spoilerProtection}
-          onChange={(checked) => {
-            void patch({ spoilerProtection: checked });
-          }}
-        />
-        <CheckboxRow
-          label={t("settings.general.showNextUpCarousel")}
-          hint={t("settings.general.showNextUpCarouselHint")}
-          checked={prefs.showNextUpCarousel}
-          onChange={(checked) => {
-            void patch({
-              uiPrefs: { ...prefs, showNextUpCarousel: checked },
-            });
-          }}
-        />
-        <SettingsSelect
-          label={t("settings.general.theme")}
-          value="dark"
-          options={[{ value: "dark", label: t("settings.general.themeDark") }]}
-          onChange={() => {}}
-        />
-      </SettingsGroup>
-
-      <SettingsGroup title={t("settings.providers.title")}>
-        <View className="rounded-xl px-3 py-3">
-          <Text className="mb-2 font-sans text-sm text-snow">
-            {t("settings.providers.tmdbKey")}
-          </Text>
-          <TextInput
-            value={settings.tmdbApiKeySet && !isEditingTmdbKey ? "••••••••••••" : tmdbKeyInput}
-            onChangeText={setTmdbKeyInput}
-            onFocus={() => {
-              if (settings.tmdbApiKeySet) setIsEditingTmdbKey(true);
-            }}
-            editable={!(settings.tmdbApiKeySet && !isEditingTmdbKey)}
-            autoCapitalize="none"
-            autoCorrect={false}
-            placeholder={t("settings.providers.tmdbKeyPlaceholder")}
-            placeholderTextColor="#888888"
-            className="h-11 rounded-lg border border-white/15 px-3 font-mono text-sm text-snow"
-          />
-          <View className="mt-2 flex-row flex-wrap gap-2">
-            {isEditingTmdbKey || !settings.tmdbApiKeySet ? (
-              <Pressable
-                onPress={() => {
-                  void onSaveTmdbKey();
-                }}
-                className="rounded-full bg-yellow px-3.5 py-2"
-              >
-                <Text className="font-mono text-[10px] uppercase tracking-widest text-void">
-                  Save
-                </Text>
-              </Pressable>
-            ) : null}
-            {settings.tmdbApiKeySet ? (
-              <Pressable
-                onPress={() => {
-                  void patch({ tmdbApiKey: null });
-                  setIsEditingTmdbKey(false);
-                  setTmdbKeyInput("");
-                }}
-                className="rounded-full border border-white/15 px-3.5 py-2"
-              >
-                <Text className="font-mono text-[10px] uppercase tracking-widest text-muted">
-                  {t("settings.providers.clear")}
-                </Text>
-              </Pressable>
-            ) : null}
-          </View>
-        </View>
-      </SettingsGroup>
-
-      <SettingsGroup title={t("settings.data.title")}>
-        <Pressable
-          accessibilityRole="button"
-          disabled={exportBusy}
-          onPress={() => {
-            void (async () => {
-              setExportBusy(true);
-              setError(null);
-              try {
-                await exportLibraryZip(false);
-              } catch (err) {
-                setError(err instanceof Error ? err.message : "export_failed");
-              } finally {
-                setExportBusy(false);
-              }
-            })();
-          }}
-          className="rounded-xl px-3 py-3 active:bg-white/[0.04] disabled:opacity-40"
-        >
-          {exportBusy ? (
-            <ActivityIndicator color="#888" />
-          ) : (
-            <Text className="font-mono text-[10px] uppercase tracking-widest text-muted">
-              {t("settings.data.export")}
-            </Text>
-          )}
-        </Pressable>
-        <Link href="/import" asChild>
-          <Pressable
-            accessibilityRole="button"
-            className="rounded-xl px-3 py-3 active:bg-white/[0.04]"
-          >
-            <Text className="font-mono text-[10px] uppercase tracking-widest text-muted">
-              {t("settings.data.tvtimeImport")}
-            </Text>
-          </Pressable>
-        </Link>
-        <Pressable
-          accessibilityRole="button"
-          disabled={metaBusy}
-          onPress={() => {
-            void (async () => {
-              setMetaBusy(true);
-              setMetaProgress(null);
-              setError(null);
-              try {
-                const result = await refreshAllSeries((e) => {
-                  setMetaProgress(`${e.done}/${e.total}`);
-                });
-                setMetaProgress(
-                  t("library.refreshAllDone", {
-                    newEpisodes: result.newEpisodes,
-                    defaultValue: `+${result.newEpisodes} episodes`,
-                  }),
-                );
-              } catch (err) {
-                setError(
-                  err instanceof ApiError
-                    ? err.message
-                    : err instanceof Error
-                      ? err.message
-                      : "refresh_failed",
-                );
-              } finally {
-                setMetaBusy(false);
-              }
-            })();
-          }}
-          className="rounded-xl px-3 py-3 active:bg-white/[0.04] disabled:opacity-40"
-        >
-          <Text className="font-mono text-[10px] uppercase tracking-widest text-muted">
-            {metaProgress ?? t("library.refreshAll")}
-          </Text>
-        </Pressable>
-      </SettingsGroup>
-
-      {session?.mode === "multi" && session.authenticated ? (
-        <View className="mb-10">
-          <AccountSection />
-        </View>
-      ) : null}
-
-      <SettingsGroup title={t("settings.dangerZone.title")} danger>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => {
-            setResetOpen((v) => !v);
-            setResetChecked(false);
-            setResetPhrase("");
-          }}
-          className="rounded-xl px-3 py-3 active:bg-white/[0.04]"
-        >
-          <Text className="font-mono text-xs uppercase tracking-widest text-red-400">
-            {t("settings.dangerZone.button")}
-          </Text>
-        </Pressable>
-        {resetOpen ? (
-          <View className="gap-3 rounded-xl px-3 py-3">
-            <Text className="font-display text-lg italic text-red-400">
-              {t("settings.dangerZone.warningTitle")}
-            </Text>
-            <Text className="text-sm text-snow">{t("settings.dangerZone.warningDesc")}</Text>
-            <View className="flex-row items-start gap-3">
-              <Checkbox
-                checked={resetChecked}
-                onChange={setResetChecked}
-                accessibilityLabel={t("settings.dangerZone.confirmCheckbox")}
-              />
-              <Pressable className="flex-1" onPress={() => setResetChecked((v) => !v)}>
-                <Text className="text-sm text-snow">
-                  {t("settings.dangerZone.confirmCheckbox")}
-                </Text>
-              </Pressable>
-            </View>
-            <Text className="text-sm text-muted">Type {confirmPhrase} to confirm</Text>
-            <TextInput
-              value={resetPhrase}
-              onChangeText={setResetPhrase}
-              editable={resetChecked}
-              autoCapitalize="characters"
-              autoCorrect={false}
-              placeholder={confirmPhrase}
-              placeholderTextColor="#888888"
-              className="h-11 rounded-lg border border-white/15 px-3 font-mono text-sm text-snow disabled:opacity-40"
+      <View className={twoCol ? "flex-row flex-wrap justify-between gap-y-2" : undefined}>
+        <View style={colStyle}>
+          <SettingsGroup title={t("settings.general.title")}>
+            <SettingsSelect
+              label={t("settings.general.locale")}
+              value={settings.locale}
+              options={LOCALES.map((l) => ({
+                value: l,
+                label: t(`settings.general.localeName.${l}`),
+              }))}
+              onChange={(val) => {
+                void onLocaleChange(val);
+              }}
             />
-            <View className="flex-row justify-end gap-2">
-              <Pressable onPress={() => setResetOpen(false)} className="rounded-full px-3.5 py-2">
-                <Text className="font-mono text-[10px] uppercase tracking-widest text-muted">
-                  Cancel
-                </Text>
-              </Pressable>
+            <SettingsSelect
+              label={t("settings.general.region")}
+              value={settings.region}
+              options={REGIONS.map((r) => ({
+                value: r,
+                label: t(`settings.general.regionName.${r}`),
+              }))}
+              onChange={(val) => {
+                void patch({ region: val });
+              }}
+            />
+            <SettingsSelect
+              label={t("settings.general.episodeLabelFormat")}
+              value={settings.episodeLabelFormat}
+              options={[
+                { value: "SxEy" as EpisodeLabelFormat, label: "S1E6" },
+                { value: "S01E06" as EpisodeLabelFormat, label: "S01E06" },
+                { value: "compact" as EpisodeLabelFormat, label: "1×6" },
+              ]}
+              onChange={(val) => {
+                void patch({ episodeLabelFormat: val });
+              }}
+            />
+            <SettingsSelect
+              label={t("settings.general.watchingWindow")}
+              hint={t("settings.general.watchingWindowHint")}
+              value={String(settings.watchingWindowDays)}
+              options={["7", "14", "30", "60", "90", "180", "365"].map((d) => ({
+                value: d,
+                label: t(`settings.general.watchingWindowOptions.${d}`),
+              }))}
+              onChange={(val) => {
+                void patch({ watchingWindowDays: Number(val) });
+              }}
+            />
+            <SettingsSelect
+              label={t("settings.general.defaultStartPage")}
+              value={settings.defaultStartPage}
+              options={[
+                {
+                  value: "home" as DefaultStartPage,
+                  label: t("settings.general.defaultStartPageName.home"),
+                },
+                {
+                  value: "calendar" as DefaultStartPage,
+                  label: t("settings.general.defaultStartPageName.calendar"),
+                },
+                {
+                  value: "stats" as DefaultStartPage,
+                  label: t("settings.general.defaultStartPageName.stats"),
+                },
+              ]}
+              onChange={(val) => {
+                void patch({ defaultStartPage: val });
+              }}
+            />
+            <SettingsSelect
+              label={t("settings.general.newSeriesDefaultStatus")}
+              value={settings.newSeriesDefaultStatus}
+              options={[
+                {
+                  value: "watching" as NewSeriesDefaultStatus,
+                  label: t("settings.general.newSeriesDefaultStatusName.watching"),
+                },
+                {
+                  value: "watchlist" as NewSeriesDefaultStatus,
+                  label: t("settings.general.newSeriesDefaultStatusName.watchlist"),
+                },
+              ]}
+              onChange={(val) => {
+                void patch({ newSeriesDefaultStatus: val });
+              }}
+            />
+            <CheckboxRow
+              label={t("settings.general.spoilerProtection")}
+              hint={t("settings.general.spoilerProtectionHint")}
+              checked={settings.spoilerProtection}
+              onChange={(checked) => {
+                void patch({ spoilerProtection: checked });
+              }}
+            />
+            <CheckboxRow
+              label={t("settings.general.showNextUpCarousel")}
+              hint={t("settings.general.showNextUpCarouselHint")}
+              checked={prefs.showNextUpCarousel}
+              onChange={(checked) => {
+                void patch({
+                  uiPrefs: { ...prefs, showNextUpCarousel: checked },
+                });
+              }}
+            />
+            <SettingsSelect
+              label={t("settings.general.theme")}
+              value="dark"
+              options={[{ value: "dark", label: t("settings.general.themeDark") }]}
+              onChange={() => {}}
+            />
+          </SettingsGroup>
+        </View>
+
+        <View style={colStyle}>
+          <SettingsGroup title={t("settings.data.title")}>
+            <View className="flex-col gap-4">
               <Pressable
-                disabled={!canReset || resetBusy}
+                accessibilityRole="button"
+                disabled={exportBusy}
                 onPress={() => {
-                  void onResetLibrary();
+                  void (async () => {
+                    setExportBusy(true);
+                    setError(null);
+                    try {
+                      await exportLibraryZip(false);
+                    } catch (err) {
+                      setError(err instanceof Error ? err.message : "export_failed");
+                    } finally {
+                      setExportBusy(false);
+                    }
+                  })();
                 }}
-                className="rounded-full bg-red-600 px-3.5 py-2 disabled:opacity-40"
+                className="self-start rounded-full border border-white/10 px-4 py-2.5 active:border-white/20 disabled:opacity-40"
               >
-                {resetBusy ? (
-                  <ActivityIndicator color="#fff" />
+                {exportBusy ? (
+                  <ActivityIndicator color="#888" />
                 ) : (
-                  <Text className="font-mono text-[10px] uppercase tracking-widest text-white">
-                    {t("settings.dangerZone.confirm")}
-                  </Text>
+                  <Text className="font-sans text-sm text-snow">{t("settings.data.export")}</Text>
                 )}
               </Pressable>
+
+              <View className="flex-col gap-2">
+                <Text className="font-sans text-sm text-snow">
+                  {t("settings.data.importTitle")}
+                </Text>
+                <Link href="/import" asChild>
+                  <Pressable
+                    accessibilityRole="button"
+                    className="items-center rounded-xl border border-dashed border-white/10 px-4 py-8 active:border-white/20 active:bg-white/[0.02]"
+                  >
+                    <Text className="font-sans text-sm text-muted">
+                      {t("settings.data.chooseFile")}
+                    </Text>
+                    <Text className="mt-1.5 font-sans text-xs text-muted/50">.zip</Text>
+                  </Pressable>
+                </Link>
+              </View>
+
+              <Link href="/import" asChild>
+                <Pressable
+                  accessibilityRole="button"
+                  className="self-start rounded-full border border-white/10 px-4 py-2.5 active:border-white/20"
+                >
+                  <Text className="font-sans text-sm text-snow">
+                    {t("settings.data.tvtimeImport")}
+                  </Text>
+                </Pressable>
+              </Link>
+
+              <Pressable
+                accessibilityRole="button"
+                disabled={metaBusy}
+                onPress={() => {
+                  void (async () => {
+                    setMetaBusy(true);
+                    setMetaProgress(null);
+                    setError(null);
+                    try {
+                      const result = await refreshAllSeries((e) => {
+                        setMetaProgress(`${e.done}/${e.total}`);
+                      });
+                      setMetaProgress(
+                        t("library.refreshAllDone", {
+                          newEpisodes: result.newEpisodes,
+                          defaultValue: `+${result.newEpisodes} episodes`,
+                        }),
+                      );
+                    } catch (err) {
+                      setError(
+                        err instanceof ApiError
+                          ? err.message
+                          : err instanceof Error
+                            ? err.message
+                            : "refresh_failed",
+                      );
+                    } finally {
+                      setMetaBusy(false);
+                    }
+                  })();
+                }}
+                className="w-full items-center rounded-full border border-white/10 px-4 py-2.5 active:border-white/20 disabled:opacity-40"
+              >
+                <Text className="font-sans text-sm text-snow">
+                  {metaProgress ?? t("library.refreshAll")}
+                </Text>
+              </Pressable>
             </View>
+          </SettingsGroup>
+        </View>
+
+        {session?.mode === "multi" && session.authenticated ? (
+          <View style={colStyle} className="mb-10">
+            <AccountSection />
           </View>
         ) : null}
-      </SettingsGroup>
+      </View>
+
+      {/* Extra spacer before Danger so Data→Danger gap matches section rhythm. */}
+      <View className="mt-6">
+        <SettingsGroup title={t("settings.dangerZone.title")} danger>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+              setResetOpen((v) => !v);
+              setResetChecked(false);
+              setResetPhrase("");
+            }}
+            className="rounded-xl px-3 py-3 active:bg-white/[0.04]"
+          >
+            <Text className="font-mono text-xs uppercase tracking-widest text-red-400">
+              {t("settings.dangerZone.button")}
+            </Text>
+          </Pressable>
+          {resetOpen ? (
+            <View className="gap-3 rounded-xl px-3 py-3">
+              <Text className="font-display text-lg italic text-red-400">
+                {t("settings.dangerZone.warningTitle")}
+              </Text>
+              <Text className="text-sm text-snow">{t("settings.dangerZone.warningDesc")}</Text>
+              <View className="flex-row items-start gap-3">
+                <Checkbox
+                  checked={resetChecked}
+                  onChange={setResetChecked}
+                  accessibilityLabel={t("settings.dangerZone.confirmCheckbox")}
+                />
+                <Pressable className="flex-1" onPress={() => setResetChecked((v) => !v)}>
+                  <Text className="text-sm text-snow">
+                    {t("settings.dangerZone.confirmCheckbox")}
+                  </Text>
+                </Pressable>
+              </View>
+              <Text className="text-sm text-muted">Type {confirmPhrase} to confirm</Text>
+              <TextInput
+                value={resetPhrase}
+                onChangeText={setResetPhrase}
+                editable={resetChecked}
+                autoCapitalize="characters"
+                autoCorrect={false}
+                placeholder={confirmPhrase}
+                placeholderTextColor="#888888"
+                className="h-11 rounded-lg border border-white/15 px-3 font-mono text-sm text-snow disabled:opacity-40"
+              />
+              <View className="flex-row justify-end gap-2">
+                <Pressable onPress={() => setResetOpen(false)} className="rounded-full px-3.5 py-2">
+                  <Text className="font-mono text-[10px] uppercase tracking-widest text-muted">
+                    Cancel
+                  </Text>
+                </Pressable>
+                <Pressable
+                  disabled={!canReset || resetBusy}
+                  onPress={() => {
+                    void onResetLibrary();
+                  }}
+                  className="rounded-full bg-red-600 px-3.5 py-2 disabled:opacity-40"
+                >
+                  {resetBusy ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text className="font-mono text-[10px] uppercase tracking-widest text-white">
+                      {t("settings.dangerZone.confirm")}
+                    </Text>
+                  )}
+                </Pressable>
+              </View>
+            </View>
+          ) : null}
+        </SettingsGroup>
+      </View>
     </PullToRefresh>
   );
 }

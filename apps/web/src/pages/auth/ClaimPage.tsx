@@ -4,8 +4,7 @@ import { TriangleAlert } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { claim, exportZipUrl, importZip } from "../../api/client.ts";
-
-const HANDLE_PATTERN = /^[a-z0-9-]{3,30}$/;
+import { HANDLE_PATTERN, sanitizeHandleInput } from "../../lib/handleInput.ts";
 
 const AUTH_INPUT =
   "rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-snow transition-colors focus:border-yellow/50 focus:outline-none focus:ring-1 focus:ring-yellow/30";
@@ -29,6 +28,7 @@ export function ClaimPage() {
   const [seedWarning, setSeedWarning] = useState(false);
 
   const passwordsMatch = password.length > 0 && password === confirm;
+  const passwordValid = password.length >= 8;
   const handleValid = HANDLE_PATTERN.test(handle);
 
   const claimMutation = useMutation({
@@ -96,8 +96,13 @@ export function ClaimPage() {
           {t("auth.handle")}
           <input
             value={handle}
-            onChange={(e) => setHandle(e.target.value)}
-            autoComplete="username"
+            onChange={(e) => setHandle(sanitizeHandleInput(e.target.value))}
+            autoComplete="nickname"
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck={false}
+            inputMode="text"
+            pattern="[a-z0-9\-]{3,30}"
             className={AUTH_INPUT}
           />
           {handle.length > 0 && !handleValid && (
@@ -114,6 +119,9 @@ export function ClaimPage() {
             autoComplete="new-password"
             className={AUTH_INPUT}
           />
+          {password.length > 0 && !passwordValid && (
+            <span className="text-xs text-red-400">{t("auth.claim.passwordHint")}</span>
+          )}
         </label>
 
         <label className="flex flex-col gap-1.5 text-sm">
@@ -145,7 +153,7 @@ export function ClaimPage() {
         <button
           type="submit"
           disabled={
-            claimMutation.isPending || !handleValid || !passwordsMatch || password.length < 8
+            claimMutation.isPending || !handleValid || !passwordsMatch || !passwordValid
           }
           className={AUTH_CTA}
         >

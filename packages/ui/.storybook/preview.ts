@@ -1,4 +1,6 @@
 import type { Preview } from "@storybook/react";
+import { createElement } from "react";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import "../src/storybook.css";
 
 const preview: Preview = {
@@ -9,6 +11,7 @@ const preview: Preview = {
     },
     layout: "padded",
   },
+  decorators: [(Story) => createElement(SafeAreaProvider, null, createElement(Story))],
 };
 
 export default preview;

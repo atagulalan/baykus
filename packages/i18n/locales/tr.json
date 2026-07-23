@@ -165,7 +165,7 @@
     "finale": "FİNAL",
     "seasonAndEpisode": "S{{season}} B{{episode}}",
     "menu": "Bölüm menüsü",
-    "watchAgain": "tekrar izledim",
+    "watchAgain": "Tekrar izledim",
     "editDate": "Tarihi Düzenle",
     "editDateHint": "İzleme geçmişi için tarihi ve saati belirleyin.",
     "datePreset": {
@@ -225,7 +225,8 @@
       "locale": "Dil",
       "localeName": {
         "tr": "Türkçe",
-        "en": "English"
+        "en": "English",
+        "ja": "日本語"
       },
       "localeHint": "Arayüz için kullanılacak dil.",
       "region": "Bölge",
@@ -470,9 +471,11 @@
     },
     "banner": {
       "edit": "Kapak fotoğrafını değiştir",
-      "title": "Kapak fotoğrafı seç",
-      "empty": "İzlediğin dizilerden kapak fotoğrafı seçmek için önce bir dizi ekle.",
-      "clear": "Kaldır"
+      "title": "Kapak fotoğrafı",
+      "empty": "Henüz kapak fotoğrafı yok.",
+      "howto": "Kapak ayarlamak için bir dizinin menüsünden “Profil kapağı yap”ı seç.",
+      "clear": "Kaldır",
+      "useAsCover": "Profil kapağı yap"
     },
     "photo": {
       "upload": "Profil fotoğrafını değiştir",
@@ -577,6 +580,7 @@
       "title": "Hesap oluştur",
       "confirmPassword": "Şifre (tekrar)",
       "passwordMismatch": "Şifreler eşleşmiyor",
+      "passwordHint": "En az 8 karakter",
       "handleHint": "3-30 karakter, küçük harf/rakam/tire",
       "seedZip": "Zip ile başla (opsiyonel)",
       "error": "Hesap oluşturulamadı — kullanıcı adı alınmış olabilir",

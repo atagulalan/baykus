@@ -195,72 +195,77 @@ export function SeriesDetailsSheet({
         </div>
       )}
 
-      <div className="flex flex-col gap-2">
-        <SectionHeader>{t("series.details.info")}</SectionHeader>
-        <div className="flex flex-col gap-1 text-sm">
-          {detail.networks.length > 0 && (
-            <InfoRow label={t("series.details.production")}>
-              <span className="inline-flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
-                {detail.networks.map((n) => (
-                  <LogoOrText key={n.name} src={buildImageUrl(n.logoRef, "thumb")} alt={n.name} />
-                ))}
-              </span>
-            </InfoRow>
-          )}
-          {avgRuntimeMin != null && (
-            <InfoRow label={t("series.details.runtime")}>
-              <span className="font-mono text-xs tabular-nums">
-                {t("episode.runtimeMin", { minutes: avgRuntimeMin })}
-              </span>
-            </InfoRow>
-          )}
-          {!preview && (
-            <>
-              <InfoRow label={t("series.details.added")}>
-                <span className="font-mono text-xs tabular-nums">{addedLabel}</span>
-              </InfoRow>
-              <InfoRow label={t("series.details.refreshed")}>
-                <span className="inline-flex items-center gap-2 font-mono text-xs tabular-nums">
-                  {refreshedLabel ?? t("series.details.neverRefreshed")}
-                  {stale && (
-                    <span className="rounded-full border border-yellow/40 px-1.5 py-0.5 font-sans text-[10px] text-yellow">
-                      {t("series.details.stale")}
-                    </span>
-                  )}
+      {(detail.networks.length > 0 ||
+        avgRuntimeMin != null ||
+        !preview ||
+        contentRating ||
+        originalLanguageName) && (
+        <div className="flex flex-col gap-2">
+          <SectionHeader>{t("series.details.info")}</SectionHeader>
+          <div className="flex flex-col gap-1 text-sm">
+            {detail.networks.length > 0 && (
+              <InfoRow label={t("series.details.production")}>
+                <span className="inline-flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
+                  {detail.networks.map((n) => (
+                    <LogoOrText key={n.name} src={buildImageUrl(n.logoRef, "thumb")} alt={n.name} />
+                  ))}
                 </span>
               </InfoRow>
-            </>
-          )}
-          {contentRating && (
-            <InfoRow label={t("series.details.contentRating")}>{contentRating.rating}</InfoRow>
-          )}
-          {originalLanguageName && (
-            <InfoRow label={t("series.details.language")}>{originalLanguageName}</InfoRow>
-          )}
+            )}
+            {avgRuntimeMin != null && (
+              <InfoRow label={t("series.details.runtime")}>
+                <span className="font-mono text-xs tabular-nums">
+                  {t("episode.runtimeMin", { minutes: avgRuntimeMin })}
+                </span>
+              </InfoRow>
+            )}
+            {!preview && (
+              <>
+                <InfoRow label={t("series.details.added")}>
+                  <span className="font-mono text-xs tabular-nums">{addedLabel}</span>
+                </InfoRow>
+                <InfoRow label={t("series.details.refreshed")}>
+                  <span className="inline-flex items-center gap-2 font-mono text-xs tabular-nums">
+                    {refreshedLabel ?? t("series.details.neverRefreshed")}
+                    {stale && (
+                      <span className="rounded-full border border-yellow/40 px-1.5 py-0.5 font-sans text-[10px] text-yellow">
+                        {t("series.details.stale")}
+                      </span>
+                    )}
+                  </span>
+                </InfoRow>
+              </>
+            )}
+            {contentRating && (
+              <InfoRow label={t("series.details.contentRating")}>{contentRating.rating}</InfoRow>
+            )}
+            {originalLanguageName && (
+              <InfoRow label={t("series.details.language")}>{originalLanguageName}</InfoRow>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {(detail.externalRatings.length > 0 || !preview) && (
         <div className="flex flex-col gap-3">
-          <SectionHeader>{t("series.details.ratings")}</SectionHeader>
           {detail.externalRatings.length > 0 && (
-            <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
-              {detail.externalRatings.map((r, i) => (
-                <span key={r.source} className="inline-flex items-center gap-1">
-                  {i > 0 && <span className="text-muted/60">{t("common.separator")}</span>}
-                  <Star size={12} strokeWidth={1.5} className="text-yellow" aria-hidden />
-                  {r.source.toUpperCase()}{" "}
-                  {(r.scale === 10 ? r.value : (r.value / r.scale) * 10).toFixed(1)}
-                </span>
-              ))}
-            </p>
+            <div className="flex flex-col gap-3">
+              <SectionHeader>{t("series.details.ratings")}</SectionHeader>
+              <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
+                {detail.externalRatings.map((r, i) => (
+                  <span key={r.source} className="inline-flex items-center gap-1">
+                    {i > 0 && <span className="text-muted/60">{t("common.separator")}</span>}
+                    <Star size={12} strokeWidth={1.5} className="text-yellow" aria-hidden />
+                    {r.source.toUpperCase()}{" "}
+                    {(r.scale === 10 ? r.value : (r.value / r.scale) * 10).toFixed(1)}
+                  </span>
+                ))}
+              </p>
+            </div>
           )}
           {!preview && (
-            <div className="flex flex-col gap-2">
-              <span className="font-mono text-[10px] uppercase tracking-widest text-muted">
-                {t("series.details.yourRating")}
-              </span>
-              <RatingControl value={detail.rating} onChange={onRateChange} />
+            <div className="flex items-center justify-center pt-2">
+              <RatingControl value={detail.rating} onChange={onRateChange} iconsOnly />
             </div>
           )}
         </div>

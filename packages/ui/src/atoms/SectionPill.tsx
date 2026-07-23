@@ -31,7 +31,7 @@ export function SectionPill({ children, className, onPress, style }: SectionPill
   if (onPress) {
     return (
       <Pressable
-        accessibilityRole="header"
+        accessibilityRole="button"
         onPress={onPress}
         className={cn(PILL_BASE, "active:bg-white/5", className)}
         style={pillStyle}

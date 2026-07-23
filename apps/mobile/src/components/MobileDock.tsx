@@ -1,6 +1,6 @@
 /// <reference types="nativewind/types" />
 
-import { colors } from "@baykus/ui";
+import { colors, haptic } from "@baykus/ui";
 import { router, usePathname, useSegments } from "expo-router";
 import { CalendarDays, type LucideIcon, Play, Search, User } from "lucide-react-native";
 import { Pressable, useWindowDimensions, View } from "react-native";
@@ -101,7 +101,10 @@ export function MobileDock() {
                       : key === "profile"
                         ? pathname === "/profile"
                         : pathname === "/search";
-                if (!atRoot) router.navigate(href);
+                if (!atRoot) {
+                  haptic("selection");
+                  router.navigate(href);
+                }
               }}
               className="h-11 min-w-0 flex-1 items-center justify-center active:scale-[0.92]"
             >

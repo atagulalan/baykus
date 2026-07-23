@@ -2,6 +2,7 @@ export {
   ApiError,
   addEpisodeWatch,
   addSeries,
+  type AvatarUploadSource,
   bulkUnwatch,
   bulkWatch,
   claim,

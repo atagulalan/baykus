@@ -12,6 +12,10 @@ describe("mobileBackAffordance", () => {
     expect(mobileBackAffordance("/import")).toBe("/(tabs)/settings");
   });
 
+  it("maps settings to profile", () => {
+    expect(mobileBackAffordance("/settings")).toBe("/(tabs)/profile");
+  });
+
   it("maps library and stats to profile", () => {
     expect(mobileBackAffordance("/library/all")).toBe("/(tabs)/profile");
     expect(mobileBackAffordance("/library/favorites")).toBe("/(tabs)/profile");

@@ -125,7 +125,7 @@ export function SeasonSection({
             <p className="font-display italic text-lg tracking-tight text-snow/90">
               {t("series.seasonEmpty.title")}
             </p>
-            <p className="font-mono text-xs text-muted/70">{t("series.seasonEmpty.hint")}</p>
+            <p className="font-sans text-sm text-muted">{t("series.seasonEmpty.hint")}</p>
           </div>
         ) : (
           season.episodes.map((episode) => {

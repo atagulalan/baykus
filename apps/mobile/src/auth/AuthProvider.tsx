@@ -124,6 +124,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Still clear local token if the network call fails.
     }
     await clearAccessToken();
+    // Optimistically drop auth so UI updates even if /session is slow.
+    setSession((prev) =>
+      prev ? { ...prev, authenticated: false, handle: null, identities: [], hasPassword: false } : prev,
+    );
     await refresh();
   }, [refresh]);
 

@@ -39,6 +39,9 @@ interface RatingDistributionSectionProps {
 
 export function RatingDistributionSection({ stats }: RatingDistributionSectionProps) {
   const { t } = useTranslation();
+  const totalRated = RATING_BARS.reduce((sum, r) => sum + stats.ratingDistribution[r.value], 0);
+  if (totalRated === 0) return null;
+
   const maxRatingCount = Math.max(1, ...RATING_BARS.map((r) => stats.ratingDistribution[r.value]));
 
   return (

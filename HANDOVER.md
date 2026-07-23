@@ -74,7 +74,7 @@ Three commits before the §M33 walk, one after:
 
 ```bash
 pnpm install
-pnpm dev            # server (4004) + web (5173, proxies /api and /img)
+pnpm dev            # server (4004) + web (5173) + Expo mobile
 pnpm test           # vitest across workspace (baseline: 576 tests, 64 files)
 pnpm typecheck && pnpm lint && pnpm build
 ```
@@ -86,3 +86,65 @@ left, there is nothing queued — ask xava what's next before starting new work.
 rail + SegmentedProgress (library) / start-watching CTA (preview), transparent
 stack header. Remaining thinner: custom tab chrome, schedule strip-span, search
 preview seasons, push **spec delta**. Commit when xava asks.
+
+---
+
+## Spec 013 — UX Polish Round 5 + mobile polish batch (2026-07-22)
+
+**Active work:** Uncommitted delta across `apps/mobile`, `apps/web`,
+`packages/ui`, `packages/i18n`, `specs/013-ux-polish-round5/spec.md`.
+Spec 013 web acceptance (E167–E197) is checked off in spec.md; the user’s
+31-item mobile/mweb checklist below is tracked here.
+
+### Checklist status (user batch 2026-07-22)
+
+| # | Item | Status | Evidence |
+|---|---|---|---|
+| 1 | Mobile accordion jank on open | **Done** | Series-detail seasons use `AccordionPanel animated={false}` (instant expand); `pinSection` defaults to one post-layout rememeasure (`correctMs: 0`) — no height-tween + rAF correction storm |
+| 2 | mweb overscroll / rubber-band excess | **Done** | `apps/mobile/global.css` `overscroll-behavior-y: none`; web `index.css` same |
+| 3 | Bottomsheet UX review | **Done** | `Modal` spring open, snappier swipe dismiss (lower threshold / fling), larger drag handle |
+| 4 | Bottomsheet list items monospace → sans | **Done** | `ActionSheet` list rows `font-sans` (`ActionSheet.tsx`); `SettingsSelect` option sheet title fixed to sans |
+| 5 | No auto-advance to TBD / when unaired remain | **Done** | `isSeasonFinished` + `nextIncompleteSeasonAfter` skip empty/TBD seasons (`packages/ui/src/lib/seasons.ts`); E180/E176 |
+| 6 | Mobile “13 days” countdown | **Done** | `UnairedTrailingMark` + `useAiringClock` wired in `apps/mobile/app/series/[id].tsx` |
+| 7 | Series detail blur even with banner | **Done** | `HeroBackdropFades` always rendered (`SeriesDetailHero.tsx`) |
+| 8 | Profile settings icon right of camera | **Done** | `apps/mobile/app/(tabs)/profile.tsx` icon row order |
+| 9 | Info icon position vs title | **Done** | Title row `items-start` in shared `SeriesDetailHero` + web hero |
+| 10 | Episode still placeholder (SxE) | **Done** | E188 — `EpisodeRow` reserved frame + code (`packages/ui/src/organisms/EpisodeRow.tsx`, web parity) |
+| 11 | Profile photo upload loader | **Done** | Avatar overlay + `accessibilityState.busy` (`profile.tsx`, E197) |
+| 12 | Remove mobile “extra info sources” | **Done** | Section absent from `apps/mobile/app/(tabs)/settings.tsx` |
+| 13 | Mobile backup & transfer UI polish | **Done** | Data actions sans body weight + taller dashed import target; native still routes zip pick via `/import` (no in-app file input) |
+| 14 | Mobile settings back button | **Done** | `MobileWordmark` + `backAffordance` for `/settings` → profile |
+| 15 | “Search series” not monospace | **Done** | Mobile `TextInput` `font-sans`; web search input sans |
+| 16 | “Find a show” / descriptions not monospace | **Done** | `EmptyPanel` hint `font-sans`; web `search.page.hint` sans; loading line de-monospaced |
+| 17 | Grid refresh after mark watched | **Done** | `useFocusEffect` refetch on library + watch tabs (`index.tsx`, `watch.tsx`) |
+| 18 | Cover photo via series menu | **Done** | `useAsCover` in series menu; profile modal howto-only (E194) |
+| 19 | Cover picker normal bottomsheet | **Done** | Profile banner modal uses default sheet (removed `size="large"`) |
+| 20 | Tablet bottomsheets max-width centered | **Done** | `Modal` tablet `maxWidth` 384/512 (`Modal.tsx` `TABLET_MIN_WIDTH`) |
+| 21 | Expo web max 1024; tablet native full width | **Done** | `WEB_CONTENT_MAX` gated to `Platform.OS === "web"` (`_layout.tsx`, `layout.ts`) |
+| 22 | Android accordion animation | **Done** | Series detail: instant expand (no Reanimated height tween of huge lists). Library grids keep Reanimated `AccordionPanel` (works on New Arch / Android). Device QA optional. |
+| 23 | Watch history chrome + poster | **Done** | E189/E190 — no title row, `posterStretch` + `stillUrl` (`watch/history.tsx`) |
+| 24 | Tap season → scroll into view | **Done** | `pinSeasonSection` → `StickySectionScroll.pinSection` (`series/[id].tsx`, E191) |
+| 25 | Next-up title → episode info | **Done** | E192 — `NextUpCard` `onPress` → `EpisodeDetailsSheet` |
+| 26 | Tablet menus as popovers | **Done** | E193 — `ActionSheet` `presentation="popover"` + `anchorRef` at ≥640 |
+| 27 | Profile cover modal howto + remove only | **Done** | E194 — mobile + web `ProfileBannerPicker` |
+| 28 | Settings Data→Danger gap + tablet columns | **Done** | E195 — `mt-6` spacer + `sm:columns-2` parity in settings |
+| 29 | Header ⋮ leak on profile navigate | **Done** | E196 — `useHeaderRightAction` clears on blur |
+| 30 | Avatar upload loader overlay | **Done** | E197 — z-index overlay on profile avatar |
+| 31 | Grain effect on mobile | **Done** | `FilmGrainOverlay` in root layout (`apps/mobile/src/components/FilmGrainOverlay.tsx`) |
+| 32 | SeriesCard long-press lift menu | **Done** | E202 — `LiftContextMenu` + `SeriesCardMenuProvider` on Library / All / Favorites / Profile |
+
+### Remaining / follow-up
+
+None blocking from the 31-item batch. Optional: device feel-check of series-detail season open on Android/iOS; native in-app zip file picker if desired later; device feel-check of E202 lift menu on Android/iOS.
+
+### Session implementation (this pass)
+
+- **SeriesCard lift context menu (32 / E202):** Cross-platform long-press menu — Reanimated lift preview + branded actions under the card (`packages/ui` `LiftContextMenu`); wired via `SeriesCardMenuProvider` / `MenuSeriesCard` on library grids. Actions match series detail ⋮; remove uses `ConfirmDialog` after the lift closes.
+- **Accordion jank (1, 22):** Root cause = Reanimated height tween of a full `EpisodeRow` list inside a FlatList body cell + `pinSection`’s ~320ms rAF rememeasure/scroll storm. Fix: series-detail seasons use `AccordionPanel animated={false}` (instant natural height); `pinSection` defaults to one post-layout rememeasure (`correctMs: 0`); pin immediately on expand (no 300ms defer). E191 decision updated.
+- **Sticky pill wrong after accordion/gap (follow-up):** FlatList does not re-fire sibling header `onLayout` when a body above changes height — `yByKey` went stale. `StickySectionScroll` now remesasures **all** mounted headers on body layout, section-structure changes, and before `pinSection`; exposes `remeasureHeaders()`.
+- **Bottomsheet (3):** Modal spring open, easier swipe dismiss, larger handle.
+- **Backup UI (13):** Settings Data buttons/import target de-monospaced to sans body.
+- Prior: `FilmGrainOverlay`, info icon top-align, search/settings sans, profile cover sheet, etc.
+
+Run before commit: `pnpm test packages/ui packages/ui/src/lib/seasons.test.ts apps/mobile/src/lib/backAffordance.test.ts && pnpm typecheck`.
+

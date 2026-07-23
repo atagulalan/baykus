@@ -82,7 +82,7 @@ export function SettingsSelect<T extends string>({
                     setIsOpen(false);
                   }
                 }}
-                className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left font-mono text-xs transition-colors ${
+                className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left font-sans text-sm transition-colors ${
                   opt.value === value
                     ? "bg-white/5 text-yellow"
                     : opt.disabled

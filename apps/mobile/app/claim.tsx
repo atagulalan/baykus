@@ -1,109 +1,105 @@
-import { ApiError, claim, importZip } from "@baykus/api-client";
+import { ApiError, claim } from "@baykus/api-client";
 import { PageTitle } from "@baykus/ui";
-import * as DocumentPicker from "expo-document-picker";
 import { router } from "expo-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { ActivityIndicator, Keyboard, Pressable, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+  AUTH_LABEL_CLASS,
+  AUTH_PRIMARY_BTN,
+  AuthSheet,
+  AuthTextInput,
+} from "../src/auth/AuthSheet.tsx";
 import { useAuth } from "../src/auth/AuthProvider.tsx";
+import { takeClaimPrefill } from "../src/auth/claimPrefill.ts";
+import { HANDLE_PATTERN, sanitizeHandleInput } from "../src/auth/handleInput.ts";
 import { setAccessToken } from "../src/lib/session.ts";
 
-const HANDLE_PATTERN = /^[a-z0-9-]{3,30}$/;
+function goBackToLogin() {
+  Keyboard.dismiss();
+  if (router.canGoBack()) router.back();
+  else router.replace("/login");
+}
+
+function readClaimPrefill() {
+  const prefill = takeClaimPrefill();
+  if (!prefill) return { handle: "", password: "" };
+  return {
+    handle: sanitizeHandleInput(prefill.handle),
+    password: prefill.password,
+  };
+}
 
 export default function ClaimScreen() {
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const { refresh, session } = useAuth();
-  const [handle, setHandle] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
-  const [seedName, setSeedName] = useState<string | null>(null);
-  const [seedBlob, setSeedBlob] = useState<Blob | null>(null);
+  const initial = useRef(readClaimPrefill()).current;
+
+  const [handle, setHandle] = useState(initial.handle);
+  const [password, setPassword] = useState(initial.password);
+  const [confirm, setConfirm] = useState(initial.password ? initial.password : "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
-  const [seedWarning, setSeedWarning] = useState(false);
 
   const handleValid = HANDLE_PATTERN.test(handle);
+  const passwordValid = password.length >= 8;
   const passwordsMatch = password.length > 0 && password === confirm;
+  const bottomPad = Math.max(insets.bottom, 20);
 
   if (session?.mode === "multi" && session.authenticated) {
     return (
-      <View className="flex-1 bg-void px-5 pt-6">
-        <PageTitle className="mb-4">Already claimed</PageTitle>
-        <Text className="font-mono text-xs text-muted">
-          Signed in as {session.handle ?? "library"}.
-        </Text>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => router.replace("/(tabs)/watch")}
-          className="mt-6 h-11 items-center justify-center rounded-full bg-yellow"
-        >
-          <Text className="font-mono text-xs uppercase tracking-widest text-void">Continue</Text>
-        </Pressable>
-      </View>
+      <AuthSheet bottomPad={bottomPad}>
+        <View className="gap-4">
+          <PageTitle>{t("auth.claim.title")}</PageTitle>
+          <Text className="font-sans text-sm text-muted">
+            Signed in as @{session.handle ?? "library"}.
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.replace("/(tabs)/watch")}
+            className={AUTH_PRIMARY_BTN}
+          >
+            <Text className="font-sans text-xs font-semibold uppercase tracking-widest text-void">
+              {t("auth.claim.continue")}
+            </Text>
+          </Pressable>
+        </View>
+      </AuthSheet>
     );
   }
 
   if (done) {
     return (
-      <View className="flex-1 bg-void px-5 pt-6">
-        <PageTitle className="mb-4">Welcome, {done}</PageTitle>
-        <Text className="mb-4 text-sm text-muted">
-          Handle claimed. Session token stored in SecureStore.
-        </Text>
-        {seedWarning ? (
-          <Text className="mb-4 font-mono text-xs text-yellow">
-            {t("auth.claim.seedImportFailed")}
+      <AuthSheet bottomPad={bottomPad}>
+        <View className="gap-4">
+          <PageTitle>{t("auth.claim.successTitle")}</PageTitle>
+          <Text className="font-sans text-sm leading-relaxed text-muted">
+            {t("auth.claim.successBody")}
           </Text>
-        ) : null}
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => router.replace("/(tabs)/watch")}
-          className="h-11 items-center justify-center rounded-full bg-yellow"
-        >
-          <Text className="font-mono text-xs uppercase tracking-widest text-void">
-            Open library
-          </Text>
-        </Pressable>
-      </View>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.replace("/(tabs)/watch")}
+            className={AUTH_PRIMARY_BTN}
+          >
+            <Text className="font-sans text-xs font-semibold uppercase tracking-widest text-void">
+              {t("auth.claim.continue")}
+            </Text>
+          </Pressable>
+        </View>
+      </AuthSheet>
     );
-  }
-
-  async function pickSeed() {
-    const picked = await DocumentPicker.getDocumentAsync({
-      type: ["application/zip"],
-      copyToCacheDirectory: true,
-    });
-    if (picked.canceled || !picked.assets?.[0]) return;
-    const asset = picked.assets[0];
-    const res = await fetch(asset.uri);
-    setSeedBlob(await res.blob());
-    setSeedName(asset.name ?? "backup.zip");
   }
 
   async function onSubmit() {
     setBusy(true);
     setError(null);
-    setSeedWarning(false);
     try {
       const result = await claim({ handle, password, returnToken: true });
       if (result.token) await setAccessToken(result.token);
       await refresh();
-      if (seedBlob) {
-        try {
-          await importZip(seedBlob, "replace");
-        } catch {
-          setSeedWarning(true);
-        }
-      }
       setDone(result.handle);
     } catch (err) {
       setError(
@@ -115,95 +111,88 @@ export default function ClaimScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      className="flex-1 bg-void px-5 pt-6"
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
-      <PageTitle className="mb-6">Claim handle</PageTitle>
-      <Field label="Handle" value={handle} onChangeText={setHandle} autoCapitalize="none" />
-      {!handleValid && handle.length > 0 ? (
-        <Text className="mb-2 font-mono text-[10px] text-red-400">
-          3–30 chars: a-z, 0-9, hyphen
-        </Text>
-      ) : null}
-      <Field label="Password" value={password} onChangeText={setPassword} secureTextEntry />
-      <Field label="Confirm" value={confirm} onChangeText={setConfirm} secureTextEntry />
-      {!passwordsMatch && confirm.length > 0 ? (
-        <Text className="mb-2 font-mono text-[10px] text-red-400">Passwords must match</Text>
-      ) : null}
+    <AuthSheet bottomPad={bottomPad} keyboard onBack={goBackToLogin}>
+      <View className="gap-4">
+        <PageTitle>{t("auth.claim.title")}</PageTitle>
 
-      <Text className="mb-2 mt-2 font-mono text-[10px] uppercase tracking-widest text-muted">
-        {t("auth.claim.seedZip")}
-      </Text>
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => {
-          void pickSeed();
-        }}
-        className="mb-4 h-11 items-center justify-center rounded-full border border-white/15"
-      >
-        <Text className="font-mono text-xs uppercase tracking-widest text-snow">
-          {seedName ?? t("auth.claim.seedZip")}
-        </Text>
-      </Pressable>
-      {seedName ? (
+        <View className="gap-3">
+          <View>
+            <Text className={AUTH_LABEL_CLASS}>{t("auth.handle")}</Text>
+            <AuthTextInput
+              value={handle}
+              onChangeText={(raw) => setHandle(sanitizeHandleInput(raw))}
+              autoCapitalize="none"
+              autoComplete="username"
+              textContentType="username"
+              keyboardType="ascii-capable"
+              autoCorrect={false}
+              spellCheck={false}
+              placeholder="yourhandle"
+            />
+            {!handleValid && handle.length > 0 ? (
+              <Text className="mt-1.5 font-sans text-xs text-red-400">
+                {t("auth.claim.handleHint")}
+              </Text>
+            ) : null}
+          </View>
+
+          <View>
+            <Text className={AUTH_LABEL_CLASS}>{t("auth.password")}</Text>
+            <AuthTextInput
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              autoComplete="new-password"
+              textContentType="newPassword"
+              autoCorrect={false}
+              spellCheck={false}
+            />
+            {password.length > 0 && !passwordValid ? (
+              <Text className="mt-1.5 font-sans text-xs text-red-400">
+                {t("auth.claim.passwordHint")}
+              </Text>
+            ) : null}
+          </View>
+
+          <View>
+            <Text className={AUTH_LABEL_CLASS}>{t("auth.claim.confirmPassword")}</Text>
+            <AuthTextInput
+              value={confirm}
+              onChangeText={setConfirm}
+              secureTextEntry
+              // Single newPassword field — a second one breaks Fill on RN.
+              autoComplete="password"
+              textContentType="password"
+              autoCorrect={false}
+              spellCheck={false}
+            />
+            {!passwordsMatch && confirm.length > 0 ? (
+              <Text className="mt-1.5 font-sans text-xs text-red-400">
+                {t("auth.claim.passwordMismatch")}
+              </Text>
+            ) : null}
+          </View>
+        </View>
+
+        {error ? <Text className="font-sans text-xs text-red-400">{error}</Text> : null}
+
         <Pressable
+          accessibilityRole="button"
+          disabled={busy || !handleValid || !passwordValid || !passwordsMatch}
           onPress={() => {
-            setSeedBlob(null);
-            setSeedName(null);
+            void onSubmit();
           }}
-          className="mb-3"
+          className={AUTH_PRIMARY_BTN}
         >
-          <Text className="font-mono text-[10px] text-muted underline">Clear seed zip</Text>
+          {busy ? (
+            <ActivityIndicator color="#080808" />
+          ) : (
+            <Text className="font-sans text-xs font-semibold uppercase tracking-widest text-void">
+              {t("auth.claim.submit")}
+            </Text>
+          )}
         </Pressable>
-      ) : null}
-
-      {error ? <Text className="mb-3 font-mono text-xs text-red-400">{error}</Text> : null}
-      <Pressable
-        accessibilityRole="button"
-        disabled={busy || !handleValid || !passwordsMatch}
-        onPress={() => {
-          void onSubmit();
-        }}
-        className="mt-2 h-11 items-center justify-center rounded-full bg-yellow disabled:opacity-40"
-      >
-        {busy ? (
-          <ActivityIndicator color="#080808" />
-        ) : (
-          <Text className="font-mono text-xs uppercase tracking-widest text-void">Claim</Text>
-        )}
-      </Pressable>
-    </KeyboardAvoidingView>
-  );
-}
-
-function Field({
-  label,
-  value,
-  onChangeText,
-  secureTextEntry,
-  autoCapitalize,
-}: {
-  label: string;
-  value: string;
-  onChangeText: (v: string) => void;
-  secureTextEntry?: boolean;
-  autoCapitalize?: "none" | "sentences";
-}) {
-  return (
-    <View className="mb-3">
-      <Text className="mb-2 font-mono text-[10px] uppercase tracking-widest text-muted">
-        {label}
-      </Text>
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        secureTextEntry={secureTextEntry}
-        autoCapitalize={autoCapitalize}
-        autoCorrect={false}
-        placeholderTextColor="#888888"
-        className="h-11 rounded-lg border border-white/15 px-3 font-mono text-sm text-snow"
-      />
-    </View>
+      </View>
+    </AuthSheet>
   );
 }

@@ -211,7 +211,7 @@ export default function StatsScreen() {
               </StatTileGrid>
 
               {stats.episodesWatched === 0 ? (
-                <Text className="text-center font-mono text-sm text-muted">{t("stats.empty")}</Text>
+                <Text className="text-center font-sans text-sm text-muted">{t("stats.empty")}</Text>
               ) : null}
             </View>
 
@@ -275,30 +275,35 @@ export default function StatsScreen() {
                   />
                 </StatsBlock>
 
-                <StatsBlock title={t("stats.ratingDistribution")}>
-                  <HBarList
-                    items={[
-                      {
-                        key: "1",
-                        label: t("rating.bad"),
-                        value: stats.ratingDistribution["1"],
-                        displayValue: String(stats.ratingDistribution["1"]),
-                      },
-                      {
-                        key: "2",
-                        label: t("rating.okay"),
-                        value: stats.ratingDistribution["2"],
-                        displayValue: String(stats.ratingDistribution["2"]),
-                      },
-                      {
-                        key: "3",
-                        label: t("rating.good"),
-                        value: stats.ratingDistribution["3"],
-                        displayValue: String(stats.ratingDistribution["3"]),
-                      },
-                    ]}
-                  />
-                </StatsBlock>
+                {stats.ratingDistribution["1"] +
+                  stats.ratingDistribution["2"] +
+                  stats.ratingDistribution["3"] >
+                0 ? (
+                  <StatsBlock title={t("stats.ratingDistribution")}>
+                    <HBarList
+                      items={[
+                        {
+                          key: "1",
+                          label: t("rating.bad"),
+                          value: stats.ratingDistribution["1"],
+                          displayValue: String(stats.ratingDistribution["1"]),
+                        },
+                        {
+                          key: "2",
+                          label: t("rating.okay"),
+                          value: stats.ratingDistribution["2"],
+                          displayValue: String(stats.ratingDistribution["2"]),
+                        },
+                        {
+                          key: "3",
+                          label: t("rating.good"),
+                          value: stats.ratingDistribution["3"],
+                          displayValue: String(stats.ratingDistribution["3"]),
+                        },
+                      ]}
+                    />
+                  </StatsBlock>
+                ) : null}
 
                 {stats.genreDistribution.top.length > 0 ? (
                   <StatsBlock title={t("stats.genreDistribution.title")}>

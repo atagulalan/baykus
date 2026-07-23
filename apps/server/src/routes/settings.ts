@@ -2,12 +2,12 @@ import type { Library, SettingsPatch, UiPrefs } from "@baykus/core";
 import type { MetadataProvider } from "@baykus/provider-sdk";
 import { Hono } from "hono";
 import { z } from "zod";
+import { resolveAvatarMime } from "../lib/imageMime.ts";
 import { ApiError } from "../middleware/errors.ts";
 import { effectiveScrapersEnabled, refreshProviders } from "../providers/registry.ts";
 
 /** WP4: profile photo upload — reasonable caps for a small avatar, not a media library. */
 const MAX_AVATAR_BYTES = 3 * 1024 * 1024;
-const ALLOWED_AVATAR_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 
 const librarySortSchema = z.enum(["lastWatched", "added", "title", "rating", "nextAir"]);
 
@@ -37,7 +37,7 @@ const uiPrefsSchema = z.object({
 
 const patchSettingsSchema = z
   .object({
-    locale: z.enum(["tr", "en"]).optional(),
+    locale: z.enum(["tr", "en", "ja"]).optional(),
     region: z.string().length(2).optional(),
     theme: z.enum(["dark", "light", "system"]).optional(),
     scrapersEnabled: z.boolean().optional(),
@@ -131,15 +131,17 @@ export function createSettingsRoutes(
     if (!(file instanceof File)) {
       throw new ApiError("VALIDATION_FAILED", "multipart field 'file' (image) is required");
     }
-    if (!ALLOWED_AVATAR_MIME_TYPES.has(file.type)) {
-      throw new ApiError("VALIDATION_FAILED", `unsupported image type "${file.type}"`);
-    }
     if (file.size > MAX_AVATAR_BYTES) {
       throw new ApiError("PAYLOAD_TOO_LARGE", "avatar image exceeds 3 MB");
     }
 
     const bytes = Buffer.from(await file.arrayBuffer());
-    const settings = library.setAvatar(file.type, bytes);
+    // RN/Expo Blob uploads often arrive as "" or application/octet-stream — sniff bytes.
+    const mimeType = resolveAvatarMime(file.type, bytes);
+    if (!mimeType) {
+      throw new ApiError("VALIDATION_FAILED", `unsupported image type "${file.type}"`);
+    }
+    const settings = library.setAvatar(mimeType, bytes);
     return c.json(settings);
   });
 

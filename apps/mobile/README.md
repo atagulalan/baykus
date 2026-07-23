@@ -5,21 +5,26 @@ Expo Router app with NativeWind + shared `@baykus/ui` / `@baykus/api-client` /
 
 ## Run
 
-```bash
-# Terminal A — API must be up on :4004
-pnpm --filter @baykus/server dev
+**Multi mode (handles / login / logout)** — preferred for phone testing:
 
-# Terminal B — Expo
-cp .env.example .env
-# Set EXPO_PUBLIC_API_BASE_URL to a host the *device* can reach
-# (LAN IP for a phone; 127.0.0.1 for iOS Simulator / Expo web on this machine;
-# 10.0.2.2 for Android emulator). Server allows CORS for Expo web.
-pnpm --filter @baykus/mobile start
-# or: pnpm dev:mobile
-# Expo web: pnpm --filter @baykus/mobile web
+```bash
+# Root .env: BAYKUS_TMDB_API_KEY (+ optional BAYKUS_GOOGLE_CLIENT_IDS)
+# apps/mobile/.env: EXPO_PUBLIC_API_BASE_URL the *device* can reach
+#   phone → http://<lan-ip>:4004
+#   iOS Simulator / Expo web on this machine → http://127.0.0.1:4004
+#   Android emulator → http://10.0.2.2:4004
+cp apps/mobile/.env.example apps/mobile/.env   # first time only
+pnpm dev:multi   # server :4004 + web :5173 + Expo (forces BAYKUS_MODE=multi)
 ```
 
-After changing `.env`, restart Metro (Expo inlines `EXPO_PUBLIC_*` at bundle time).
+**Single mode** (open library, no accounts — logout UI is hidden):
+
+```bash
+pnpm dev   # or: pnpm --filter @baykus/server dev + pnpm dev:mobile
+```
+
+After changing `apps/mobile/.env`, restart Metro (Expo inlines `EXPO_PUBLIC_*` at bundle time).
+Server allows CORS for Expo web.
 
 Shared UI RN-Web Storybook (NativeWind + Tailwind 3.4, not production Vite):
 

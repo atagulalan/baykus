@@ -5,6 +5,7 @@ import { EpisodeLabel } from "../atoms/EpisodeLabel.tsx";
 import { MediaImage } from "../atoms/MediaImage.tsx";
 import { cn } from "../lib/cn.ts";
 import type { EpisodeType } from "../lib/episodeTags.ts";
+import { haptic } from "../lib/haptics.ts";
 import { EpisodeTags, type EpisodeTagsProps } from "./EpisodeTags.tsx";
 
 export type CalendarEntryRowData = {
@@ -15,7 +16,6 @@ export type CalendarEntryRowData = {
   s: number;
   e: number;
   episodeTitle: string | null;
-  networkOrProvider?: string | null;
   airDate?: string;
   airStamp?: string | null;
   episodeType?: EpisodeType | null;
@@ -81,11 +81,6 @@ export function CalendarEntryRow({
             {entry.episodeTitle}
           </Text>
         ) : null}
-        {entry.networkOrProvider ? (
-          <Text numberOfLines={1} className="font-mono text-[10px] text-muted">
-            {entry.networkOrProvider}
-          </Text>
-        ) : null}
       </View>
     </>
   );
@@ -101,7 +96,10 @@ export function CalendarEntryRow({
       {onPress ? (
         <Pressable
           accessibilityRole="button"
-          onPress={onPress}
+          onPress={() => {
+            haptic("selection");
+            onPress();
+          }}
           className="min-w-0 flex-1 flex-row items-center active:opacity-90"
         >
           {body}

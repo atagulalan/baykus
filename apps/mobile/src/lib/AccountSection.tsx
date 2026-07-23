@@ -6,7 +6,9 @@ import {
   oauthUnlink,
 } from "@baykus/api-client";
 import { OAuthButtons } from "@baykus/ui";
+import { router } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
 import { useAuth } from "../auth/AuthProvider.tsx";
 import { appleSignInAvailable, obtainAppleIdToken } from "./appleAuth.ts";
@@ -19,6 +21,7 @@ import { clearAccessToken } from "./session.ts";
  */
 export function AccountSection() {
   const { session, refresh, signOut } = useAuth();
+  const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -92,6 +95,7 @@ export function AccountSection() {
     await clearAccessToken();
     await signOut();
     setDeleteOpen(false);
+    router.replace("/login");
   }
 
   return (
@@ -162,6 +166,36 @@ export function AccountSection() {
           )}
         </Pressable>
       ) : null}
+
+      <Pressable
+        accessibilityRole="button"
+        disabled={busy}
+        onPress={() => {
+          void (async () => {
+            setBusy(true);
+            setError(null);
+            try {
+              await signOut();
+              router.replace("/login");
+            } catch (err) {
+              setError(
+                err instanceof ApiError
+                  ? err.message
+                  : err instanceof Error
+                    ? err.message
+                    : "logout_failed",
+              );
+            } finally {
+              setBusy(false);
+            }
+          })();
+        }}
+        className="rounded-xl border border-white/10 px-3 py-3 active:bg-white/5 disabled:opacity-40"
+      >
+        <Text className="font-mono text-xs uppercase tracking-widest text-muted">
+          {t("auth.account.logout")}
+        </Text>
+      </Pressable>
 
       <Pressable
         accessibilityRole="button"

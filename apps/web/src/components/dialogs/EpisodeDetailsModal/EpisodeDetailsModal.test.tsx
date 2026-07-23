@@ -35,4 +35,21 @@ describe("EpisodeDetailsModal (render)", () => {
     await user.click(screen.getByRole("button", { name: "Kapat" }));
     expect(onClose).toHaveBeenCalled();
   });
+
+  it("E205: toggle watched does not close the modal", async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    const onToggleWatched = vi.fn();
+    renderWithProviders(
+      <EpisodeDetailsModal
+        {...baseProps}
+        onClose={onClose}
+        watched={false}
+        onToggleWatched={onToggleWatched}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "İzledim" }));
+    expect(onToggleWatched).toHaveBeenCalledOnce();
+    expect(onClose).not.toHaveBeenCalled();
+  });
 });

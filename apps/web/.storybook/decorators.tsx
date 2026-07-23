@@ -121,9 +121,9 @@ export const withAppProviders: Decorator = (Story, context) => {
 
 /** Switch i18n locale via Storybook toolbar (`globals.locale`). */
 export const withLocaleToolbar: Decorator = (Story, context) => {
-  const locale = (context.globals.locale as "tr" | "en" | undefined) ?? "tr";
+  const locale = (context.globals.locale as "tr" | "en" | "ja" | undefined) ?? "tr";
 
-  function LocaleShell({ activeLocale }: { activeLocale: "tr" | "en" }) {
+  function LocaleShell({ activeLocale }: { activeLocale: "tr" | "en" | "ja" }) {
     useEffect(() => {
       void i18n.changeLanguage(activeLocale);
     }, [activeLocale]);
@@ -134,9 +134,9 @@ export const withLocaleToolbar: Decorator = (Story, context) => {
 };
 
 /** Pin a specific locale regardless of toolbar. */
-export function withLocale(locale: "tr" | "en"): Decorator {
+export function withLocale(locale: "tr" | "en" | "ja"): Decorator {
   return (Story) => {
-    function LocaleShell({ activeLocale }: { activeLocale: "tr" | "en" }) {
+    function LocaleShell({ activeLocale }: { activeLocale: "tr" | "en" | "ja" }) {
       useEffect(() => {
         void i18n.changeLanguage(activeLocale);
       }, [activeLocale]);

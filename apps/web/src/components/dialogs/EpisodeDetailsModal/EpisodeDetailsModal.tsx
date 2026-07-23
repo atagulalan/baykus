@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getSettings } from "../../../api/client.ts";
 import { buildImageUrl } from "../../../api/images.ts";
@@ -17,6 +18,38 @@ import { RatingControl } from "../../atoms/RatingControl/RatingControl.tsx";
 import { ReleaseTime } from "../../atoms/ReleaseTime/ReleaseTime.tsx";
 import { EpisodeTags } from "../../molecules/EpisodeTags/EpisodeTags.tsx";
 import { Modal } from "../../molecules/Modal/Modal.tsx";
+
+function EpisodeStillPlaceholder({
+  s,
+  e,
+  stillUrl,
+}: {
+  s: number;
+  e: number;
+  stillUrl: string | null;
+}) {
+  const [stillFailed, setStillFailed] = useState(false);
+  const showStill = Boolean(stillUrl) && !stillFailed;
+
+  return (
+    <div className="mb-4 flex aspect-video w-full items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/5">
+      {showStill && stillUrl ? (
+        <MediaImage
+          src={stillUrl}
+          alt=""
+          wrapperClassName="block h-full w-full"
+          className="h-full w-full object-cover"
+          spinnerSize={20}
+          onError={() => setStillFailed(true)}
+        />
+      ) : (
+        <span className="font-mono text-sm text-muted tabular-nums">
+          S{s}E{e}
+        </span>
+      )}
+    </div>
+  );
+}
 
 export function formatAirDate(airDate: string | null): string {
   if (!airDate) return "";
@@ -99,16 +132,8 @@ export function EpisodeDetailsModal({
 
   return (
     <Modal isOpen={open} onClose={onClose} title={t("episode.detailsTitle")} className="p-4">
-      {stillUrl && (
-        <div className="mb-4 aspect-video w-full overflow-hidden rounded-xl border border-white/10 bg-white/5">
-          <MediaImage
-            src={stillUrl}
-            alt=""
-            wrapperClassName="block h-full w-full"
-            className={`h-full w-full object-cover ${hideSpoilers ? "blur-md select-none opacity-60" : ""}`}
-            spinnerSize={20}
-          />
-        </div>
+      {!hideSpoilers && (
+        <EpisodeStillPlaceholder key={stillUrl ?? ""} s={s} e={e} stillUrl={stillUrl} />
       )}
       <div className="flex flex-col gap-3">
         <div className="min-w-0">
@@ -199,9 +224,7 @@ export function EpisodeDetailsModal({
           <p className="mt-1 text-sm italic text-muted-dim">{t("episode.noOverview")}</p>
         )}
 
-        {onRate && (
-          <RatingControl value={myRating} onChange={onRate} size="sm" iconsOnly />
-        )}
+        {onRate && <RatingControl value={myRating} onChange={onRate} size="sm" iconsOnly />}
 
         {onToggleWatched &&
           (unaired.kind === "countdown" ? (
@@ -250,8 +273,8 @@ export function EpisodeDetailsModal({
                   : "w-full rounded-lg bg-yellow px-4 py-2.5 font-mono text-xs uppercase tracking-widest text-[#080808] transition-opacity hover:opacity-90 disabled:opacity-50"
               }
               onClick={() => {
+                // E205 — stay open; rating lives in this modal (no post-watch popup).
                 onToggleWatched();
-                onClose();
               }}
             >
               {watched

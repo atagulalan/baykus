@@ -225,7 +225,8 @@
       "locale": "Language",
       "localeName": {
         "tr": "Türkçe",
-        "en": "English"
+        "en": "English",
+        "ja": "日本語"
       },
       "localeHint": "Language for the user interface.",
       "region": "Region",
@@ -470,9 +471,11 @@
     },
     "banner": {
       "edit": "Change cover photo",
-      "title": "Choose a cover photo",
-      "empty": "Add a series and watch it to pick a cover photo from its backdrops.",
-      "clear": "Remove"
+      "title": "Cover photo",
+      "empty": "No cover photo set yet.",
+      "howto": "To set a cover, open a series menu and choose “Use as profile cover”.",
+      "clear": "Remove",
+      "useAsCover": "Use as profile cover"
     },
     "photo": {
       "upload": "Change profile photo",
@@ -577,6 +580,7 @@
       "title": "Create account",
       "confirmPassword": "Confirm password",
       "passwordMismatch": "Passwords don't match",
+      "passwordHint": "At least 8 characters",
       "handleHint": "3-30 characters, lowercase letters/digits/hyphens",
       "seedZip": "Start from a zip (optional)",
       "error": "Couldn't create the account — the handle may be taken",

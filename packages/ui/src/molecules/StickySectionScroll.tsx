@@ -1,15 +1,20 @@
 /// <reference types="nativewind/types" />
 import {
   createContext,
+  type MutableRefObject,
   type ReactElement,
   type ReactNode,
+  type Ref,
   useCallback,
   useContext,
+  useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
 import {
+  type FlatList,
   type ListRenderItemInfo,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
@@ -18,7 +23,12 @@ import {
   View,
   type ViewStyle,
 } from "react-native";
-import { PullToRefreshList, type PullToRefreshListProps } from "./PullToRefresh.tsx";
+import {
+  HistoryPullChromeHost,
+  HistoryPullShift,
+  PullToRefreshList,
+  type PullToRefreshListProps,
+} from "./PullToRefresh.tsx";
 
 export type StickySection<T = unknown> = {
   key: string;
@@ -35,6 +45,24 @@ export type StickySection<T = unknown> = {
   keyExtractor?: (item: T, index: number) => string;
   /** Bottom gap after virtualized rows (replaces AccordionPanel `mb-6`). */
   rowsClassName?: string;
+};
+
+/** Imperative scroll / season-pin API for series detail (E176). */
+export type StickySectionScrollHandle = {
+  scrollToOffset: (params: { offset: number; animated?: boolean }) => void;
+  /**
+   * Scroll so the section header docks under sticky chrome.
+   * Remeasures **all** sticky headers first (accordion/gap height shifts
+   * move siblings without firing their `onLayout`), then pins the target.
+   * Pass `correctMs > 0` only if a height tween still needs multi-frame correction.
+   */
+  pinSection: (sectionKey: string, options?: { animated?: boolean; correctMs?: number }) => void;
+  /**
+   * Refresh content-Y for every mounted sticky header. Call after layout that
+   * changes heights above later sections (season accordion, collapsed-gap expand)
+   * when automatic body `onLayout` is not enough.
+   */
+  remesasureHeaders: () => void;
 };
 
 type StickyBase<T = unknown> = {
@@ -61,13 +89,16 @@ type StickyBase<T = unknown> = {
   contentContainerClassName?: string;
   onScroll?: (e: NativeSyntheticEvent<NativeScrollEvent>) => void;
   scrollEventThrottle?: number;
+  /** Imperative scroll / pin API (series detail season expand). */
+  scrollRef?: Ref<StickySectionScrollHandle | null>;
 };
 
 type PullVariant =
   | {
       variant?: "refresh";
-      refreshing: boolean;
-      onRefresh: () => void | Promise<void>;
+      /** Omit for non-refreshing lists (loading shells, static sections). */
+      refreshing?: boolean;
+      onRefresh?: () => void | Promise<void>;
     }
   | {
       variant: "history";
@@ -85,14 +116,23 @@ type FlatCell =
 
 const StuckKeyContext = createContext<string | null>(null);
 
+/**
+ * Default: no multi-frame correction storm. Instant season expand (series
+ * detail) settles in one layout pass; a single rAF rememeasure is enough.
+ * Callers that still height-tween may pass `correctMs` ≈ tween duration.
+ */
+const DEFAULT_PIN_CORRECT_MS = 0;
+
 function SectionHeaderCell({
   sectionKey,
   renderHeader,
   onMeasuredWindowY,
+  headerViewByKey,
 }: {
   sectionKey: string;
   renderHeader: () => ReactNode;
   onMeasuredWindowY: (sectionKey: string, windowY: number) => void;
+  headerViewByKey: MutableRefObject<Map<string, View>>;
 }) {
   const stuckKey = useContext(StuckKeyContext);
   const stuck = stuckKey === sectionKey;
@@ -106,7 +146,14 @@ function SectionHeaderCell({
 
   return (
     <View
-      ref={ref}
+      ref={(node) => {
+        const prev = ref.current;
+        ref.current = node;
+        if (node) headerViewByKey.current.set(sectionKey, node);
+        else if (headerViewByKey.current.get(sectionKey) === prev) {
+          headerViewByKey.current.delete(sectionKey);
+        }
+      }}
       collapsable={false}
       onLayout={report}
       pointerEvents={stuck ? "none" : "auto"}
@@ -115,6 +162,12 @@ function SectionHeaderCell({
       {renderHeader()}
     </View>
   );
+}
+
+function assignRef<T>(ref: Ref<T | null> | undefined, value: T | null) {
+  if (ref == null) return;
+  if (typeof ref === "function") ref(value);
+  else (ref as MutableRefObject<T | null>).current = value;
 }
 
 /**
@@ -136,12 +189,18 @@ export function StickySectionScroll<T = unknown>(props: StickySectionScrollProps
     contentContainerClassName,
     style,
     className,
+    scrollRef,
     ...pullProps
   } = props;
   const topSpacer = contentTopSpacer ?? stickyOffset;
   const yByKey = useRef(new Map<string, number>());
+  const headerViewByKey = useRef(new Map<string, View>());
   const scrollYRef = useRef(0);
   const listWindowYRef = useRef(0);
+  const listRef = useRef<FlatList<FlatCell>>(null);
+  const pinGenRef = useRef(0);
+  const remesasureGenRef = useRef(0);
+  const remesasureRafRef = useRef<number | null>(null);
   const [stuckKey, setStuckKey] = useState<string | null>(null);
 
   const sectionByKey = useMemo(() => {
@@ -161,7 +220,7 @@ export function StickySectionScroll<T = unknown>(props: StickySectionScrollProps
       if (section.renderHeader != null) {
         out.push({ kind: "header", key: `h:${section.key}`, sectionKey: section.key });
       }
-      if (section.data != null && section.renderItem != null) {
+      if (Array.isArray(section.data) && section.renderItem != null) {
         const extract =
           section.keyExtractor ??
           ((item: unknown, index: number) => {
@@ -170,7 +229,8 @@ export function StickySectionScroll<T = unknown>(props: StickySectionScrollProps
             }
             return String(index);
           });
-        section.data.forEach((item, index) => {
+        for (let index = 0; index < section.data.length; index++) {
+          const item = section.data[index] as T;
           out.push({
             kind: "row",
             key: `r:${section.key}:${extract(item, index)}`,
@@ -178,7 +238,7 @@ export function StickySectionScroll<T = unknown>(props: StickySectionScrollProps
             item,
             index,
           });
-        });
+        }
         out.push({ kind: "rowsEnd", key: `e:${section.key}`, sectionKey: section.key });
       } else if (section.body != null) {
         out.push({ kind: "body", key: `b:${section.key}`, sectionKey: section.key });
@@ -221,6 +281,132 @@ export function StickySectionScroll<T = unknown>(props: StickySectionScrollProps
     [pickStuck],
   );
 
+  /**
+   * FlatList does not re-fire header `onLayout` when a sibling body above
+   * changes height (accordion / collapsed-gap). Those headers move in content
+   * space while `yByKey` stays stale → wrong floating sticky pill. Remeasure
+   * every mounted header; drop Y for unmounted keys so pickStuck cannot stick
+   * to ghosts.
+   */
+  const remesasureAllHeaders = useCallback(
+    (onDone?: () => void) => {
+      const gen = ++remesasureGenRef.current;
+      for (const key of stickyKeys) {
+        if (!headerViewByKey.current.has(key)) yByKey.current.delete(key);
+      }
+      const entries = [...headerViewByKey.current.entries()];
+      if (entries.length === 0) {
+        pickStuck(scrollYRef.current);
+        onDone?.();
+        return;
+      }
+      let left = entries.length;
+      for (const [key, header] of entries) {
+        header.measureInWindow((_x, windowY) => {
+          if (remesasureGenRef.current !== gen) return;
+          const contentY = windowY - listWindowYRef.current + scrollYRef.current;
+          yByKey.current.set(key, contentY);
+          left -= 1;
+          if (left <= 0) {
+            pickStuck(scrollYRef.current);
+            onDone?.();
+          }
+        });
+      }
+    },
+    [pickStuck, stickyKeys],
+  );
+
+  const scheduleRemeasureAllHeaders = useCallback(() => {
+    if (remesasureRafRef.current != null) return;
+    remesasureRafRef.current = requestAnimationFrame(() => {
+      remesasureRafRef.current = null;
+      remesasureAllHeaders();
+    });
+  }, [remesasureAllHeaders]);
+
+  useEffect(() => {
+    return () => {
+      if (remesasureRafRef.current != null) {
+        cancelAnimationFrame(remesasureRafRef.current);
+        remesasureRafRef.current = null;
+      }
+    };
+  }, []);
+
+  // Gap expand / section list rebuild inserts or removes headers — refresh map.
+  // Depend on a key fingerprint: callers often pass a fresh `sections` array
+  // each render, which would otherwise remesasure every paint.
+  // Double rAF: FlatList may not have mounted new header cells in the first frame.
+  const sectionStructureKey = cells.map((c) => c.key).join("|");
+  useEffect(() => {
+    scheduleRemeasureAllHeaders();
+    let second = 0;
+    const first = requestAnimationFrame(() => {
+      second = requestAnimationFrame(() => {
+        remesasureAllHeaders();
+      });
+    });
+    return () => {
+      cancelAnimationFrame(first);
+      if (second) cancelAnimationFrame(second);
+    };
+  }, [sectionStructureKey, scheduleRemeasureAllHeaders, remesasureAllHeaders]);
+
+  const scrollToOffset = useCallback((params: { offset: number; animated?: boolean }) => {
+    listRef.current?.scrollToOffset(params);
+  }, []);
+
+  const pinSection = useCallback(
+    (sectionKey: string, options?: { animated?: boolean; correctMs?: number }) => {
+      const animated = options?.animated ?? false;
+      const correctMs = options?.correctMs ?? DEFAULT_PIN_CORRECT_MS;
+      const gen = ++pinGenRef.current;
+
+      const applyFromContentY = (contentY: number) => {
+        const offset = Math.max(0, contentY - stickyOffset);
+        listRef.current?.scrollToOffset({ offset, animated });
+        scrollYRef.current = offset;
+        pickStuck(offset);
+      };
+
+      const remesasureThenPin = () => {
+        if (pinGenRef.current !== gen) return;
+        remesasureAllHeaders(() => {
+          if (pinGenRef.current !== gen) return;
+          const y = yByKey.current.get(sectionKey);
+          if (y != null) applyFromContentY(y);
+        });
+      };
+
+      remesasureThenPin();
+      if (correctMs <= 0) return;
+
+      const started = Date.now();
+      const tick = () => {
+        if (pinGenRef.current !== gen) return;
+        remesasureThenPin();
+        if (Date.now() - started < correctMs) {
+          requestAnimationFrame(tick);
+        }
+      };
+      requestAnimationFrame(tick);
+    },
+    [pickStuck, remesasureAllHeaders, stickyOffset],
+  );
+
+  useLayoutEffect(() => {
+    const handle: StickySectionScrollHandle = {
+      scrollToOffset,
+      pinSection,
+      remesasureHeaders: () => {
+        remesasureAllHeaders();
+      },
+    };
+    assignRef(scrollRef, handle);
+    return () => assignRef(scrollRef, null);
+  }, [pinSection, remesasureAllHeaders, scrollRef, scrollToOffset]);
+
   const renderItem = useCallback(
     ({ item: cell }: ListRenderItemInfo<FlatCell>) => {
       const section = sectionByKey.get(cell.sectionKey);
@@ -234,12 +420,17 @@ export function StickySectionScroll<T = unknown>(props: StickySectionScrollProps
             sectionKey={cell.sectionKey}
             renderHeader={renderHeader}
             onMeasuredWindowY={onHeaderMeasuredWindowY}
+            headerViewByKey={headerViewByKey}
           />
         );
       }
 
       if (cell.kind === "body") {
-        return <View collapsable={false}>{section.body}</View>;
+        return (
+          <View collapsable={false} onLayout={scheduleRemeasureAllHeaders}>
+            {section.body}
+          </View>
+        );
       }
 
       if (cell.kind === "rowsEnd") {
@@ -248,7 +439,7 @@ export function StickySectionScroll<T = unknown>(props: StickySectionScrollProps
 
       return <>{section.renderItem?.({ item: cell.item as T, index: cell.index })}</>;
     },
-    [onHeaderMeasuredWindowY, sectionByKey],
+    [onHeaderMeasuredWindowY, scheduleRemeasureAllHeaders, sectionByKey],
   );
 
   const keyExtractor = useCallback((cell: FlatCell) => cell.key, []);
@@ -272,7 +463,7 @@ export function StickySectionScroll<T = unknown>(props: StickySectionScrollProps
     <StuckKeyContext.Provider value={stuckKey}>
       <View
         ref={listAnchorRef}
-        className="flex-1"
+        className="flex-1 bg-void"
         collapsable={false}
         onLayout={() => {
           listAnchorRef.current?.measureInWindow((_x, y) => {
@@ -283,11 +474,14 @@ export function StickySectionScroll<T = unknown>(props: StickySectionScrollProps
         <PullToRefreshList
           {...(pullProps as PullToRefreshListProps<FlatCell>)}
           {...(pullProps.variant === "history" ? { indicatorInsetTop: topSpacer } : {})}
+          listRef={listRef}
           data={cells}
           renderItem={renderItem}
           keyExtractor={keyExtractor}
           ListHeaderComponent={listHeaderNode}
-          ListFooterComponent={listFooter ?? null}
+          {...(listFooter != null
+            ? { ListFooterComponent: <View collapsable={false}>{listFooter}</View> }
+            : {})}
           onScroll={handleScroll}
           scrollEventThrottle={scrollEventThrottle}
           {...(contentContainerStyle !== undefined ? { contentContainerStyle } : {})}
@@ -305,18 +499,20 @@ export function StickySectionScroll<T = unknown>(props: StickySectionScrollProps
   );
 
   return (
-    <View className="flex-1">
-      {list}
-      {stuckHeader ? (
-        <View
-          pointerEvents="box-none"
-          className={`absolute left-0 right-0 z-30 items-center ${pinClassName ?? ""}`}
-          style={{ top: stickyOffset }}
-        >
-          {stuckHeader}
-        </View>
-      ) : null}
-    </View>
+    <HistoryPullChromeHost>
+      <View className="flex-1 bg-void">
+        {list}
+        {stuckHeader ? (
+          <HistoryPullShift
+            pointerEvents="box-none"
+            className={`absolute left-0 right-0 z-30 items-center ${pinClassName ?? ""}`}
+            style={{ top: stickyOffset }}
+          >
+            {stuckHeader}
+          </HistoryPullShift>
+        ) : null}
+      </View>
+    </HistoryPullChromeHost>
   );
 }
 

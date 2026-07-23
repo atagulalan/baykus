@@ -1,10 +1,11 @@
 /// <reference types="nativewind/types" />
-import type { ReactNode } from "react";
-import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import type { ReactNode, RefObject } from "react";
+import { ActivityIndicator, Pressable, Text, useWindowDimensions, View } from "react-native";
 import { borders } from "../lib/borders.ts";
 import { cn } from "../lib/cn.ts";
+import { haptic } from "../lib/haptics.ts";
 import { colors } from "../tokens.ts";
-import { Modal } from "./Modal.tsx";
+import { Modal, type ModalPopoverAlign } from "./Modal.tsx";
 
 export type ActionSheetItem = {
   key: string;
@@ -31,7 +32,19 @@ export type ActionSheetProps = {
    * `confirm` — stacked full-width CTAs; `primary` item is yellow.
    */
   variant?: "list" | "confirm";
+  /**
+   * Tablet (≥640): `popover` anchors near `anchorRef` (series/season/episode menus).
+   * Phone stays a bottom sheet. Confirm dialogs default to centered `modal`.
+   */
+  presentation?: "modal" | "popover";
+  /** Trigger view for tablet popover placement. */
+  anchorRef?: RefObject<View | null>;
+  popoverAlign?: ModalPopoverAlign;
+  /** After close animation — safe point to open a follow-up Modal (iOS). */
+  onExitComplete?: () => void;
 };
+
+const TABLET_MIN_WIDTH = 640;
 
 /** Bottom-sheet list of actions — series / season / episode menus. */
 export function ActionSheet({
@@ -43,15 +56,27 @@ export function ActionSheet({
   closeLabel = "Close",
   description,
   variant = "list",
+  presentation,
+  anchorRef,
+  popoverAlign = "end",
+  onExitComplete,
 }: ActionSheetProps) {
+  const { width } = useWindowDimensions();
   const confirm = variant === "confirm";
+  const resolvedPresentation = presentation ?? (confirm ? "modal" : "popover");
+  /** Tablet anchored menu — flush list, no bottom cushion (phone sheet owns safe-area). */
+  const flushPopover = !confirm && width >= TABLET_MIN_WIDTH && resolvedPresentation === "popover";
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
       closeLabel={closeLabel}
-      {...(confirm ? { className: "gap-0 p-6" } : { title })}
+      presentation={resolvedPresentation}
+      {...(anchorRef !== undefined ? { anchorRef } : {})}
+      popoverAlign={popoverAlign}
+      {...(onExitComplete !== undefined ? { onExitComplete } : {})}
+      {...(confirm ? { className: "gap-0 p-6" } : { title, className: "p-0" })}
     >
       {busy ? (
         <View className="items-center py-8">
@@ -71,8 +96,12 @@ export function ActionSheet({
                 disabled={item.disabled}
                 onPress={() => {
                   if (item.disabled) return;
-                  onClose();
+                  haptic(item.danger ? "warning" : item.primary ? "medium" : "light");
+                  // Action before close — parent often clears the state that
+                  // feeds `items`/`presentation`; flipping those mid-close
+                  // broke Modal transform flatten (forEach of null).
                   item.onPress();
+                  onClose();
                 }}
                 className={cn(
                   "w-full items-center rounded-lg px-4 py-2.5 disabled:opacity-40",
@@ -93,23 +122,28 @@ export function ActionSheet({
           </View>
         </View>
       ) : (
-        <View className="pb-4">
+        <View>
           {description ? <Text className="px-4 pb-2 text-sm text-muted">{description}</Text> : null}
-          {items.map((item) => (
+          {items.map((item, index) => (
             <Pressable
               key={item.key}
               accessibilityRole="button"
               disabled={item.disabled}
               onPress={() => {
                 if (item.disabled) return;
-                onClose();
+                haptic(item.danger ? "warning" : "light");
                 item.onPress();
+                onClose();
               }}
-              className="flex-row items-center gap-2 border-b border-white/5 px-4 py-3.5 active:bg-white/5 disabled:opacity-40"
+              className={cn(
+                "flex-row items-center gap-2 px-4 py-3.5 active:bg-white/5 disabled:opacity-40",
+                // Flush popover: no trailing hairline under the last row.
+                (flushPopover ? index < items.length - 1 : true) && "border-b border-white/5",
+              )}
             >
               {item.icon}
               <Text
-                className={cn("font-mono text-xs", item.danger ? "text-red-400" : "text-muted")}
+                className={cn("font-sans text-sm", item.danger ? "text-red-400" : "text-muted")}
               >
                 {item.label}
               </Text>

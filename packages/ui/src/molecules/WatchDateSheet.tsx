@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 import { cn } from "../lib/cn.ts";
+import { haptic } from "../lib/haptics.ts";
 import { Modal } from "./Modal.tsx";
 
 export type WatchDateSheetProps = {
@@ -102,6 +103,7 @@ export function WatchDateSheet({
             disabled={!canSave}
             onPress={() => {
               if (!iso) return;
+              haptic("medium");
               onSave(iso);
             }}
             className={cn("rounded-full bg-yellow px-3.5 py-2.5", !canSave && "opacity-40")}

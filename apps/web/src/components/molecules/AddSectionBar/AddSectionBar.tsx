@@ -116,7 +116,7 @@ function SortOptionList({
           role="option"
           aria-selected={sort === currentSort}
           onClick={() => onSortChange(category, sort)}
-          className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left font-mono text-xs transition-colors ${
+          className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left font-sans text-sm transition-colors ${
             sort === currentSort ? "bg-white/5 text-yellow" : "text-snow hover:bg-white/5"
           }`}
         >

@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Expo web: no viewport rubber-band past page content. */
+html,
+body,
+#root {
+  overscroll-behavior-y: none;
+}
+
 /*
  * NativeWind sets `preflight: false`. Tailwind border-width utilities therefore
  * don't set `border-style`, and Firefox often paints nothing after RN-web's

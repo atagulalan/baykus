@@ -114,11 +114,11 @@ function TodayEmptyPanel({
           {t("calendar.empty.today")}
         </p>
         {unwatched.length > 0 ? (
-          <p className="font-mono text-xs text-muted/70">{t("calendar.empty.suggestUnwatched")}</p>
+          <p className="font-sans text-sm text-muted">{t("calendar.empty.suggestUnwatched")}</p>
         ) : upcoming.length > 0 ? (
-          <p className="font-mono text-xs text-muted/70">{t("calendar.empty.suggestUpcoming")}</p>
+          <p className="font-sans text-sm text-muted">{t("calendar.empty.suggestUpcoming")}</p>
         ) : (
-          <p className="font-mono text-xs text-muted/70">{t("calendar.empty.suggestAddHint")}</p>
+          <p className="font-sans text-sm text-muted">{t("calendar.empty.suggestAddHint")}</p>
         )}
       </div>
 

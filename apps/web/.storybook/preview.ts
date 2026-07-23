@@ -14,6 +14,7 @@ const preview: Preview = {
         items: [
           { value: "tr", title: "Türkçe" },
           { value: "en", title: "English" },
+          { value: "ja", title: "日本語" },
         ],
         dynamicTitle: true,
       },

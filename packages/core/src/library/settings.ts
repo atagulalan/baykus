@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import type { LibraryDatabase } from "../db/open.ts";
 import * as schema from "../db/schema.ts";
 
-export type Locale = "tr" | "en";
+export type Locale = "tr" | "en" | "ja";
 export type Theme = "dark" | "light" | "system";
 export type EpisodeLabelFormat = "SxEy" | "S01E06" | "compact";
 export type DefaultStartPage = "home" | "calendar" | "stats";

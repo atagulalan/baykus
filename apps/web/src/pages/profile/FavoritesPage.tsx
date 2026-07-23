@@ -70,7 +70,7 @@ function FavoritesPageContent() {
         ) : favorites.length === 0 ? (
           // E79: zero-favorites deep link — the existing hint, no redirect.
           <div className="content-inset mt-4 flex flex-col items-center gap-4 border border-white/5 bg-[#101010] py-24 text-center">
-            <p className="font-mono text-xs text-muted/70">{t("profile.favorites.empty")}</p>
+            <p className="font-sans text-sm text-muted">{t("profile.favorites.empty")}</p>
           </div>
         ) : (
           <div className={SERIES_GRID_CLASSNAME}>

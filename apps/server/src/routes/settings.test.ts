@@ -334,6 +334,43 @@ describe("POST /api/settings/avatar (WP4)", () => {
     expect(body.error.code).toBe("VALIDATION_FAILED");
   });
 
+  it("accepts a PNG whose multipart Content-Type is empty (RN Blob)", async () => {
+    const { app } = setup();
+    const formData = new FormData();
+    formData.append(
+      "file",
+      new File([Buffer.from(TINY_PNG_BASE64, "base64")], "avatar.png", { type: "" }),
+    );
+
+    const res = await app.request("/api/settings/avatar", {
+      method: "POST",
+      headers: { "X-Baykus": "1" },
+      body: formData,
+    });
+    expect(res.status).toBe(200);
+    const getRes = await app.request("/api/settings/avatar");
+    expect(getRes.status).toBe(200);
+    expect(getRes.headers.get("content-type")).toBe("image/png");
+  });
+
+  it("accepts a PNG declared as application/octet-stream", async () => {
+    const { app } = setup();
+    const formData = new FormData();
+    formData.append(
+      "file",
+      new File([Buffer.from(TINY_PNG_BASE64, "base64")], "avatar.bin", {
+        type: "application/octet-stream",
+      }),
+    );
+
+    const res = await app.request("/api/settings/avatar", {
+      method: "POST",
+      headers: { "X-Baykus": "1" },
+      body: formData,
+    });
+    expect(res.status).toBe(200);
+  });
+
   it("rejects a file over the 3 MB cap", async () => {
     const { app } = setup();
     const oversized = new Uint8Array(3 * 1024 * 1024 + 1);

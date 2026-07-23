@@ -14,9 +14,6 @@ export function CalendarEntryRow({
   watched = false,
   onToggleWatched,
 }: CalendarEntryRowProps) {
-  const provider = entry.watchProviders[0];
-  const networkOrProvider = provider ? `${provider.provider} (${provider.region})` : entry.network;
-
   return (
     <EpisodeRow
       embedded
@@ -35,7 +32,6 @@ export function CalendarEntryRow({
       muted={watched}
       watched={watched}
       detailsEpisodeId={entry.episodeId}
-      {...(networkOrProvider ? { networkOrProvider } : {})}
       {...(onToggleWatched ? { onToggleWatch: onToggleWatched } : {})}
     />
   );

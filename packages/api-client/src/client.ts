@@ -313,10 +313,41 @@ export function updateSettings(patch: SettingsPatch): Promise<Settings> {
 /**
  * WP4: profile photo upload — multipart, same pattern as importZip() for a
  * non-JSON request body.
+ *
+ * Accepts a web `Blob`/`File`, or a React Native FormData file descriptor
+ * (`{ uri, type, name }`) — RN Blob uploads often lose MIME type.
  */
-export async function uploadAvatar(file: Blob): Promise<Settings> {
+export type AvatarUploadSource =
+  | Blob
+  | {
+      uri: string;
+      type: string;
+      name: string;
+    };
+
+function avatarFilename(mimeType: string): string {
+  if (mimeType === "image/png") return "avatar.png";
+  if (mimeType === "image/webp") return "avatar.webp";
+  if (mimeType === "image/gif") return "avatar.gif";
+  return "avatar.jpg";
+}
+
+export async function uploadAvatar(file: AvatarUploadSource): Promise<Settings> {
   const formData = new FormData();
-  formData.append("file", file);
+  if (typeof Blob !== "undefined" && file instanceof Blob) {
+    const mimeType = file.type || "image/jpeg";
+    const name =
+      file instanceof File && file.name
+        ? file.name
+        : avatarFilename(mimeType);
+    // Re-wrap when type is missing so the multipart part carries a real Content-Type.
+    const payload =
+      file.type === mimeType ? file : new Blob([await file.arrayBuffer()], { type: mimeType });
+    formData.append("file", payload, name);
+  } else {
+    // React Native FormData file shape — cast: DOM FormData typings only know Blob.
+    formData.append("file", file as unknown as Blob);
+  }
   const requestId = newRequestId();
   const headers = await authHeaders(requestId);
 

@@ -41,10 +41,7 @@ export function SectionHeader({
   const labelText = (
     <>
       <Text
-        className={cn(
-          "min-w-0 shrink font-semibold text-snow",
-          leading ? "text-base" : "text-sm",
-        )}
+        className={cn("min-w-0 shrink font-semibold text-snow", leading ? "text-base" : "text-sm")}
         numberOfLines={1}
       >
         {label}
@@ -98,11 +95,8 @@ export function SectionHeader({
       pointerEvents="box-none"
       className={cn("w-full flex-row items-center justify-center gap-1 py-1", className)}
     >
-      <SectionPill
-        className="shrink"
-        style={leading ? { height: SEASON_PILL_SIZE } : undefined}
-      >
-        <View className={cn("flex-row items-center", leading && "h-full")}>
+      <SectionPill className="shrink" style={leading ? { height: SEASON_PILL_SIZE } : undefined}>
+        <View className={cn("flex-row items-center", leading ? "h-full" : undefined)}>
           {leading ? (
             <View
               className="shrink-0 items-center justify-center"

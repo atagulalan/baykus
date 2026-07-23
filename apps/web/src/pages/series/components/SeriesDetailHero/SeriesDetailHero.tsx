@@ -27,6 +27,7 @@ interface SeriesDetailHeroProps {
   onChangeManualList: (manualList: ManualList | null) => void;
   onToggleMute: () => void;
   onRemove: () => void;
+  onUseAsCover?: (() => void) | undefined;
   /** /series/new — same chrome, start-watching CTA instead of library progress. */
   preview?: boolean;
   /** Search→preview view-transition name (`poster-preview-…`). */
@@ -45,6 +46,7 @@ export function SeriesDetailHero({
   onChangeManualList,
   onToggleMute,
   onRemove,
+  onUseAsCover,
   preview = false,
   posterStyle,
   onStartWatching,
@@ -86,14 +88,18 @@ export function SeriesDetailHero({
 
       <div className="relative z-10 flex min-h-[24rem] items-end gap-4 px-3 pb-6 pt-20 sm:min-h-[30rem] sm:gap-6 sm:px-4 sm:pt-32">
         {/* E51: VT name on the poster *container* (not MediaImage's fading <img>). */}
-        <div
-          className="aspect-[2/3] w-28 shrink-0 overflow-hidden rounded-md bg-white/5 shadow-2xl sm:w-40"
+        {/* E204: poster / title / ⓘ all open SeriesDetailsSheet — not only the tiny info icon. */}
+        <button
+          type="button"
+          onClick={() => onDetailsOpenChange(true)}
+          aria-label={t("series.details.trigger")}
+          className="aspect-[2/3] w-28 shrink-0 overflow-hidden rounded-md bg-white/5 shadow-2xl transition-opacity hover:opacity-90 sm:w-40"
           style={resolvedPosterStyle}
         >
           {imageUrl ? (
             <MediaImage
               src={imageUrl}
-              alt={detail.title}
+              alt=""
               wrapperClassName="block size-full"
               className="h-full w-full object-cover"
               spinnerSize={24}
@@ -104,16 +110,22 @@ export function SeriesDetailHero({
               {detail.title}
             </div>
           )}
-        </div>
+        </button>
         <div className="flex min-w-0 flex-1 flex-col gap-3">
-          <div className="flex items-center justify-between gap-3">
-            <h1 className="min-w-0 flex-1 font-display italic text-2xl text-snow leading-none tracking-tight line-clamp-3 sm:text-4xl">
-              {detail.title}
-              {detail.year ? (
-                <span className="ml-2 font-sans text-base text-snow/60 not-italic sm:text-2xl">
-                  ({detail.year})
-                </span>
-              ) : null}
+          <div className="flex items-start justify-between gap-3">
+            <h1 className="min-w-0 flex-1">
+              <button
+                type="button"
+                onClick={() => onDetailsOpenChange(true)}
+                className="w-full text-left font-display italic text-2xl text-snow leading-none tracking-tight line-clamp-3 transition-opacity hover:opacity-90 sm:text-4xl"
+              >
+                {detail.title}
+                {detail.year ? (
+                  <span className="ml-2 font-sans text-base text-snow/60 not-italic sm:text-2xl">
+                    ({detail.year})
+                  </span>
+                ) : null}
+              </button>
             </h1>
             <div className="flex shrink-0 items-center gap-1">
               <div className="relative shrink-0">
@@ -145,6 +157,7 @@ export function SeriesDetailHero({
                     onChangeManualList={onChangeManualList}
                     onToggleMute={onToggleMute}
                     onRemove={onRemove}
+                    onUseAsCover={onUseAsCover}
                   />
                 </div>
               )}

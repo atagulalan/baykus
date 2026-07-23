@@ -1,5 +1,5 @@
 /// <reference types="nativewind/types" />
-import type { ReactNode } from "react";
+import { type ReactNode, type Ref, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { Checkbox } from "../atoms/Checkbox.tsx";
 import { EpisodeLabel } from "../atoms/EpisodeLabel.tsx";
@@ -15,6 +15,7 @@ import type { EpisodeLabelFormat } from "../lib/episodeLabel.ts";
 import { formatEpisodeLabel } from "../lib/episodeLabel.ts";
 import type { EpisodeType } from "../lib/episodeTags.ts";
 import { TAG_BORDERS } from "../lib/episodeTags.ts";
+import { haptic } from "../lib/haptics.ts";
 import { EpisodeTags, type EpisodeTagsProps } from "../molecules/EpisodeTags.tsx";
 
 export type EpisodeRowProps = {
@@ -57,6 +58,8 @@ export type EpisodeRowProps = {
   skipLabel?: string;
   onRate?: (value: RatingValue) => void;
   onDismissPrompt?: () => void;
+  /** Watch control wrapper — tablet ActionSheet popover anchor. */
+  watchControlRef?: Ref<View>;
 };
 
 /** Season still — web `h-12 w-20`. */
@@ -65,6 +68,53 @@ const STILL_H = 48;
 /** Series chrome poster — web `h-12 w-8`. */
 const POSTER_W = 48;
 const POSTER_H = 56;
+
+/** Reserved still frame with centered S{n}E{m} when missing/failed (amends E148). */
+function EpisodeStillFrame(props: {
+  s: number;
+  e: number;
+  stillUrl?: string | null;
+  accessibilityLabel: string;
+}) {
+  return <EpisodeStillFrameInner key={props.stillUrl ?? ""} {...props} />;
+}
+
+function EpisodeStillFrameInner({
+  s,
+  e,
+  stillUrl,
+  accessibilityLabel,
+}: {
+  s: number;
+  e: number;
+  stillUrl?: string | null;
+  accessibilityLabel: string;
+}) {
+  const [failed, setFailed] = useState(false);
+  const showImage = Boolean(stillUrl) && !failed;
+  const code = formatEpisodeLabel(s, e, "SxEy");
+
+  return (
+    <View
+      className="shrink-0 items-center justify-center overflow-hidden rounded-md bg-white/5"
+      style={{ width: STILL_W, height: STILL_H }}
+    >
+      {showImage && stillUrl ? (
+        <MediaImage
+          src={stillUrl}
+          accessibilityLabel={accessibilityLabel}
+          wrapperClassName="h-full w-full"
+          className="h-full w-full opacity-90"
+          style={{ width: STILL_W, height: STILL_H }}
+          showLoader={false}
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        <Text className="font-mono text-[10px] tabular-nums text-muted">{code}</Text>
+      )}
+    </View>
+  );
+}
 
 /**
  * Episode list row for calendar / watch / series detail / history.
@@ -102,6 +152,7 @@ export function EpisodeRow({
   skipLabel = "skip",
   onRate,
   onDismissPrompt,
+  watchControlRef,
 }: EpisodeRowProps) {
   const hasSeriesChrome = seriesTitle != null;
   const stretchPoster = posterStretch && hasSeriesChrome;
@@ -117,7 +168,9 @@ export function EpisodeRow({
       className="shrink-0 overflow-hidden rounded-md bg-white/5"
       style={
         stretchPoster
-          ? { width: POSTER_W, alignSelf: "stretch", minHeight: POSTER_H }
+          ? // Stretch to row height (web `self-stretch`). Image must `fill` —
+            // percentage/flex height lets RN Image intrinsic bitmap explode the row.
+            { width: POSTER_W, alignSelf: "stretch", minHeight: POSTER_H }
           : { width: POSTER_W, height: POSTER_H }
       }
     >
@@ -125,26 +178,17 @@ export function EpisodeRow({
         <MediaImage
           src={stillUrl}
           accessibilityLabel={seriesTitle ?? displayTitle}
-          wrapperClassName="h-full w-full"
+          fill={stretchPoster}
+          wrapperClassName={stretchPoster ? undefined : "h-full w-full"}
           className="h-full w-full"
-          style={{ width: POSTER_W, height: stretchPoster ? undefined : POSTER_H, flex: 1 }}
+          style={stretchPoster ? undefined : { width: POSTER_W, height: POSTER_H }}
+          showLoader={false}
         />
       ) : null}
     </View>
-  ) : stillUrl ? (
-    <View
-      className="shrink-0 overflow-hidden rounded-md bg-white/5"
-      style={{ width: STILL_W, height: STILL_H }}
-    >
-      <MediaImage
-        src={stillUrl}
-        accessibilityLabel={displayTitle}
-        wrapperClassName="h-full w-full"
-        className="h-full w-full opacity-90"
-        style={{ width: STILL_W, height: STILL_H }}
-      />
-    </View>
-  ) : null;
+  ) : (
+    <EpisodeStillFrame s={s} e={e} stillUrl={stillUrl ?? null} accessibilityLabel={displayTitle} />
+  );
 
   const seasonPrimary = (
     <View
@@ -199,7 +243,7 @@ export function EpisodeRow({
     <View
       className={cn(
         "min-w-0 flex-1 justify-center gap-0.5 overflow-hidden",
-        stretchPoster ? "py-2 pl-4 pr-0" : "py-2 pl-4 pr-2",
+        stretchPoster ? "py-2 pl-2 pr-0" : "py-2 pl-4 pr-2",
       )}
     >
       <Text
@@ -220,15 +264,13 @@ export function EpisodeRow({
     </View>
   );
 
+  // Stretch mode still needs the poster beside the title block (web shell
+  // renders poster outside `body`; RN keeps both inside the pressable).
   const body = hasSeriesChrome ? (
-    stretchPoster ? (
-      seriesPrimary
-    ) : (
-      <>
-        {thumb}
-        {seriesPrimary}
-      </>
-    )
+    <>
+      {thumb}
+      {seriesPrimary}
+    </>
   ) : (
     <>
       {thumb}
@@ -250,7 +292,10 @@ export function EpisodeRow({
       {onPress ? (
         <Pressable
           accessibilityRole="button"
-          onPress={onPress}
+          onPress={() => {
+            haptic("selection");
+            onPress();
+          }}
           className={cn(
             "min-w-0 flex-row gap-3",
             centered ? "w-auto max-w-full shrink" : "flex-1",
@@ -275,10 +320,14 @@ export function EpisodeRow({
         <EpisodeTags s={s} e={e} {...tags} />
       ) : null}
 
-      {trailing ? <View className="justify-center pl-2">{trailing}</View> : null}
+      {trailing ? <View className="justify-center pl-2 pr-3">{trailing}</View> : null}
 
       {onToggleWatch ? (
-        <View className="relative min-h-9 shrink-0 flex-row items-center justify-end">
+        <View
+          ref={watchControlRef}
+          collapsable={false}
+          className="relative min-h-9 shrink-0 flex-row items-center justify-end"
+        >
           {showPrompt && promptLabels && onRate && onDismissPrompt ? (
             <View className="mr-1 flex-row items-center gap-1.5">
               <RatingControl
@@ -307,7 +356,10 @@ export function EpisodeRow({
             <Pressable
               accessibilityRole="button"
               disabled={checkboxDisabled}
-              onPress={() => onToggleWatch()}
+              onPress={() => {
+                haptic("selection");
+                onToggleWatch();
+              }}
               className="h-9 min-w-9 items-center justify-center disabled:opacity-40"
             >
               <Text className="font-mono text-sm tabular-nums text-yellow">×{watchCount}</Text>

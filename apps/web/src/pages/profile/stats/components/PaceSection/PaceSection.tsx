@@ -22,7 +22,7 @@ export function PaceSection({ stats }: PaceSectionProps) {
 
   const caughtUp = projectedWeeks === 0;
   const estimatedDate = projectedCatchUpDate(projectedWeeks).toLocaleDateString(
-    i18n.language === "en" ? "en-US" : "tr-TR",
+    i18n.language === "en" ? "en-US" : i18n.language === "ja" ? "ja-JP" : "tr-TR",
     { day: "numeric", month: "long", year: "numeric" },
   );
 

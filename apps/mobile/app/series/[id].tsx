@@ -16,6 +16,7 @@ import {
   type Settings,
   setRating,
   updateSeries,
+  updateSettings,
 } from "@baykus/api-client";
 import {
   AccordionPanel,
@@ -38,16 +39,22 @@ import {
   NeedsReviewBanner,
   NextUpCard,
   type RatingValue,
-  SectionHeader,
   SEASON_PROGRESS_SIZE,
+  SectionHeader,
   SeriesDetailHero,
   SeriesDetailsSheet,
   SkeletonSeriesDetailHero,
   type StickySection,
   StickySectionScroll,
+  type StickySectionScrollHandle,
   seasonCompleteSnapshot,
   sortSeasonsSpecialsLast,
+  todayIso,
+  UnairedTrailingMark,
+  type UnairedTrailingMarkLabels,
   isEpisodeAired as uiIsEpisodeAired,
+  unairedTrailingState,
+  useAiringClock,
   WatchDateSheet,
 } from "@baykus/ui";
 import { router, Stack, useLocalSearchParams } from "expo-router";
@@ -58,6 +65,7 @@ import {
   CircleX,
   Clapperboard,
   Heart,
+  ImageIcon,
   Info,
   MoreVertical,
   Play,
@@ -66,7 +74,7 @@ import {
 } from "lucide-react-native";
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { LayoutAnimation, Platform, Pressable, Text, UIManager, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useBannerEdgeScrub } from "../../src/chrome/EdgeScrubContext.tsx";
@@ -86,14 +94,6 @@ import {
 import { shouldPromptEpisodeRating } from "../../src/lib/shouldPromptEpisodeRating.ts";
 import { resolveUiPrefs } from "../../src/lib/uiPrefs.ts";
 
-if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
-
-function animateSeasonToggle() {
-  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-}
-
 function findNextEpisode(detail: SeriesDetail): EpisodeSummary | null {
   const next = detail.nextUnwatched;
   if (!next) return null;
@@ -109,12 +109,217 @@ function formatSeasonCount(watched: number, total: number, complete: boolean): s
   return `${watched}/${total}`;
 }
 
+function useUnairedTrailingMark(
+  airDate: string | null,
+  airStamp: string | null | undefined,
+  watched: boolean,
+  labels: UnairedTrailingMarkLabels,
+) {
+  const needsClock = !watched && (airStamp != null || (airDate != null && airDate > todayIso()));
+  const now = useAiringClock(airDate, airStamp, needsClock);
+  const state = unairedTrailingState(airDate, undefined, airStamp, now);
+  const showMark = !watched && state.kind !== "none";
+  return {
+    showMark,
+    trailing: showMark ? <UnairedTrailingMark state={state} labels={labels} /> : undefined,
+  };
+}
+
+type RatingLabels = {
+  group: string;
+  bad: string;
+  okay: string;
+  good: string;
+};
+
+function SeasonRingMenuButton({
+  progressPct,
+  finished,
+  caughtUpWaiting,
+  accessibilityLabel,
+  onOpen,
+}: {
+  progressPct: number;
+  finished: boolean;
+  caughtUpWaiting: boolean;
+  accessibilityLabel: string;
+  onOpen: (anchor: View | null) => void;
+}) {
+  const ringRef = useRef<View>(null);
+  return (
+    <Pressable
+      ref={ringRef}
+      collapsable={false}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      onPress={() => onOpen(ringRef.current)}
+      className="h-full w-full items-center justify-center rounded-full active:bg-white/10"
+    >
+      <CircularProgress
+        size={SEASON_PROGRESS_SIZE}
+        value={progressPct}
+        complete={finished}
+        caughtUp={caughtUpWaiting}
+      />
+    </Pressable>
+  );
+}
+
+function SeriesDetailEpisodeRow({
+  ep,
+  locale,
+  busy,
+  promptOpen,
+  ratingLabels,
+  countdownLabels,
+  finaleLabel,
+  untitledLabel,
+  skipLabel,
+  onRate,
+  onDismissPrompt,
+  onPress,
+  onToggleWatch,
+}: {
+  ep: EpisodeSummary;
+  locale: string;
+  busy: boolean;
+  promptOpen: boolean;
+  ratingLabels: RatingLabels;
+  countdownLabels: UnairedTrailingMarkLabels;
+  finaleLabel: string;
+  untitledLabel: string;
+  skipLabel: string;
+  onRate: (value: RatingValue) => void;
+  onDismissPrompt: () => void;
+  onPress: () => void;
+  onToggleWatch: (watchControl: View | null) => void;
+}) {
+  const watchControlRef = useRef<View>(null);
+  const watched = ep.watchCount > 0;
+  const { showMark, trailing } = useUnairedTrailingMark(
+    ep.airDate,
+    ep.airStamp,
+    watched,
+    countdownLabels,
+  );
+  return (
+    <EpisodeRow
+      s={ep.s}
+      e={ep.e}
+      episodeTitle={ep.title}
+      stillUrl={buildImageUrl(ep.stillRef, "thumb")}
+      watched={watched}
+      watchCount={ep.watchCount}
+      muted={!uiIsEpisodeAired(ep)}
+      checkboxDisabled={busy || !uiIsEpisodeAired(ep)}
+      showRatingPrompt={promptOpen}
+      myRating={ep.myRating}
+      ratingLabels={ratingLabels}
+      skipLabel={skipLabel}
+      airDateLabel={ep.airDate ? formatAirDateLabel(ep.airDate, locale) : null}
+      episodeType={ep.episodeType}
+      finaleLabel={finaleLabel}
+      untitledLabel={untitledLabel}
+      showTags={false}
+      trailing={trailing}
+      watchControlRef={watchControlRef}
+      onRate={onRate}
+      onDismissPrompt={onDismissPrompt}
+      onPress={onPress}
+      onToggleWatch={
+        showMark
+          ? undefined
+          : () => {
+              onToggleWatch(watchControlRef.current);
+            }
+      }
+    />
+  );
+}
+
+function SeriesDetailNextUp({
+  episode,
+  locale,
+  title,
+  busy,
+  promptOpen,
+  ratingLabels,
+  countdownLabels,
+  finaleLabel,
+  untitledLabel,
+  skipLabel,
+  onToggleWatch,
+  onPress,
+  onRate,
+  onDismissPrompt,
+}: {
+  episode: EpisodeSummary;
+  locale: string;
+  title: string;
+  busy: boolean;
+  promptOpen: boolean;
+  ratingLabels: RatingLabels;
+  countdownLabels: UnairedTrailingMarkLabels;
+  finaleLabel: string;
+  untitledLabel: string;
+  skipLabel: string;
+  onToggleWatch: (watchControl: View | null) => void;
+  onPress: () => void;
+  onRate: (value: RatingValue) => void;
+  onDismissPrompt: () => void;
+}) {
+  const watchControlRef = useRef<View>(null);
+  const watched = episode.watchCount > 0;
+  const { showMark, trailing } = useUnairedTrailingMark(
+    episode.airDate,
+    episode.airStamp,
+    watched,
+    countdownLabels,
+  );
+  return (
+    <NextUpCard
+      title={title}
+      episode={{
+        s: episode.s,
+        e: episode.e,
+        episodeTitle: episode.title,
+        stillUrl: buildImageUrl(episode.stillRef, "thumb"),
+        watched,
+        muted: !uiIsEpisodeAired(episode),
+        checkboxDisabled: !uiIsEpisodeAired(episode) || busy,
+        airDateLabel: episode.airDate ? formatAirDateLabel(episode.airDate, locale) : null,
+        episodeType: episode.episodeType,
+        finaleLabel,
+        untitledLabel,
+        watchCount: episode.watchCount,
+        showRatingPrompt: promptOpen,
+        myRating: episode.myRating,
+        ratingLabels,
+        skipLabel,
+        trailing,
+      }}
+      watchControlRef={watchControlRef}
+      onPress={onPress}
+      onToggleWatch={
+        showMark
+          ? undefined
+          : () => {
+              onToggleWatch(watchControlRef.current);
+            }
+      }
+      onRate={onRate}
+      onDismissPrompt={onDismissPrompt}
+    />
+  );
+}
+
 type EpisodeSheetMode = "upToHere" | "watched";
 
 export default function SeriesDetailScreen() {
   const { t, i18n } = useTranslation();
   const insets = useSafeAreaInsets();
-  const bannerScrub = useBannerEdgeScrub(true);
+  // Keep full top scrub so header actions stay readable over the banner.
+  const bannerScrub = useBannerEdgeScrub(false);
   const { id } = useLocalSearchParams<{ id: string }>();
   const [detail, setDetail] = useState<SeriesDetail | null>(null);
   const [settings, setSettings] = useState<Settings | null>(null);
@@ -124,7 +329,7 @@ export default function SeriesDetailScreen() {
   const [busyEpisode, setBusyEpisode] = useState<number | null>(null);
   const [seasonBusy, setSeasonBusy] = useState(false);
   const [menuBusy, setMenuBusy] = useState(false);
-  const [ratingBusy, setRatingBusy] = useState(false);
+  const [, setRatingBusy] = useState(false);
   const [removeOpen, setRemoveOpen] = useState(false);
   const [seriesMenuOpen, setSeriesMenuOpen] = useState(false);
   const [seriesDetailsOpen, setSeriesDetailsOpen] = useState(false);
@@ -136,9 +341,18 @@ export default function SeriesDetailScreen() {
   const openSeasonRef = useRef(openSeason);
   openSeasonRef.current = openSeason;
   const prevSeasonCompleteRef = useRef<Map<number, boolean>>(new Map());
+  const stickyScrollRef = useRef<StickySectionScrollHandle>(null);
+  const seriesMenuAnchorRef = useRef<View>(null);
+  const seasonMenuAnchorRef = useRef<View | null>(null);
+  const episodeMenuAnchorRef = useRef<View | null>(null);
 
   const [seasonMenu, setSeasonMenu] = useState<number | null>(null);
   const [unwatchSeasonConfirm, setUnwatchSeasonConfirm] = useState<number | null>(null);
+  // iOS: a second RN Modal must not mount while another is still dismissing.
+  // Queue follow-up overlays until the source ActionSheet's onExitComplete.
+  const pendingUnwatchSeasonRef = useRef<number | null>(null);
+  const pendingRemoveRef = useRef(false);
+  const pendingEditDateRef = useRef<EpisodeSummary | null>(null);
 
   const [episodeSheet, setEpisodeSheet] = useState<{
     episode: EpisodeSummary;
@@ -148,10 +362,25 @@ export default function SeriesDetailScreen() {
   const [promptEpisodeId, setPromptEpisodeId] = useState<number | null>(null);
   const [reviewBusy, setReviewBusy] = useState(false);
 
-  const openSeriesMenu = useCallback(() => setSeriesMenuOpen(true), []);
+  const pinSeasonSection = useCallback((seasonNumber: number) => {
+    // Instant AccordionPanel expand — pin after one layout frame (no tween wait,
+    // no multi-frame correctMs storm). `animated: true` scrolls the dock smoothly.
+    requestAnimationFrame(() => {
+      stickyScrollRef.current?.pinSection(`season-${seasonNumber}`, {
+        animated: true,
+        correctMs: 0,
+      });
+    });
+  }, []);
+
+  const openSeriesMenu = useCallback(() => {
+    pendingRemoveRef.current = false;
+    setSeriesMenuOpen(true);
+  }, []);
   const seriesMenuTrigger = useMemo(
     () => (
       <Pressable
+        ref={seriesMenuAnchorRef}
         accessibilityRole="button"
         accessibilityLabel={t("series.menu")}
         onPress={openSeriesMenu}
@@ -171,6 +400,28 @@ export default function SeriesDetailScreen() {
     okay: t("rating.okay"),
     good: t("rating.good"),
   };
+
+  /** Keep details sheet in sync after watch/rate mutations refresh `detail`. */
+  const liveDetailsEpisode = useMemo(() => {
+    if (!detailsEpisode) return null;
+    if (!detail) return detailsEpisode;
+    for (const season of detail.seasons) {
+      const found = season.episodes.find((ep) => ep.id === detailsEpisode.id);
+      if (found) return found;
+    }
+    return detailsEpisode;
+  }, [detailsEpisode, detail]);
+
+  const countdownLabels = useMemo<UnairedTrailingMarkLabels>(
+    () => ({
+      day: (count) => t("episode.countdownUnit.day", { count }),
+      hour: (count) => t("episode.countdownUnit.hour", { count }),
+      minute: t("episode.countdownUnit.minute"),
+      second: t("episode.countdownUnit.second"),
+      tbd: t("episode.tbd"),
+    }),
+    [t],
+  );
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -220,21 +471,29 @@ export default function SeriesDetailScreen() {
     );
     prevSeasonCompleteRef.current = seasonCompleteSnapshot(detail.seasons);
     if (advanced !== undefined) {
-      animateSeasonToggle();
       setOpenSeason(advanced == null ? "" : String(advanced));
+      if (advanced != null) {
+        pinSeasonSection(advanced);
+      }
     }
-  }, [detail]);
+  }, [detail, pinSeasonSection]);
 
   function fail(err: unknown, fallback: string) {
     setError(err instanceof ApiError ? err.message : err instanceof Error ? err.message : fallback);
   }
 
-  async function watchOnly(episodeId: number, priorRating?: 1 | 2 | 3 | null) {
+  async function watchOnly(
+    episodeId: number,
+    priorRating?: 1 | 2 | 3 | null,
+    opts?: { skipRatingPrompt?: boolean },
+  ) {
     setBusyEpisode(episodeId);
     try {
       await addEpisodeWatch(episodeId);
       await load();
-      if (shouldPromptEpisodeRating(priorRating)) setPromptEpisodeId(episodeId);
+      if (!opts?.skipRatingPrompt && shouldPromptEpisodeRating(priorRating)) {
+        setPromptEpisodeId(episodeId);
+      }
     } catch (err) {
       fail(err, "watch_failed");
     } finally {
@@ -289,7 +548,7 @@ export default function SeriesDetailScreen() {
     }
   }
 
-  function onEpisodeToggle(episode: EpisodeSummary) {
+  function onEpisodeToggle(episode: EpisodeSummary, watchControl: View | null = null) {
     if (!uiIsEpisodeAired(episode)) return;
     const next = detail?.nextUnwatched ?? null;
     const hasUnwatchedBefore =
@@ -298,10 +557,13 @@ export default function SeriesDetailScreen() {
       (episode.s > next.s || (episode.s === next.s && episode.e > next.e));
 
     if (episode.watchCount > 0) {
+      episodeMenuAnchorRef.current = watchControl;
+      pendingEditDateRef.current = null;
       setEpisodeSheet({ episode, mode: "watched" });
       return;
     }
     if (hasUnwatchedBefore) {
+      episodeMenuAnchorRef.current = watchControl;
       setEpisodeSheet({ episode, mode: "upToHere" });
       return;
     }
@@ -386,6 +648,20 @@ export default function SeriesDetailScreen() {
       setDetail((prev) => (prev ? { ...prev, pushMuted: updated.pushMuted } : prev));
     } catch (err) {
       fail(err, "mute_failed");
+    } finally {
+      setMenuBusy(false);
+    }
+  }
+
+  async function setAsCover() {
+    if (!detail?.backdropRef) return;
+    setMenuBusy(true);
+    setError(null);
+    try {
+      const next = await updateSettings({ bannerRef: detail.backdropRef });
+      setSettings(next);
+    } catch (err) {
+      fail(err, "banner_failed");
     } finally {
       setMenuBusy(false);
     }
@@ -544,6 +820,20 @@ export default function SeriesDetailScreen() {
             void toggleMute();
           },
         },
+        ...(detail.backdropRef
+          ? [
+              {
+                key: "useAsCover",
+                label: t("profile.banner.useAsCover", {
+                  defaultValue: "Use as profile cover",
+                }),
+                icon: <ImageIcon size={16} color={colors.muted} />,
+                onPress: () => {
+                  void setAsCover();
+                },
+              } satisfies ActionSheetItem,
+            ]
+          : []),
         {
           key: "refresh",
           label: t("series.refresh"),
@@ -557,7 +847,9 @@ export default function SeriesDetailScreen() {
           label: t("library.card.remove"),
           icon: <Trash2 size={16} color="#f87171" />,
           danger: true,
-          onPress: () => setRemoveOpen(true),
+          onPress: () => {
+            pendingRemoveRef.current = true;
+          },
         },
       ];
 
@@ -601,59 +893,72 @@ export default function SeriesDetailScreen() {
     seasonForMenu?.episodes.some((ep) => uiIsEpisodeAired(ep) && ep.watchCount === 0) ?? false;
   const seasonHasWatched = seasonForMenu?.episodes.some((ep) => ep.watchCount > 0) ?? false;
 
-  const episodeSheetItems: ActionSheetItem[] = episodeSheet
-    ? episodeSheet.mode === "upToHere"
-      ? [
-          {
-            key: "upTo",
-            label: t("episode.watchedUpToHere"),
-            primary: true,
-            onPress: () => {
-              void watchUpTo(episodeSheet.episode.id);
-            },
+  // Two sheets (not one with a mode ternary): closing clears `episodeSheet`, and a
+  // ternary would flip presentation modal→popover mid-close animation. On tablet
+  // that sets `transform: undefined`, and RN `processTransform(null)` throws
+  // "Cannot read properties of null (reading 'forEach')".
+  const upToHereEpisode = episodeSheet?.mode === "upToHere" ? episodeSheet.episode : null;
+  const watchedMenuEpisode = episodeSheet?.mode === "watched" ? episodeSheet.episode : null;
+
+  const upToHereItems: ActionSheetItem[] = upToHereEpisode
+    ? [
+        {
+          key: "upTo",
+          label: t("episode.watchedUpToHere"),
+          primary: true,
+          onPress: () => {
+            void watchUpTo(upToHereEpisode.id);
           },
-          {
-            key: "only",
-            label: t("episode.markOnlyThis"),
-            onPress: () => {
-              void watchOnly(episodeSheet.episode.id, episodeSheet.episode.myRating);
-            },
+        },
+        {
+          key: "only",
+          label: t("episode.markOnlyThis"),
+          onPress: () => {
+            void watchOnly(upToHereEpisode.id, upToHereEpisode.myRating);
           },
-        ]
-      : [
-          {
-            key: "again",
-            label: t("episode.watchAgain"),
-            onPress: () => {
-              void watchOnly(episodeSheet.episode.id, episodeSheet.episode.myRating);
-            },
-          },
-          {
-            key: "edit",
-            label: t("episode.editDate"),
-            onPress: () => setEditDateEpisode(episodeSheet.episode),
-          },
-          {
-            key: "unwatch",
-            label:
-              episodeSheet.episode.watchCount > 1
-                ? t("episode.removeRewatch")
-                : t("episode.markAsUnwatched"),
-            danger: true,
-            onPress: () => {
-              void unwatchLatest(episodeSheet.episode.id);
-            },
-          },
-        ]
+        },
+      ]
     : [];
 
+  const watchedMenuItems: ActionSheetItem[] = watchedMenuEpisode
+    ? [
+        {
+          key: "again",
+          label: t("episode.watchAgain"),
+          onPress: () => {
+            void watchOnly(watchedMenuEpisode.id, watchedMenuEpisode.myRating);
+          },
+        },
+        {
+          key: "edit",
+          label: t("episode.editDate"),
+          onPress: () => {
+            pendingEditDateRef.current = watchedMenuEpisode;
+          },
+        },
+        {
+          key: "unwatch",
+          label:
+            watchedMenuEpisode.watchCount > 1
+              ? t("episode.removeRewatch")
+              : t("episode.markAsUnwatched"),
+          danger: true,
+          onPress: () => {
+            void unwatchLatest(watchedMenuEpisode.id);
+          },
+        },
+      ]
+    : [];
   // Header sits over backdrop — keep bar transparent; title empty so hero owns the name.
   const headerPad = WORDMARK_ROW_H;
 
   const toggleSeason = (seasonNumber: number) => {
-    animateSeasonToggle();
     const key = String(seasonNumber);
-    setOpenSeason((prev) => (prev === key ? "" : key));
+    const collapsing = openSeason === key;
+    setOpenSeason(collapsing ? "" : key);
+    if (!collapsing) {
+      pinSeasonSection(seasonNumber);
+    }
   };
 
   const listHeaderParts: ReactNode[] = [
@@ -706,30 +1011,20 @@ export default function SeriesDetailScreen() {
   if (showNextUp && nextEpisode) {
     listHeaderParts.push(
       <View key="next-up" className="mt-6">
-        <NextUpCard
+        <SeriesDetailNextUp
+          episode={nextEpisode}
+          locale={i18n.language}
           title={t("series.nextUp")}
-          episode={{
-            s: nextEpisode.s,
-            e: nextEpisode.e,
-            episodeTitle: nextEpisode.title,
-            stillUrl: buildImageUrl(nextEpisode.stillRef, "thumb"),
-            watched: nextEpisode.watchCount > 0,
-            muted: !uiIsEpisodeAired(nextEpisode),
-            checkboxDisabled: !uiIsEpisodeAired(nextEpisode) || busyEpisode === nextEpisode.id,
-            airDateLabel: nextEpisode.airDate
-              ? formatAirDateLabel(nextEpisode.airDate, i18n.language)
-              : null,
-            episodeType: nextEpisode.episodeType,
-            finaleLabel: t("episode.finale"),
-            untitledLabel: t("episode.untitled", { defaultValue: "Untitled" }),
-            watchCount: nextEpisode.watchCount,
-            showRatingPrompt: promptEpisodeId === nextEpisode.id,
-            myRating: nextEpisode.myRating,
-            ratingLabels,
-            skipLabel: t("rating.skip"),
-          }}
-          onToggleWatch={() => {
-            onEpisodeToggle(nextEpisode);
+          busy={busyEpisode === nextEpisode.id}
+          promptOpen={promptEpisodeId === nextEpisode.id}
+          ratingLabels={ratingLabels}
+          countdownLabels={countdownLabels}
+          finaleLabel={t("episode.finale")}
+          untitledLabel={t("episode.untitled", { defaultValue: "Untitled" })}
+          skipLabel={t("rating.skip")}
+          onPress={() => setDetailsEpisode(nextEpisode)}
+          onToggleWatch={(watchControl) => {
+            onEpisodeToggle(nextEpisode, watchControl);
           }}
           onRate={(value) => {
             void rateEpisode(nextEpisode.id, value);
@@ -805,19 +1100,17 @@ export default function SeriesDetailScreen() {
           className="px-3"
           leading={
             hasAiredUnwatched || hasWatched ? (
-              <Pressable
-                accessibilityRole="button"
+              <SeasonRingMenuButton
+                progressPct={progressPct}
+                finished={finished}
+                caughtUpWaiting={caughtUpWaiting}
                 accessibilityLabel={t("series.seasonMenu")}
-                onPress={() => setSeasonMenu(season.number)}
-                className="h-full w-full items-center justify-center rounded-full active:bg-white/10"
-              >
-                <CircularProgress
-                  size={SEASON_PROGRESS_SIZE}
-                  value={progressPct}
-                  complete={finished}
-                  caughtUp={caughtUpWaiting}
-                />
-              </Pressable>
+                onOpen={(anchor) => {
+                  seasonMenuAnchorRef.current = anchor;
+                  pendingUnwatchSeasonRef.current = null;
+                  setSeasonMenu(season.number);
+                }}
+              />
             ) : (
               <View className="h-full w-full items-center justify-center">
                 <CircularProgress
@@ -837,7 +1130,7 @@ export default function SeriesDetailScreen() {
         />
       ),
       body: (
-        <AccordionPanel open={expanded} contentClassName="gap-0.5 pb-2 pt-2">
+        <AccordionPanel open={expanded} animated={false} contentClassName="gap-0.5 pb-2 pt-2">
           {season.episodes.length === 0 ? (
             <EmptyPanel
               className="px-3 py-6"
@@ -851,32 +1144,24 @@ export default function SeriesDetailScreen() {
             />
           ) : (
             season.episodes.map((ep) => (
-              <EpisodeRow
+              <SeriesDetailEpisodeRow
                 key={ep.id}
-                s={ep.s}
-                e={ep.e}
-                episodeTitle={ep.title}
-                stillUrl={buildImageUrl(ep.stillRef, "thumb")}
-                watched={ep.watchCount > 0}
-                watchCount={ep.watchCount}
-                muted={!uiIsEpisodeAired(ep)}
-                checkboxDisabled={busyEpisode === ep.id || !uiIsEpisodeAired(ep)}
-                showRatingPrompt={promptEpisodeId === ep.id}
-                myRating={ep.myRating}
+                ep={ep}
+                locale={i18n.language}
+                busy={busyEpisode === ep.id}
+                promptOpen={promptEpisodeId === ep.id}
                 ratingLabels={ratingLabels}
-                skipLabel={t("rating.skip")}
-                airDateLabel={ep.airDate ? formatAirDateLabel(ep.airDate, i18n.language) : null}
-                episodeType={ep.episodeType}
+                countdownLabels={countdownLabels}
                 finaleLabel={t("episode.finale")}
                 untitledLabel={t("episode.untitled", { defaultValue: "Untitled" })}
-                showTags={false}
+                skipLabel={t("rating.skip")}
                 onRate={(value) => {
                   void rateEpisode(ep.id, value);
                 }}
                 onDismissPrompt={() => setPromptEpisodeId(null)}
                 onPress={() => setDetailsEpisode(ep)}
-                onToggleWatch={() => {
-                  onEpisodeToggle(ep);
+                onToggleWatch={(watchControl) => {
+                  onEpisodeToggle(ep, watchControl);
                 }}
               />
             ))
@@ -889,6 +1174,7 @@ export default function SeriesDetailScreen() {
   return (
     <View className="flex-1 bg-void">
       <StickySectionScroll
+        scrollRef={stickyScrollRef}
         className="flex-1 bg-void"
         contentContainerStyle={{ paddingBottom: tabContentBottom(insets.bottom) }}
         stickyOffset={stickySectionTop(insets.top)}
@@ -917,6 +1203,14 @@ export default function SeriesDetailScreen() {
         title={t("series.menu")}
         items={seriesMenuItems}
         busy={menuBusy}
+        presentation="popover"
+        anchorRef={seriesMenuAnchorRef}
+        popoverAlign="end"
+        onExitComplete={() => {
+          if (!pendingRemoveRef.current) return;
+          pendingRemoveRef.current = false;
+          setRemoveOpen(true);
+        }}
       />
 
       <ActionSheet
@@ -924,6 +1218,15 @@ export default function SeriesDetailScreen() {
         onClose={() => setSeasonMenu(null)}
         title={t("series.seasonMenu")}
         busy={seasonBusy}
+        presentation="popover"
+        anchorRef={seasonMenuAnchorRef}
+        popoverAlign="center"
+        onExitComplete={() => {
+          const season = pendingUnwatchSeasonRef.current;
+          if (season == null) return;
+          pendingUnwatchSeasonRef.current = null;
+          setUnwatchSeasonConfirm(season);
+        }}
         items={[
           ...(seasonHasAiredUnwatched
             ? [
@@ -943,7 +1246,7 @@ export default function SeriesDetailScreen() {
                   label: t("series.unwatchSeason"),
                   danger: true,
                   onPress: () => {
-                    if (seasonMenu != null) setUnwatchSeasonConfirm(seasonMenu);
+                    if (seasonMenu != null) pendingUnwatchSeasonRef.current = seasonMenu;
                   },
                 },
               ]
@@ -952,18 +1255,32 @@ export default function SeriesDetailScreen() {
       />
 
       <ActionSheet
-        isOpen={episodeSheet != null}
+        isOpen={upToHereEpisode != null}
         onClose={() => setEpisodeSheet(null)}
-        title={
-          episodeSheet?.mode === "upToHere" ? t("episode.watchedUpToHereTitle") : t("episode.menu")
-        }
-        {...(episodeSheet?.mode === "upToHere"
-          ? {
-              description: t("episode.watchedUpToHereDesc"),
-              variant: "confirm" as const,
-            }
-          : { variant: "list" as const })}
-        items={episodeSheetItems}
+        title={t("episode.watchedUpToHereTitle")}
+        description={t("episode.watchedUpToHereDesc")}
+        variant="confirm"
+        presentation="modal"
+        items={upToHereItems}
+        busy={busyEpisode != null}
+      />
+
+      <ActionSheet
+        isOpen={watchedMenuEpisode != null}
+        onClose={() => setEpisodeSheet(null)}
+        title={t("episode.menu")}
+        variant="list"
+        presentation="popover"
+        anchorRef={episodeMenuAnchorRef}
+        popoverAlign="end-top"
+        items={watchedMenuItems}
+        busy={busyEpisode != null}
+        onExitComplete={() => {
+          const ep = pendingEditDateRef.current;
+          if (!ep) return;
+          pendingEditDateRef.current = null;
+          setEditDateEpisode(ep);
+        }}
       />
 
       <WatchDateSheet
@@ -1067,30 +1384,50 @@ export default function SeriesDetailScreen() {
       <EpisodeDetailsSheet
         isOpen={detailsEpisode != null}
         onClose={() => setDetailsEpisode(null)}
-        s={detailsEpisode?.s ?? 0}
-        e={detailsEpisode?.e ?? 0}
-        episodeTitle={detailsEpisode?.title ?? null}
-        overview={detailsEpisode?.overview}
-        stillUrl={detailsEpisode ? buildImageUrl(detailsEpisode.stillRef, "large") : null}
+        title={t("episode.detailsTitle")}
+        s={liveDetailsEpisode?.s ?? 0}
+        e={liveDetailsEpisode?.e ?? 0}
+        episodeTitle={liveDetailsEpisode?.title ?? null}
+        overview={liveDetailsEpisode?.overview}
+        stillUrl={liveDetailsEpisode ? buildImageUrl(liveDetailsEpisode.stillRef, "large") : null}
         seriesTitle={detail.title}
-        airDate={detailsEpisode?.airDate}
-        runtimeMin={detailsEpisode?.runtimeMin}
-        watched={(detailsEpisode?.watchCount ?? 0) > 0}
-        lastWatchedAt={detailsEpisode?.lastWatchedAt}
-        myRating={detailsEpisode?.myRating ?? null}
+        airDate={liveDetailsEpisode?.airDate}
+        locale={i18n.language}
+        runtimeLabel={
+          liveDetailsEpisode?.runtimeMin != null
+            ? t("episode.runtimeMin", { minutes: liveDetailsEpisode.runtimeMin })
+            : null
+        }
+        watched={(liveDetailsEpisode?.watchCount ?? 0) > 0}
+        lastWatchedAt={liveDetailsEpisode?.lastWatchedAt}
+        myRating={liveDetailsEpisode?.myRating ?? null}
         ratingLabels={ratingLabels}
         onRate={(value) => {
-          if (detailsEpisode && value != null) void rateEpisode(detailsEpisode.id, value);
+          if (liveDetailsEpisode && value != null) void rateEpisode(liveDetailsEpisode.id, value);
         }}
         onToggleWatch={
-          detailsEpisode
+          liveDetailsEpisode
             ? () => {
-                onEpisodeToggle(detailsEpisode);
-                setDetailsEpisode(null);
+                const ep = liveDetailsEpisode;
+                // E205 — stay open; rate in-sheet; skip row popup. Direct toggle
+                // (no up-to-here / watched-options sheets) matches web details modal.
+                if (ep.watchCount > 0) {
+                  void unwatchLatest(ep.id);
+                } else {
+                  void watchOnly(ep.id, ep.myRating, { skipRatingPrompt: true });
+                }
               }
             : undefined
         }
-        toggleLabel={t("episode.markWatched", { defaultValue: "Watch actions" })}
+        toggleLabel={
+          liveDetailsEpisode == null
+            ? undefined
+            : liveDetailsEpisode.watchCount > 1
+              ? t("episode.removeRewatch")
+              : liveDetailsEpisode.watchCount > 0
+                ? t("episode.markAsUnwatched")
+                : t("episode.toggleWatched")
+        }
       />
 
       {unwatchSeasonConfirm != null ? (
@@ -1110,7 +1447,7 @@ export default function SeriesDetailScreen() {
       {removeOpen ? (
         <ConfirmDialog
           title={t("library.card.remove")}
-          body={t("library.card.removeConfirm", { title: detail.title })}
+          body={t("library.removeConfirm", { title: detail.title })}
           confirmLabel={t("library.card.remove")}
           cancelLabel={t("watch.removeSectionCancel")}
           variant="danger"

@@ -14,4 +14,13 @@ describe("RatingDistributionSection", () => {
     expect(screen.getByText("45")).toBeInTheDocument();
     expect(screen.getByText("12")).toBeInTheDocument();
   });
+
+  it("hides when every rating count is zero", () => {
+    const { container } = renderWithProviders(
+      <RatingDistributionSection
+        stats={{ ratingDistribution: { "1": 0, "2": 0, "3": 0 } }}
+      />,
+    );
+    expect(container).toBeEmptyDOMElement();
+  });
 });

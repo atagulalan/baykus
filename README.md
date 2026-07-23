@@ -164,7 +164,7 @@ multi-mode ekranları — [HANDOVER.md](HANDOVER.md)'de listeli).
 
 ```bash
 pnpm install
-pnpm dev          # server (4004) + web (5173, /api ve /img proxy'li)
+pnpm dev          # server (4004) + web (5173) + Expo mobile
 pnpm test         # vitest, tüm workspace (pnpm test packages/core gibi daraltılabilir)
 pnpm typecheck
 pnpm lint         # biome (düzeltme: pnpm exec biome check --write .)

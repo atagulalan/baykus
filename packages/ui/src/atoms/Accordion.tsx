@@ -4,21 +4,30 @@ import {
   type ReactNode,
   useCallback,
   useContext,
+  useEffect,
   useId,
   useMemo,
   useState,
 } from "react";
-import { LayoutAnimation, Platform, Pressable, UIManager, View } from "react-native";
+import { Pressable, View } from "react-native";
+import Animated, {
+  Easing,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import { cn } from "../lib/cn.ts";
 
-if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
+const PANEL_DURATION_MS = 300;
+const PANEL_EASING = Easing.inOut(Easing.ease);
+const PANEL_TIMING = { duration: PANEL_DURATION_MS, easing: PANEL_EASING } as const;
 
-/** Ease-in-out layout animation for accordion / section collapse (web height transition stand-in). */
-export function animateLayoutToggle() {
-  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-}
+/**
+ * No-op kept for call-site compatibility. Height open/close is driven by
+ * `AccordionPanel` via Reanimated — do not use LayoutAnimation for list resize.
+ */
+export function animateLayoutToggle() {}
 
 type AccordionType = "single" | "multiple";
 
@@ -62,33 +71,201 @@ export type AccordionPanelProps = {
   children: ReactNode;
   className?: string;
   contentClassName?: string;
-  /** Unmount children when closed. Default true. */
+  /**
+   * Unmount children after the close tween finishes (or immediately when
+   * `animated={false}`). Default true.
+   * Children stay mounted during animated open/close so New Arch / Android
+   * can tween height.
+   */
   unmountOnExit?: boolean;
+  /**
+   * When false, expand/collapse instantly (natural layout height) — no
+   * Reanimated height tween. Prefer for large nested lists inside FlatList
+   * body cells (series-detail seasons) where height animation causes jank.
+   * Default true.
+   */
+  animated?: boolean;
 };
 
-/** Controlled collapse panel — LayoutAnimation stand-in for web height transition. */
+/** Instant expand/collapse — natural height, no Reanimated measure/tween. */
+function AccordionPanelInstant({
+  open,
+  children,
+  className,
+  contentClassName,
+  unmountOnExit,
+}: {
+  open: boolean;
+  children: ReactNode;
+  className?: string;
+  contentClassName?: string;
+  unmountOnExit: boolean;
+}) {
+  // Keep a native child slot when fully closed so StickySectionScroll header
+  // cells stay aligned — `return null` would shift FlatList indices.
+  const [present, setPresent] = useState(open || !unmountOnExit);
+
+  useEffect(() => {
+    if (open) {
+      setPresent(true);
+      return;
+    }
+    if (unmountOnExit) setPresent(false);
+  }, [open, unmountOnExit]);
+
+  if (!present) {
+    return (
+      <View
+        collapsable={false}
+        {...(className !== undefined ? { className } : {})}
+        style={{ height: 0 }}
+      />
+    );
+  }
+
+  if (!open) {
+    return (
+      <View
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+        collapsable={false}
+        {...(className !== undefined ? { className } : {})}
+        style={{ height: 0, overflow: "hidden" }}
+      >
+        <View className={cn(contentClassName)}>{children}</View>
+      </View>
+    );
+  }
+
+  return (
+    <View
+      collapsable={false}
+      {...(className !== undefined ? { className } : {})}
+      style={{ overflow: "hidden" }}
+    >
+      <View className={cn(contentClassName)}>{children}</View>
+    </View>
+  );
+}
+
+/** Controlled collapse panel — Reanimated measured-height open/close. */
+function AccordionPanelAnimated({
+  open,
+  children,
+  className,
+  contentClassName,
+  unmountOnExit,
+}: {
+  open: boolean;
+  children: ReactNode;
+  className?: string;
+  contentClassName?: string;
+  unmountOnExit: boolean;
+}) {
+  const [present, setPresent] = useState(open || !unmountOnExit);
+  const measuredHeight = useSharedValue(0);
+  const animatedHeight = useSharedValue(0);
+  const animatedOpacity = useSharedValue(open ? 1 : 0);
+
+  useEffect(() => {
+    if (open) {
+      setPresent(true);
+      const target = measuredHeight.value;
+      animatedOpacity.value = withTiming(1, PANEL_TIMING);
+      // If content is not measured yet, onLayout will drive the open tween.
+      if (target > 0) {
+        animatedHeight.value = withTiming(target, PANEL_TIMING);
+      }
+      return;
+    }
+
+    animatedOpacity.value = withTiming(0, PANEL_TIMING);
+    animatedHeight.value = withTiming(0, PANEL_TIMING, (finished) => {
+      if (finished && unmountOnExit) {
+        runOnJS(setPresent)(false);
+      }
+    });
+  }, [open, unmountOnExit, animatedHeight, animatedOpacity, measuredHeight]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    height: animatedHeight.value,
+    opacity: animatedOpacity.value,
+    overflow: "hidden" as const,
+  }));
+
+  if (!present) {
+    return (
+      <View
+        collapsable={false}
+        {...(className !== undefined ? { className } : {})}
+        style={{ height: 0 }}
+      />
+    );
+  }
+
+  return (
+    <Animated.View
+      accessibilityElementsHidden={!open}
+      importantForAccessibility={open ? "auto" : "no-hide-descendants"}
+      collapsable={false}
+      {...(className !== undefined ? { className } : {})}
+      style={animatedStyle}
+    >
+      {/*
+        Absolute inner so onLayout reports full content height while the outer
+        view clips/animates — matches Reanimated accordion measured-height pattern.
+      */}
+      <View
+        style={{ position: "absolute", left: 0, right: 0, top: 0 }}
+        onLayout={(e) => {
+          const next = e.nativeEvent.layout.height;
+          if (next <= 0) return;
+          const prev = measuredHeight.value;
+          measuredHeight.value = next;
+          if (!open) return;
+          // First measure after mount/open, or content size changed while open.
+          if (prev === 0 || Math.abs(prev - next) > 0.5) {
+            animatedHeight.value = withTiming(next, PANEL_TIMING);
+            animatedOpacity.value = withTiming(1, PANEL_TIMING);
+          }
+        }}
+      >
+        <View className={cn(contentClassName)}>{children}</View>
+      </View>
+    </Animated.View>
+  );
+}
+
 export function AccordionPanel({
   open,
   children,
   className,
   contentClassName,
   unmountOnExit = true,
+  animated = true,
 }: AccordionPanelProps) {
-  // Keep a native child slot when closed so ScrollView `stickyHeaderIndices`
-  // (sibling headers) stay aligned with host children — `return null` shifts indices.
-  // Keep `className` so collapsed sections can use a compact margin (e.g. `mb-1`).
-  if (unmountOnExit && !open) {
-    return <View collapsable={false} className={className} style={{ height: 0 }} />;
+  if (!animated) {
+    return (
+      <AccordionPanelInstant
+        open={open}
+        unmountOnExit={unmountOnExit}
+        {...(className !== undefined ? { className } : {})}
+        {...(contentClassName !== undefined ? { contentClassName } : {})}
+      >
+        {children}
+      </AccordionPanelInstant>
+    );
   }
+
   return (
-    <View
-      accessibilityElementsHidden={!open}
-      importantForAccessibility={open ? "auto" : "no-hide-descendants"}
-      className={cn(!open && "hidden", className)}
-      style={open ? undefined : { height: 0, overflow: "hidden", opacity: 0 }}
+    <AccordionPanelAnimated
+      open={open}
+      unmountOnExit={unmountOnExit}
+      {...(className !== undefined ? { className } : {})}
+      {...(contentClassName !== undefined ? { contentClassName } : {})}
     >
-      <View className={cn(contentClassName)}>{children}</View>
-    </View>
+      {children}
+    </AccordionPanelAnimated>
   );
 }
 
@@ -118,7 +295,6 @@ export function Accordion({
 
   const toggle = useCallback(
     (itemValue: string) => {
-      animateLayoutToggle();
       let next: string[];
       if (type === "single") {
         const isOpen = value[0] === itemValue;
@@ -219,6 +395,7 @@ export type AccordionContentProps = {
   className?: string;
   contentClassName?: string;
   unmountOnExit?: boolean;
+  animated?: boolean;
 };
 
 export function AccordionContent({
@@ -226,6 +403,7 @@ export function AccordionContent({
   className,
   contentClassName,
   unmountOnExit = true,
+  animated = true,
 }: AccordionContentProps) {
   const item = useAccordionItemCtx("AccordionContent");
   return (
@@ -234,6 +412,7 @@ export function AccordionContent({
       {...(className !== undefined ? { className } : {})}
       {...(contentClassName !== undefined ? { contentClassName } : {})}
       unmountOnExit={unmountOnExit}
+      animated={animated}
     >
       {children}
     </AccordionPanel>

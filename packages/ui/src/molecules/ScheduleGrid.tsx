@@ -8,6 +8,7 @@ import {
   type ScheduleGridEpisode,
 } from "../lib/buildScheduleModel.ts";
 import { cn } from "../lib/cn.ts";
+import { haptic } from "../lib/haptics.ts";
 
 export type ScheduleGridProps = {
   days: ScheduleGridDayInput[];
@@ -152,7 +153,10 @@ export function ScheduleGrid({
                       <Pressable
                         key={ep.episodeId}
                         accessibilityRole="button"
-                        onPress={() => onPressEpisode(ep)}
+                        onPress={() => {
+                          haptic("selection");
+                          onPressEpisode(ep);
+                        }}
                         className={cn(
                           "rounded border border-white/10 bg-void/90 px-1 py-1 active:bg-white/10",
                           ep.isWatched && "opacity-40",

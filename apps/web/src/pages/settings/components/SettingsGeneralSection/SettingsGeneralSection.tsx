@@ -6,7 +6,7 @@ import { SETTINGS_ROW } from "../../../../lib/settingsChrome.ts";
 import { updateUiPrefs } from "../../../../lib/uiPrefs.ts";
 import { SettingsSection } from "../SettingsSection/SettingsSection.tsx";
 
-const LOCALES: Locale[] = ["tr", "en"];
+const LOCALES: Locale[] = ["tr", "en", "ja"];
 const REGIONS = ["TR", "US", "GB", "DE", "FR", "ES", "IT", "NL"];
 
 interface SettingsGeneralSectionProps {

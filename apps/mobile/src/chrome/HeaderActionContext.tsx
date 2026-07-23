@@ -1,12 +1,5 @@
-import {
-  createContext,
-  type ReactNode,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { useFocusEffect } from "expo-router";
+import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from "react";
 
 type HeaderActionContextValue = {
   /** Right-rail control in `MobileWordmark` (web `MobileHeaderAction` / series slot). */
@@ -33,11 +26,17 @@ export function useHeaderAction(): HeaderActionContextValue {
   return ctx;
 }
 
-/** Register a chrome right-rail control for the lifetime of the calling screen. */
+/**
+ * Register a chrome right-rail control while the calling screen is focused.
+ * Clears on blur so dock navigations that keep the prior screen mounted (e.g.
+ * series → profile) do not leak the previous screen's ⋮ into MobileWordmark.
+ */
 export function useHeaderRightAction(node: ReactNode) {
   const { setRightAction } = useHeaderAction();
-  useEffect(() => {
-    setRightAction(node);
-    return () => setRightAction(null);
-  }, [node, setRightAction]);
+  useFocusEffect(
+    useCallback(() => {
+      setRightAction(node);
+      return () => setRightAction(null);
+    }, [node, setRightAction]),
+  );
 }

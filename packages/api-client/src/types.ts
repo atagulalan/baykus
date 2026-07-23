@@ -286,7 +286,7 @@ export interface Rating {
   ratedAt: string;
 }
 
-export type Locale = "tr" | "en";
+export type Locale = "tr" | "en" | "ja";
 export type Theme = "dark" | "light" | "system";
 export type EpisodeLabelFormat = "SxEy" | "S01E06" | "compact";
 export type DefaultStartPage = "home" | "calendar" | "stats";

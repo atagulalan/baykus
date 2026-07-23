@@ -5,8 +5,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getAuthSession, login, oauthCallback, oauthClaim } from "../../api/client.ts";
 import { OAuthButtons } from "../../components/molecules/OAuthButtons/OAuthButtons.tsx";
-
-const HANDLE_PATTERN = /^[a-z0-9-]{3,30}$/;
+import { HANDLE_PATTERN, sanitizeHandleInput } from "../../lib/handleInput.ts";
 
 const AUTH_INPUT =
   "rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-snow transition-colors focus:border-yellow/50 focus:outline-none focus:ring-1 focus:ring-yellow/30";
@@ -89,8 +88,13 @@ export function LoginPage() {
             {t("auth.handle")}
             <input
               value={oauthHandle}
-              onChange={(e) => setOauthHandle(e.target.value)}
-              autoComplete="username"
+              onChange={(e) => setOauthHandle(sanitizeHandleInput(e.target.value))}
+              autoComplete="nickname"
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
+              inputMode="text"
+              pattern="[a-z0-9\-]{3,30}"
               className={AUTH_INPUT}
             />
             {oauthHandle.length > 0 && !oauthHandleValid && (
@@ -131,8 +135,13 @@ export function LoginPage() {
             {t("auth.handle")}
             <input
               value={handle}
-              onChange={(e) => setHandle(e.target.value)}
+              onChange={(e) => setHandle(sanitizeHandleInput(e.target.value))}
               autoComplete="username"
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
+              inputMode="text"
+              pattern="[a-z0-9\-]{3,30}"
               className={AUTH_INPUT}
             />
           </label>

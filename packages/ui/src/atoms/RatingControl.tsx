@@ -4,6 +4,7 @@ import type { ComponentType } from "react";
 import { Pressable, Text, View } from "react-native";
 import { borders } from "../lib/borders.ts";
 import { cn } from "../lib/cn.ts";
+import { haptic } from "../lib/haptics.ts";
 import { colors } from "../tokens.ts";
 
 export type RatingValue = 1 | 2 | 3;
@@ -72,12 +73,12 @@ export function RatingControl({
   const padding = iconsOnly
     ? compact
       ? "p-1.5"
-      : "p-2"
+      : "p-3"
     : compact
       ? "gap-1 px-2.5 py-1.5"
       : "gap-1.5 px-3.5 py-2";
   const labelClass = compact ? "text-[10px]" : "text-[11px]";
-  const iconSize = compact ? 14 : 16;
+  const iconSize = iconsOnly ? (compact ? 16 : 22) : compact ? 14 : 16;
 
   return (
     <View
@@ -97,7 +98,10 @@ export function RatingControl({
             accessibilityRole="button"
             accessibilityState={{ selected: active }}
             accessibilityLabel={iconsOnly ? labels[opt.key] : undefined}
-            onPress={() => onChange(active ? null : opt.value)}
+            onPress={() => {
+              haptic("selection");
+              onChange(active ? null : opt.value);
+            }}
             className={cn(
               "flex-row items-center rounded-full font-mono",
               !iconsOnly && `${labelClass} uppercase tracking-widest`,

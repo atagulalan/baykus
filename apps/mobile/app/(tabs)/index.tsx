@@ -18,11 +18,11 @@ import {
   EmptyPanel,
   type LibrarySort,
   SectionHeader,
-  SeriesCard,
   type StickySection,
   StickySectionScroll,
   skeletonCategoryStickySections,
 } from "@baykus/ui";
+import { useFocusEffect } from "@react-navigation/native";
 import { Link, router } from "expo-router";
 import { Library, LogIn } from "lucide-react-native";
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
@@ -31,8 +31,8 @@ import { Pressable, Text, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../src/auth/AuthProvider.tsx";
 import { stickySectionTop, tabContentBottom } from "../../src/chrome/layout.ts";
+import { MenuSeriesCard, SeriesCardMenuProvider } from "../../src/components/SeriesCardMenu.tsx";
 import { groupByCategory } from "../../src/lib/groupByCategory.ts";
-import { toSeriesCardSeries } from "../../src/lib/mapSeriesCard.ts";
 import { sectionSort, sortsForCategory } from "../../src/lib/sectionSort.ts";
 import { seriesGridCols } from "../../src/lib/seriesGridCols.ts";
 import { sortSeriesSummaries } from "../../src/lib/sortSeries.ts";
@@ -84,6 +84,14 @@ export default function LibraryScreen() {
     setLoading(true);
     void load();
   }, [authLoading, load]);
+
+  // Tabs stay mounted — refetch when returning from series detail after watch mutations.
+  useFocusEffect(
+    useCallback(() => {
+      if (authLoading || needsAuth) return;
+      void load();
+    }, [authLoading, needsAuth, load]),
+  );
 
   useEffect(() => {
     if (authLoading || needsAuth || loading) return;
@@ -236,15 +244,12 @@ export default function LibraryScreen() {
           />
         ),
         body: (
-          <AccordionPanel
-            open={!isCollapsed}
-            className={isCollapsed ? "mb-1" : "mb-6 mt-2"}
-          >
+          <AccordionPanel open={!isCollapsed} className={isCollapsed ? "mb-1" : "mb-6 mt-2"}>
             <View className="flex-row flex-wrap">
               {section.items.map((item) => (
                 <View key={item.id} style={{ width: `${100 / cols}%` }}>
-                  <SeriesCard
-                    series={toSeriesCardSeries(item)}
+                  <MenuSeriesCard
+                    item={item}
                     onPress={() => router.push(`/series/${seriesParam(item)}`)}
                   />
                 </View>
@@ -300,20 +305,33 @@ export default function LibraryScreen() {
   }
 
   return (
-    <StickySectionScroll
-      className="flex-1 bg-void"
-      contentContainerClassName="px-1.5"
-      contentContainerStyle={{ paddingBottom: tabContentBottom(insets.bottom) }}
-      stickyOffset={stickySectionTop(insets.top)}
-      pinClassName="px-1.5"
-      sections={stickySections}
-      listHeader={listHeaderParts.length > 0 ? listHeaderParts : null}
-      listFooter={listFooter}
-      variant="history"
-      historyLabel={t("watch.showHistory", { defaultValue: "Show history" })}
-      onOpen={() => {
-        router.push("/watch/history");
+    <SeriesCardMenuProvider
+      onSeriesPatched={(updated) => {
+        setItems((prev) => prev.map((s) => (s.id === updated.id ? { ...s, ...updated } : s)));
       }}
-    />
+      onSeriesRemoved={(id) => {
+        setItems((prev) => prev.filter((s) => s.id !== id));
+      }}
+      onReload={() => {
+        void load();
+      }}
+      onError={(message) => setError(message)}
+    >
+      <StickySectionScroll
+        className="flex-1 bg-void"
+        contentContainerClassName="px-1.5"
+        contentContainerStyle={{ paddingBottom: tabContentBottom(insets.bottom) }}
+        stickyOffset={stickySectionTop(insets.top)}
+        pinClassName="px-1.5"
+        sections={stickySections}
+        listHeader={listHeaderParts.length > 0 ? listHeaderParts : null}
+        listFooter={listFooter}
+        variant="history"
+        historyLabel={t("watch.showHistory", { defaultValue: "Show history" })}
+        onOpen={() => {
+          router.push("/watch/history");
+        }}
+      />
+    </SeriesCardMenuProvider>
   );
 }

@@ -184,6 +184,7 @@ export function SeriesDetailsSheet({
       onClose={onClose}
       title={detail.title}
       titleAccessory={statusBadge}
+      size="large"
       className={cn("gap-5 px-4 pb-8 pt-3", className)}
     >
       {detail.tagline || detail.overview ? (
@@ -227,99 +228,101 @@ export function SeriesDetailsSheet({
         </SheetSection>
       ) : null}
 
-      <SheetSection title={labels.info}>
-        <View className="gap-1">
-          {detail.networks && detail.networks.length > 0 ? (
-            <InfoRow label={labels.production}>
-              <View className="flex-row flex-wrap items-center justify-end gap-x-3 gap-y-1">
-                {detail.networks.map((n) => (
-                  <LogoOrText key={n.name} src={n.logoUrl} alt={n.name} />
-                ))}
-              </View>
-            </InfoRow>
-          ) : null}
-          {detail.runtimeLabel ? (
-            <InfoRow label={labels.runtime}>
-              <Text className="font-mono text-xs tabular-nums text-snow/80">
-                {detail.runtimeLabel}
-              </Text>
-            </InfoRow>
-          ) : null}
-          {!preview ? (
-            <>
-              {detail.addedLabel ? (
-                <InfoRow label={labels.added}>
-                  <Text className="font-mono text-xs tabular-nums text-snow/80">
-                    {detail.addedLabel}
-                  </Text>
-                </InfoRow>
-              ) : null}
-              <InfoRow label={labels.refreshed}>
-                <View className="flex-row flex-wrap items-center justify-end gap-2">
-                  <Text className="font-mono text-xs tabular-nums text-snow/80">
-                    {detail.neverRefreshed
-                      ? labels.neverRefreshed
-                      : (detail.refreshedLabel ?? labels.neverRefreshed)}
-                  </Text>
-                  {detail.stale ? (
-                    <View
-                      className="rounded-full px-1.5 py-0.5"
-                      style={{
-                        borderWidth: 1,
-                        borderColor: "rgba(240, 224, 0, 0.4)",
-                        borderStyle: "solid",
-                      }}
-                    >
-                      <Text className="font-sans text-[10px] text-yellow">{labels.stale}</Text>
-                    </View>
-                  ) : null}
+      {(detail.networks && detail.networks.length > 0) ||
+      detail.runtimeLabel ||
+      !preview ||
+      detail.contentRating ||
+      detail.languageLabel ? (
+        <SheetSection title={labels.info}>
+          <View className="gap-1">
+            {detail.networks && detail.networks.length > 0 ? (
+              <InfoRow label={labels.production}>
+                <View className="flex-row flex-wrap items-center justify-end gap-x-3 gap-y-1">
+                  {detail.networks.map((n) => (
+                    <LogoOrText key={n.name} src={n.logoUrl} alt={n.name} />
+                  ))}
                 </View>
               </InfoRow>
-            </>
-          ) : null}
-          {detail.contentRating ? (
-            <InfoRow label={labels.contentRating}>
-              <Text className="text-sm text-snow/80">{detail.contentRating}</Text>
-            </InfoRow>
-          ) : null}
-          {detail.languageLabel ? (
-            <InfoRow label={labels.language}>
-              <Text className="text-sm text-snow/80">{detail.languageLabel}</Text>
-            </InfoRow>
-          ) : null}
-        </View>
-      </SheetSection>
-
-      {(detail.externalRatings && detail.externalRatings.length > 0) ||
-      (!preview && ratingLabels && onRateChange) ? (
-        <SheetSection title={labels.ratings}>
-          {detail.externalRatings && detail.externalRatings.length > 0 ? (
-            <View className="flex-row flex-wrap items-center gap-x-2 gap-y-1">
-              {detail.externalRatings.map((r, i) => (
-                <View key={r.source} className="flex-row items-center gap-1">
-                  {i > 0 ? <Text className="text-sm text-muted/60">{sep}</Text> : null}
-                  <Star size={12} strokeWidth={1.5} color={colors.yellow} />
-                  <Text className="text-sm text-muted">
-                    {r.source.toUpperCase()} {r.display}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          ) : null}
-          {!preview && ratingLabels && onRateChange ? (
-            <View className="gap-2 pt-1">
-              <Text className="font-mono text-[10px] uppercase tracking-widest text-muted">
-                {labels.yourRating}
-              </Text>
-              <RatingControl
-                value={detail.myRating ?? null}
-                onChange={onRateChange}
-                labels={ratingLabels}
-                size="sm"
-              />
-            </View>
-          ) : null}
+            ) : null}
+            {detail.runtimeLabel ? (
+              <InfoRow label={labels.runtime}>
+                <Text className="font-mono text-xs tabular-nums text-snow/80">
+                  {detail.runtimeLabel}
+                </Text>
+              </InfoRow>
+            ) : null}
+            {!preview ? (
+              <>
+                {detail.addedLabel ? (
+                  <InfoRow label={labels.added}>
+                    <Text className="font-mono text-xs tabular-nums text-snow/80">
+                      {detail.addedLabel}
+                    </Text>
+                  </InfoRow>
+                ) : null}
+                <InfoRow label={labels.refreshed}>
+                  <View className="flex-row flex-wrap items-center justify-end gap-2">
+                    <Text className="font-mono text-xs tabular-nums text-snow/80">
+                      {detail.neverRefreshed
+                        ? labels.neverRefreshed
+                        : (detail.refreshedLabel ?? labels.neverRefreshed)}
+                    </Text>
+                    {detail.stale ? (
+                      <View
+                        className="rounded-full px-1.5 py-0.5"
+                        style={{
+                          borderWidth: 1,
+                          borderColor: "rgba(240, 224, 0, 0.4)",
+                          borderStyle: "solid",
+                        }}
+                      >
+                        <Text className="font-sans text-[10px] text-yellow">{labels.stale}</Text>
+                      </View>
+                    ) : null}
+                  </View>
+                </InfoRow>
+              </>
+            ) : null}
+            {detail.contentRating ? (
+              <InfoRow label={labels.contentRating}>
+                <Text className="text-sm text-snow/80">{detail.contentRating}</Text>
+              </InfoRow>
+            ) : null}
+            {detail.languageLabel ? (
+              <InfoRow label={labels.language}>
+                <Text className="text-sm text-snow/80">{detail.languageLabel}</Text>
+              </InfoRow>
+            ) : null}
+          </View>
         </SheetSection>
+      ) : null}
+
+      {detail.externalRatings && detail.externalRatings.length > 0 ? (
+        <SheetSection title={labels.ratings}>
+          <View className="flex-row flex-wrap items-center gap-x-2 gap-y-1">
+            {detail.externalRatings.map((r, i) => (
+              <View key={r.source} className="flex-row items-center gap-1">
+                {i > 0 ? <Text className="text-sm text-muted/60">{sep}</Text> : null}
+                <Star size={12} strokeWidth={1.5} color={colors.yellow} />
+                <Text className="text-sm text-muted">
+                  {r.source.toUpperCase()} {r.display}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </SheetSection>
+      ) : null}
+      {!preview && ratingLabels && onRateChange ? (
+        <View className="items-center pt-2">
+          <View>
+            <RatingControl
+              value={detail.myRating ?? null}
+              onChange={onRateChange}
+              labels={ratingLabels}
+              iconsOnly
+            />
+          </View>
+        </View>
       ) : null}
 
       {detail.providers && detail.providers.length > 0 ? (

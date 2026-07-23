@@ -2,7 +2,9 @@
 import { Check, ChevronDown } from "lucide-react-native";
 import { useState } from "react";
 import { Modal, Pressable, ScrollView, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { cn } from "../lib/cn.ts";
+import { haptic } from "../lib/haptics.ts";
 import { colors } from "../tokens.ts";
 
 export type SettingsSelectOption<T extends string> = {
@@ -31,7 +33,9 @@ export function SettingsSelect<T extends string>({
   hint,
 }: SettingsSelectProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
+  const insets = useSafeAreaInsets();
   const selectedOption = options.find((o) => o.value === value);
+  const sheetBottomInset = Math.round(insets.bottom) + 16;
 
   return (
     <View>
@@ -39,7 +43,10 @@ export function SettingsSelect<T extends string>({
         accessibilityRole="button"
         accessibilityLabel={label}
         accessibilityState={{ expanded: isOpen }}
-        onPress={() => setIsOpen((o) => !o)}
+        onPress={() => {
+          haptic("light");
+          setIsOpen((o) => !o);
+        }}
         className={cn(
           "flex-row items-center justify-between rounded-xl px-3 py-3.5 active:bg-white/[0.04]",
           isOpen && "bg-white/[0.04]",
@@ -68,10 +75,11 @@ export function SettingsSelect<T extends string>({
             className="absolute inset-0 bg-black/60"
             onPress={() => setIsOpen(false)}
           />
-          <View className="max-h-[70%] rounded-t-2xl border border-white/10 bg-void p-3">
-            <Text className="mb-2 px-2 font-mono text-xs uppercase tracking-widest text-muted">
-              {label}
-            </Text>
+          <View
+            className="max-h-[70%] rounded-t-2xl border border-white/10 bg-void p-3"
+            style={{ paddingBottom: sheetBottomInset }}
+          >
+            <Text className="mb-2 px-2 font-sans text-sm font-semibold text-snow">{label}</Text>
             <ScrollView>
               {options.map((opt) => {
                 const selected = opt.value === value;
@@ -82,10 +90,10 @@ export function SettingsSelect<T extends string>({
                     accessibilityState={{ selected, disabled: opt.disabled }}
                     disabled={opt.disabled}
                     onPress={() => {
-                      if (!opt.disabled) {
-                        onChange(opt.value);
-                        setIsOpen(false);
-                      }
+                      if (opt.disabled) return;
+                      haptic("selection");
+                      onChange(opt.value);
+                      setIsOpen(false);
                     }}
                     className={cn(
                       "mb-0.5 flex-row items-center justify-between rounded-lg px-3 py-2.5",
@@ -93,7 +101,7 @@ export function SettingsSelect<T extends string>({
                     )}
                   >
                     <Text
-                      className={cn("font-mono text-xs", selected ? "text-yellow" : "text-snow")}
+                      className={cn("font-sans text-sm", selected ? "text-yellow" : "text-snow")}
                     >
                       {opt.label}
                     </Text>

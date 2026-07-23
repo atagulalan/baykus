@@ -13,13 +13,15 @@ import {
   EmptyPanel,
   SectionHeader,
   type StickySection,
+  type StickySectionScrollHandle,
   StickySectionScroll,
   skeletonCalendarStickySections,
   todayIso,
 } from "@baykus/ui";
+import { useFocusEffect } from "@react-navigation/native";
 import { router } from "expo-router";
 import { CalendarDays, LogIn } from "lucide-react-native";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -33,6 +35,17 @@ import {
   type TimelineBucketId,
 } from "../../src/lib/calendarBuckets.ts";
 
+/** API omits empty days — synthesize today so BUGÜN always exists for E73 pin. */
+function ensureTodayPresent(
+  days: Array<{ date: string; entries: CalendarEntry[] }>,
+  today: string,
+): Array<{ date: string; entries: CalendarEntry[] }> {
+  if (days.some((d) => d.date === today)) return days;
+  return [...days, { date: today, entries: [] }].sort((a, b) =>
+    a.date < b.date ? -1 : a.date > b.date ? 1 : 0,
+  );
+}
+
 function addDays(iso: string, days: number): string {
   const d = new Date(`${iso}T12:00:00Z`);
   d.setUTCDate(d.getUTCDate() + days);
@@ -40,7 +53,6 @@ function addDays(iso: string, days: number): string {
 }
 
 function mapEntry(entry: CalendarEntry) {
-  const provider = entry.watchProviders[0];
   return {
     episodeId: entry.episodeId,
     itemId: entry.itemId,
@@ -49,7 +61,6 @@ function mapEntry(entry: CalendarEntry) {
     s: entry.s,
     e: entry.e,
     episodeTitle: entry.episodeTitle,
-    networkOrProvider: provider ? `${provider.provider} (${provider.region})` : entry.network,
     airDate: entry.airDate,
     airStamp: entry.airStamp,
     episodeType: entry.episodeType,
@@ -68,6 +79,7 @@ export default function CalendarScreen() {
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [checkedOff, setCheckedOff] = useState<Set<number>>(() => new Set());
+  const stickyScrollRef = useRef<StickySectionScrollHandle | null>(null);
 
   const needsAuth = session?.mode === "multi" && !session.authenticated;
 
@@ -167,11 +179,35 @@ export default function CalendarScreen() {
         isWatched: e.isWatched || checkedOff.has(e.episodeId),
       })),
     }));
-    return groupIntoTimelineSections(
-      filtered.filter((d) => d.entries.length > 0),
-      today,
+    // Keep today even when empty so the BUGÜN section (and E73 pin) always exists.
+    const visible = ensureTodayPresent(filtered, today).filter(
+      (d) => d.entries.length > 0 || d.date === today,
     );
+    return groupIntoTimelineSections(visible, today);
   }, [displayDays, checkedOff]);
+
+  // E73: tabs stay mounted — pin BUGÜN under sticky chrome whenever Calendar
+  // gains focus (and again once data finishes loading while focused).
+  useFocusEffect(
+    useCallback(() => {
+      if (loading || authLoading || needsAuth) return;
+
+      let cancelled = false;
+      let raf1 = 0;
+      let raf2 = 0;
+      raf1 = requestAnimationFrame(() => {
+        raf2 = requestAnimationFrame(() => {
+          if (cancelled) return;
+          stickyScrollRef.current?.pinSection("today", { animated: false, correctMs: 0 });
+        });
+      });
+      return () => {
+        cancelled = true;
+        cancelAnimationFrame(raf1);
+        cancelAnimationFrame(raf2);
+      };
+    }, [loading, authLoading, needsAuth]),
+  );
 
   function bucketLabel(bucket: TimelineBucketId): string {
     return t(`calendar.bucket.${bucket}`, {
@@ -252,7 +288,13 @@ export default function CalendarScreen() {
                       {day.date}
                     </Text>
                   ) : null}
-                  <View>{day.entries.map(renderEntry)}</View>
+                  {day.entries.length === 0 && section.bucket === "today" ? (
+                    <Text className="px-4 py-6 text-center font-display italic text-base text-snow">
+                      {t("calendar.empty.today")}
+                    </Text>
+                  ) : (
+                    <View>{day.entries.map(renderEntry)}</View>
+                  )}
                 </View>
               ))}
             </View>
@@ -266,6 +308,7 @@ export default function CalendarScreen() {
       stickyOffset={stickySectionTop(insets.top)}
       sections={stickySections}
       listHeader={listHeader}
+      scrollRef={stickyScrollRef}
       refreshing={refreshing}
       onRefresh={async () => {
         setRefreshing(true);

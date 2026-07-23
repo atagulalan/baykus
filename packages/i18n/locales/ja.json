@@ -1,0 +1,674 @@
+{
+  "app": {
+    "name": "baykuş",
+    "nav": {
+      "library": "ライブラリ",
+      "watch": "視聴",
+      "calendar": "カレンダー",
+      "stats": "統計",
+      "settings": "設定",
+      "search": "検索",
+      "profile": "プロフィール"
+    },
+    "back": "戻る"
+  },
+  "modal": {
+    "close": "閉じる"
+  },
+  "common": {
+    "separator": " · ",
+    "skipToMain": "メインコンテンツへスキップ"
+  },
+  "search": {
+    "placeholder": "シリーズを検索…",
+    "loading": "検索中…",
+    "noResults": "結果が見つかりません",
+    "providerError": "検索プロバイダーで問題が発生しました",
+    "retry": "再試行",
+    "clear": "クリア",
+    "add": "追加",
+    "cancel": "キャンセル",
+    "inLibrary": "ライブラリ内",
+    "added": "「{{title}}」をライブラリに追加しました",
+    "alreadyInLibrary": "このシリーズはすでにライブラリにあります",
+    "addError": "追加中に問題が発生しました",
+    "page": {
+      "hint": "シリーズ名を入力して検索を開始してください。"
+    }
+  },
+  "category": {
+    "watching": "視聴中",
+    "not_watched_recently": "しばらく見ていない",
+    "not_started": "未視聴",
+    "watch_later": "後で見る",
+    "up_to_date": "最新まで視聴済み",
+    "finished": "完走",
+    "stopped": "中断",
+    "needs_review": "要確認"
+  },
+  "manualList": {
+    "watch_later": "後で見る",
+    "stopped": "中断"
+  },
+  "library": {
+    "empty": {
+      "title": "ライブラリは空です",
+      "hint": "上の検索ボックスでシリーズを探してください。",
+      "filterTitle": "結果が見つかりません",
+      "filterHint": "選択したフィルターに一致するシリーズはありません。",
+      "resetFilter": "フィルターをリセット",
+      "allDoneTitle": "表示するものがありません",
+      "allDoneHint": "ライブラリ内の作品はすべて完走または中断済みのようです。"
+    },
+    "filter": {
+      "title": "フィルター",
+      "viewTitle": "表示",
+      "sortTitle": "並び替え",
+      "progressTitle": "進捗",
+      "reset": "リセット",
+      "apply": "適用"
+    },
+    "view": {
+      "list": "リスト",
+      "grid": "グリッド"
+    },
+    "sort": {
+      "label": "並び替え",
+      "title": "タイトル",
+      "added": "追加日",
+      "rating": "評価",
+      "nextAir": "次回放送日",
+      "lastWatched": "最終視聴"
+    },
+    "card": {
+      "remove": "削除",
+      "refresh": "更新",
+      "moveToWatchLater": "「後で見る」へ移動",
+      "moveToStopped": "「中断」へ移動",
+      "moveToAuto": "自動に戻す"
+    },
+    "removeConfirm": "「{{title}}」をライブラリから削除しますか？",
+    "removeError": "削除中に問題が発生しました",
+    "refreshAll": "すべて更新",
+    "refreshAllDone": "更新完了 — 新エピソード {{newEpisodes}} 件",
+    "sweep": {
+      "progress": "更新中 {{done}}/{{total}}…"
+    }
+  },
+  "series": {
+    "notFound": "このシリーズはライブラリにありません",
+    "previewMissingIds": "プレビュー用のシリーズ ID がありません",
+    "startWatching": "視聴を開始",
+    "needsReviewTitle": "未マークのエピソードがあります",
+    "needsReviewDesc": "このシリーズはインポートされたため、一部のシーズンに未マークのエピソードがある可能性があります。不足分を埋めますか？",
+    "needsReviewFill": "不足分を埋める",
+    "needsReviewDismiss": "閉じる",
+    "specials": "スペシャル",
+    "seasonNumber": "シーズン {{number}}",
+    "seasonEmpty": {
+      "title": "エピソードはまだ発表されていません",
+      "hint": "このシーズンは確定しています — エピソード一覧は未定です。"
+    },
+    "showHiddenSeasons": "さらに {{count}} シーズンを表示",
+    "hiddenSeasonsWatched": "{{count}} シーズン視聴済み",
+    "markSeasonWatched": "シーズンを視聴済みにする",
+    "unwatchSeason": "シーズンの視聴を取り消す",
+    "seasonMenu": "シーズンメニュー",
+    "nextUp": "次に見る:",
+    "stoppedBlocked": "完走したシリーズは中断にできません",
+    "justwatchAttribution": "データ提供: JustWatch",
+    "refresh": "更新",
+    "refreshFoundNew": "新エピソード {{count}} 件を見つけました",
+    "refreshUpToDate": "最新です — 新しいエピソードはありません",
+    "mute": "通知をミュート",
+    "unmute": "通知のミュートを解除",
+    "menu": "シリーズメニュー",
+    "favorite": "お気に入りに追加",
+    "unfavorite": "お気に入りから削除",
+    "unwatchSeasonTitle": "よろしいですか？",
+    "unwatchSeasonWarning": "このシーズンの視聴履歴がすべて削除されます。続けますか？",
+    "unwatchSeasonConfirm": "はい、削除する",
+    "releaseStatus": {
+      "returning": "放送継続中",
+      "ended": "終了",
+      "canceled": "打ち切り",
+      "in_production": "制作中",
+      "planned": "予定",
+      "pilot": "パイロット"
+    },
+    "details": {
+      "trigger": "詳細を見る",
+      "title": "詳細",
+      "genres": "ジャンル",
+      "tags": "タグ",
+      "info": "情報",
+      "runtime": "上映時間",
+      "contentRating": "年齢制限",
+      "language": "原語",
+      "production": "制作",
+      "ratings": "評価",
+      "providers": "視聴サービス",
+      "yourRating": "あなたの評価",
+      "added": "追加日",
+      "refreshed": "最終更新",
+      "neverRefreshed": "未更新",
+      "stale": "古い"
+    },
+    "cast": {
+      "title": "キャスト"
+    },
+    "adding": "追加中…"
+  },
+  "episode": {
+    "toggleWatched": "視聴済み",
+    "untitled": "無題のエピソード",
+    "finale": "最終回",
+    "seasonAndEpisode": "S{{season}} E{{episode}}",
+    "menu": "エピソードメニュー",
+    "watchAgain": "もう一度見る",
+    "editDate": "日付を編集",
+    "editDateHint": "視聴履歴の日時を設定します。",
+    "datePreset": {
+      "now": "今",
+      "yesterday": "昨日"
+    },
+    "watchedUpToHere": "ここまで視聴",
+    "watchedUpToHereTitle": "以前のエピソードも視聴済みにしますか？",
+    "watchedUpToHereDesc": "このエピソードより前に未視聴があります。ここまでをすべて視聴済みにしますか？",
+    "markOnlyThis": "いいえ、このエピソードだけ",
+    "markAsUnwatched": "未視聴にする",
+    "removeRewatch": "再視聴を削除",
+    "save": "保存",
+    "detailsTitle": "エピソード詳細",
+    "openDetails": "{{title}} の詳細を開く",
+    "aired": "放送日",
+    "watched": "視聴日",
+    "airTime": "時間",
+    "network": "ネットワーク",
+    "watchedCount": "視聴回数: {{count}}",
+    "runtimeMin": "{{minutes}}分",
+    "noOverview": "あらすじはありません。",
+    "tbd": "未定",
+    "countdownUnit": {
+      "day_one": "日",
+      "day_other": "日",
+      "hour_one": "時間",
+      "hour_other": "時間",
+      "minute": "分",
+      "second": "秒"
+    },
+    "tag": {
+      "new": "NEW",
+      "upcoming": "近日",
+      "premiere": "初回",
+      "special": "SP",
+      "ova": "OVA"
+    }
+  },
+  "rating": {
+    "label": "評価",
+    "bad": "悪い",
+    "okay": "普通",
+    "good": "良い",
+    "skip": "スキップ"
+  },
+  "errors": {
+    "generic": "問題が発生しました",
+    "retry": "再試行"
+  },
+  "settings": {
+    "title": "設定",
+    "saved": "設定を保存しました",
+    "save": "保存",
+    "general": {
+      "title": "一般",
+      "locale": "言語",
+      "localeName": {
+        "tr": "Türkçe",
+        "en": "English",
+        "ja": "日本語"
+      },
+      "localeHint": "ユーザーインターフェースの言語。",
+      "region": "地域",
+      "regionHint": "公開日の地域",
+      "regionName": {
+        "TR": "トルコ",
+        "US": "アメリカ合衆国",
+        "GB": "イギリス",
+        "DE": "ドイツ",
+        "FR": "フランス",
+        "ES": "スペイン",
+        "IT": "イタリア",
+        "NL": "オランダ"
+      },
+      "episodeLabelFormat": "エピソード表記",
+      "episodeLabelFormatHint": "アプリ全体でのエピソード番号の表示方法。",
+      "watchingWindow": "視聴中ウィンドウ（日数）",
+      "watchingWindowHint": "この期間内に視聴・追加・新エピソードがあった作品は「視聴中」に残ります。",
+      "watchingWindowOptions": {
+        "7": "7日",
+        "14": "14日",
+        "30": "30日",
+        "60": "60日",
+        "90": "90日",
+        "180": "180日",
+        "365": "365日"
+      },
+      "theme": "テーマ",
+      "themeDark": "ダーク",
+      "themeSoon": "近日公開",
+      "themeHint": "アプリの見た目。",
+      "spoilerProtection": "ネタバレ防止",
+      "spoilerProtectionHint": "未視聴エピソードの画像とあらすじをぼかします。",
+      "defaultStartPage": "起動時のページ",
+      "defaultStartPageName": {
+        "home": "ライブラリ",
+        "calendar": "カレンダー",
+        "stats": "統計"
+      },
+      "defaultStartPageHint": "アプリを開いたときに最初に表示するページ。",
+      "newSeriesDefaultStatus": "新しいシリーズの状態",
+      "newSeriesDefaultStatusName": {
+        "watching": "視聴中",
+        "watchlist": "ウォッチリスト"
+      },
+      "newSeriesDefaultStatusHint": "新しいシリーズをデフォルトでどこに追加するか。",
+      "showNextUpCarousel": "次に見る",
+      "showNextUpCarouselHint": "シリーズ詳細ページに次のエピソードカードを表示します。"
+    },
+    "providers": {
+      "title": "追加の情報源",
+      "tmdbKey": "カスタム接続キー（任意）",
+      "tmdbKeyPlaceholder": "キーを貼り付けてください",
+      "tmdbKeySet": "保存済み ✓",
+      "clear": "削除",
+      "scrapers": "代替ソースを使う（IMDb などから追加情報を取得）",
+      "scrapersTos": "この機能は他のシリーズサイトから不足情報を収集します。"
+    },
+    "notifications": {
+      "title": "通知",
+      "enable": "通知を有効にする",
+      "disable": "通知を削除",
+      "subscribed": "通知が有効です",
+      "unsupported": "このブラウザはプッシュ通知に対応していません",
+      "test": "テスト通知を送信",
+      "testSent": "テスト通知を送信しました"
+    },
+    "data": {
+      "title": "バックアップと移行",
+      "export": "すべてのシリーズをバックアップ（ダウンロード）",
+      "importTitle": "バックアップを復元",
+      "mode": {
+        "replace": "既存を削除し、バックアップのみを入れる",
+        "merge": "バックアップを現在のリストに追加"
+      },
+      "chooseFile": "バックアップファイルを選択",
+      "importButton": "復元",
+      "importing": "復元中…",
+      "warnings": "警告",
+      "success": "{{items}} シリーズ、{{watches}} 視聴、{{ratings}} 評価をインポートしました",
+      "error": "インポートに失敗しました",
+      "tvtimeImport": "他のアプリから移行（TV Time）"
+    },
+    "dangerZone": {
+      "title": "アカウントのリセット",
+      "description": "やり直したい場合は、すべてのシリーズと履歴を削除できます。",
+      "button": "すべて削除",
+      "warningTitle": "警告！すべてが削除されます。",
+      "warningDesc": "進める前にバックアップを取ることをおすすめします。確認のため下のチェックボックスにチェックを入れてください。",
+      "confirmCheckbox": "すべてが完全に削除されることを受け入れます。",
+      "confirmLabel": "確認のため <phrase>{{phrase}}</phrase> と入力",
+      "confirmPhrase": "すべて削除",
+      "confirm": "完全に削除",
+      "success": "ライブラリを削除しました",
+      "resetSelections": "選択をリセット",
+      "resetSelectionsDesc": "視聴カテゴリ、並び替え、フィルター、履歴アコーディオンを既定に戻します。",
+      "resetSelectionsDone": "選択をリセットしました",
+      "resetWarnings": "警告をリセット",
+      "resetWarningsDesc": "「次回から表示しない」設定を消し、確認ダイアログを再表示します。",
+      "resetWarningsDone": "警告をリセットしました"
+    }
+  },
+  "stats": {
+    "episodesWatched": "視聴したエピソード",
+    "watchTimeHours": "合計時間（時間）",
+    "timeSpent": "視聴時間",
+    "activeSeries": "アクティブなシリーズ",
+    "ratingDistribution": "評価の分布",
+    "empty": "まだ視聴履歴がありません",
+    "mostRewatched": "最も再視聴した作品",
+    "duration": {
+      "yearsDaysHours": "{{years}}年 {{days}}日 {{hours}}時間",
+      "monthsDaysHours": "{{months}}か月 {{days}}日 {{hours}}時間",
+      "daysHours": "{{days}}日 {{hours}}時間",
+      "hoursMinutes": "{{hours}}時間 {{minutes}}分"
+    },
+    "hero": {
+      "subline": "{{episodes}} エピソード · {{series}} シリーズ",
+      "activities": {
+        "walkAroundWorld": "世界一周を {{count}} 回歩けた時間です",
+        "shower": "シャワーを {{count}} 回浴びられた時間です",
+        "outerWilds": "Outer Wilds を {{count}} 回クリアできた時間です",
+        "lotr": "指輪物語シリーズを {{count}} 回視聴できた時間です",
+        "moonFlight": "月まで往復を {{count}} 回できた時間です",
+        "mountEverest": "エベレストを {{count}} 回登れた時間です",
+        "next": "別の活動を表示"
+      }
+    },
+    "tiles": {
+      "tracked": "登録済み",
+      "episodes": "視聴エピソード",
+      "favorites": "お気に入り",
+      "watching": "視聴中",
+      "finished": "完走",
+      "watchLater": "後で見る"
+    },
+    "recent": {
+      "title": "最近のアクティビティ",
+      "last7Days": "過去7日",
+      "last30Days": "過去30日",
+      "thisMonth": "今月",
+      "episodesSub": "{{count}} エピソード"
+    },
+    "mostWatchedByTime": {
+      "title": "最も視聴した作品"
+    },
+    "categoryStatus": {
+      "title": "視聴ステータス"
+    },
+    "favorites": {
+      "title": "お気に入り",
+      "progress": "{{count}} エピソード · {{percent}}%"
+    },
+    "production": {
+      "title": "制作ステータス",
+      "ongoing": "放送継続中",
+      "ended": "終了",
+      "episodeProgress": "{{watched}}/{{aired}} エピソード",
+      "showMore": "もっと見る",
+      "showLess": "閉じる"
+    },
+    "distribution": {
+      "other": "その他"
+    },
+    "genreDistribution": {
+      "title": "ジャンル分布"
+    },
+    "networkDistribution": {
+      "title": "ネットワーク分布",
+      "networkCount": "フォロー中のネットワーク"
+    },
+    "backlog": {
+      "title": "残りエピソード",
+      "episodes": "残りエピソード",
+      "seriesSub": "{{count}} シリーズ",
+      "remainingTime": "残り時間",
+      "episodesShort": "{{count}} エピソード"
+    },
+    "pace": {
+      "title": "追いつきペース",
+      "label": "週間ペース",
+      "value": "約 {{count}} エピソード",
+      "sub": "過去2か月の平均",
+      "projectionLabel": "見込み完了",
+      "projection_zero": "追いついています",
+      "projection": "追いつくまで約 {{weeks}} 週間",
+      "projectionDate": "{{date}} 頃"
+    },
+    "upcoming": {
+      "title": "今後のエピソード",
+      "nextMonth": "来月",
+      "caveat": "プロバイダーは通常数週間先までしか把握していないため、この一覧は不完全な場合があります。"
+    },
+    "binges": {
+      "title": "最速の一気見",
+      "episodesShort": "{{count}} エピソード"
+    },
+    "rewatchSummary": {
+      "title": "再視聴",
+      "total": "再視聴の合計",
+      "episodes": "再視聴したエピソード"
+    },
+    "streaks": {
+      "title": "週間連続",
+      "longest": "最長連続記録",
+      "current": "現在の連続",
+      "mostConsistent": "最も継続したシリーズ",
+      "weeks": "{{count}} 週間"
+    },
+    "yearlyTime": {
+      "title": "週次 / 月次の視聴時間",
+      "monthly": "月次 — 合計 {{total}}",
+      "weekly": "週次 — 合計 {{total}}",
+      "weekTooltip": "第{{week}}週: {{minutes}}分"
+    },
+    "activityHeatmap": {
+      "title": "年間アクティビティ",
+      "tooltip": "{{date}}: {{count}} エピソード",
+      "legendLow": "少",
+      "legendHigh": "多"
+    },
+    "byWeekday": {
+      "title": "曜日別"
+    },
+    "byHour": {
+      "title": "時間帯別"
+    },
+    "footer": {
+      "caveat": "時間ベースの分析は、日付が分かる {{dated}} / {{total}} 件の視聴に基づいています。"
+    }
+  },
+  "profile": {
+    "title": "マイプロフィール",
+    "allSeries": "すべてのシリーズ",
+    "allSeriesEmpty": "ライブラリはまだ空です。",
+    "allSeriesEmptyHint": "検索でシリーズを見つけて追加してください。",
+    "detailedStats": "詳細な統計",
+    "favorites": {
+      "title": "お気に入り",
+      "emptyTitle": "お気に入りはまだありません",
+      "empty": "シリーズ詳細ページでハートを付けるとここに表示されます。"
+    },
+    "banner": {
+      "edit": "カバー写真を変更",
+      "title": "カバー写真",
+      "empty": "カバー写真はまだ設定されていません。",
+      "howto": "カバーを設定するには、シリーズメニューを開き「プロフィールカバーに使う」を選びます。",
+      "clear": "削除",
+      "useAsCover": "プロフィールカバーに使う"
+    },
+    "photo": {
+      "upload": "プロフィール写真を変更",
+      "uploading": "アップロード中…",
+      "invalidType": "未対応のファイル形式です — jpg、png、webp、gif を選んでください。",
+      "tooLarge": "写真が大きすぎます — 最大 3 MB です。"
+    }
+  },
+  "notFound": {
+    "profile": "プロフィールが見つかりません。"
+  },
+  "calendar": {
+    "mode": {
+      "timeline": "タイムライン",
+      "month": "カレンダー",
+      "schedule": "スケジュール"
+    },
+    "today": "今日 {{date}}",
+    "section": {
+      "earlier": "それ以前",
+      "lastWeek": "先週",
+      "yesterday": "昨日",
+      "today": "今日",
+      "tomorrow": "明日",
+      "thisWeek": "今週",
+      "laterThisWeek": "今週の後半",
+      "later": "それ以降"
+    },
+    "overflow": "+{{count}}",
+    "prevMonth": "前の月",
+    "nextMonth": "次の月",
+    "nothingFurther": "これ以上ありません",
+    "empty": {
+      "today": "今日の放送はありません",
+      "suggestUnwatched": "未視聴のエピソードがあります",
+      "suggestUpcoming": "まもなく放送",
+      "suggestAdd": "シリーズを検索",
+      "suggestAddHint": "カレンダーを埋めるにはライブラリにシリーズを追加してください。",
+      "month": "今月のエピソードはありません"
+    },
+    "weekHeader": "{{year}} - 第{{week}}週"
+  },
+  "watch": {
+    "title": "視聴",
+    "history": "視聴履歴",
+    "showHistory": "履歴を表示",
+    "next": "次に見る",
+    "notWatchedRecently": "しばらく見ていない",
+    "addSection": "カテゴリを追加",
+    "addSectionTitle": "カテゴリを追加",
+    "removeSection": "カテゴリを削除",
+    "removeSectionTitle": "カテゴリを削除",
+    "removeSectionConfirm": "「{{category}}」カテゴリを削除しますか？",
+    "removeSectionHint": "「カテゴリを管理」からいつでも追加し直せます。",
+    "removeSectionDontShow": "次回から表示しない",
+    "removeSectionCancel": "キャンセル",
+    "removeSectionConfirmBtn": "削除する",
+    "relativeDay": {
+      "todayAt": "今日 {{time}}",
+      "yesterdayAt": "昨日 {{time}}"
+    },
+    "empty": {
+      "history": "まだ視聴履歴がありません",
+      "next": "キューに何もありません",
+      "notWatchedRecently": "このカテゴリにシリーズはありません",
+      "section": "このカテゴリに表示するものがありません"
+    },
+    "manageSections": "カテゴリを管理",
+    "manageSectionsTitle": "カテゴリを管理",
+    "manageSectionsAddHeading": "カテゴリを追加",
+    "manageSectionsHint": "ドラッグで並べ替え、+ で追加",
+    "addSectionNamed": "{{category}} を追加",
+    "sectionPinned": "固定カテゴリ — 削除できません",
+    "moveSectionUp": "上へ",
+    "moveSectionDown": "下へ",
+    "reorderSection": "{{category}} をドラッグして並べ替え"
+  },
+  "auth": {
+    "handle": "ハンドル",
+    "password": "パスワード",
+    "login": "ログイン",
+    "loginError": "ハンドルまたはパスワードが正しくありません",
+    "needAccount": "アカウントをお持ちでないですか？作成する",
+    "oauth": {
+      "or": "または",
+      "google": "Google で続行",
+      "apple": "Apple で続行",
+      "error": "ソーシャルログインに失敗しました",
+      "errorUnregisteredOrigin": "このオリジンは Google に登録されていません — Authorized redirect URIs に {{origin}}/oauth-google.html を追加し（JavaScript origins にも {{origin}} を追加）",
+      "errorPopupBlocked": "ポップアップがブロックされました — このサイトのポップアップを許可してください",
+      "pickHandle": "ハンドルを選んでください",
+      "finish": "アカウントを作成",
+      "backupReminder": "バックアップは zip エクスポートです。設定 → zip をダウンロード。（パスワードなし — 復旧は IdP 経由）",
+      "linked": "連携済みログイン",
+      "connected": "連携済み",
+      "link": "連携",
+      "unlink": "解除",
+      "linkError": "連携できませんでした",
+      "unlinkError": "解除できません — 少なくとも1つのログイン方法を残してください"
+    },
+    "claim": {
+      "title": "アカウント作成",
+      "confirmPassword": "パスワード確認",
+      "passwordMismatch": "パスワードが一致しません",
+      "passwordHint": "8文字以上",
+      "handleHint": "3〜30文字、小文字・数字・ハイフン",
+      "seedZip": "zip から開始（任意）",
+      "error": "アカウントを作成できませんでした — ハンドルが使用中の可能性があります",
+      "submit": "アカウントを作成",
+      "successTitle": "パスワード復旧はありません",
+      "successBody": "バックアップは zip エクスポートです。設定 → zip をダウンロード。",
+      "seedImportFailed": "zip のインポートに失敗しました — アカウントは作成済みです。設定から再試行してください",
+      "continue": "ライブラリへ"
+    },
+    "account": {
+      "title": "アカウント",
+      "handle": "ハンドル: {{handle}}",
+      "logout": "ログアウト",
+      "delete": "アカウントを削除"
+    },
+    "deleteAccount": {
+      "warning": "先に最終バックアップをダウンロードしてください",
+      "confirm": "それでも削除",
+      "error": "アカウントを削除できませんでした — パスワードを確認してください",
+      "reauthOAuth": "削除するには連携アカウントで再認証してください"
+    }
+  },
+  "importWizard": {
+    "title": "TV Time からインポート",
+    "dropzone": "ダウンロードした TV Time データファイル（zip または csv）をここにドラッグ",
+    "chooseFile": "ファイルを選択",
+    "uploading": "アップロード中…",
+    "uploadProgress": "{{done}}/{{total}} 作品を照合",
+    "uploadError": "ファイルを処理できませんでした",
+    "reportTitle": "照合レポート",
+    "underflowWarning": "シーズン {{seasons}}: TV Time のエピソード数がプロバイダーより少ないです。分割エピソードは手動でマークが必要な場合があります。",
+    "matched": "一致 ({{count}})",
+    "episodeCount": "{{count}} ep",
+    "none": "—",
+    "fuzzy": "不明 ({{count}})",
+    "pickCandidate": "候補を選ぶ",
+    "unmatched": "未一致 ({{count}})",
+    "skippedRelics": "古いフォロー {{count}} 件をスキップ（視聴履歴なし）",
+    "skippedRelicsHint": "TV Time でフォロー解除し視聴履歴がない作品はインポートされません。",
+    "confirmError": "インポートに失敗しました",
+    "confirm": "確定",
+    "confirming": "インポート中…",
+    "confirmProgress": "{{done}}/{{total}} ({{percent}}%)",
+    "summaryTitle": "インポート完了",
+    "itemsCreated": "追加したシリーズ",
+    "watchesCreated": "追加した視聴",
+    "skipped": "スキップ",
+    "goToLibrary": "ライブラリへ",
+    "episodeDiscrepancy": "エピソード数の不一致（TV Time: {{tvTime}}、こちら: {{provider}}）。誤照合の可能性があります。"
+  },
+  "genres": {
+    "action": "アクション",
+    "adventure": "アドベンチャー",
+    "animation": "アニメーション",
+    "anime": "アニメ",
+    "comedy": "コメディ",
+    "crime": "クライム",
+    "documentary": "ドキュメンタリー",
+    "drama": "ドラマ",
+    "family": "ファミリー",
+    "fantasy": "ファンタジー",
+    "history": "ヒストリー",
+    "horror": "ホラー",
+    "kids": "キッズ",
+    "mystery": "ミステリー",
+    "news": "ニュース",
+    "reality": "リアリティ",
+    "romance": "ロマンス",
+    "science_fiction": "サイエンスフィクション",
+    "sci_fi___fantasy": "SF & ファンタジー",
+    "soap": "ソープ",
+    "talk": "トーク",
+    "thriller": "スリラー",
+    "war": "戦争",
+    "western": "西部劇",
+    "action___adventure": "アクション & アドベンチャー",
+    "war___politics": "戦争 & 政治",
+    "music": "音楽",
+    "musical": "ミュージカル",
+    "sport": "スポーツ",
+    "suspense": "サスペンス",
+    "food": "フード",
+    "nature": "ネイチャー",
+    "travel": "トラベル"
+  },
+  "stepper": {
+    "decrease": "減らす",
+    "increase": "増やす",
+    "value": "値"
+  }
+}

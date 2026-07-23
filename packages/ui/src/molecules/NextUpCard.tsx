@@ -1,5 +1,5 @@
 /// <reference types="nativewind/types" />
-import type { ReactNode } from "react";
+import type { ReactNode, Ref } from "react";
 import { Text, View } from "react-native";
 import { SectionPill } from "../atoms/SectionPill.tsx";
 import { borders } from "../lib/borders.ts";
@@ -26,12 +26,17 @@ export type NextUpCardProps = {
     | "myRating"
     | "ratingLabels"
     | "skipLabel"
+    | "trailing"
   > & {
     checkboxDisabled?: boolean;
   };
   onToggleWatch?: () => void;
+  /** Title / still press — open episode details (series detail). */
+  onPress?: () => void;
   onRate?: EpisodeRowProps["onRate"];
   onDismissPrompt?: () => void;
+  /** Watch control wrapper — tablet ActionSheet popover anchor. */
+  watchControlRef?: Ref<View>;
   footer?: ReactNode;
   className?: string;
 };
@@ -41,8 +46,10 @@ export function NextUpCard({
   title,
   episode,
   onToggleWatch,
+  onPress,
   onRate,
   onDismissPrompt,
+  watchControlRef,
   footer,
   className,
 }: NextUpCardProps) {
@@ -66,9 +73,12 @@ export function NextUpCard({
   if (episode.myRating !== undefined) rowProps.myRating = episode.myRating;
   if (episode.ratingLabels !== undefined) rowProps.ratingLabels = episode.ratingLabels;
   if (episode.skipLabel !== undefined) rowProps.skipLabel = episode.skipLabel;
+  if (episode.trailing !== undefined) rowProps.trailing = episode.trailing;
   if (onToggleWatch) rowProps.onToggleWatch = onToggleWatch;
+  if (onPress) rowProps.onPress = onPress;
   if (onRate) rowProps.onRate = onRate;
   if (onDismissPrompt) rowProps.onDismissPrompt = onDismissPrompt;
+  if (watchControlRef) rowProps.watchControlRef = watchControlRef;
 
   return (
     <View className={cn("gap-1", className)}>

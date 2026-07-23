@@ -11,7 +11,6 @@ const entry = {
   s: 2,
   e: 5,
   episodeTitle: "Trojan's Horse",
-  networkOrProvider: "Apple TV+",
 };
 
 const meta = {

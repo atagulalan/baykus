@@ -65,6 +65,13 @@
   }
 }
 
+/* Soft halo behind the baykuş wordmark (banner / poster chrome). */
+.wordmark-shadow {
+  text-shadow:
+    0 0 20px rgba(8, 8, 8, 0.65),
+    0 0 48px rgba(8, 8, 8, 0.5);
+}
+
 .skip-link {
   position: absolute;
   width: 1px;
@@ -94,6 +101,12 @@
   color: var(--color-snow);
   font-size: 0.875rem;
   text-decoration: none;
+}
+
+/* mweb: no viewport rubber-band past page content. */
+html,
+body {
+  overscroll-behavior-y: none;
 }
 
 body {

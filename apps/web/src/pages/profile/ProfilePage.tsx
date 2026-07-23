@@ -128,7 +128,7 @@ function SeriesGridSection({
       {items.length === 0 ? (
         <div className="flex flex-col items-center gap-2 px-3 py-8 text-center sm:px-0">
           <p className="font-display italic text-lg tracking-tight text-snow/90">{emptyTitle}</p>
-          <p className="font-mono text-xs text-muted/70">{emptyHint}</p>
+          <p className="font-sans text-sm text-muted">{emptyHint}</p>
         </div>
       ) : (
         <div className={SERIES_GRID_CLASSNAME}>
@@ -307,7 +307,11 @@ function ProfileHub({
       {allSeries.length > 0 ? (
         <section className="flex flex-col">
           <HubSectionHeader>
-            <Link to="/watch/history" viewTransition={pageViewTransition} className={HUB_LINK_CLASS}>
+            <Link
+              to="/watch/history"
+              viewTransition={pageViewTransition}
+              className={HUB_LINK_CLASS}
+            >
               <HubHeaderContent icon={History} label={t("watch.history")} linked />
             </Link>
           </HubSectionHeader>
@@ -361,9 +365,6 @@ function ProfilePageContent({ handle, session }: { handle: string; session: Auth
   const settingsQuery = useQuery({ queryKey: ["settings"], queryFn: getSettings });
 
   const allSeries = libraryQuery.data?.items ?? [];
-  const bannerCandidates = allSeries
-    .filter((series) => series.backdropRef !== null)
-    .sort(byLastWatchedDesc);
   const settings = settingsQuery.data;
 
   const hubLoading = statsQuery.isLoading || libraryQuery.isLoading;
@@ -371,7 +372,7 @@ function ProfilePageContent({ handle, session }: { handle: string; session: Auth
 
   return (
     <div className="flex flex-col gap-6">
-      <ProfileBannerPicker bannerRef={settings?.bannerRef ?? null} candidates={bannerCandidates}>
+      <ProfileBannerPicker bannerRef={settings?.bannerRef ?? null}>
         {(openBannerPicker) => (
           <IdentityRow
             session={session}

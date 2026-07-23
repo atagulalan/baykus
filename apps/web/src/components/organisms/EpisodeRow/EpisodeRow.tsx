@@ -157,6 +157,8 @@ export function EpisodeRow({
   const episodeLabelFormat = settings?.episodeLabelFormat ?? "SxEy";
 
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  /** E205 — watch from details already has RatingControl; suppress row prompt. */
+  const [suppressDetailsWatchPrompt, setSuppressDetailsWatchPrompt] = useState(false);
   const [showMarkUpToHereModal, setShowMarkUpToHereModal] = useState(false);
   const [showWatchedOptionsModal, setShowWatchedOptionsModal] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
@@ -203,7 +205,19 @@ export function EpisodeRow({
   });
 
   useEffect(() => {
-    if (!showRatingPrompt || !onDismissPrompt) return;
+    if (!suppressDetailsWatchPrompt) return;
+    if (showRatingPrompt) {
+      onDismissPrompt?.();
+      setSuppressDetailsWatchPrompt(false);
+      return;
+    }
+    // Clear stale suppress if no prompt arrives (unwatch / error / already rated).
+    const id = window.setTimeout(() => setSuppressDetailsWatchPrompt(false), 3000);
+    return () => clearTimeout(id);
+  }, [suppressDetailsWatchPrompt, showRatingPrompt, onDismissPrompt]);
+
+  useEffect(() => {
+    if (!showRatingPrompt || !onDismissPrompt || suppressDetailsWatchPrompt) return;
     function handlePointerDown(event: PointerEvent) {
       const el = promptAnchorRef.current;
       if (!el || !(event.target instanceof Node) || el.contains(event.target)) return;
@@ -211,7 +225,20 @@ export function EpisodeRow({
     }
     document.addEventListener("pointerdown", handlePointerDown);
     return () => document.removeEventListener("pointerdown", handlePointerDown);
-  }, [showRatingPrompt, onDismissPrompt]);
+  }, [showRatingPrompt, onDismissPrompt, suppressDetailsWatchPrompt]);
+
+  function closeDetailsModal() {
+    setShowDetailsModal(false);
+    // Keep suppressDetailsWatchPrompt so a late watch onSuccess still skips the popup.
+    if (showRatingPrompt) onDismissPrompt?.();
+  }
+
+  function toggleWatchFromDetails() {
+    if (!onToggleWatch) return;
+    // Only first-watch would open the row prompt (E150); block it here.
+    if (!watched) setSuppressDetailsWatchPrompt(true);
+    onToggleWatch();
+  }
 
   function prefetchSeries() {
     if (!seriesRouteParam) return;
@@ -266,8 +293,8 @@ export function EpisodeRow({
     .filter(Boolean)
     .join(" ");
   const stretchContentClass = compact
-    ? `flex min-w-0 flex-1 items-center gap-2 py-1.5 pl-4 ${stretchPoster ? "pr-0" : "pr-2"} text-sm ${stretchPoster ? "" : "sm:pr-4"}`
-    : `flex min-w-0 flex-1 items-center gap-3 ${stretchPoster ? "py-2" : "py-3"} pl-4 ${stretchPoster ? "pr-0" : "pr-2"} sm:gap-4 ${stretchPoster ? "" : "sm:pr-4"}`;
+    ? `flex min-w-0 flex-1 items-center gap-2 py-1.5 ${stretchPoster ? "pl-2 pr-0" : "pl-4 pr-2"} text-sm ${stretchPoster ? "" : "sm:pr-4"}`
+    : `flex min-w-0 flex-1 items-center gap-3 ${stretchPoster ? "py-2 pl-2 pr-0" : "py-3 pl-4 pr-2"} sm:gap-4 ${stretchPoster ? "" : "sm:pr-4"}`;
 
   const primaryClass = `min-w-0 truncate font-display italic ${
     muted ? "text-muted-dim" : "text-snow"
@@ -330,7 +357,7 @@ export function EpisodeRow({
         onClick={(e) => e.stopPropagation()}
         onPointerDown={(e) => e.stopPropagation()}
       >
-        {showRatingPrompt && (
+        {showRatingPrompt && !suppressDetailsWatchPrompt && (
           <div
             role="dialog"
             aria-label={t("rating.label")}
@@ -418,16 +445,26 @@ export function EpisodeRow({
     </Link>
   );
 
-  const episodeThumbnail = !hasSeriesChrome && !hideSpoilers && stillImageUrl && !imageFailed && (
-    <MediaImage
-      src={stillImageUrl}
-      alt=""
-      wrapperClassName="block h-12 w-20 shrink-0 rounded-md bg-white/5"
-      className="h-full w-full object-cover opacity-90"
-      spinnerSize={12}
-      loading="lazy"
-      onError={() => setImageFailed(true)}
-    />
+  // Reserved still frame with centered S{n}E{m} when missing/failed (amends E148 / 013 E188).
+  // Spoiler protection still omits the frame entirely (E149).
+  const episodeThumbnail = !hasSeriesChrome && !hideSpoilers && (
+    <div className="flex h-12 w-20 shrink-0 items-center justify-center overflow-hidden rounded-md bg-white/5">
+      {stillImageUrl && !imageFailed ? (
+        <MediaImage
+          src={stillImageUrl}
+          alt=""
+          wrapperClassName="block h-full w-full"
+          className="h-full w-full object-cover opacity-90"
+          spinnerSize={12}
+          loading="lazy"
+          onError={() => setImageFailed(true)}
+        />
+      ) : (
+        <span className="font-mono text-[10px] text-muted tabular-nums">
+          S{s}E{e}
+        </span>
+      )}
+    </div>
   );
 
   const seriesTitleLink = hasSeriesChrome && seriesRouteParam && (
@@ -607,7 +644,7 @@ export function EpisodeRow({
 
       <EpisodeDetailsModal
         open={showDetailsModal}
-        onClose={() => setShowDetailsModal(false)}
+        onClose={closeDetailsModal}
         s={s}
         e={e}
         episodeTitle={detailTitle}
@@ -628,7 +665,7 @@ export function EpisodeRow({
         {...(onRate ? { onRate } : {})}
         {...(onToggleWatch
           ? {
-              onToggleWatched: onToggleWatch,
+              onToggleWatched: toggleWatchFromDetails,
               toggleDisabled: checkboxDisabled,
             }
           : {})}

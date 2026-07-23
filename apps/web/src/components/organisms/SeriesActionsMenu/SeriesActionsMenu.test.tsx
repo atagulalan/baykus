@@ -56,4 +56,20 @@ describe("SeriesActionsMenu", () => {
     expect(screen.getByRole("dialog", { name: "Dizi menüsü" })).toBeInTheDocument();
     expect(await axe(container)).toHaveNoViolations();
   });
+
+  it("offers use-as-cover when onUseAsCover is provided", async () => {
+    const user = userEvent.setup();
+    const onUseAsCover = vi.fn();
+    await renderWithProviders(<SeriesActionsMenu {...baseProps} onUseAsCover={onUseAsCover} />);
+    await user.click(screen.getByRole("button", { name: "Dizi menüsü" }));
+    await user.click(screen.getByText("Use as profile cover"));
+    expect(onUseAsCover).toHaveBeenCalledOnce();
+  });
+
+  it("hides use-as-cover when onUseAsCover is omitted", async () => {
+    const user = userEvent.setup();
+    await renderWithProviders(<SeriesActionsMenu {...baseProps} />);
+    await user.click(screen.getByRole("button", { name: "Dizi menüsü" }));
+    expect(screen.queryByText("Use as profile cover")).not.toBeInTheDocument();
+  });
 });

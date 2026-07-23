@@ -3,6 +3,12 @@ export const EDGE_TOP_H = 88;
 export const EDGE_BOTTOM_H = 96;
 
 /**
+ * Expo-web page shell — Vite `max-w-5xl` parity.
+ * Apply only when `Platform.OS === "web"`; never on native tablet.
+ */
+export const WEB_CONTENT_MAX = 1024;
+
+/**
  * Wordmark nav row under the status bar — web mobile header `pt-6` + text-2xl + `pb-4`.
  */
 export const WORDMARK_ROW_H = 56;
@@ -13,15 +19,20 @@ export const BANNER_FADE_PX = 100;
 export const Z_EDGE = 35;
 export const Z_CHROME = 40;
 
-/** Routes without wordmark chrome — root AppEdgeBlur keeps the top scrub there. */
+/** Routes without wordmark / dock chrome. */
 export const HIDE_WORDMARK_SEGMENTS = new Set(["login", "claim", "dev"]);
+
+/**
+ * Auth routes: flat void, no root edge scrub.
+ * Bottom-anchored login sits on the screen edge — dock-style blur looks wrong.
+ */
+export const BARE_NO_EDGE_SEGMENTS = new Set(["login", "claim"]);
 
 /**
  * Chrome header rail control — back, series ⋮, browse toggle, settings.
  * In-flow 44×44 hit target (web `HEADER_ACTION_CLASS`); icon size 20.
  */
-export const HEADER_ACTION_CLASS =
-  "z-10 h-11 w-11 items-center justify-center active:opacity-70";
+export const HEADER_ACTION_CLASS = "z-10 h-11 w-11 items-center justify-center active:opacity-70";
 
 /** Empty left/right rail so the absolute-centered wordmark stays put. */
 export const HEADER_ACTION_SLOT_CLASS = "h-11 w-11 shrink-0 items-center justify-center";

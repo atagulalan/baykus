@@ -161,6 +161,25 @@ describe("nextIncompleteSeasonAfter (E176)", () => {
     ];
     expect(nextIncompleteSeasonAfter(withSpecials, 2)).toBe(3);
   });
+
+  it("skips empty and TBD-only seasons (no aired episodes)", () => {
+    const withEmptyAndTbd = [
+      {
+        number: 1,
+        episodes: [{ watchCount: 1, airDate: "2020-01-01", airStamp: null }],
+      },
+      { number: 2, episodes: [] },
+      {
+        number: 3,
+        episodes: [{ watchCount: 0, airDate: null, airStamp: null }],
+      },
+      {
+        number: 4,
+        episodes: [{ watchCount: 0, airDate: "2020-02-01", airStamp: null }],
+      },
+    ];
+    expect(nextIncompleteSeasonAfter(withEmptyAndTbd, 1)).toBe(4);
+  });
 });
 
 describe("autoAdvanceIfSeasonJustCompleted (E176)", () => {

@@ -3,6 +3,7 @@ import { ArrowUpDown, Check } from "lucide-react-native";
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { cn } from "../lib/cn.ts";
+import { haptic } from "../lib/haptics.ts";
 import { colors } from "../tokens.ts";
 import { Modal } from "./Modal.tsx";
 
@@ -44,6 +45,7 @@ export function SortMenu({ sort, onChange, options, title, accessibilityLabel }:
               accessibilityRole="button"
               accessibilityState={{ selected }}
               onPress={() => {
+                haptic("selection");
                 onChange(opt.value);
                 setOpen(false);
               }}
@@ -52,7 +54,7 @@ export function SortMenu({ sort, onChange, options, title, accessibilityLabel }:
                 selected ? "bg-white/5" : "active:bg-white/5",
               )}
             >
-              <Text className={cn("font-mono text-xs", selected ? "text-yellow" : "text-snow")}>
+              <Text className={cn("font-sans text-sm", selected ? "text-yellow" : "text-snow")}>
                 {opt.label}
               </Text>
               {selected ? <Check size={14} color={colors.yellow} /> : null}

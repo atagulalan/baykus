@@ -1,7 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
-/** Soft page-level empty (Search / Calendar recipe) — icon ring + display title + mono hint + optional CTA. */
+/** Soft page-level empty (Search / Calendar recipe) — icon ring + display title + sans hint + optional CTA. */
 export function EmptyPanel({
   icon: Icon,
   title,
@@ -27,7 +27,7 @@ export function EmptyPanel({
         <h1 className="font-display italic text-3xl tracking-tight text-snow sm:text-4xl">
           {title}
         </h1>
-        {hint ? <p className="max-w-[18rem] font-mono text-xs text-muted/70">{hint}</p> : null}
+        {hint ? <p className="max-w-[18rem] font-sans text-sm text-muted">{hint}</p> : null}
       </div>
       {action ? <div className="flex justify-center pt-1">{action}</div> : null}
     </div>

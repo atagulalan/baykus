@@ -110,7 +110,7 @@ export const AppHeader = memo(function AppHeader({ profileHandle }: { profileHan
           <Link
             to={watchTo}
             viewTransition={pageViewTransition}
-            className="-translate-x-1/2 absolute left-1/2 font-display italic text-snow text-2xl leading-none tracking-tight"
+            className="wordmark-shadow -translate-x-1/2 absolute left-1/2 font-display italic text-snow text-2xl leading-none tracking-tight"
           >
             baykuş
           </Link>
@@ -122,7 +122,7 @@ export const AppHeader = memo(function AppHeader({ profileHandle }: { profileHan
           <Link
             to={watchTo}
             viewTransition={pageViewTransition}
-            className="justify-self-start font-display italic text-snow text-2xl tracking-tight leading-none"
+            className="wordmark-shadow justify-self-start font-display italic text-snow text-2xl tracking-tight leading-none"
           >
             baykuş
           </Link>

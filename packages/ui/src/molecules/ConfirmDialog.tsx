@@ -1,6 +1,7 @@
 /// <reference types="nativewind/types" />
 import { Pressable, Text, View } from "react-native";
 import { cn } from "../lib/cn.ts";
+import { haptic } from "../lib/haptics.ts";
 import { Modal } from "./Modal.tsx";
 
 export type ConfirmDialogProps = {
@@ -42,6 +43,7 @@ export function ConfirmDialog({
         <Pressable
           accessibilityRole="button"
           onPress={() => {
+            haptic(variant === "danger" ? "error" : "medium");
             onConfirm();
             onClose();
           }}

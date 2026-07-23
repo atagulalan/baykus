@@ -1,4 +1,14 @@
-import { Bell, BellOff, Bookmark, CircleX, Heart, MoreVertical, Play, Trash2 } from "lucide-react";
+import {
+  Bell,
+  BellOff,
+  Bookmark,
+  CircleX,
+  Heart,
+  ImageIcon,
+  MoreVertical,
+  Play,
+  Trash2,
+} from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { ManualList, WatchCategory } from "../../../api/types.ts";
@@ -13,12 +23,14 @@ interface SeriesActionsMenuProps {
   onChangeManualList: (manualList: ManualList | null) => void;
   onToggleMute: () => void;
   onRemove: () => void;
+  /** When set (series has a backdrop), offer setting it as the profile cover. */
+  onUseAsCover?: (() => void) | undefined;
   /** Trigger button styling — the hero row and the header slot size it differently. */
   triggerClassName?: string;
 }
 
 const MENU_ITEM_CLASS =
-  "flex w-full items-center gap-2 px-4 py-3.5 text-left text-xs font-mono text-muted hover:text-snow hover:bg-white/5 transition-colors border-b border-white/5";
+  "flex w-full items-center gap-2 px-4 py-3.5 text-left font-sans text-sm text-muted hover:text-snow hover:bg-white/5 transition-colors border-b border-white/5";
 
 /**
  * Series detail's overflow menu (favorite / list / mute / remove). Extracted so it
@@ -34,6 +46,7 @@ export function SeriesActionsMenu({
   onChangeManualList,
   onToggleMute,
   onRemove,
+  onUseAsCover,
   triggerClassName = "px-2 py-1 text-muted hover:text-snow transition-colors",
 }: SeriesActionsMenuProps) {
   const { t } = useTranslation();
@@ -105,10 +118,16 @@ export function SeriesActionsMenu({
           {pushMuted ? <BellOff size={16} /> : <Bell size={16} />}
           {pushMuted ? t("series.unmute") : t("series.mute")}
         </button>
+        {onUseAsCover && (
+          <button type="button" onClick={() => act(onUseAsCover)} className={MENU_ITEM_CLASS}>
+            <ImageIcon size={16} />
+            {t("profile.banner.useAsCover", { defaultValue: "Use as profile cover" })}
+          </button>
+        )}
         <button
           type="button"
           onClick={() => act(onRemove)}
-          className="flex w-full items-center gap-2 px-4 py-3.5 text-left text-xs font-mono text-red-400 hover:text-red-300 hover:bg-white/5 transition-colors"
+          className="flex w-full items-center gap-2 px-4 py-3.5 text-left font-sans text-sm text-red-400 hover:text-red-300 hover:bg-white/5 transition-colors"
         >
           <Trash2 size={16} />
           {t("library.card.remove")}

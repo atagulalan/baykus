@@ -44,7 +44,8 @@ function HistoryRow({
   unwatching: boolean;
 }) {
   const { t, i18n } = useTranslation();
-  const locale = i18n.language === "en" ? "en-US" : "tr-TR";
+  const locale =
+    i18n.language === "en" ? "en-US" : i18n.language === "ja" ? "ja-JP" : "tr-TR";
   const currentYear = Number(todayIso().slice(0, 4));
   const date = entry.watchedAt.slice(0, 10);
   const time = new Intl.DateTimeFormat(locale, {

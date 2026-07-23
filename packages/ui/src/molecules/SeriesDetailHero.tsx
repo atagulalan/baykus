@@ -94,8 +94,13 @@ export function SeriesDetailHero({
           paddingTop: insetsTop + (wide ? 32 : 16),
         }}
       >
-        <View
-          className="shrink-0 overflow-hidden rounded-md bg-white/5"
+        {/* E204: poster / title / ⓘ all open details — not only the tiny info icon. */}
+        <Pressable
+          accessibilityRole={onPressDetails ? "button" : undefined}
+          accessibilityLabel={onPressDetails ? detailsAccessibilityLabel : undefined}
+          disabled={!onPressDetails}
+          onPress={onPressDetails}
+          className="shrink-0 overflow-hidden rounded-md bg-white/5 active:opacity-90"
           style={{
             width: posterW,
             height: posterH,
@@ -109,7 +114,7 @@ export function SeriesDetailHero({
           {posterUrl ? (
             <MediaImage
               src={posterUrl}
-              accessibilityLabel={title}
+              accessibilityLabel=""
               style={{ width: posterW, height: posterH }}
             />
           ) : (
@@ -117,11 +122,17 @@ export function SeriesDetailHero({
               <Text className="text-center text-sm text-muted">{title}</Text>
             </View>
           )}
-        </View>
+        </Pressable>
 
         <View className="min-w-0 flex-1 gap-3 pb-1">
           <View className="flex-row items-start justify-between gap-2">
-            <View className="min-w-0 flex-1">
+            <Pressable
+              accessibilityRole={onPressDetails ? "button" : undefined}
+              accessibilityLabel={onPressDetails ? detailsAccessibilityLabel : undefined}
+              disabled={!onPressDetails}
+              onPress={onPressDetails}
+              className="min-w-0 flex-1 active:opacity-90"
+            >
               <Text
                 numberOfLines={3}
                 className={cn(
@@ -141,15 +152,15 @@ export function SeriesDetailHero({
                   </Text>
                 ) : null}
               </Text>
-            </View>
+            </Pressable>
             <View className="shrink-0 flex-row items-center gap-1">
               {onPressDetails ? (
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={detailsAccessibilityLabel}
                   onPress={onPressDetails}
-                  hitSlop={8}
-                  className="h-11 w-11 shrink-0 items-center justify-center active:opacity-70"
+                  hitSlop={{ top: 13, bottom: 13, left: 10, right: 10 }}
+                  className="shrink-0 items-center justify-center px-2 py-1 active:opacity-70"
                 >
                   {detailsIcon}
                 </Pressable>

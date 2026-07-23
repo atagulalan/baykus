@@ -24,6 +24,7 @@ import {
   WatchNextRow,
   type WatchNextSeries,
 } from "@baykus/ui";
+import { useFocusEffect } from "@react-navigation/native";
 import { router } from "expo-router";
 import { Clapperboard, LogIn } from "lucide-react-native";
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
@@ -100,6 +101,14 @@ export default function WatchScreen() {
     setLoading(true);
     void load();
   }, [authLoading, load]);
+
+  // Tabs stay mounted — refetch when returning from series detail after watch mutations.
+  useFocusEffect(
+    useCallback(() => {
+      if (authLoading || needsAuth) return;
+      void load();
+    }, [authLoading, needsAuth, load]),
+  );
 
   const prefs = useMemo(() => resolveUiPrefs(settings), [settings]);
   const sections = prefs.watchSections as WatchCategory[];

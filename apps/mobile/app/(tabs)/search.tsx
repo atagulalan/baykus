@@ -7,18 +7,26 @@ import {
   seriesParam,
 } from "@baykus/api-client";
 import {
+  borders,
+  colors,
   EmptyPanel,
+  haptic,
   ROUNDED_CHECKBOX_SIZE_CLASS,
   SearchResultThumb,
   SkeletonSearchResults,
-  borders,
-  colors,
   space,
 } from "@baykus/ui";
 import { router } from "expo-router";
 import { Plus, Search } from "lucide-react-native";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { tabContentBottom, tabContentTop } from "../../src/chrome/layout.ts";
 
@@ -111,10 +119,7 @@ export default function SearchScreen() {
   return (
     <View
       className="flex-1 bg-void px-4"
-      style={{
-        paddingTop: tabContentTop(insets.top) + space.pageTop,
-        paddingBottom: tabContentBottom(insets.bottom),
-      }}
+      style={{ paddingTop: tabContentTop(insets.top) + space.pageTop }}
     >
       <TextInput
         value={query}
@@ -123,80 +128,92 @@ export default function SearchScreen() {
         autoCorrect={false}
         placeholder="Search series…"
         placeholderTextColor="#888888"
-        className="mb-6 h-11 rounded-lg border border-white/15 px-3 font-mono text-sm text-snow"
+        className="mb-6 h-11 rounded-lg border border-white/15 px-3 font-sans text-sm text-snow"
       />
 
       {error ? <Text className="mb-3 font-mono text-xs text-red-400">{error}</Text> : null}
 
-      {loading ? (
-        <SkeletonSearchResults rows={4} />
-      ) : debounced.length < 2 ? (
-        <EmptyPanel
-          icon={Search}
-          title="Find a show"
-          hint="Type at least two characters. Tap a result to preview or add."
-        />
-      ) : items.length === 0 ? (
-        <EmptyPanel icon={Search} title="No results" hint={`Nothing matched “${debounced}”.`} />
-      ) : (
-        <View className="gap-1">
-          {items.map((hit) => {
-            const key = `${hit.providerId}:${hit.externalIds.tmdbId ?? hit.externalIds.tvmazeId ?? hit.title}`;
-            const inLibrary = hit.libraryItemId != null;
-            const adding = addingKey === key;
-            return (
-              <View key={key} className="flex-row items-center gap-2 rounded-lg px-1 py-2">
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => {
-                    if (hit.libraryItemId != null) {
-                      router.push(
-                        `/series/${seriesParam({ id: hit.libraryItemId, tmdbId: hit.externalIds.tmdbId ?? null })}`,
-                      );
-                    } else {
-                      router.push(previewHref(hit) as `/series/new?${string}`);
-                    }
-                  }}
-                  className="min-w-0 flex-1 flex-row items-center gap-3 active:opacity-80"
-                >
-                  <SearchResultThumb
-                    imageUrl={buildImageUrl(hit.posterRef ?? null, "thumb")}
-                    title={hit.title}
-                  />
-                  <View className="min-w-0 flex-1">
-                    <Text numberOfLines={1} className="text-sm text-snow">
-                      {hit.title}
-                    </Text>
-                    <Text className="font-mono text-[10px] text-muted">
-                      {[hit.year, hit.network, inLibrary ? "in library" : "not in library"]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </Text>
-                  </View>
-                </Pressable>
-                {!inLibrary ? (
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{
+          flexGrow: 1,
+          paddingBottom: tabContentBottom(insets.bottom),
+        }}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
+        {loading ? (
+          <SkeletonSearchResults rows={4} />
+        ) : debounced.length < 2 ? (
+          <EmptyPanel
+            icon={Search}
+            title="Find a show"
+            hint="Type at least two characters. Tap a result to preview or add."
+          />
+        ) : items.length === 0 ? (
+          <EmptyPanel icon={Search} title="No results" hint={`Nothing matched “${debounced}”.`} />
+        ) : (
+          <View className="gap-1">
+            {items.map((hit) => {
+              const key = `${hit.providerId}:${hit.externalIds.tmdbId ?? hit.externalIds.tvmazeId ?? hit.title}`;
+              const inLibrary = hit.libraryItemId != null;
+              const adding = addingKey === key;
+              return (
+                <View key={key} className="flex-row items-center gap-2 rounded-lg px-1 py-2">
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="Add to library"
-                    disabled={adding || addingKey !== null}
                     onPress={() => {
-                      void quickAdd(hit, key);
+                      haptic("selection");
+                      if (hit.libraryItemId != null) {
+                        router.push(
+                          `/series/${seriesParam({ id: hit.libraryItemId, tmdbId: hit.externalIds.tmdbId ?? null })}`,
+                        );
+                      } else {
+                        router.push(previewHref(hit) as `/series/new?${string}`);
+                      }
                     }}
-                    className={`${ROUNDED_CHECKBOX_SIZE_CLASS} shrink-0 items-center justify-center bg-transparent active:opacity-80 disabled:opacity-40`}
-                    style={borders.idle}
+                    className="min-w-0 flex-1 flex-row items-center gap-3 active:opacity-80"
                   >
-                    {adding ? (
-                      <ActivityIndicator color={colors.muted} size="small" />
-                    ) : (
-                      <Plus size={18} color={colors.muted} strokeWidth={2} />
-                    )}
+                    <SearchResultThumb
+                      imageUrl={buildImageUrl(hit.posterRef ?? null, "thumb")}
+                      title={hit.title}
+                    />
+                    <View className="min-w-0 flex-1">
+                      <Text numberOfLines={1} className="text-sm text-snow">
+                        {hit.title}
+                      </Text>
+                      <Text className="font-mono text-[10px] text-muted">
+                        {[hit.year, hit.network, inLibrary ? "in library" : "not in library"]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </Text>
+                    </View>
                   </Pressable>
-                ) : null}
-              </View>
-            );
-          })}
-        </View>
-      )}
+                  {!inLibrary ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Add to library"
+                      disabled={adding || addingKey !== null}
+                      onPress={() => {
+                        haptic("medium");
+                        void quickAdd(hit, key);
+                      }}
+                      className={`${ROUNDED_CHECKBOX_SIZE_CLASS} shrink-0 items-center justify-center bg-transparent active:opacity-80 disabled:opacity-40`}
+                      style={borders.idle}
+                    >
+                      {adding ? (
+                        <ActivityIndicator color={colors.muted} size="small" />
+                      ) : (
+                        <Plus size={18} color={colors.muted} strokeWidth={2} />
+                      )}
+                    </Pressable>
+                  ) : null}
+                </View>
+              );
+            })}
+          </View>
+        )}
+      </ScrollView>
     </View>
   );
 }

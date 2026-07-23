@@ -2,6 +2,7 @@
 import type { ReactNode } from "react";
 import { Pressable, Text, View } from "react-native";
 import { cn } from "../lib/cn.ts";
+import { haptic } from "../lib/haptics.ts";
 
 export type SegmentedOption<T extends string> = {
   value: T;
@@ -33,7 +34,9 @@ export function SegmentedButtonGroup<T extends string>({
             accessibilityState={{ selected: active, disabled: option.disabled }}
             disabled={option.disabled}
             onPress={() => {
-              if (option.value !== value && !option.disabled) onChange(option.value);
+              if (option.value === value || option.disabled) return;
+              haptic("selection");
+              onChange(option.value);
             }}
             className={cn(
               "flex-row items-center gap-1.5 px-3 py-2",

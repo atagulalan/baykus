@@ -1,17 +1,21 @@
 import { ApiError } from "@baykus/api-client";
 import { OAuthButtons, type OAuthProviderId, PageTitle } from "@baykus/ui";
-import { Link, router } from "expo-router";
+import { router } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+  AUTH_LABEL_CLASS,
+  AUTH_OUTLINE_BTN,
+  AUTH_PRIMARY_BTN,
+  AUTH_TEXT_LINK,
+  AuthSheet,
+  AuthTextInput,
+} from "../src/auth/AuthSheet.tsx";
 import { useAuth } from "../src/auth/AuthProvider.tsx";
+import { stashClaimPrefill } from "../src/auth/claimPrefill.ts";
+import { HANDLE_PATTERN, sanitizeHandleInput } from "../src/auth/handleInput.ts";
 import { appleSignInAvailable, obtainAppleIdToken } from "../src/lib/appleAuth.ts";
 import {
   googleAuthConfigured,
@@ -19,9 +23,9 @@ import {
   useGoogleIdToken,
 } from "../src/lib/googleAuth.ts";
 
-const HANDLE_PATTERN = /^[a-z0-9-]{3,30}$/;
-
 export default function LoginScreen() {
+  const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const { session, loginWithPassword, finishOAuth, claimOAuthHandle } = useAuth();
   const [handle, setHandle] = useState("");
   const [password, setPassword] = useState("");
@@ -45,6 +49,8 @@ export default function LoginScreen() {
   const appleReady = appleConfigured && appleDeviceOk;
   const showOauth = googleReady || appleReady;
   const oauthHandleValid = HANDLE_PATTERN.test(oauthHandle);
+
+  const bottomPad = Math.max(insets.bottom, 20);
 
   useEffect(() => {
     if (!appleConfigured) {
@@ -88,7 +94,7 @@ export default function LoginScreen() {
     setError(null);
     try {
       await loginWithPassword(handle.trim(), password);
-      router.back();
+      router.replace("/(tabs)/watch");
     } catch (err) {
       setError(
         err instanceof ApiError ? err.message : err instanceof Error ? err.message : "login_failed",
@@ -117,187 +123,216 @@ export default function LoginScreen() {
 
   if (claimedHandle) {
     return (
-      <View className="flex-1 bg-void px-5 pt-6">
-        <PageTitle className="mb-4">Welcome, {claimedHandle}</PageTitle>
-        <Text className="mb-6 text-sm text-muted">
-          Account created via OAuth. Export a zip backup when you can — OAuth-only accounts have no
-          password recovery.
-        </Text>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => router.replace("/(tabs)/watch")}
-          className="h-11 items-center justify-center rounded-full bg-yellow"
-        >
-          <Text className="font-mono text-xs uppercase tracking-widest text-void">Continue</Text>
-        </Pressable>
-      </View>
+      <AuthSheet bottomPad={bottomPad}>
+        <View className="gap-4">
+          <PageTitle>{t("auth.claim.successTitle")}</PageTitle>
+          <Text className="font-sans text-sm leading-relaxed text-muted">
+            {t("auth.oauth.backupReminder")}
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.replace("/(tabs)/watch")}
+            className={AUTH_PRIMARY_BTN}
+          >
+            <Text className="font-sans text-xs font-semibold uppercase tracking-widest text-void">
+              {t("auth.claim.continue")}
+            </Text>
+          </Pressable>
+        </View>
+      </AuthSheet>
     );
   }
 
   if (pendingToken) {
     return (
-      <KeyboardAvoidingView
-        className="flex-1 bg-void px-5 pt-6"
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        <PageTitle className="mb-6">Pick a handle</PageTitle>
-        <Text className="mb-2 font-mono text-[10px] uppercase tracking-widest text-muted">
-          Handle
-        </Text>
-        <TextInput
-          value={oauthHandle}
-          onChangeText={setOauthHandle}
-          autoCapitalize="none"
-          autoCorrect={false}
-          placeholder="yourhandle"
-          placeholderTextColor="#888888"
-          className="mb-2 h-11 rounded-lg border border-white/15 px-3 font-mono text-sm text-snow"
-        />
-        {oauthHandle.length > 0 && !oauthHandleValid ? (
-          <Text className="mb-2 font-mono text-[10px] text-red-400">
-            3–30 chars: a-z, 0-9, hyphen
-          </Text>
-        ) : null}
-        {error ? <Text className="mb-3 font-mono text-xs text-red-400">{error}</Text> : null}
-        <Pressable
-          accessibilityRole="button"
-          disabled={busy || !oauthHandleValid}
-          onPress={() => {
-            void onOauthClaim();
-          }}
-          className="h-11 items-center justify-center rounded-full bg-yellow disabled:opacity-40"
-        >
-          {busy ? (
-            <ActivityIndicator color="#080808" />
-          ) : (
-            <Text className="font-mono text-xs uppercase tracking-widest text-void">Finish</Text>
-          )}
-        </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => {
-            setPendingToken(null);
-            setError(null);
-          }}
-          className="mt-3 h-11 items-center justify-center rounded-full border border-white/15"
-        >
-          <Text className="font-mono text-xs uppercase tracking-widest text-muted">Cancel</Text>
-        </Pressable>
-      </KeyboardAvoidingView>
+      <AuthSheet bottomPad={bottomPad} keyboard>
+        <View className="gap-4">
+          <PageTitle>{t("auth.oauth.pickHandle")}</PageTitle>
+          <View>
+            <Text className={AUTH_LABEL_CLASS}>{t("auth.handle")}</Text>
+            <AuthTextInput
+              value={oauthHandle}
+              onChangeText={(raw) => setOauthHandle(sanitizeHandleInput(raw))}
+              autoCapitalize="none"
+              autoCorrect={false}
+              spellCheck={false}
+              // Claim-style handle — not an email (nickname avoids mail QuickType).
+              autoComplete="nickname"
+              textContentType="nickname"
+              keyboardType="ascii-capable"
+              placeholder="yourhandle"
+            />
+            {oauthHandle.length > 0 && !oauthHandleValid ? (
+              <Text className="mt-1.5 font-sans text-xs text-red-400">
+                {t("auth.claim.handleHint")}
+              </Text>
+            ) : null}
+          </View>
+          {error ? <Text className="font-sans text-xs text-red-400">{error}</Text> : null}
+          <View className="gap-2">
+            <Pressable
+              accessibilityRole="button"
+              disabled={busy || !oauthHandleValid}
+              onPress={() => {
+                void onOauthClaim();
+              }}
+              className={AUTH_PRIMARY_BTN}
+            >
+              {busy ? (
+                <ActivityIndicator color="#080808" />
+              ) : (
+                <Text className="font-sans text-xs font-semibold uppercase tracking-widest text-void">
+                  {t("auth.oauth.finish")}
+                </Text>
+              )}
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                setPendingToken(null);
+                setError(null);
+              }}
+              className={AUTH_OUTLINE_BTN}
+            >
+              <Text className="font-sans text-xs font-semibold uppercase tracking-widest text-muted">
+                {t("search.cancel")}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </AuthSheet>
     );
   }
 
   return (
-    <KeyboardAvoidingView
-      className="flex-1 bg-void px-5 pt-6"
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
-      <PageTitle className="mb-6">Sign in</PageTitle>
-      {multi ? (
-        <>
-          <Text className="mb-2 font-mono text-[10px] uppercase tracking-widest text-muted">
-            Handle
-          </Text>
-          <TextInput
-            value={handle}
-            onChangeText={setHandle}
-            autoCapitalize="none"
-            autoCorrect={false}
-            placeholder="yourhandle"
-            placeholderTextColor="#888888"
-            className="mb-4 h-11 rounded-lg border border-white/15 px-3 font-mono text-sm text-snow"
-          />
-        </>
-      ) : null}
-      <Text className="mb-2 font-mono text-[10px] uppercase tracking-widest text-muted">
-        Password
-      </Text>
-      <TextInput
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        placeholder="••••••••"
-        placeholderTextColor="#888888"
-        className="mb-4 h-11 rounded-lg border border-white/15 px-3 font-mono text-sm text-snow"
-      />
-      {error ? <Text className="mb-3 font-mono text-xs text-red-400">{error}</Text> : null}
-      <Pressable
-        accessibilityRole="button"
-        disabled={busy || !password || (multi && !handle.trim())}
-        onPress={() => {
-          void onSubmit();
-        }}
-        className="h-11 items-center justify-center rounded-full bg-yellow disabled:opacity-40"
-      >
-        {busy ? (
-          <ActivityIndicator color="#080808" />
-        ) : (
-          <Text className="font-mono text-xs uppercase tracking-widest text-void">Continue</Text>
-        )}
-      </Pressable>
+    <AuthSheet bottomPad={bottomPad} keyboard>
+      <View className="gap-4">
+        <PageTitle>{t("auth.login")}</PageTitle>
 
-      {showOauth ? (
-        <View className="mt-6 gap-3">
-          <View className="flex-row items-center gap-2">
-            <View className="h-px flex-1 bg-white/10" />
-            <Text className="font-mono text-[10px] uppercase tracking-widest text-muted">or</Text>
-            <View className="h-px flex-1 bg-white/10" />
+        <View className="gap-3">
+          {multi ? (
+            <View>
+              <Text className={AUTH_LABEL_CLASS}>{t("auth.handle")}</Text>
+              <AuthTextInput
+                value={handle}
+                onChangeText={(raw) => setHandle(sanitizeHandleInput(raw))}
+                autoCapitalize="none"
+                autoCorrect={false}
+                spellCheck={false}
+                // Keep username for saved-password fill; sanitize blocks @/email paste.
+                autoComplete="username"
+                textContentType="username"
+                keyboardType="ascii-capable"
+                placeholder="yourhandle"
+              />
+            </View>
+          ) : null}
+          <View>
+            <Text className={AUTH_LABEL_CLASS}>{t("auth.password")}</Text>
+            <AuthTextInput
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              autoComplete="current-password"
+              textContentType="password"
+              placeholder="••••••••"
+            />
           </View>
-          {googleReady ? (
-            <GoogleButton
-              ids={googleIds}
-              busy={oauthBusy}
-              busyProvider={busyProvider}
-              setBusyProvider={setBusyProvider}
-              onBusy={setOauthBusy}
-              onError={setError}
-              onIdToken={(idToken) => finishWithToken("google", idToken)}
-            />
-          ) : null}
-          {appleReady ? (
-            <OAuthButtons
-              providers={[{ id: "apple", label: "Continue with Apple", available: !oauthBusy }]}
-              busyProvider={busyProvider === "apple" ? "apple" : null}
-              onPress={() => {
-                setError(null);
-                void (async () => {
-                  try {
-                    const { idToken, nonce } = await obtainAppleIdToken();
-                    await finishWithToken("apple", idToken, nonce);
-                  } catch (err) {
-                    const code =
-                      err && typeof err === "object" && "code" in err
-                        ? String((err as { code: unknown }).code)
-                        : "";
-                    if (code === "ERR_REQUEST_CANCELED") return;
-                    setError(err instanceof Error ? err.message : "apple_oauth_failed");
-                    setOauthBusy(false);
-                    setBusyProvider(null);
-                  }
-                })();
-              }}
-            />
-          ) : null}
         </View>
-      ) : null}
 
-      {multi ? (
-        <Link href="/claim" asChild>
-          <Pressable accessibilityRole="link" className="mt-6 items-center py-2">
-            <Text className="font-mono text-xs text-muted underline">Need an account?</Text>
+        {error ? <Text className="font-sans text-xs text-red-400">{error}</Text> : null}
+
+        <Pressable
+          accessibilityRole="button"
+          disabled={busy || !password || (multi && !handle.trim())}
+          onPress={() => {
+            void onSubmit();
+          }}
+          className={AUTH_PRIMARY_BTN}
+        >
+          {busy ? (
+            <ActivityIndicator color="#080808" />
+          ) : (
+            <Text className="font-sans text-xs font-semibold uppercase tracking-widest text-void">
+              {t("auth.login")}
+            </Text>
+          )}
+        </Pressable>
+
+        {showOauth ? (
+          <View className="gap-2">
+            <View className="flex-row items-center gap-3">
+              <View className="h-px flex-1 bg-white/15" />
+              <Text className="font-sans text-[10px] uppercase tracking-widest text-muted">
+                {t("auth.oauth.or")}
+              </Text>
+              <View className="h-px flex-1 bg-white/15" />
+            </View>
+            {googleReady ? (
+              <GoogleButton
+                ids={googleIds}
+                label={t("auth.oauth.google")}
+                busy={oauthBusy}
+                busyProvider={busyProvider}
+                setBusyProvider={setBusyProvider}
+                onBusy={setOauthBusy}
+                onError={setError}
+                onIdToken={(idToken) => finishWithToken("google", idToken)}
+              />
+            ) : null}
+            {appleReady ? (
+              <OAuthButtons
+                providers={[
+                  { id: "apple", label: t("auth.oauth.apple"), available: !oauthBusy },
+                ]}
+                busyProvider={busyProvider === "apple" ? "apple" : null}
+                onPress={() => {
+                  setError(null);
+                  void (async () => {
+                    try {
+                      const { idToken, nonce } = await obtainAppleIdToken();
+                      await finishWithToken("apple", idToken, nonce);
+                    } catch (err) {
+                      const code =
+                        err && typeof err === "object" && "code" in err
+                          ? String((err as { code: unknown }).code)
+                          : "";
+                      if (code === "ERR_REQUEST_CANCELED") return;
+                      setError(err instanceof Error ? err.message : "apple_oauth_failed");
+                      setOauthBusy(false);
+                      setBusyProvider(null);
+                    }
+                  })();
+                }}
+              />
+            ) : null}
+          </View>
+        ) : null}
+
+        {multi ? (
+          <Pressable
+            accessibilityRole="link"
+            onPress={() => {
+              if (error && handle.trim() && password) {
+                stashClaimPrefill({ handle: handle.trim(), password });
+              }
+              router.push("/claim");
+            }}
+            className={AUTH_TEXT_LINK}
+          >
+            <Text className="px-3 text-center font-sans text-sm font-semibold text-yellow">
+              {t("auth.needAccount")}
+            </Text>
           </Pressable>
-        </Link>
-      ) : null}
-
-      <Text className="mt-4 font-mono text-[10px] text-muted">
-        Uses returnToken + SecureStore key baykus.accessToken (014).
-      </Text>
-    </KeyboardAvoidingView>
+        ) : null}
+      </View>
+    </AuthSheet>
   );
 }
 
 function GoogleButton({
   ids,
+  label,
   busy,
   busyProvider,
   setBusyProvider,
@@ -306,6 +341,7 @@ function GoogleButton({
   onIdToken,
 }: {
   ids: ReturnType<typeof resolveGoogleClientIds>;
+  label: string;
   busy: boolean;
   busyProvider: OAuthProviderId | null;
   setBusyProvider: (p: OAuthProviderId | null) => void;
@@ -329,7 +365,7 @@ function GoogleButton({
 
   return (
     <OAuthButtons
-      providers={[{ id: "google", label: "Continue with Google", available: ready && !busy }]}
+      providers={[{ id: "google", label, available: ready && !busy }]}
       busyProvider={busyProvider === "google" ? "google" : null}
       onPress={() => {
         onError(null);

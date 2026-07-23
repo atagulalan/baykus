@@ -1,10 +1,21 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { ApiError, getSeriesByParam, getSettings, refreshSeries } from "../../api/client.ts";
-import type { EpisodeSummary, SeriesDetail, SeriesListResponse } from "../../api/types.ts";
+import {
+  ApiError,
+  getSeriesByParam,
+  getSettings,
+  refreshSeries,
+  updateSettings,
+} from "../../api/client.ts";
+import type {
+  EpisodeSummary,
+  SeriesDetail,
+  SeriesListResponse,
+  Settings,
+} from "../../api/types.ts";
 import { SkeletonSeriesDetailHero } from "../../components/atoms/Skeleton/Skeleton.tsx";
 import { RemoveSeriesDialog } from "../../components/dialogs/RemoveSeriesDialog/RemoveSeriesDialog.tsx";
 import { WatchDateDialog } from "../../components/dialogs/WatchDateDialog/WatchDateDialog.tsx";
@@ -104,6 +115,13 @@ export function SeriesDetailPage() {
     onPromptEpisodeRating: setPromptEpisodeId,
   });
 
+  const setBannerCover = useMutation({
+    mutationFn: (bannerRef: string) => updateSettings({ bannerRef }),
+    onSuccess: (settings) => {
+      queryClient.setQueryData<Settings>(["settings"], settings);
+    },
+  });
+
   useEffect(() => {
     if (!query.data) return;
     const canonical = seriesParam(query.data);
@@ -179,6 +197,9 @@ export function SeriesDetailPage() {
   const detail = query.data;
   if (!detail) return null;
 
+  const backdropRef = detail.backdropRef;
+  const onUseAsCover = backdropRef != null ? () => setBannerCover.mutate(backdropRef) : undefined;
+
   const sortedSeasons = sortSeasonsSpecialsLast(detail.seasons);
   const seasonEntries = collapseCompletedSeasonRuns(
     sortedSeasons,
@@ -209,6 +230,7 @@ export function SeriesDetailPage() {
           onChangeManualList={(manualList) => changeManualList.mutate(manualList)}
           onToggleMute={() => toggleMute.mutate(!detail.pushMuted)}
           onRemove={handleRemove}
+          onUseAsCover={onUseAsCover}
         />
 
         {headerActionSlot &&
@@ -222,6 +244,7 @@ export function SeriesDetailPage() {
               onChangeManualList={(manualList) => changeManualList.mutate(manualList)}
               onToggleMute={() => toggleMute.mutate(!detail.pushMuted)}
               onRemove={handleRemove}
+              onUseAsCover={onUseAsCover}
               triggerClassName="flex h-11 w-11 shrink-0 items-center justify-center text-muted transition-colors hover:text-snow"
             />,
             headerActionSlot,

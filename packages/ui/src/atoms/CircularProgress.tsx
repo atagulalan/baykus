@@ -76,7 +76,11 @@ export function CircularProgress({
         />
       </Svg>
       {complete ? (
-        <View className="absolute items-center justify-center">
+        <View
+          className="absolute inset-0 items-center justify-center"
+          pointerEvents="none"
+        >
+          {/* Same green as web `text-green-500` / Tailwind green-500 */}
           <Check size={checkSize} strokeWidth={3} color="#22c55e" />
         </View>
       ) : null}

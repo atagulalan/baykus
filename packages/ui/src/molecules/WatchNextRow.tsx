@@ -6,6 +6,7 @@ import { EpisodeLabel } from "../atoms/EpisodeLabel.tsx";
 import { MediaImage } from "../atoms/MediaImage.tsx";
 import type { WatchCategory } from "../lib/categoryColors.ts";
 import { cn } from "../lib/cn.ts";
+import { haptic } from "../lib/haptics.ts";
 import type { SeasonProgress } from "../lib/progressSegments.ts";
 import { computeOverflowBadge, shouldShowQuickMarkCheckbox } from "../lib/watchNext.ts";
 
@@ -89,7 +90,10 @@ function CaughtUpWatchRow({
   return (
     <Pressable
       accessibilityRole="button"
-      onPress={onPress}
+      onPress={() => {
+        haptic("selection");
+        onPress();
+      }}
       className={cn(
         "min-w-0 flex-row items-center gap-0 py-2 pl-3 pr-3 active:bg-white/5",
         className,
@@ -138,15 +142,13 @@ export const WatchNextRow = memo(function WatchNextRow({
   const showCheckbox = shouldShowQuickMarkCheckbox(next);
 
   return (
-    <View
-      className={cn(
-        "min-w-0 flex-row items-center py-2 pl-3 pr-3",
-        className,
-      )}
-    >
+    <View className={cn("min-w-0 flex-row items-center py-2 pl-3 pr-3", className)}>
       <Pressable
         accessibilityRole="button"
-        onPress={onPress}
+        onPress={() => {
+          haptic("selection");
+          onPress();
+        }}
         className="min-w-0 flex-1 flex-row items-center active:opacity-90"
       >
         <Poster url={series.posterUrl} label={series.title} />

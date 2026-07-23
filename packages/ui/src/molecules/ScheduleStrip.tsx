@@ -5,6 +5,7 @@ import { EpisodeLabel } from "../atoms/EpisodeLabel.tsx";
 import { MediaImage } from "../atoms/MediaImage.tsx";
 import { todayIso } from "../lib/airing.ts";
 import { cn } from "../lib/cn.ts";
+import { haptic } from "../lib/haptics.ts";
 
 export type ScheduleStripEntry = {
   episodeId: number;
@@ -101,7 +102,10 @@ export function ScheduleStrip({ entries, onPressEntry, className }: ScheduleStri
                 <Pressable
                   key={entry.episodeId}
                   accessibilityRole="button"
-                  onPress={() => onPressEntry(entry)}
+                  onPress={() => {
+                    haptic("selection");
+                    onPressEntry(entry);
+                  }}
                   className="overflow-hidden rounded-lg border border-white/10 bg-void/80 active:bg-white/5"
                 >
                   <View className="h-20 w-full overflow-hidden bg-white/5">

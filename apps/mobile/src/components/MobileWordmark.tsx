@@ -2,10 +2,10 @@
 import { getSettings, updateSettings } from "@baykus/api-client";
 import { colors } from "@baykus/ui";
 import { router, usePathname, useSegments } from "expo-router";
-import { ArrowLeft, LayoutGrid, List, Settings } from "lucide-react-native";
+import { ArrowLeft, LayoutGrid, List } from "lucide-react-native";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, Text, useWindowDimensions, View } from "react-native";
+import { Platform, Pressable, Text, useWindowDimensions, View, type TextStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useEdgeScrub } from "../chrome/EdgeScrubContext.tsx";
 import { useHeaderAction } from "../chrome/HeaderActionContext.tsx";
@@ -19,6 +19,27 @@ import {
 import { mobileBackAffordance } from "../lib/backAffordance.ts";
 import { resolveUiPrefs } from "../lib/uiPrefs.ts";
 import { EdgeScrub } from "./AppEdgeBlur.tsx";
+
+/** Soft void halo — matches web `.wordmark-shadow`. */
+const WORDMARK_GLOW = "rgba(8, 8, 8, 0.7)";
+/** Room for blur outside glyphs; RN Text otherwise clips shadow into a box. */
+const GLOW_PAD = 28;
+
+const wordmarkGlowStyle: TextStyle =
+  Platform.OS === "web"
+    ? ({
+        // RN-web CSS shorthand — follows glyphs; textShadow* often clips to a box.
+        textShadow: `0 0 20px ${WORDMARK_GLOW}, 0 0 48px rgba(8, 8, 8, 0.5)`,
+      } as TextStyle)
+    : {
+        textShadowColor: WORDMARK_GLOW,
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 18,
+        paddingHorizontal: GLOW_PAD,
+        paddingVertical: GLOW_PAD,
+        marginHorizontal: -GLOW_PAD,
+        marginVertical: -GLOW_PAD,
+      };
 
 /**
  * Centered baykuş wordmark — web mobile `AppHeader` chrome.
@@ -42,10 +63,15 @@ export function MobileWordmark() {
   if (root && HIDE_WORDMARK_SEGMENTS.has(root)) return null;
 
   const onTabs = root === "(tabs)";
-  const backFallback = onTabs ? null : mobileBackAffordance(pathname);
+  // Settings is a hidden tab (href: null) — still show chrome back → profile.
+  const backFallback =
+    pathname === "/settings"
+      ? mobileBackAffordance(pathname)
+      : onTabs
+        ? null
+        : mobileBackAffordance(pathname);
   const onLibrary = pathname === "/";
   const onWatch = pathname === "/watch";
-  const onProfile = pathname === "/profile";
   /** Inner / banner chrome — snow reads over edge scrub + hero better than muted. */
   const chromeIcon = backFallback ? colors.snow : colors.muted;
 
@@ -57,15 +83,19 @@ export function MobileWordmark() {
     if (backFallback) router.replace(backFallback);
   }
 
-  async function goBrowseView(view: "grid" | "list") {
-    try {
-      const settings = await getSettings();
-      const prefs = resolveUiPrefs(settings);
-      await updateSettings({ uiPrefs: { ...prefs, browseView: view } });
-    } catch {
-      // Navigation still proceeds — prefs may already match from a prior toggle.
-    }
-    router.push(view === "grid" ? "/" : "/(tabs)/watch");
+  function goBrowseView(view: "grid" | "list") {
+    // Navigate first — awaiting get/updateSettings here made the toggle lag
+    // or appear dead when the API was slow.
+    router.replace(view === "grid" ? "/" : "/(tabs)/watch");
+    void (async () => {
+      try {
+        const settings = await getSettings();
+        const prefs = resolveUiPrefs(settings);
+        await updateSettings({ uiPrefs: { ...prefs, browseView: view } });
+      } catch {
+        // Prefs may already match from a prior toggle; dock still works via route.
+      }
+    })();
   }
 
   let routeAction: ReactNode = null;
@@ -75,7 +105,7 @@ export function MobileWordmark() {
         accessibilityRole="button"
         accessibilityLabel={t("library.view.list")}
         onPress={() => {
-          void goBrowseView("list");
+          goBrowseView("list");
         }}
         hitSlop={8}
         className={HEADER_ACTION_CLASS}
@@ -89,7 +119,7 @@ export function MobileWordmark() {
         accessibilityRole="button"
         accessibilityLabel={t("library.view.grid")}
         onPress={() => {
-          void goBrowseView("grid");
+          goBrowseView("grid");
         }}
         hitSlop={8}
         className={HEADER_ACTION_CLASS}
@@ -97,19 +127,8 @@ export function MobileWordmark() {
         <LayoutGrid size={20} color={colors.muted} strokeWidth={1.5} />
       </Pressable>
     );
-  } else if (onProfile) {
-    routeAction = (
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={t("app.nav.settings")}
-        onPress={() => router.push("/(tabs)/settings")}
-        hitSlop={8}
-        className={HEADER_ACTION_CLASS}
-      >
-        <Settings size={20} color={colors.muted} strokeWidth={1.5} />
-      </Pressable>
-    );
   }
+  // Profile settings gear lives in the identity row (right of banner/camera), not here.
 
   const rightAction = slotAction ?? routeAction;
 
@@ -122,14 +141,19 @@ export function MobileWordmark() {
         left: 0,
         right: 0,
         zIndex: Z_CHROME,
+        overflow: "visible",
       }}
     >
       {/* Under logo — full viewport top, same band as web AppEdgeBlur. */}
       <EdgeScrub edge="top" height={EDGE_TOP_H} progress={topProgress} width={width} nested />
-      <View pointerEvents="box-none" style={{ paddingTop: insets.top, zIndex: 1 }}>
+      <View
+        pointerEvents="box-none"
+        style={{ paddingTop: insets.top, zIndex: 1, overflow: "visible" }}
+      >
         <View
           pointerEvents="box-none"
           className="relative h-14 flex-row items-center justify-between px-3"
+          style={{ overflow: "visible" }}
         >
           <View className={HEADER_ACTION_SLOT_CLASS}>
             {backFallback ? (
@@ -148,6 +172,7 @@ export function MobileWordmark() {
           <View
             pointerEvents="box-none"
             className="absolute inset-0 items-center justify-center"
+            style={{ overflow: "visible" }}
           >
             <Pressable
               accessibilityRole="link"
@@ -157,8 +182,12 @@ export function MobileWordmark() {
               }}
               className="items-center justify-center active:opacity-80"
               hitSlop={8}
+              style={{ overflow: "visible" }}
             >
-              <Text className="font-display text-2xl italic leading-none tracking-tight text-snow">
+              <Text
+                className="font-display text-2xl italic leading-none tracking-tight text-snow"
+                style={wordmarkGlowStyle}
+              >
                 baykuş
               </Text>
             </Pressable>

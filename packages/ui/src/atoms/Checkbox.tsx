@@ -4,6 +4,7 @@ import type { ViewStyle } from "react-native";
 import { Pressable, View } from "react-native";
 import { borders } from "../lib/borders.ts";
 import { cn } from "../lib/cn.ts";
+import { haptic } from "../lib/haptics.ts";
 import { colors } from "../tokens.ts";
 
 /** Shared hit box — keep every list checkbox at this size (web rem=16 parity). */
@@ -72,7 +73,8 @@ export function Checkbox({
   className,
 }: CheckboxProps) {
   const v = VARIANT[variant];
-  const iconColor = checked ? v.checkedIcon : showHint ? v.uncheckedIcon : "transparent";
+  const iconColor = checked ? v.checkedIcon : v.uncheckedIcon;
+  const iconOpacity = checked ? 1 : showHint ? 0.2 : 0;
   const borderStyle = checked ? v.checkedBorder : v.uncheckedBorder;
 
   const boxStyle: ViewStyle = {
@@ -81,6 +83,15 @@ export function Checkbox({
     borderRadius: v.radius,
     backgroundColor: checked ? v.checkedBg : v.uncheckedBg,
     ...borderStyle,
+    // web default checked: `shadow-[0_0_10px_rgba(234,179,8,0.3)]`
+    ...(checked && variant === "default"
+      ? {
+          shadowColor: "#eab308",
+          shadowOpacity: 0.3,
+          shadowRadius: 5,
+          shadowOffset: { width: 0, height: 0 },
+        }
+      : {}),
   };
 
   return (
@@ -97,15 +108,16 @@ export function Checkbox({
         accessibilityState={{ checked, disabled }}
         accessibilityLabel={accessibilityLabel}
         disabled={disabled}
-        onPress={() => onChange(!checked)}
+        onPress={() => {
+          haptic("selection");
+          onChange(!checked);
+        }}
         className="h-full w-full items-center justify-center active:opacity-80"
       >
-        <Check
-          size={v.icon}
-          strokeWidth={v.strokeWidth}
-          color={iconColor}
-          opacity={checked ? 1 : showHint ? 0.2 : 0}
-        />
+        {/* Opacity on a wrapper — lucide/RN-svg `opacity` on Path can fail to paint stroke. */}
+        <View style={{ opacity: iconOpacity }} pointerEvents="none">
+          <Check size={v.icon} strokeWidth={v.strokeWidth} color={iconColor} />
+        </View>
       </Pressable>
     </View>
   );

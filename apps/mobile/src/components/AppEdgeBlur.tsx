@@ -7,7 +7,13 @@ import { memo, useId, useMemo } from "react";
 import { StyleSheet, useWindowDimensions, View } from "react-native";
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 import { useEdgeScrub } from "../chrome/EdgeScrubContext.tsx";
-import { EDGE_BOTTOM_H, EDGE_TOP_H, HIDE_WORDMARK_SEGMENTS, Z_EDGE } from "../chrome/layout.ts";
+import {
+  BARE_NO_EDGE_SEGMENTS,
+  EDGE_BOTTOM_H,
+  EDGE_TOP_H,
+  HIDE_WORDMARK_SEGMENTS,
+  Z_EDGE,
+} from "../chrome/layout.ts";
 
 type Edge = "top" | "bottom";
 
@@ -120,7 +126,8 @@ export function EdgeScrub({
  * Top/bottom are omitted when chrome owns them:
  * - Top → `MobileWordmark` (behind the logo, flush to screen top)
  * - Bottom → `MobileDock` (behind icons; also on inner stack screens)
- * Root still paints both edges on login/claim/dev (no wordmark / dock).
+ * Auth (`login` / `claim`) stays flat void — no root scrub.
+ * `dev` smoke keeps both edges when chrome is hidden.
  */
 export const AppEdgeBlur = memo(function AppEdgeBlur() {
   const { width } = useWindowDimensions();
@@ -128,13 +135,15 @@ export const AppEdgeBlur = memo(function AppEdgeBlur() {
   const segments = useSegments();
   const root = segments[0];
   const chromeHidden = Boolean(root && HIDE_WORDMARK_SEGMENTS.has(root));
+  const bareAuth = Boolean(root && BARE_NO_EDGE_SEGMENTS.has(root));
+  const paintRootEdges = chromeHidden && !bareAuth;
 
   return (
     <>
-      {chromeHidden ? (
+      {paintRootEdges ? (
         <EdgeScrub edge="top" height={EDGE_TOP_H} progress={topProgress} width={width} />
       ) : null}
-      {chromeHidden ? (
+      {paintRootEdges ? (
         <EdgeScrub edge="bottom" height={EDGE_BOTTOM_H} progress={1} width={width} />
       ) : null}
     </>

@@ -179,7 +179,7 @@ export const pushSubscriptions = sqliteTable("push_subscriptions", {
 });
 
 /**
- * Known keys: locale ("tr"|"en"), region ("TR"), tmdb_api_key (single mode
+ * Known keys: locale ("tr"|"en"|"ja"), region ("TR"), tmdb_api_key (single mode
  * only), scrapers_enabled ("0"|"1"), theme ("dark"|"light"|"system"),
  * schema_version (zip schema version this library was created at),
  * watching_window_days (integer days as string, default "30"),

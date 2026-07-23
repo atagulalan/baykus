@@ -127,8 +127,9 @@ comment. Silent divergence is the one unforgivable failure mode.
 
 ```bash
 pnpm install
-pnpm dev            # server (4004) + web (5173, proxies /api and /img)
-pnpm dev:mobile     # Expo Router (@baykus/mobile) — see docs/react-native-migration.md
+pnpm dev            # server (4004) + web (5173) + Expo mobile
+pnpm dev:web        # server + web only (no Expo)
+pnpm dev:mobile     # Expo only — see docs/react-native-migration.md
 pnpm test           # vitest across workspace
 pnpm test <path>    # e.g. pnpm test packages/core
 pnpm typecheck

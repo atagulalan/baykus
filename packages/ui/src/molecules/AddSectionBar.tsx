@@ -138,7 +138,7 @@ function SortOptionList({
               selected ? "bg-white/5" : "active:bg-white/5",
             )}
           >
-            <Text className={cn("font-mono text-xs", selected ? "text-yellow" : "text-snow")}>
+            <Text className={cn("font-sans text-sm", selected ? "text-yellow" : "text-snow")}>
               {sortLabel(sort)}
             </Text>
             {selected ? <Check size={14} color={colors.yellow} /> : null}
